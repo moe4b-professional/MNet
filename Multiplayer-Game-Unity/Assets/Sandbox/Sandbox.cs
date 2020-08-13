@@ -30,6 +30,8 @@ namespace Game
         void Start()
         {
             ConnectWebSocket();
+
+            Debug.Log("Start");
         }
 
         void Update()
@@ -59,7 +61,7 @@ namespace Game
 
         void ConnectWebSocket()
         {
-            websocket = new WebSocket($"ws://localhost{Constants.WebSockeAPI.Port}");
+            websocket = new WebSocket($"ws://localhost:{Constants.WebSockeAPI.Port}/");
 
             websocket.OnError += ErrorCallback;
             void ErrorCallback(object sender, WebSocketSharp.ErrorEventArgs args)
@@ -70,7 +72,7 @@ namespace Game
             websocket.OnOpen += OpenCallback;
             void OpenCallback(object sender, EventArgs args)
             {
-                Debug.Log("Websocket Open");
+                Debug.Log("Websocket Opened");
 
                 websocket.Send("Hello Server");
             }
@@ -79,6 +81,12 @@ namespace Game
             void MessageCallback(object sender, MessageEventArgs args)
             {
                 Debug.Log($"WebSocket API: {args.Data}");
+            }
+
+            websocket.OnClose += CloseCallback;
+            void CloseCallback(object sender, CloseEventArgs e)
+            {
+                Debug.Log($"WebSocket Closed");
             }
 
             websocket.Connect();

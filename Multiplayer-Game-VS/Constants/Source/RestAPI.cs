@@ -13,6 +13,8 @@ namespace Game.Constants
         public static class Requests
         {
             public const string ListMatches = nameof(ListMatches);
+
+            public const string CreateMatch = nameof(CreateMatch);
         }
     }
 }

@@ -29,6 +29,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -45,4 +48,8 @@
     <Compile Include="Source\WebSockeAPI.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>set /p Destination=&lt;"$(ProjectDir)DLL-Copy-Destination.txt"
+xcopy /y /d "$(TargetPath)" "$(SolutionDir)%25Destination%25"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

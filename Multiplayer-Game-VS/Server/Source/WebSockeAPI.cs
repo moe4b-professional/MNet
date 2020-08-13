@@ -23,7 +23,12 @@ namespace Game.Server
         {
             server = new WebSocketServer(address, port);
 
-            server.AddWebSocketService("", InitializeService);
+            server.KeepClean = true;
+
+            server.Log.Level = LogLevel.Info;
+            server.Log.Output = (data, s) => { Log.Info(data.Message); };
+
+            server.AddWebSocketService("/", InitializeService);
 
             Log.Info($"Configuring Rest API on {address}:{port}");
         }
@@ -49,14 +54,16 @@ namespace Game.Server
         {
             base.OnOpen();
 
-            Log.Info($"WebSocket Connected: {Context.UserEndPoint}");
+            Log.Info($"WebSocket Client Connected: {Context.UserEndPoint.Address}");
         }
 
         protected override void OnMessage(MessageEventArgs args)
         {
             base.OnMessage(args);
 
-            Log.Info($"WebSocket Message: {args.Data} + from {Context.UserEndPoint}");
+            Log.Info($"WebSocket Client Message: \"{args.Data}\" from {Context.UserEndPoint.Address}");
+
+            Context.WebSocket.Send("Welcome to the API");
         }
 
         public WebSocketService()

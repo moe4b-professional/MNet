@@ -23,8 +23,6 @@ namespace Game.Server
             websocket = new WebSockeAPI();
             websocket.Configure(IPAddress.Any, Constants.WebSockeAPI.Port);
             websocket.Start();
-
-            Console.ReadKey();
         }
     }
 }
