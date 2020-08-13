@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Server
+namespace Game.Server
 {
-    class Program
+    public static class Log
     {
-        static void Main(string[] args)
+        public static void Info(string text)
         {
-            Console.WriteLine("Hello World");
+            Console.WriteLine(text);
         }
     }
 }
