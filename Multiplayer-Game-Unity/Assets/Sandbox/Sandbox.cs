@@ -46,18 +46,27 @@ namespace Game
         {
             Call<ListRoomsMessage>("localhost", "GET", Constants.RestAPI.Requests.ListRooms, Callback);
 
-            void Callback(ListRoomsMessage message)
+            void Callback(ListRoomsMessage message, RestError error)
             {
-                foreach (var room in message.list)
-                    Debug.Log(room);
+                if(error == null)
+                {
+                    foreach (var room in message.list)
+                        Debug.Log(room);
+                }
+                else
+                {
+                    Debug.LogError("Error Listing Rooms, Message: " + error.Message);
+                }
             }
         }
 
-        public delegate void ResponseDelegate<TMessage>(TMessage message) where TMessage : NetworkMessage;
+        public delegate void ResponseDelegate<TMessage>(TMessage message, RestError error) where TMessage : NetworkMessage;
+
         void Call<TResponse>(string address, string method, string path, ResponseDelegate<TResponse> callback)
             where TResponse : NetworkMessage
         {
             StartCoroutine(Procedure());
+
             IEnumerator Procedure()
             {
                 var url = address + ":" + Constants.RestAPI.Port + path;
@@ -68,9 +77,28 @@ namespace Game
 
                 yield return request.SendWebRequest();
 
-                var message = NetworkMessage.Deserialize<TResponse>(request.downloadHandler.data);
+                if(request.isHttpError || request.isNetworkError)
+                {
+                    var error = new RestError(request.error);
 
-                callback(message);
+                    callback(null, error);
+                }
+                else
+                {
+                    var message = NetworkMessage.Deserialize<TResponse>(request.downloadHandler.data);
+
+                    callback(message, null);
+                }
+            }
+        }
+
+        public class RestError
+        {
+            public string Message { get; protected set; }
+
+            public RestError(string message)
+            {
+                this.Message = message;
             }
         }
 
