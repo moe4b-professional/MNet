@@ -29,22 +29,20 @@ namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{
-        WebSocket websocket;
-
         void Start()
         {
             Debug.Log("Start");
             
-            SendRestRequest();
+            ListRooms();
         }
 
         void Update()
         {
             if (Input.GetKeyDown(KeyCode.S))
-                SendRestRequest();
+                ListRooms();
         }
 
-        void SendRestRequest()
+        void ListRooms()
         {
             Call<ListRoomsMessage>("localhost", "GET", Constants.RestAPI.Requests.ListRooms, Callback);
 
@@ -109,7 +107,7 @@ namespace Game
 
         void ConnectWebSocket(string path)
         {
-            websocket = new WebSocket($"ws://localhost:{Constants.WebSocketAPI.Port}{path}");
+            var websocket = new WebSocket($"ws://localhost:{Constants.WebSocketAPI.Port}{path}");
 
             websocket.OnError += ErrorCallback;
             void ErrorCallback(object sender, WebSocketSharp.ErrorEventArgs args)

@@ -4,11 +4,25 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using WebSocketSharp;
+using WebSocketSharp.Net;
+
 namespace Game.Fixed
 {
     [Serializable]
     public class NetworkMessage
     {
+        public void WriteTo(HttpListenerResponse response)
+        {
+            response.StatusCode = (int)HttpStatusCode.OK;
+
+            var data = NetworkSerializer.Serialize(this);
+
+            response.WriteContent(data);
+
+            response.Close();
+        }
+
         public static byte[] Serialize(NetworkMessage message)
         {
             var data = NetworkSerializer.Serialize(message);
@@ -26,14 +40,7 @@ namespace Game.Fixed
     }
 
     [Serializable]
-    public class NetworkMessage<T> : NetworkMessage
-        where T : NetworkMessage
-    {
-        public static T Deserialize(byte[] data) => Deserialize<T>(data);
-    }
-
-    [Serializable]
-    public class ListRoomsMessage : NetworkMessage<ListRoomsMessage>
+    public class ListRoomsMessage : NetworkMessage
     {
         public IList<RoomInfo> list { get; protected set; }
 

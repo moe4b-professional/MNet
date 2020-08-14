@@ -25,15 +25,9 @@ namespace Game.Server
         public int MaxPlayers { get; protected set; }
 
         public int PlayersCount { get; protected set; }
-        #endregion
-
-        #region Schedule
-        public const long DefaultTickInterval = 50;
-
-        public Schedule Schedule { get; protected set; }
-        #endregion
 
         public RoomInfo ReadInfo() => new RoomInfo(ID, Name, MaxPlayers, PlayersCount);
+        #endregion
 
         #region Web Socket
         public WebSocketServiceHost WebSocket => GameServer.WebSocket.Services[Path];
@@ -42,22 +36,14 @@ namespace Game.Server
         {
             var service = new RoomWebSocketSerivce();
 
-            Log.Info("*Creating Room WebSocket Service*");
-
-            if(WebSocket == null)
-            {
-                Log.Info("WebSocket Host is still Empty");
-            }
-            else
-            {
-                Log.Info(WebSocket.Path);
-                Log.Info(WebSocket.Sessions.Count);
-
-                WebSocket.Sessions.Broadcast("Hey All!");
-            }
-
             return service;
         }
+        #endregion
+
+        #region Schedule
+        public const long DefaultTickInterval = 50;
+
+        public Schedule Schedule { get; protected set; }
         #endregion
 
         void Init()

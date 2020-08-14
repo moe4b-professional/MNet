@@ -15,8 +15,6 @@ namespace Game.Server
     {
         public Dictionary<string, Room> Rooms { get; protected set; }
 
-        public LobbyRestAPI Rest { get; protected set; }
-
         public IList<RoomInfo> ReadRoomsInfo()
         {
             var results = new List<RoomInfo>(Rooms.Count);
@@ -35,7 +33,7 @@ namespace Game.Server
         {
             Rooms = new Dictionary<string, Room>();
 
-            Rest = new LobbyRestAPI(this);
+            GameServer.Rest.Router.Register(GETListRooms);
         }
 
         public Room CreateRoom(string name)
@@ -48,39 +46,21 @@ namespace Game.Server
 
             return room;
         }
-    }
 
-    class LobbyRestAPI
-    {
-        Lobby lobby;
-
-        public bool ProcessListRooms(HttpListenerRequest request, HttpListenerResponse response)
+        public bool GETListRooms(HttpListenerRequest request, HttpListenerResponse response)
         {
-            if(request.RawUrl == Constants.RestAPI.Requests.ListRooms)
+            if (request.RawUrl == Constants.RestAPI.Requests.ListRooms)
             {
-                response.StatusCode = (int)HttpStatusCode.OK;
+                var list = ReadRoomsInfo();
 
-                var rooms = lobby.ReadRoomsInfo();
+                var message = new ListRoomsMessage(list);
 
-                var message = new ListRoomsMessage(rooms);
-
-                var data = NetworkSerializer.Serialize(message);
-
-                response.WriteContent(data);
-
-                response.Close();
+                message.WriteTo(response);
 
                 return true;
             }
 
             return false;
-        }
-
-        public LobbyRestAPI(Lobby lobby)
-        {
-            this.lobby = lobby;
-
-            GameServer.Rest.Router.Register(ProcessListRooms);
         }
     }
 }
