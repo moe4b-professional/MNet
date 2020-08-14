@@ -15,7 +15,7 @@ namespace Game.Server
     {
         public Dictionary<string, Room> Rooms { get; protected set; }
 
-        public LobbyRest Rest { get; protected set; }
+        public LobbyRestAPI Rest { get; protected set; }
 
         public IList<RoomInfo> ReadRoomsInfo()
         {
@@ -35,7 +35,7 @@ namespace Game.Server
         {
             Rooms = new Dictionary<string, Room>();
 
-            Rest = new LobbyRest(this);
+            Rest = new LobbyRestAPI(this);
         }
 
         public Room CreateRoom(string name)
@@ -50,7 +50,7 @@ namespace Game.Server
         }
     }
 
-    class LobbyRest
+    class LobbyRestAPI
     {
         Lobby lobby;
 
@@ -76,7 +76,7 @@ namespace Game.Server
             return false;
         }
 
-        public LobbyRest(Lobby lobby)
+        public LobbyRestAPI(Lobby lobby)
         {
             this.lobby = lobby;
 

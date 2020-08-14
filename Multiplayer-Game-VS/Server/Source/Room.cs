@@ -7,26 +7,67 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 
+using System.Threading;
+
 using Game.Fixed;
 
 namespace Game.Server
 {
     class Room
     {
+        #region Basic Properties
         public string ID { get; protected set; }
+
+        public string Path => "/" + ID;
 
         public string Name { get; protected set; }
 
         public int MaxPlayers { get; protected set; }
+
         public int PlayersCount { get; protected set; }
+        #endregion
 
-        public WebSocketServiceHost WebSocket => GameServer.WebSocket.Services[ID];
+        #region Schedule
+        public const long DefaultTickInterval = 50;
 
-        public RoomInfo ReadInfo()
+        public Schedule Schedule { get; protected set; }
+        #endregion
+
+        public RoomInfo ReadInfo() => new RoomInfo(ID, Name, MaxPlayers, PlayersCount);
+
+        #region Web Socket
+        public WebSocketServiceHost WebSocket => GameServer.WebSocket.Services[Path];
+
+        public RoomWebSocketSerivce CreateWebSocketService()
         {
-            var result = new RoomInfo(ID, Name, MaxPlayers, PlayersCount);
+            var service = new RoomWebSocketSerivce();
 
-            return result;
+            Log.Info("*Creating Room WebSocket Service*");
+
+            if(WebSocket == null)
+            {
+                Log.Info("WebSocket Host is still Empty");
+            }
+            else
+            {
+                Log.Info(WebSocket.Path);
+                Log.Info(WebSocket.Sessions.Count);
+
+                WebSocket.Sessions.Broadcast("Hey All!");
+            }
+
+            return service;
+        }
+        #endregion
+
+        void Init()
+        {
+
+        }
+        
+        void Tick()
+        {
+            //Log.Info("Room Tick @ " + Schedule.DeltaTime.ToString("F3"));
         }
 
         public Room(string id, string name, int maxPlayers)
@@ -34,11 +75,43 @@ namespace Game.Server
             this.ID = id;
             this.Name = name;
             this.MaxPlayers = maxPlayers;
+
+            GameServer.WebSocket.AddService(Path, CreateWebSocketService);
+
+            Schedule = new Schedule(DefaultTickInterval);
+            Schedule.OnInit += Init;
+            Schedule.OnTick += Tick;
         }
     }
 
-    class RoomWebSocketSerivce : WebSocketAPIService
+    class RoomWebSocketSerivce : WebSocketBehavior
     {
-        
+        protected override void OnOpen()
+        {
+            base.OnOpen();
+
+            Log.Info($"WebSocket Client {Context.UserEndPoint.Address} Connected To Room, ID: {this.ID}");
+
+            Context.WebSocket.Send($"Welcome to the Room");
+        }
+
+        protected override void OnMessage(MessageEventArgs args)
+        {
+            base.OnMessage(args);
+
+            Log.Info($"WebSocket Client {Context.UserEndPoint.Address}: '{args.Data}'");
+        }
+
+        protected override void OnClose(CloseEventArgs args)
+        {
+            base.OnClose(args);
+
+            Log.Info($"WebSocket Client Disconnected With Code: {args.Code}");
+        }
+
+        public RoomWebSocketSerivce()
+        {
+
+        }
     }
 }

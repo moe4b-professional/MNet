@@ -28,8 +28,6 @@ namespace Game.Server
             Server.Log.Level = LogLevel.Info;
             Server.Log.Output = (data, s) => { Log.Info(data.Message); };
 
-            Server.AddWebSocketService<WebSocketAPIService>("/");
-
             Log.Info($"Configuring Rest API on {address}:{port}");
         }
 
@@ -40,41 +38,10 @@ namespace Game.Server
             Log.Info("Starting WebSocket API");
         }
 
-        public void AddService<TBehaviour>(string path)
+        public void AddService<TBehaviour>(string path, Func<TBehaviour> initializer)
             where TBehaviour : WebSocketBehavior, new()
         {
-            Server.AddWebSocketService<TBehaviour>(path);
-        }
-    }
-
-    class WebSocketAPIService : WebSocketBehavior
-    {
-        protected override void OnOpen()
-        {
-            base.OnOpen();
-
-            Log.Info($"WebSocket Client Connected: {Context.UserEndPoint.Address}");
-        }
-
-        protected override void OnMessage(MessageEventArgs args)
-        {
-            base.OnMessage(args);
-
-            Log.Info($"WebSocket Client Message: \"{args.Data}\" from {Context.UserEndPoint.Address}");
-
-            Context.WebSocket.Send("Welcome to WebSocket API");
-        }
-
-        protected override void OnClose(CloseEventArgs args)
-        {
-            base.OnClose(args);
-
-            Log.Info($"WebSocket Client Disconnected With Code: {args.Code}");
-        }
-
-        public WebSocketAPIService()
-        {
-
+            Server.AddWebSocketService(path, initializer);
         }
     }
 }

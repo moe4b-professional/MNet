@@ -20,7 +20,7 @@ namespace Game.Fixed
             }
         }
 
-        public static class WebSockeAPI
+        public static class WebSocketAPI
         {
             public const int Port = 9090;
         }

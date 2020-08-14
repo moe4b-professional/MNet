@@ -25,7 +25,7 @@ namespace Game.Server
             Rest.Start();
 
             WebSocket = new WebSockeAPI();
-            WebSocket.Configure(IPAddress.Any, Constants.WebSockeAPI.Port);
+            WebSocket.Configure(IPAddress.Any, Constants.WebSocketAPI.Port);
             WebSocket.Start();
 
             Lobby = new Lobby();

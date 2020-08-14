@@ -23,6 +23,8 @@ using WebSocketSharp;
 
 using Game.Fixed;
 
+using System.Threading;
+
 namespace Game
 {
 	public class Sandbox : MonoBehaviour
@@ -32,8 +34,8 @@ namespace Game
         void Start()
         {
             Debug.Log("Start");
-
-            ConnectWebSocket();
+            
+            SendRestRequest();
         }
 
         void Update()
@@ -51,7 +53,10 @@ namespace Game
                 if(error == null)
                 {
                     foreach (var room in message.list)
-                        Debug.Log(room);
+                    {
+                        Debug.Log("Room :" + room);
+                        ConnectWebSocket("/" + room.ID);
+                    }
                 }
                 else
                 {
@@ -102,9 +107,9 @@ namespace Game
             }
         }
 
-        void ConnectWebSocket()
+        void ConnectWebSocket(string path)
         {
-            websocket = new WebSocket($"ws://localhost:{Constants.WebSockeAPI.Port}/");
+            websocket = new WebSocket($"ws://localhost:{Constants.WebSocketAPI.Port}{path}");
 
             websocket.OnError += ErrorCallback;
             void ErrorCallback(object sender, WebSocketSharp.ErrorEventArgs args)
@@ -117,7 +122,7 @@ namespace Game
             {
                 Debug.Log("Websocket Opened");
 
-                websocket.Send("Hello Server");
+                websocket.Send("Hello Room");
             }
 
             websocket.OnMessage += MessageCallback;
@@ -135,10 +140,10 @@ namespace Game
             Application.quitting += QuitCallback;
             void QuitCallback()
             {
-                websocket.Close();
+                if(websocket.IsAlive) websocket.Close();
             }
 
-            websocket.Connect();
+            websocket.ConnectAsync();
         }
     }
 }
