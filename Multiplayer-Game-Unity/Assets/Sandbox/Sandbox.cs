@@ -44,18 +44,33 @@ namespace Game
 
         void SendRestRequest()
         {
-            StartCoroutine(Procedure());
+            Call<ListRoomsMessage>("localhost", "GET", Constants.RestAPI.Requests.ListRooms, Callback);
 
+            void Callback(ListRoomsMessage message)
+            {
+                foreach (var room in message.list)
+                    Debug.Log(room);
+            }
+        }
+
+        public delegate void ResponseDelegate<TMessage>(TMessage message) where TMessage : NetworkMessage;
+        void Call<TResponse>(string address, string method, string path, ResponseDelegate<TResponse> callback)
+            where TResponse : NetworkMessage
+        {
+            StartCoroutine(Procedure());
             IEnumerator Procedure()
             {
-                var request = UnityWebRequest.Get($"localhost:{Constants.RestAPI.Port}{Constants.RestAPI.Requests.ListRooms}");
+                var url = address + ":" + Constants.RestAPI.Port + path;
+
+                var request = new UnityWebRequest(url, method);
+
+                request.downloadHandler = new DownloadHandlerBuffer();
 
                 yield return request.SendWebRequest();
 
-                if (request.isDone)
-                {
-                    var message = ListRoomsMessage.Deserialize(request.downloadHandler.data);
-                }
+                var message = NetworkMessage.Deserialize<TResponse>(request.downloadHandler.data);
+
+                callback(message);
             }
         }
 

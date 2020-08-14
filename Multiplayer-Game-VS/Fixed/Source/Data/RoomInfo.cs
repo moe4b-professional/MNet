@@ -26,5 +26,13 @@ namespace Game.Fixed
 
             this.PlayersCount = playersCount;
         }
+
+        public override string ToString()
+        {
+            return "ID: " + ID + Environment.NewLine +
+                "Name: " + Name + Environment.NewLine +
+                "MaxPlayers: " + MaxPlayers + Environment.NewLine +
+                "PlayersCount: " + PlayersCount + Environment.NewLine;
+        }
     }
 }

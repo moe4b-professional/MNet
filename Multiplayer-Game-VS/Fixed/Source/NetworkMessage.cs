@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace Game.Fixed
 {
     [Serializable]
-    public class BaseNetworkMessage
+    public class NetworkMessage
     {
-        public static byte[] Serialize(BaseNetworkMessage message)
+        public static byte[] Serialize(NetworkMessage message)
         {
             var data = NetworkSerializer.Serialize(message);
 
@@ -17,7 +17,7 @@ namespace Game.Fixed
         }
 
         public static T Deserialize<T>(byte[] data)
-            where T : BaseNetworkMessage
+            where T : NetworkMessage
         {
             var target = NetworkSerializer.Deserialize(data) as T;
 
@@ -26,8 +26,8 @@ namespace Game.Fixed
     }
 
     [Serializable]
-    public class NetworkMessage<T> : BaseNetworkMessage
-        where T : BaseNetworkMessage
+    public class NetworkMessage<T> : NetworkMessage
+        where T : NetworkMessage
     {
         public static T Deserialize(byte[] data) => Deserialize<T>(data);
     }
