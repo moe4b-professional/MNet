@@ -21,6 +21,8 @@ using UnityEngine.Networking;
 
 using WebSocketSharp;
 
+using Game.Fixed;
+
 namespace Game
 {
 	public class Sandbox : MonoBehaviour
@@ -29,9 +31,9 @@ namespace Game
 
         void Start()
         {
-            ConnectWebSocket();
-
             Debug.Log("Start");
+
+            ConnectWebSocket();
         }
 
         void Update()
@@ -46,15 +48,13 @@ namespace Game
 
             IEnumerator Procedure()
             {
-                var request = UnityWebRequest.Get($"localhost:{Constants.RestAPI.Port}/{Constants.RestAPI.Requests.ListMatches}");
+                var request = UnityWebRequest.Get($"localhost:{Constants.RestAPI.Port}{Constants.RestAPI.Requests.ListRooms}");
 
                 yield return request.SendWebRequest();
 
                 if (request.isDone)
                 {
-                    Debug.Log(request.responseCode);
-
-                    Debug.Log(request.downloadHandler.text);
+                    var message = ListRoomsMessage.Deserialize(request.downloadHandler.data);
                 }
             }
         }
@@ -87,6 +87,12 @@ namespace Game
             void CloseCallback(object sender, CloseEventArgs e)
             {
                 Debug.Log($"WebSocket Closed");
+            }
+
+            Application.quitting += QuitCallback;
+            void QuitCallback()
+            {
+                websocket.Close();
             }
 
             websocket.Connect();

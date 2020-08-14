@@ -15,40 +15,39 @@ namespace Game.Server
 {
     class WebSockeAPI
     {
-        WebSocketServer server;
+        public WebSocketServer Server { get; protected set; }
 
-        WebSocketService service;
+        public WebSocketServiceManager Services => Server.WebSocketServices;
 
         public void Configure(IPAddress address, int port)
         {
-            server = new WebSocketServer(address, port);
+            Server = new WebSocketServer(address, port);
 
-            server.KeepClean = true;
+            Server.KeepClean = true;
 
-            server.Log.Level = LogLevel.Info;
-            server.Log.Output = (data, s) => { Log.Info(data.Message); };
+            Server.Log.Level = LogLevel.Info;
+            Server.Log.Output = (data, s) => { Log.Info(data.Message); };
 
-            server.AddWebSocketService("/", InitializeService);
+            Server.AddWebSocketService<WebSocketAPIService>("/");
 
             Log.Info($"Configuring Rest API on {address}:{port}");
         }
 
-        WebSocketService InitializeService()
-        {
-            service = new WebSocketService();
-
-            return service;
-        }
-
         public void Start()
         {
-            server.Start();
+            Server.Start();
 
             Log.Info("Starting WebSocket API");
         }
+
+        public void AddService<TBehaviour>(string path)
+            where TBehaviour : WebSocketBehavior, new()
+        {
+            Server.AddWebSocketService<TBehaviour>(path);
+        }
     }
 
-    class WebSocketService : WebSocketBehavior
+    class WebSocketAPIService : WebSocketBehavior
     {
         protected override void OnOpen()
         {
@@ -63,10 +62,17 @@ namespace Game.Server
 
             Log.Info($"WebSocket Client Message: \"{args.Data}\" from {Context.UserEndPoint.Address}");
 
-            Context.WebSocket.Send("Welcome to the API");
+            Context.WebSocket.Send("Welcome to WebSocket API");
         }
 
-        public WebSocketService()
+        protected override void OnClose(CloseEventArgs args)
+        {
+            base.OnClose(args);
+
+            Log.Info($"WebSocket Client Disconnected With Code: {args.Code}");
+        }
+
+        public WebSocketAPIService()
         {
 
         }

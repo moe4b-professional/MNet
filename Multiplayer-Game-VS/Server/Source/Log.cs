@@ -8,9 +8,9 @@ namespace Game.Server
 {
     public static class Log
     {
-        public static void Info(string text)
+        public static void Info(object target)
         {
-            Console.WriteLine(text);
+            Console.WriteLine(target);
         }
     }
 }

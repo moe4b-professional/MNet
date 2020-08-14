@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27428.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{0FFAE3D7-53F6-4B1C-802F-722054AE2376}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Constants", "Constants\Constants.csproj", "{1D7748A0-D914-4D0E-BDF3-489AEAEA46E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fixed", "Fixed\Fixed.csproj", "{1D7748A0-D914-4D0E-BDF3-489AEAEA46E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "..\Multiplayer-Game-Unity\Assembly-CSharp.csproj", "{88779CB0-ED79-3274-C2A3-23B036161304}"
 EndProject

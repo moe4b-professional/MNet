@@ -7,8 +7,8 @@
     <ProjectGuid>{1D7748A0-D914-4D0E-BDF3-489AEAEA46E2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Game.Constants</RootNamespace>
-    <AssemblyName>Constants</AssemblyName>
+    <RootNamespace>Game.Fixed</RootNamespace>
+    <AssemblyName>Fixed</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -43,9 +43,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Source\RestAPI.cs" />
+    <Compile Include="Source\Constants.cs" />
+    <Compile Include="Source\Data\RoomInfo.cs" />
+    <Compile Include="Source\NetworkMessage.cs" />
+    <Compile Include="Source\NetworkSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\WebSockeAPI.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

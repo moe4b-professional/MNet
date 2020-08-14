@@ -4,24 +4,33 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using NHttp;
-
 using System.IO;
 using System.Net;
+
+using WebSocketSharp;
+using WebSocketSharp.Server;
+
+using HttpListenerRequest = WebSocketSharp.Net.HttpListenerRequest;
+using HttpListenerResponse = WebSocketSharp.Net.HttpListenerResponse;
 
 namespace Game.Server
 {
     class RestAPI
     {
-        HttpServer server;
+        public HttpServer Server { get; protected set; }
+
+        public RestAPIRouter Router { get; protected set; }
 
         public void Configure(IPAddress address, int port)
         {
-            server = new HttpServer();
+            Server = new HttpServer(address, port);
 
-            server.EndPoint = new IPEndPoint(address, port);
+            Server.OnGet += RequestCallback;
+            Server.OnPost += RequestCallback;
+            Server.OnDelete += RequestCallback;
+            Server.OnPut += RequestCallback;
 
-            server.RequestReceived += RequestCallback;
+            Router = new RestAPIRouter();
 
             Log.Info($"Configuring Rest API on {address}:{port}");
         }
@@ -30,17 +39,57 @@ namespace Game.Server
         {
             Log.Info("Starting Rest API");
 
-            server.Start();
+            Server.Start();
         }
 
         void RequestCallback(object sender, HttpRequestEventArgs args)
         {
-            using (var writer = new StreamWriter(args.Response.OutputStream))
-            {
-                Log.Info($"Rest API Request: {args.Request.Path} from {args.Request.UserHostAddress}");
+            var request = args.Request;
+            var response = args.Response;
 
-                writer.Write("Hello world!");
+            Log.Info($"Rest API Request: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
+
+            if (Router.Process(request, response))
+            {
+                
             }
+            else
+            {
+                response.StatusCode = (int)HttpStatusCode.NotFound;
+
+                response.ContentEncoding = Encoding.UTF8;
+                var data = Encoding.UTF8.GetBytes("ERROR 404, NOT FOUND");
+                response.WriteContent(data);
+
+                response.Close();
+            }
+        }
+    }
+
+    class RestAPIRouter
+    {
+        public List<ProcessDelegate> List { get; protected set; }
+        
+        public virtual bool Process(HttpListenerRequest request, WebSocketSharp.Net.HttpListenerResponse response)
+        {
+            for (int i = 0; i < List.Count; i++)
+                if (List[i](request, response))
+                    return true;
+
+            return false;
+        }
+
+        public virtual void Register(ProcessDelegate callback)
+        {
+            List.Add(callback);
+        }
+
+        public delegate bool CheckDelegate(HttpListenerRequest request);
+        public delegate bool ProcessDelegate(HttpListenerRequest request, HttpListenerResponse response);
+
+        public RestAPIRouter()
+        {
+            List = new List<ProcessDelegate>();
         }
     }
 }
