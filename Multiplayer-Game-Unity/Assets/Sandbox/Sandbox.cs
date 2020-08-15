@@ -34,6 +34,22 @@ namespace Game
             Debug.Log("Start");
             
             ListRooms();
+
+            Call<PlayerInfoMessage>("localhost", "GET", "/PlayerInfo", Callback);
+            void Callback(PlayerInfoMessage message, RestError error)
+            {
+                if(error == null)
+                {
+                    foreach (var pair in message.Dictionary)
+                    {
+                        Debug.Log(pair.Key + " : " + pair.Value);
+                    }
+                }
+                else
+                {
+                    Debug.LogError("Error Getting Player Info, Message: " + error.Message);
+                }
+            }
         }
 
         void Update()
@@ -82,7 +98,7 @@ namespace Game
 
                 if(request.isHttpError || request.isNetworkError)
                 {
-                    var error = new RestError(request.error);
+                    var error = new RestError(request);
 
                     callback(null, error);
                 }
@@ -97,12 +113,17 @@ namespace Game
 
         public class RestError
         {
+            public long Code { get; protected set; }
+
             public string Message { get; protected set; }
 
-            public RestError(string message)
+            public RestError(long code, string message)
             {
+                this.Code = code;
                 this.Message = message;
             }
+
+            public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
         }
 
         void ConnectWebSocket(string path)

@@ -14,18 +14,16 @@ namespace Game.Server
     {
         public static RestAPI Rest { get; private set; }
 
-        public static WebSockeAPI WebSocket { get; private set; }
+        public static WebSocketAPI WebSocket { get; private set; }
 
         public static Lobby Lobby { get; private set; }
 
         static void Main(string[] args)
         {
-            Rest = new RestAPI();
-            Rest.Configure(IPAddress.Any, Constants.RestAPI.Port);
+            Rest = new RestAPI(IPAddress.Any, Constants.RestAPI.Port);
             Rest.Start();
 
-            WebSocket = new WebSockeAPI();
-            WebSocket.Configure(IPAddress.Any, Constants.WebSocketAPI.Port);
+            WebSocket = new WebSocketAPI(IPAddress.Any, Constants.WebSocketAPI.Port);
             WebSocket.Start();
 
             Lobby = new Lobby();
@@ -33,7 +31,17 @@ namespace Game.Server
 
             Lobby.CreateRoom("Game Room #1");
 
+            Sandbox.Run();
+
             Console.ReadKey();
+        }
+    }
+
+    public static class Sandbox
+    {
+        public static void Run()
+        {
+
         }
     }
 }

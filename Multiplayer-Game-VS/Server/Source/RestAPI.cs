@@ -21,23 +21,9 @@ namespace Game.Server
 
         public RestAPIRouter Router { get; protected set; }
 
-        public void Configure(IPAddress address, int port)
-        {
-            Server = new HttpServer(address, port);
-
-            Server.OnGet += RequestCallback;
-            Server.OnPost += RequestCallback;
-            Server.OnDelete += RequestCallback;
-            Server.OnPut += RequestCallback;
-
-            Router = new RestAPIRouter();
-
-            Log.Info($"Configuring Rest API on {address}:{port}");
-        }
-
         public void Start()
         {
-            Log.Info("Starting Rest API");
+            Log.Info($"Starting {nameof(RestAPI)}");
 
             Server.Start();
         }
@@ -47,7 +33,7 @@ namespace Game.Server
             var request = args.Request;
             var response = args.Response;
 
-            Log.Info($"Rest API Request: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
+            Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
             if (Router.Process(request, response))
             {
@@ -58,11 +44,25 @@ namespace Game.Server
                 response.StatusCode = (int)HttpStatusCode.NotFound;
 
                 response.ContentEncoding = Encoding.UTF8;
-                var data = Encoding.UTF8.GetBytes("ERROR 404, NOT FOUND");
+                var data = Encoding.UTF8.GetBytes("Error 404");
                 response.WriteContent(data);
 
                 response.Close();
             }
+        }
+
+        public RestAPI(IPAddress address, int port)
+        {
+            Log.Info($"Configuring {nameof(RestAPI)} on {address}:{port}");
+
+            Server = new HttpServer(address, port);
+
+            Server.OnGet += RequestCallback;
+            Server.OnPost += RequestCallback;
+            Server.OnDelete += RequestCallback;
+            Server.OnPut += RequestCallback;
+
+            Router = new RestAPIRouter();
         }
     }
 

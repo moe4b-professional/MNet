@@ -18,7 +18,14 @@ namespace Game.Server
 
         Thread thread;
 
-        void Start()
+        bool run = true;
+
+        public void Start()
+        {
+            thread.Start();
+        }
+
+        void Connect()
         {
             Init();
 
@@ -26,49 +33,52 @@ namespace Game.Server
         }
 
         public delegate void InitDelegate();
-        public event InitDelegate OnInit;
+        InitDelegate initCallback;
         void Init()
         {
-            OnInit?.Invoke();
+            initCallback?.Invoke();
         }
 
         public delegate void TickDelegate();
-        public event TickDelegate OnTick;
+        TickDelegate tickCallback;
         void Tick()
         {
             var stopwatch = new Stopwatch();
 
-            long elapsed = 0;
-
-            while (true)
+            while (run)
             {
-                stopwatch.Start();
-                {
-                    OnTick?.Invoke();
+                tickCallback?.Invoke();
 
-                    elapsed = stopwatch.ElapsedMilliseconds;
+                var elapsed = stopwatch.ElapsedMilliseconds;
 
-                    if (interval > elapsed) Sleep(interval - elapsed);
+                if (interval > elapsed) Sleep(interval - elapsed);
 
-                    DeltaTime = stopwatch.ElapsedMilliseconds / 1000f;
+                DeltaTime = stopwatch.ElapsedMilliseconds / 1000f;
 
-                    ElapsedTime += DeltaTime;
-                }
-                stopwatch.Reset();
+                ElapsedTime += DeltaTime;
+
+                stopwatch.Restart();
             }
         }
 
         void Sleep(long duration) => Thread.Sleep((int)duration);
 
-        public Schedule(long interval)
+        public void Stop()
+        {
+            run = false;
+        }
+
+        public Schedule(long interval, InitDelegate initCallback, TickDelegate tickCallback)
         {
             this.interval = interval;
 
             ElapsedTime = 0f;
             DeltaTime = interval / 1000;
 
-            thread = new Thread(Start);
-            thread.Start();
+            this.initCallback = initCallback;
+            this.tickCallback = tickCallback;
+
+            thread = new Thread(Connect);
         }
     }
 }

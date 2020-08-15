@@ -49,4 +49,15 @@ namespace Game.Fixed
             this.list = list;
         }
     }
+
+    [Serializable]
+    public class PlayerInfoMessage : NetworkMessage
+    {
+        public Dictionary<string, object> Dictionary { get; protected set; }
+
+        public PlayerInfoMessage(Dictionary<string, object> dictionary)
+        {
+            this.Dictionary = dictionary;
+        }
+    }
 }

@@ -13,35 +13,37 @@ using System.Net;
 
 namespace Game.Server
 {
-    class WebSockeAPI
+    class WebSocketAPI
     {
         public WebSocketServer Server { get; protected set; }
 
         public WebSocketServiceManager Services => Server.WebSocketServices;
 
-        public void Configure(IPAddress address, int port)
-        {
-            Server = new WebSocketServer(address, port);
-
-            Server.KeepClean = true;
-
-            Server.Log.Level = LogLevel.Info;
-            Server.Log.Output = (data, s) => { Log.Info(data.Message); };
-
-            Log.Info($"Configuring Rest API on {address}:{port}");
-        }
-
         public void Start()
         {
-            Server.Start();
+            Log.Info($"Starting {nameof(WebSocketAPI)}");
 
-            Log.Info("Starting WebSocket API");
+            Server.Start();
         }
 
         public void AddService<TBehaviour>(string path, Func<TBehaviour> initializer)
             where TBehaviour : WebSocketBehavior, new()
         {
             Server.AddWebSocketService(path, initializer);
+        }
+
+        public void RemoveService(string path) => Server.RemoveWebSocketService(path);
+
+        public WebSocketAPI(IPAddress address, int port)
+        {
+            Log.Info($"Configuring {nameof(WebSocketAPI)} on {address}:{port}");
+
+            Server = new WebSocketServer(address, port);
+
+            Server.KeepClean = true;
+
+            Server.Log.Level = LogLevel.Info;
+            Server.Log.Output = (data, s) => { Log.Info(data.Message); };
         }
     }
 }

@@ -47,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Source\Constants.cs" />
-    <Compile Include="Source\Data\RoomInfo.cs" />
+    <Compile Include="Source\RoomInfo.cs" />
     <Compile Include="Source\NetworkMessage.cs" />
     <Compile Include="Source\NetworkSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

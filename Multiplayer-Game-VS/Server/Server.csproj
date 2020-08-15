@@ -52,7 +52,7 @@
     <Compile Include="Source\RestAPI.cs" />
     <Compile Include="Source\Room.cs" />
     <Compile Include="Source\Schedule.cs" />
-    <Compile Include="Source\WebSockeAPI.cs" />
+    <Compile Include="Source\WebSocketAPI.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

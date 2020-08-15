@@ -33,7 +33,7 @@ namespace Game.Server
         {
             Rooms = new Dictionary<string, Room>();
 
-            GameServer.Rest.Router.Register(GETListRooms);
+            GameServer.Rest.Router.Register(RestRoute);
         }
 
         public Room CreateRoom(string name)
@@ -44,16 +44,33 @@ namespace Game.Server
 
             Rooms.Add(id, room);
 
+            room.Start();
+
             return room;
         }
 
-        public bool GETListRooms(HttpListenerRequest request, HttpListenerResponse response)
+        public bool RestRoute(HttpListenerRequest request, HttpListenerResponse response)
         {
             if (request.RawUrl == Constants.RestAPI.Requests.ListRooms)
             {
                 var list = ReadRoomsInfo();
 
                 var message = new ListRoomsMessage(list);
+
+                message.WriteTo(response);
+
+                return true;
+            }
+
+            if(request.RawUrl == "/PlayerInfo")
+            {
+                var dictionary = new Dictionary<string, object>();
+
+                dictionary.Add("Name", "Moe4B");
+
+                dictionary.Add("Level", "4");
+
+                var message = new PlayerInfoMessage(dictionary);
 
                 message.WriteTo(response);
 
