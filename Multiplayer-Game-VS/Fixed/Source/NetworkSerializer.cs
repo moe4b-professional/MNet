@@ -5,37 +5,42 @@ using System.Text;
 using System.Threading.Tasks;
 
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+
+using ProtoBuf;
 
 namespace Game.Fixed
 {
     public static class NetworkSerializer
     {
-        public static BinaryFormatter Formatter { get; private set; }
-
-        public static byte[] Serialize(object target)
+        public static byte[] Serialize<T>(T instance)
         {
             using (var stream = new MemoryStream())
             {
-                Formatter.Serialize(stream, target);
+                Serializer.Serialize(stream, instance);
 
                 return stream.ToArray();
             }
         }
 
-        public static object Deserialize(byte[] data)
+        public static T Deserialize<T>(byte[] data)
+        {
+            var target = Deserialize(data, typeof(T));
+
+            return (T)target;
+        }
+        public static object Deserialize(byte[] data, Type type)
         {
             using (var stream = new MemoryStream(data))
             {
-                var target = Formatter.Deserialize(stream);
+                var instance = Serializer.Deserialize(type, stream);
 
-                return target;
+                return instance;
             }
         }
 
         static NetworkSerializer()
         {
-            Formatter = new BinaryFormatter();
+            
         }
     }
 }

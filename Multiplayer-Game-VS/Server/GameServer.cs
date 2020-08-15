@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using System.IO;
 using System.Net;
 
 using Game.Fixed;
+
+using ProtoBuf;
 
 namespace Game.Server
 {
@@ -20,6 +23,8 @@ namespace Game.Server
 
         static void Main(string[] args)
         {
+            NetworkMessagePayload.ValidateAll();
+
             Rest = new RestAPI(IPAddress.Any, Constants.RestAPI.Port);
             Rest.Start();
 
@@ -41,7 +46,16 @@ namespace Game.Server
     {
         public static void Run()
         {
+            var source = RPCArgument.Create(DateTime.Now);
 
+            var data = NetworkSerializer.Serialize(source);
+
+            Log.Info(source.ID);
+            Log.Info(data.Length);
+
+            var instance = NetworkSerializer.Deserialize<RPCArgument>(data);
+
+            Log.Info(instance.Read());
         }
     }
 }

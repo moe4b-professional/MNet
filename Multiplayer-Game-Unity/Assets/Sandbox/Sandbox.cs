@@ -29,18 +29,24 @@ namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{
+        [RuntimeInitializeOnLoadMethod]
+        static void OnLoad()
+        {
+            NetworkMessagePayload.ValidateAll();
+        }
+
         void Start()
         {
             Debug.Log("Start");
-            
-            ListRooms();
 
-            Call<PlayerInfoMessage>("localhost", "GET", "/PlayerInfo", Callback);
-            void Callback(PlayerInfoMessage message, RestError error)
+            Call<NetworkMessage>("localhost", "GET", "/PlayerInfo", Callback);
+            void Callback(NetworkMessage message, RestError error)
             {
                 if(error == null)
                 {
-                    foreach (var pair in message.Dictionary)
+                    var payload = message.Read<PlayerInfoPayload>();
+
+                    foreach (var pair in payload.Dictionary)
                     {
                         Debug.Log(pair.Key + " : " + pair.Value);
                     }
@@ -60,13 +66,15 @@ namespace Game
 
         void ListRooms()
         {
-            Call<ListRoomsMessage>("localhost", "GET", Constants.RestAPI.Requests.ListRooms, Callback);
+            Call<NetworkMessage>("localhost", "GET", Constants.RestAPI.Requests.ListRooms, Callback);
 
-            void Callback(ListRoomsMessage message, RestError error)
+            void Callback(NetworkMessage message, RestError error)
             {
                 if(error == null)
                 {
-                    foreach (var room in message.list)
+                    var payload = message.Read<ListRoomsPayload>();
+
+                    foreach (var room in payload.list)
                     {
                         Debug.Log("Room :" + room);
                         ConnectWebSocket("/" + room.ID);
@@ -79,10 +87,9 @@ namespace Game
             }
         }
 
-        public delegate void ResponseDelegate<TMessage>(TMessage message, RestError error) where TMessage : NetworkMessage;
+        public delegate void ResponseDelegate(NetworkMessage message, RestError error);
 
-        void Call<TResponse>(string address, string method, string path, ResponseDelegate<TResponse> callback)
-            where TResponse : NetworkMessage
+        void Call<TResponse>(string address, string method, string path, ResponseDelegate callback)
         {
             StartCoroutine(Procedure());
 
@@ -104,7 +111,7 @@ namespace Game
                 }
                 else
                 {
-                    var message = NetworkMessage.Deserialize<TResponse>(request.downloadHandler.data);
+                    var message = NetworkMessage.Read(request.downloadHandler.data);
 
                     callback(message, null);
                 }

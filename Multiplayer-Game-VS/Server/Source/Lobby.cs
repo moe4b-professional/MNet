@@ -55,7 +55,9 @@ namespace Game.Server
             {
                 var list = ReadRoomsInfo();
 
-                var message = new ListRoomsMessage(list);
+                var payload = new ListRoomsPayload(list);
+
+                var message = NetworkMessage.Write(payload);
 
                 message.WriteTo(response);
 
@@ -64,13 +66,15 @@ namespace Game.Server
 
             if(request.RawUrl == "/PlayerInfo")
             {
-                var dictionary = new Dictionary<string, object>();
+                var dictionary = new Dictionary<string, string>();
 
                 dictionary.Add("Name", "Moe4B");
 
                 dictionary.Add("Level", "4");
 
-                var message = new PlayerInfoMessage(dictionary);
+                var payload = new PlayerInfoPayload(dictionary);
+
+                var message = NetworkMessage.Write(payload);
 
                 message.WriteTo(response);
 
