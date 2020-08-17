@@ -6,16 +6,20 @@ using System.Threading.Tasks;
 
 namespace Game.Fixed
 {
-    [Serializable]
-    public struct RoomInfo
+    public class RoomInfo : INetSerializable
     {
-        public string ID { get; private set; }
+        public string ID { get; protected set; }
 
-        public string Name { get; private set; }
+        public string Name { get; protected set; }
 
-        public int MaxPlayers { get; private set; }
-        public int PlayersCount { get; private set; }
+        public int MaxPlayers { get; protected set; }
 
+        public int PlayersCount { get; protected set; }
+
+        public RoomInfo()
+        {
+
+        }
         public RoomInfo(string id, string name, int maxPlayers, int playersCount)
         {
             this.ID = id;
@@ -25,6 +29,22 @@ namespace Game.Fixed
             this.MaxPlayers = maxPlayers;
 
             this.PlayersCount = playersCount;
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            ID = reader.ReadString();
+            Name = reader.ReadString();
+            MaxPlayers = reader.ReadInt();
+            PlayersCount = reader.ReadInt();
+        }
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.WriteString(ID);
+            writer.WriteString(Name);
+            writer.WriteInt(MaxPlayers);
+            writer.WriteInt(PlayersCount);
         }
 
         public override string ToString()

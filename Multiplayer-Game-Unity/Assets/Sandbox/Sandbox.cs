@@ -23,12 +23,12 @@ using WebSocketSharp;
 
 using Game.Fixed;
 
-using System.Threading;
-
 namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{
+        public string address = "localhost";
+
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
@@ -39,10 +39,61 @@ namespace Game
         {
             Debug.Log("Start");
 
-            Call<NetworkMessage>("localhost", "GET", "/PlayerInfo", Callback);
+            TryMessagePack();
+
+            GetPlayerInfo();
+            ListRooms();
+        }
+
+        void TryMessagePack()
+        {
+            TryPlayerInfo();
+        }
+
+        void TryPlayerInfo()
+        {
+            Byte[] data;
+
+            {
+                var dictionary = new Dictionary<string, string>();
+
+                dictionary.Add("Name", "Moe4B");
+                dictionary.Add("Level", "4");
+
+                var payload = new PlayerInfoPayload(dictionary);
+
+                var message = NetworkMessage.Write(payload);
+
+                data = NetworkSerializer.Serialize(message);
+
+                Debug.Log("Serialized Player Info: " + data.Length);
+            }
+
+            {
+                var instance = NetworkSerializer.Deserialize<NetworkMessage>(data);
+
+                var payload = instance.Read<PlayerInfoPayload>();
+
+                var dictionary = payload.Dictionary;
+
+                foreach (var pair in dictionary)
+                {
+                    Debug.Log("Player Info: " + pair.Key + " : " + pair.Value);
+                }
+            }
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.S)) ListRooms();
+        }
+
+        void GetPlayerInfo()
+        {
+            Call<NetworkMessage>(address, "GET", "/PlayerInfo", Callback);
             void Callback(NetworkMessage message, RestError error)
             {
-                if(error == null)
+                if (error == null)
                 {
                     var payload = message.Read<PlayerInfoPayload>();
 
@@ -57,16 +108,9 @@ namespace Game
                 }
             }
         }
-
-        void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.S))
-                ListRooms();
-        }
-
         void ListRooms()
         {
-            Call<NetworkMessage>("localhost", "GET", Constants.RestAPI.Requests.ListRooms, Callback);
+            Call<NetworkMessage>(address, "GET", Constants.RestAPI.Requests.ListRooms, Callback);
 
             void Callback(NetworkMessage message, RestError error)
             {
@@ -87,6 +131,7 @@ namespace Game
             }
         }
 
+        #region REST
         public delegate void ResponseDelegate(NetworkMessage message, RestError error);
 
         void Call<TResponse>(string address, string method, string path, ResponseDelegate callback)
@@ -95,7 +140,7 @@ namespace Game
 
             IEnumerator Procedure()
             {
-                var url = address + ":" + Constants.RestAPI.Port + path;
+                var url = "http://" + address + ":" + Constants.RestAPI.Port + path;
 
                 var request = new UnityWebRequest(url, method);
 
@@ -132,10 +177,12 @@ namespace Game
 
             public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
         }
+        #endregion
 
+        #region WebSocket
         void ConnectWebSocket(string path)
         {
-            var websocket = new WebSocket($"ws://localhost:{Constants.WebSocketAPI.Port}{path}");
+            var websocket = new WebSocket($"ws://{address}:{Constants.WebSocketAPI.Port}{path}");
 
             websocket.OnError += ErrorCallback;
             void ErrorCallback(object sender, WebSocketSharp.ErrorEventArgs args)
@@ -171,5 +218,6 @@ namespace Game
 
             websocket.ConnectAsync();
         }
+        #endregion
     }
 }

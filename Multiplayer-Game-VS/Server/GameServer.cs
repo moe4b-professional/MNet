@@ -9,8 +9,6 @@ using System.Net;
 
 using Game.Fixed;
 
-using ProtoBuf;
-
 namespace Game.Server
 {
     static class GameServer
@@ -46,16 +44,7 @@ namespace Game.Server
     {
         public static void Run()
         {
-            var source = RPCArgument.Create(DateTime.Now);
-
-            var data = NetworkSerializer.Serialize(source);
-
-            Log.Info(source.ID);
-            Log.Info(data.Length);
-
-            var instance = NetworkSerializer.Deserialize<RPCArgument>(data);
-
-            Log.Info(instance.Read());
+            
         }
     }
 }

@@ -11,6 +11,8 @@ using WebSocketSharp.Server;
 
 using System.Net;
 
+using Game.Fixed;
+
 namespace Game.Server
 {
     class WebSocketAPI

@@ -7,34 +7,29 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
-using ProtoBuf;
-
 namespace Game.Fixed
 {
     [Serializable]
-    [ProtoContract]
-    public sealed class NetworkMessage
+    public sealed class NetworkMessage : INetSerializable
     {
-        [ProtoMember(1)]
         public string ID { get; private set; }
 
-        [ProtoMember(2)]
-        public byte[] Data { get; private set; }
+        public byte[] Raw { get; private set; }
 
-        public bool Is<TPayload>()
-            where TPayload : NetworkMessagePayload
+        public bool Is<TType>()
+            where TType : NetworkMessagePayload
         {
-            return NetworkMessagePayload.GetID<TPayload>() == ID;
+            return NetworkMessagePayload.GetID<TType>() == ID;
         }
         public bool Is(Type type)
         {
             return NetworkMessagePayload.GetID(type) == ID;
         }
 
-        public TPayload Read<TPayload>()
-            where TPayload : NetworkMessagePayload
+        public TType Read<TType>()
+            where TType : NetworkMessagePayload, new()
         {
-            var instance = NetworkSerializer.Deserialize<TPayload>(Data);
+            var instance = NetworkSerializer.Deserialize<TType>(Raw);
 
             return instance;
         }
@@ -49,12 +44,27 @@ namespace Game.Fixed
 
             response.Close();
         }
-        
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.WriteString(ID);
+
+            writer.WriteArray(Raw);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            ID = reader.ReadString();
+
+            Raw = reader.ReadArray<byte>();
+        }
+
+        public NetworkMessage() { }
         public NetworkMessage(string id, byte[] payload)
         {
             this.ID = id;
 
-            this.Data = payload;
+            this.Raw = payload;
         }
 
         public static NetworkMessage Read(byte[] data)
@@ -67,20 +77,14 @@ namespace Game.Fixed
         {
             var id = NetworkMessagePayload.GetID(payload);
 
-            var data = NetworkSerializer.Serialize<TPayload>(payload);
+            var data = NetworkSerializer.Serialize(payload);
 
             return new NetworkMessage(id, data);
-        }
-
-        public NetworkMessage()
-        {
-
         }
     }
 
     [Serializable]
-    [ProtoContract]
-    public class NetworkMessagePayload
+    public abstract class NetworkMessagePayload : INetSerializable
     {
         public static string GetID<TPayload>() where TPayload : NetworkMessagePayload => GetID(typeof(TPayload));
         public static string GetID(NetworkMessagePayload payload) => GetID(payload.GetType());
@@ -108,82 +112,117 @@ namespace Game.Fixed
                 }
             }
         }
+
+        public abstract void Deserialize(NetworkReader reader);
+
+        public abstract void Serialize(NetworkWriter writer);
     }
 
     [Serializable]
-    [ProtoContract]
     public sealed class ListRoomsPayload : NetworkMessagePayload
     {
-        [ProtoMember(1)]
-        public IList<RoomInfo> list { get; private set; }
+        public RoomInfo[] list { get; private set; }
 
-        public ListRoomsPayload(IList<RoomInfo> list)
+        public override void Serialize(NetworkWriter writer)
+        {
+            writer.WriteArray(list);
+        }
+
+        public override void Deserialize(NetworkReader reader)
+        {
+            list = reader.ReadArray<RoomInfo>();
+        }
+
+        public ListRoomsPayload() { }
+        public ListRoomsPayload(RoomInfo[] list)
         {
             this.list = list;
         }
-
-        public ListRoomsPayload()
-        {
-
-        }
     }
 
     [Serializable]
-    [ProtoContract]
     public sealed class PlayerInfoPayload : NetworkMessagePayload
     {
-        [ProtoMember(1)]
         public Dictionary<string, string> Dictionary { get; private set; }
 
+        public override void Serialize(NetworkWriter writer)
+        {
+            writer.WriteDictionary(Dictionary);
+        }
+
+        public override void Deserialize(NetworkReader reader)
+        {
+            Dictionary = reader.ReadDictionary<string, string>();
+        }
+
+        public PlayerInfoPayload() { }
         public PlayerInfoPayload(Dictionary<string, string> dictionary)
         {
             this.Dictionary = dictionary;
         }
-
-        public PlayerInfoPayload()
-        {
-
-        }
     }
 
     [Serializable]
-    [ProtoContract]
     public sealed class RPCInfoPayload : NetworkMessagePayload
     {
-        string target;
+        public string Target { get; private set; }
 
-        RPCArgument[] arguments;
+        public RPCArgument[] Arguments { get; private set; }
+
+        public override void Serialize(NetworkWriter writer)
+        {
+            writer.WriteString(Target);
+
+            writer.WriteArray(Arguments);
+        }
+
+        public override void Deserialize(NetworkReader reader)
+        {
+            Target = reader.ReadString();
+
+            Arguments = reader.ReadArray<RPCArgument>();
+        }
+
+        public RPCInfoPayload() { }
     }
 
     [Serializable]
-    [ProtoContract]
-    public class RPCArgument
+    public class RPCArgument : INetSerializable
     {
-        [ProtoMember(1)]
-        public string ID;
+        public string ID { get; private set; }
 
-        [ProtoMember(2)]
-        public byte[] data;
+        public byte[] Raw { get; private set; }
 
         public object Read()
         {
             var type = Type.GetType(ID);
 
-            var result = NetworkSerializer.Deserialize(data, type);
+            var result = NetworkSerializer.Deserialize(Raw, type);
 
             return result;
         }
         public T Read<T>() => (T)Read();
 
-        public RPCArgument()
+        public void Serialize(NetworkWriter writer)
         {
+            writer.WriteString(ID);
 
+            writer.WriteArray(Raw);
         }
-        public RPCArgument(string name, byte[] data)
-        {
-            this.ID = name;
 
-            this.data = data;
+        public void Deserialize(NetworkReader reader)
+        {
+            ID = reader.ReadString();
+
+            Raw = reader.ReadArray<byte>();
+        }
+
+        public RPCArgument() { }
+        public RPCArgument(string id, byte[] raw)
+        {
+            this.ID = id;
+
+            this.Raw = raw;
         }
 
         public static RPCArgument Create(object value)

@@ -15,15 +15,18 @@ namespace Game.Server
     {
         public Dictionary<string, Room> Rooms { get; protected set; }
 
-        public IList<RoomInfo> ReadRoomsInfo()
+        public RoomInfo[] ReadRoomsInfo()
         {
-            var results = new List<RoomInfo>(Rooms.Count);
+            var results = new RoomInfo[Rooms.Count];
 
+            var index = 0;
             foreach (var room in Rooms.Values)
             {
                 var info = room.ReadInfo();
 
-                results.Add(info);
+                results[index] = info;
+
+                index++;
             }
 
             return results;
