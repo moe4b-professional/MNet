@@ -51,53 +51,6 @@ namespace Game.Fixed
         }
     }
 
-    public class PocoSerializer
-    {
-        public static void Test()
-        {
-            var data = new byte[1024];
-
-            {
-                var sample = new SampleObject()
-                {
-                    number = 42,
-                    text = "Hello Serializer",
-                    array = new string[]
-                    {
-                        "Welcome",
-                        "To",
-                        "Roayal",
-                        "Mania"
-                    },
-                    keyvalue = new KeyValuePair<string, string>("One Ring", "Destruction"),
-                    dictionary = new Dictionary<string, string>()
-                    {
-                        { "Name", "Moe4B" },
-                        { "Level", "14" },
-                    }
-                };
-
-                var writer = new NetworkWriter(data);
-
-                writer.WriteSerializable(sample);
-
-                Log.Info(writer.Position);
-            }
-
-            {
-                var reader = new NetworkReader(data);
-
-                var info = reader.ReadSerializable<SampleObject>();
-
-                Log.Info(info.number);
-                Log.Info(info.text);
-                foreach (var item in info.array) Log.Info(item);
-                Log.Info(info.keyvalue);
-                foreach (var pair in info.dictionary) Log.Info(pair);
-            }
-        }
-    }
-
     public partial class SampleObject : INetSerializable
     {
         public int number;
@@ -115,7 +68,7 @@ namespace Game.Fixed
             number = reader.ReadInt();
             text = reader.ReadString();
             array = reader.ReadArray<string>();
-            keyvalue = reader.ReadKeyValue<string, string>();
+            keyvalue = reader.ReadKeyValuePair<string, string>();
             dictionary = reader.ReadDictionary<string, string>();
         }
 
@@ -129,7 +82,7 @@ namespace Game.Fixed
         }
     }
 
-    public class NetworkWriter
+    public abstract class NetworkDataOperator : IDisposable
     {
         protected byte[] data;
         public byte[] Data { get { return data; } }
@@ -141,6 +94,19 @@ namespace Game.Fixed
 
         public int Remaining => Size - position;
 
+        public virtual void Dispose()
+        {
+            data = null;
+        }
+
+        public NetworkDataOperator(byte[] data)
+        {
+            this.data = data;
+        }
+    }
+
+    public class NetworkWriter : NetworkDataOperator
+    {
         public byte[] Read()
         {
             var result = new byte[position];
@@ -162,6 +128,7 @@ namespace Game.Fixed
             position += 1;
         }
 
+        #region Primitives
         public void WriteByte(byte value)
         {
             Put(value);
@@ -182,6 +149,7 @@ namespace Game.Fixed
 
             Put(binary);
         }
+        #endregion
 
         public void WriteSerializable<T>(T value)
             where T : INetSerializable
@@ -189,21 +157,16 @@ namespace Game.Fixed
             value.Serialize(this);
         }
 
-        public void WriteArray<T>(T[] array)
+        #region Collections
+        public void WriteArray<T>(T[] array) => WriteList(array);
+        public void WriteList<T>(IList<T> list)
         {
-            WriteInt(array.Length);
+            WriteInt(list.Count);
 
-            for (int i = 0; i < array.Length; i++)
-                WritePrimitive(array[i]);
+            for (int i = 0; i < list.Count; i++)
+                WriteBasic(list[i]);
         }
-
-        public void WriteKeyValuePair<TKey, TValue>(KeyValuePair<TKey, TValue> pair) => WriteKeyValue(pair.Key, pair.Value);
-        public void WriteKeyValue<TKey, TValue>(TKey key, TValue value)
-        {
-            WritePrimitive(key);
-
-            WritePrimitive(value);
-        }
+        
         public void WriteDictionary<Tkey, TValue>(Dictionary<Tkey, TValue> value)
         {
             WriteInt(value.Count);
@@ -212,38 +175,50 @@ namespace Game.Fixed
                 WriteKeyValue(pair.Key, pair.Value);
         }
 
-        public void WritePrimitive(object value)
+        public void WriteKeyValuePair<TKey, TValue>(KeyValuePair<TKey, TValue> pair) => WriteKeyValue(pair.Key, pair.Value);
+        public void WriteKeyValue<TKey, TValue>(TKey key, TValue value)
         {
-            if (value is byte) WriteByte((byte)value);
+            WriteBasic(key);
 
-            else if (value is Int32) WriteInt((Int32)value);
+            WriteBasic(value);
+        }
+        #endregion
 
-            else if (value is string) WriteString((string)value);
+        public void WriteBasic(object value)
+        {
+            if (value is byte)
+            {
+                WriteByte((byte)value);
+                return;
+            }
 
-            else if (value is INetSerializable) WriteSerializable(value as INetSerializable);
+            if (value is Int32)
+            {
+                WriteInt((Int32)value);
+                return;
+            }
 
-            else throw new NotImplementedException(value.GetType().Name);
+            if (value is string)
+            {
+                WriteString((string)value);
+                return;
+            }
+
+            if (value is INetSerializable)
+            {
+                WriteSerializable(value as INetSerializable);
+                return;
+            }
+
+            else throw new NotImplementedException();
         }
 
-        public NetworkWriter(byte[] data)
-        {
-            this.data = data;
-        }
-        public NetworkWriter(int size) : this(new byte[size]) { }
+        public NetworkWriter(int size) : base(new byte[size]) { }
     }
 
-    public class NetworkReader
+    public class NetworkReader : NetworkDataOperator
     {
-        protected byte[] data;
-        public byte[] Data { get { return data; } }
-
-        public int Size => data.Length;
-
-        protected int position;
-        public int Position { get { return position; } }
-
-        public int Remaining => Size - position;
-
+        #region Primitives
         public byte ReadByte()
         {
             var result = data[position];
@@ -275,6 +250,7 @@ namespace Game.Fixed
 
             return result;
         }
+        #endregion
 
         public T ReadSerializable<T>()
             where T : INetSerializable, new()
@@ -289,11 +265,14 @@ namespace Game.Fixed
         {
             var result = Activator.CreateInstance(type) as INetSerializable;
 
+            if (result == null) throw new ArgumentException($"{type.FullName} is not {nameof(INetSerializable)}");
+
             result.Deserialize(this);
 
             return result;
         }
 
+        #region Collections
         public T[] ReadArray<T>()
         {
             var length = ReadInt();
@@ -301,19 +280,26 @@ namespace Game.Fixed
             var array = new T[length];
 
             for (int i = 0; i < length; i++)
-                array[i] = ReadPrimitive<T>();
+                array[i] = ReadBasic<T>();
 
             return array;
         }
-
-        public KeyValuePair<TKey, TValue> ReadKeyValue<TKey, TValue>()
+        public List<T> ReadList<T>()
         {
-            ReadPrimitive(out TKey key);
+            var length = ReadInt();
 
-            ReadPrimitive(out TValue value);
+            var list = new List<T>(length);
 
-            return new KeyValuePair<TKey, TValue>(key, value);
+            for (int i = 0; i < length; i++)
+            {
+                var item = ReadBasic<T>();
+
+                list.Add(item);
+            }
+
+            return list;
         }
+
         public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>()
         {
             var count = ReadInt();
@@ -322,7 +308,7 @@ namespace Game.Fixed
 
             for (int i = 0; i < count; i++)
             {
-                var pair = ReadKeyValue<TKey, TValue>();
+                var pair = ReadKeyValuePair<TKey, TValue>();
 
                 dictionary.Add(pair.Key, pair.Value);
             }
@@ -330,9 +316,19 @@ namespace Game.Fixed
             return dictionary;
         }
 
-        public void ReadPrimitive<T>(out T value) => value = ReadPrimitive<T>();
-        public T ReadPrimitive<T>() => (T)ReadPrimitive(typeof(T));
-        public object ReadPrimitive(Type type)
+        public KeyValuePair<TKey, TValue> ReadKeyValuePair<TKey, TValue>()
+        {
+            var key = ReadBasic<TKey>();
+
+            var value = ReadBasic<TValue>();
+
+            return new KeyValuePair<TKey, TValue>(key, value);
+        }
+
+        #endregion
+
+        public T ReadBasic<T>() => (T)ReadBasic(typeof(T));
+        public object ReadBasic(Type type)
         {
             if (type == typeof(byte)) return ReadByte();
 
@@ -345,10 +341,7 @@ namespace Game.Fixed
             throw new NotImplementedException();
         }
 
-        public NetworkReader(byte[] data)
-        {
-            this.data = data;
-        }
+        public NetworkReader(byte[] data) : base(data) { }
     }
 
     public interface INetSerializable
@@ -356,5 +349,68 @@ namespace Game.Fixed
         void Serialize(NetworkWriter writer);
 
         void Deserialize(NetworkReader reader);
+    }
+
+    public abstract class NetworkSerializationResolver
+    {
+        public Type Type { get; protected set; }
+
+        public abstract void Serialize(NetworkWriter writer, object type);
+
+        public abstract object Deserialize(NetworkReader reader);
+
+        public NetworkSerializationResolver(Type type)
+        {
+            this.Type = type;
+        }
+
+        public static class Collection
+        {
+            public static List<NetworkSerializationResolver> List { get; private set; }
+
+            static Collection()
+            {
+                List = new List<NetworkSerializationResolver>();
+
+                var target = typeof(NetworkSerializationResolver);
+
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    foreach (var type in assembly.GetTypes())
+                    {
+                        if (target.IsAssignableFrom(type) == false) continue;
+
+                        var constructor = type.GetConstructor(Type.EmptyTypes);
+
+                        if (constructor == null)
+                            throw new InvalidOperationException($"{type.FullName} needs to have an empty constructor to be registered as a {nameof(NetworkSerializationResolver)}");
+
+                        var instance = Activator.CreateInstance(type);
+                    }
+                }
+            }
+        }
+    }
+
+    public class DateTimeNetworkSerializationResolver : NetworkSerializationResolver
+    {
+        public override void Serialize(NetworkWriter writer, object type)
+        {
+            var date = (DateTime)type;
+
+            writer.WriteString(date.ToLongDateString());
+        }
+
+        public override object Deserialize(NetworkReader reader)
+        {
+            var text = reader.ReadString();
+
+            if (DateTime.TryParse(text, out var date))
+                return date;
+            else
+                return new DateTime();
+        }
+
+        public DateTimeNetworkSerializationResolver() : base(typeof(DateTime)) { }
     }
 }
