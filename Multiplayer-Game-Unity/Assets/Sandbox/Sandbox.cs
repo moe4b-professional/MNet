@@ -34,12 +34,6 @@ namespace Game
             Debug.Log("Start");
 
             CreateRoom();
-
-            return;
-            GetPlayerInfo();
-            ListRooms();
-
-            TryRPC();
         }
 
         void TryRPC()
@@ -95,8 +89,10 @@ namespace Game
         void CreateRoom()
         {
             {
-                var payload = new CreateRoomRequestPayload("Moe4B's Room", 4);
-                var message = NetworkMessage.Write(payload);
+                //var payload = new CreateRoomRequestPayload("Moe4B's Room", 4);
+                //var message = NetworkMessage.Write(payload);
+
+                var message = new CreateRoomRequestPayload("Moe4B's Room", 4).ToMessage();
 
                 RestRequest.POST(address, Constants.RestAPI.Requests.CreateRoom, message, Callback, false);
             }

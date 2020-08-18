@@ -62,7 +62,10 @@ namespace Game.Server
 
             }
 
-            public static WebSocketService Create() => new WebSocketService();
+            public static void Create(WebSocketService service)
+            {
+
+            }
         }
         #endregion
 
@@ -106,7 +109,7 @@ namespace Game.Server
             this.Name = name;
             this.Capacity = capacity;
 
-            GameServer.WebSocket.AddService(Path, WebSocketService.Create);
+            GameServer.WebSocket.AddService<WebSocketService>(Path, WebSocketService.Create);
 
             Schedule = new Schedule(DefaultTickInterval, Init, Tick);
         }

@@ -28,7 +28,7 @@ namespace Game.Server
             Server.Start();
         }
 
-        public void AddService<TBehaviour>(string path, Func<TBehaviour> initializer)
+        public void AddService<TBehaviour>(string path, Action<TBehaviour> initializer)
             where TBehaviour : WebSocketBehavior, new()
         {
             Server.AddWebSocketService(path, initializer);

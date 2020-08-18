@@ -30,7 +30,7 @@ namespace Game.Server
             Lobby = new Lobby();
             Lobby.Configure();
 
-            Lobby.CreateRoom("Game Room #1", 4);
+            //Lobby.CreateRoom("Game Room #1", 4);
 
             Sandbox.Run();
 

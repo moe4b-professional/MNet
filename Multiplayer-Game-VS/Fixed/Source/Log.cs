@@ -8,6 +8,7 @@ namespace Game.Shared
 {
     public static class Log
     {
+        public static void Error(object target) => Info(target);
         public static void Info(object target)
         {
             Console.WriteLine(target);

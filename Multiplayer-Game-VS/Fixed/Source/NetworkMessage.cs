@@ -92,10 +92,9 @@ namespace Game.Shared
             }
         }
 
-        public static NetworkMessage Write<T>(T payload)
-            where T : NetworkMessagePayload
+        public static NetworkMessage Write(NetworkMessagePayload payload)
         {
-            var code = NetworkMessagePayload.GetCode<T>();
+            var code = NetworkMessagePayload.GetCode(payload.Type);
 
             var raw = NetworkSerializer.Serialize(payload);
 
@@ -106,22 +105,26 @@ namespace Game.Shared
     [Serializable]
     public abstract class NetworkMessagePayload : INetSerializable
     {
+        public Type Type => GetType();
+
         public NetworkMessage ToMessage() => NetworkMessage.Write(this);
 
         public abstract void Serialize(NetworkWriter writer);
         public abstract void Deserialize(NetworkReader reader);
 
-        //Static Utility
-        public static Type Target => typeof(NetworkMessagePayload);
+        public NetworkMessagePayload() { }
 
-        public static List<Element> List { get; private set; }
-        public class Element
+        //Static Utility
+        static Type Target => typeof(NetworkMessagePayload);
+
+        public static List<Data> All { get; private set; }
+        public class Data
         {
             public short Code { get; protected set; }
 
             public Type Type { get; protected set; }
 
-            public Element(short code, Type type)
+            public Data(short code, Type type)
             {
                 this.Code = code;
                 this.Type = type;
@@ -130,9 +133,9 @@ namespace Game.Shared
 
         public static Type GetType(short code)
         {
-            for (int i = 0; i < List.Count; i++)
-                if (List[i].Code == code)
-                    return List[i].Type;
+            for (int i = 0; i < All.Count; i++)
+                if (All[i].Code == code)
+                    return All[i].Type;
 
             return null;
         }
@@ -140,9 +143,9 @@ namespace Game.Shared
         public static short GetCode<T>() where T : NetworkMessagePayload => GetCode(typeof(T));
         public static short GetCode(Type type)
         {
-            for (int i = 0; i < List.Count; i++)
-                if (List[i].Type == type)
-                    return List[i].Code;
+            for (int i = 0; i < All.Count; i++)
+                if (All[i].Type == type)
+                    return All[i].Code;
 
             throw new NotImplementedException($"Type {type.Name} not registerd as {nameof(NetworkMessagePayload)}");
         }
@@ -150,7 +153,7 @@ namespace Game.Shared
         static void Register<T>(short value) where T : NetworkMessagePayload => Register(value, typeof(T));
         static void Register(short value, Type type)
         {
-            var element = new Element(value, type);
+            var element = new Data(value, type);
 
             if (type == Target)
                 throw new InvalidOperationException($"Cannot register {nameof(NetworkMessagePayload)} directly, please inherit from it");
@@ -166,12 +169,12 @@ namespace Game.Shared
             if (constructor == null)
                 throw new Exception($"{type.FullName} rquires a parameter-less constructor to act as a {nameof(NetworkMessagePayload)}");
 
-            List.Add(element);
+            All.Add(element);
         }
 
         static NetworkMessagePayload()
         {
-            List = new List<Element>();
+            All = new List<Data>();
 
             Register<ListRoomsPayload>(1);
             Register<PlayerInfoPayload>(2);

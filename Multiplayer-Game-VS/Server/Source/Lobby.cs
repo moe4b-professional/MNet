@@ -39,7 +39,16 @@ namespace Game.Server
             GameServer.Rest.Router.Register(RESTRoute);
         }
 
-        public Room CreateRoom(CreateRoomRequestPayload request) => CreateRoom(request.Name, request.Capacity);
+        public CreateRoomResponsePayload CreateRoom(CreateRoomRequestPayload request)
+        {
+            var room = CreateRoom(request.Name, request.Capacity);
+
+            var info = room.ReadInfo();
+
+            var response = new CreateRoomResponsePayload(info);
+
+            return response;
+        }
         public Room CreateRoom(string name, short capacity)
         {
             var id = Guid.NewGuid().ToString();
@@ -59,9 +68,7 @@ namespace Game.Server
             {
                 var list = ReadRoomsInfo();
 
-                var payload = new ListRoomsPayload(list);
-
-                var message = NetworkMessage.Write(payload);
+                var message = new ListRoomsPayload(list).ToMessage();
 
                 message.WriteTo(response);
 
@@ -70,27 +77,27 @@ namespace Game.Server
 
             if(request.RawUrl == Constants.RestAPI.Requests.CreateRoom)
             {
-                Room room;
+                CreateRoomRequestPayload payload;
 
+                try
                 {
                     var message = NetworkMessage.Read(request);
 
-                    var payload = message.Read<CreateRoomRequestPayload>();
-
-                    room = CreateRoom(payload);
+                    payload = message.Read<CreateRoomRequestPayload>();
+                }
+                catch (Exception e)
+                {
+                    Log.Error($"Error on {Constants.RestAPI.Requests.CreateRoom},\nmessage: {e}");
+                    return false;
                 }
 
                 {
-                    var info = room.ReadInfo();
-
-                    var payload = new CreateRoomResponsePayload(info);
-
-                    var message = NetworkMessage.Write(payload);
+                    var message = CreateRoom(payload).ToMessage();
 
                     message.WriteTo(response);
-                }
 
-                return true;
+                    return true;
+                }
             }
 
             if(request.RawUrl == "/PlayerInfo")
@@ -101,9 +108,7 @@ namespace Game.Server
 
                 dictionary.Add("Level", "4");
 
-                var payload = new PlayerInfoPayload(dictionary);
-
-                var message = NetworkMessage.Write(payload);
+                var message = new PlayerInfoPayload(dictionary).ToMessage();
 
                 message.WriteTo(response);
 
