@@ -145,10 +145,7 @@ namespace Game
         {
             var url = "http://" + address + ":" + Constants.RestAPI.Port + path;
 
-            var request = new UnityWebRequest(url, method);
-
-            request.uploadHandler = uploader;
-            request.downloadHandler = downloader;
+            var request = new UnityWebRequest(url, method, downloader, uploader);
 
             Register(request, callback, enqueue);
         }

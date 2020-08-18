@@ -176,16 +176,16 @@ namespace Game.Shared
         {
             All = new List<Data>();
 
-            Register<ListRoomsPayload>(1);
+            Register<RoomListInfoPayload>(1);
             Register<PlayerInfoPayload>(2);
             Register<RPCPayload>(3);
-            Register<CreateRoomRequestPayload>(4);
-            Register<CreateRoomResponsePayload>(5);
+            Register<CreateRoomPayload>(4);
+            Register<RoomInfoPayload>(5);
         }
     }
 
     [Serializable]
-    public sealed class ListRoomsPayload : NetworkMessagePayload
+    public sealed class RoomListInfoPayload : NetworkMessagePayload
     {
         private RoomInfo[] list;
         public RoomInfo[] List { get { return list; } }
@@ -200,8 +200,8 @@ namespace Game.Shared
             reader.Read(out list);
         }
 
-        public ListRoomsPayload() { }
-        public ListRoomsPayload(RoomInfo[] list)
+        public RoomListInfoPayload() { }
+        public RoomListInfoPayload(RoomInfo[] list)
         {
             this.list = list;
         }
@@ -290,7 +290,7 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public sealed class CreateRoomRequestPayload : NetworkMessagePayload
+    public sealed class CreateRoomPayload : NetworkMessagePayload
     {
         private string name;
         public string Name { get { return name; } }
@@ -310,8 +310,8 @@ namespace Game.Shared
             reader.Read(out capacity);
         }
 
-        public CreateRoomRequestPayload() { }
-        public CreateRoomRequestPayload(string name, short capacity)
+        public CreateRoomPayload() { }
+        public CreateRoomPayload(string name, short capacity)
         {
             this.name = name;
             this.capacity = capacity;
@@ -319,7 +319,7 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public sealed class CreateRoomResponsePayload : NetworkMessagePayload
+    public sealed class RoomInfoPayload : NetworkMessagePayload
     {
         private RoomInfo info;
         public RoomInfo Info { get { return info; } }
@@ -334,8 +334,8 @@ namespace Game.Shared
             reader.Read(out info);
         }
 
-        public CreateRoomResponsePayload() { }
-        public CreateRoomResponsePayload(RoomInfo info)
+        public RoomInfoPayload() { }
+        public RoomInfoPayload(RoomInfo info)
         {
             this.info = info;
         }

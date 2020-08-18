@@ -14,9 +14,16 @@ namespace Game.Shared
 
             public static class Requests
             {
-                public const string ListRooms = "/" + nameof(ListRooms);
+                public static class Room
+                {
+                    public static string Path = "/Room/";
 
-                public const string CreateRoom = "/" + nameof(CreateRoom);
+                    public static string List { get; private set; } = Appened(Path, nameof(List));
+
+                    public static string Create { get; private set; } = Appened(Path, nameof(Create));
+                }
+
+                public static string Appened(string path, string name) => path + name;
             }
         }
 

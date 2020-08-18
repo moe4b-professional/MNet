@@ -92,16 +92,16 @@ namespace Game
                 //var payload = new CreateRoomRequestPayload("Moe4B's Room", 4);
                 //var message = NetworkMessage.Write(payload);
 
-                var message = new CreateRoomRequestPayload("Moe4B's Room", 4).ToMessage();
+                var message = new CreateRoomPayload("Moe4B's Room", 4).ToMessage();
 
-                RestRequest.POST(address, Constants.RestAPI.Requests.CreateRoom, message, Callback, false);
+                RestRequest.POST(address, Constants.RestAPI.Requests.Room.Create, message, Callback, false);
             }
 
             void Callback(NetworkMessage message, RestError error)
             {
                 if (error == null)
                 {
-                    var payload = message.Read<CreateRoomResponsePayload>();
+                    var payload = message.Read<RoomInfoPayload>();
 
                     Debug.Log("Created Room: " + payload.Info);
 
@@ -116,13 +116,13 @@ namespace Game
 
         void ListRooms()
         {
-            RestRequest.GET(address, Constants.RestAPI.Requests.ListRooms, Callback, false);
+            RestRequest.GET(address, Constants.RestAPI.Requests.Room.List, Callback, false);
 
             void Callback(NetworkMessage message, RestError error)
             {
                 if(error == null)
                 {
-                    var payload = message.Read<ListRoomsPayload>();
+                    var payload = message.Read<RoomListInfoPayload>();
 
                     foreach (var room in payload.List)
                     {

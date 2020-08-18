@@ -39,13 +39,13 @@ namespace Game.Server
             GameServer.Rest.Router.Register(RESTRoute);
         }
 
-        public CreateRoomResponsePayload CreateRoom(CreateRoomRequestPayload request)
+        public RoomInfoPayload CreateRoom(CreateRoomPayload request)
         {
             var room = CreateRoom(request.Name, request.Capacity);
 
             var info = room.ReadInfo();
 
-            var response = new CreateRoomResponsePayload(info);
+            var response = new RoomInfoPayload(info);
 
             return response;
         }
@@ -64,31 +64,32 @@ namespace Game.Server
 
         public bool RESTRoute(HttpListenerRequest request, HttpListenerResponse response)
         {
-            if (request.RawUrl == Constants.RestAPI.Requests.ListRooms)
+            if (request.RawUrl == Constants.RestAPI.Requests.Room.List)
             {
                 var list = ReadRoomsInfo();
 
-                var message = new ListRoomsPayload(list).ToMessage();
+                var message = new RoomListInfoPayload(list).ToMessage();
 
                 message.WriteTo(response);
 
                 return true;
             }
 
-            if(request.RawUrl == Constants.RestAPI.Requests.CreateRoom)
+            if(request.RawUrl == Constants.RestAPI.Requests.Room.Create)
             {
-                CreateRoomRequestPayload payload;
+                CreateRoomPayload payload;
 
                 try
                 {
                     var message = NetworkMessage.Read(request);
 
-                    payload = message.Read<CreateRoomRequestPayload>();
+                    payload = message.Read<CreateRoomPayload>();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    Log.Error($"Error on {Constants.RestAPI.Requests.CreateRoom},\nmessage: {e}");
-                    return false;
+                    RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomPayload)}");
+
+                    return true;
                 }
 
                 {

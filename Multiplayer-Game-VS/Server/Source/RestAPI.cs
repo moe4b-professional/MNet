@@ -4,16 +4,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using System.IO;
-using System.Net;
-
 using WebSocketSharp;
 using WebSocketSharp.Server;
 
+using System.IO;
+using System.Net;
+
 using Game.Shared;
 
-using HttpListenerRequest = WebSocketSharp.Net.HttpListenerRequest;
-using HttpListenerResponse = WebSocketSharp.Net.HttpListenerResponse;
+using HttpRequest = WebSocketSharp.Net.HttpListenerRequest;
+using HttpResponse = WebSocketSharp.Net.HttpListenerResponse;
+
+using HttpCode = WebSocketSharp.Net.HttpStatusCode;
 
 namespace Game.Server
 {
@@ -37,20 +39,19 @@ namespace Game.Server
 
             Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
-            if (Router.Process(request, response))
-            {
-                
-            }
-            else
-            {
-                response.StatusCode = (int)HttpStatusCode.NotFound;
+            if (Router.Process(request, response) == false)
+                WriteTo(response, HttpCode.NotFound, "Error 404");
+        }
 
-                response.ContentEncoding = Encoding.UTF8;
-                var data = Encoding.UTF8.GetBytes("Error 404");
-                response.WriteContent(data);
+        public static void WriteTo(HttpResponse response, HttpCode code, string message)
+        {
+            response.StatusCode = (int)code;
 
-                response.Close();
-            }
+            response.ContentEncoding = Encoding.UTF8;
+            var data = Encoding.UTF8.GetBytes(message);
+            response.WriteContent(data);
+
+            response.Close();
         }
 
         public RestAPI(IPAddress address, int port)
@@ -72,7 +73,7 @@ namespace Game.Server
     {
         public List<ProcessDelegate> List { get; protected set; }
         
-        public virtual bool Process(HttpListenerRequest request, WebSocketSharp.Net.HttpListenerResponse response)
+        public virtual bool Process(HttpRequest request, WebSocketSharp.Net.HttpListenerResponse response)
         {
             for (int i = 0; i < List.Count; i++)
                 if (List[i](request, response))
@@ -86,8 +87,8 @@ namespace Game.Server
             List.Add(callback);
         }
 
-        public delegate bool CheckDelegate(HttpListenerRequest request);
-        public delegate bool ProcessDelegate(HttpListenerRequest request, HttpListenerResponse response);
+        public delegate bool CheckDelegate(HttpRequest request);
+        public delegate bool ProcessDelegate(HttpRequest request, HttpResponse response);
 
         public RestAPIRouter()
         {
