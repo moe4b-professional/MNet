@@ -25,7 +25,7 @@ namespace Game.Shared
         }
 
         public static T Deserialize<T>(byte[] data)
-            where T : INetSerializable, new()
+            where T : new()
         {
             var reader = new NetworkReader(data);
 
@@ -117,6 +117,14 @@ namespace Game.Shared
             Put(binary);
         }
 
+        public void Write(float value) => WriteFloat(value);
+        public void WriteFloat(float value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            Put(binary);
+        }
+
         public void Write(string value) => WriteString(value);
         public void WriteString(string value)
         {
@@ -190,6 +198,12 @@ namespace Game.Shared
                 return;
             }
 
+            if(type == typeof(float))
+            {
+                WriteFloat((float)value);
+                return;
+            }
+
             if (type == typeof(string))
             {
                 WriteString((string)value);
@@ -228,6 +242,16 @@ namespace Game.Shared
             var result = BitConverter.ToInt32(data, Position);
 
             Position += sizeof(int);
+
+            return result;
+        }
+
+        public void Read(out float value) => value = ReadFloat();
+        public float ReadFloat()
+        {
+            var result = BitConverter.ToSingle(data, Position);
+
+            Position += sizeof(float);
 
             return result;
         }
@@ -336,6 +360,8 @@ namespace Game.Shared
             if (type == typeof(byte)) return ReadByte();
 
             if (type == typeof(Int32)) return ReadInt();
+
+            if (type == typeof(float)) return ReadFloat();
 
             if (type == typeof(string)) return ReadString();
 
