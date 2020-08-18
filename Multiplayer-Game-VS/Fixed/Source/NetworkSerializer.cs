@@ -87,7 +87,7 @@ namespace Game.Shared
             return result;
         }
 
-        public void Put(byte[] source)
+        public void Insert(byte[] source)
         {
             var count = source.Length;
 
@@ -95,7 +95,7 @@ namespace Game.Shared
 
             Position += count;
         }
-        public void Put(byte value)
+        public void Insert(byte value)
         {
             data[Position] = value;
 
@@ -106,7 +106,15 @@ namespace Game.Shared
         public void Write(byte value) => WriteByte(value);
         public void WriteByte(byte value)
         {
-            Put(value);
+            Insert(value);
+        }
+
+        public void Write(short value) => WriteShort(value);
+        public void WriteShort(short value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            Insert(binary);
         }
 
         public void Write(int value) => WriteInt(value);
@@ -114,7 +122,7 @@ namespace Game.Shared
         {
             var binary = BitConverter.GetBytes(value);
 
-            Put(binary);
+            Insert(binary);
         }
 
         public void Write(float value) => WriteFloat(value);
@@ -122,7 +130,7 @@ namespace Game.Shared
         {
             var binary = BitConverter.GetBytes(value);
 
-            Put(binary);
+            Insert(binary);
         }
 
         public void Write(string value) => WriteString(value);
@@ -132,7 +140,7 @@ namespace Game.Shared
 
             WriteInt(binary.Length);
 
-            Put(binary);
+            Insert(binary);
         }
         #endregion
 
@@ -192,7 +200,13 @@ namespace Game.Shared
                 return;
             }
 
-            if (type == typeof(Int32))
+            if(type == typeof(short))
+            {
+                WriteShort((short)value);
+                return;
+            }
+
+            if (type == typeof(int))
             {
                 WriteInt((Int32)value);
                 return;
@@ -232,6 +246,16 @@ namespace Game.Shared
             var result = data[Position];
 
             Position += 1;
+
+            return result;
+        }
+
+        public void Read(out short value) => value = ReadShort();
+        public short ReadShort()
+        {
+            var result = BitConverter.ToInt16(data, Position);
+
+            Position += sizeof(short);
 
             return result;
         }

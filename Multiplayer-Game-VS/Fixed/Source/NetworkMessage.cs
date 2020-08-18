@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,8 +13,8 @@ namespace Game.Shared
     [Serializable]
     public sealed class NetworkMessage : INetSerializable
     {
-        private string id;
-        public string ID { get { return id; } }
+        private short code;
+        public short Code { get { return code; } }
 
         private byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -21,13 +22,21 @@ namespace Game.Shared
         public bool Is<TType>()
             where TType : NetworkMessagePayload
         {
-            return NetworkMessagePayload.GetID<TType>() == id;
+            return NetworkMessagePayload.Collection.GetCode<TType>() == code;
         }
         public bool Is(Type type)
         {
-            return NetworkMessagePayload.GetID(type) == id;
+            return NetworkMessagePayload.Collection.GetCode(type) == code;
         }
 
+        public object Read()
+        {
+            var type = NetworkMessagePayload.Collection.GetType(Code);
+
+            var instance = NetworkSerializer.Deserialize(raw, type);
+
+            return instance;
+        }
         public TType Read<TType>()
             where TType : NetworkMessagePayload, new()
         {
@@ -49,20 +58,20 @@ namespace Game.Shared
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.Write(id);
+            writer.Write(code);
             writer.Write(raw);
         }
 
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out id);
+            reader.Read(out code);
             reader.Read(out raw);
         }
 
         public NetworkMessage() { }
-        public NetworkMessage(string id, byte[] payload)
+        public NetworkMessage(short id, byte[] payload)
         {
-            this.id = id;
+            this.code = id;
 
             this.raw = payload;
         }
@@ -72,47 +81,91 @@ namespace Game.Shared
             return NetworkSerializer.Deserialize<NetworkMessage>(data);
         }
 
-        public static NetworkMessage Write<TPayload>(TPayload payload)
-            where TPayload : NetworkMessagePayload
+        public static NetworkMessage Write<T>(T payload)
+            where T : NetworkMessagePayload
         {
-            var id = NetworkMessagePayload.GetID(payload);
+            var code = NetworkMessagePayload.Collection.GetCode<T>();
 
-            var data = NetworkSerializer.Serialize(payload);
+            var raw = NetworkSerializer.Serialize(payload);
 
-            return new NetworkMessage(id, data);
+            return new NetworkMessage(code, raw);
         }
     }
 
     [Serializable]
     public abstract class NetworkMessagePayload : INetSerializable
     {
-        public static string GetID<TPayload>() where TPayload : NetworkMessagePayload => GetID(typeof(TPayload));
-        public static string GetID(NetworkMessagePayload payload) => GetID(payload.GetType());
-        public static string GetID(Type type) => type.Name;
-        
-        public static void ValidateAll()
+        public static class Collection
         {
-            var target = typeof(NetworkMessagePayload);
+            public static Type Target => typeof(NetworkMessagePayload);
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            public static List<Element> List { get; private set; }
+            public class Element
             {
-                foreach (var type in assembly.GetTypes())
+                public short Code { get; protected set; }
+
+                public Type Type { get; protected set; }
+
+                public Element(short code, Type type)
                 {
-                    if (type == target) continue; //Don't register NetworkMessagePayloadAttribute it's self
-                    
-                    if (target.IsAssignableFrom(type) == false) continue;
-
-                    if (type.BaseType != target)
-                        throw new Exception($"{type.Name} must inherit from {target.Name} directly!");
-
-                    var constructor = type.GetConstructor(Type.EmptyTypes);
-
-                    if (constructor == null)
-                        throw new Exception($"{type.FullName} rquires a parameter-less constructor to act as a {nameof(NetworkMessagePayload)}");
+                    this.Code = code;
+                    this.Type = type;
                 }
             }
-        }
 
+            public static Type GetType(short code)
+            {
+                for (int i = 0; i < List.Count; i++)
+                    if (List[i].Code == code)
+                        return List[i].Type;
+
+                return null;
+            }
+
+            public static short GetCode<T>() where T : NetworkMessagePayload => GetCode(typeof(T));
+            public static short GetCode(Type type)
+            {
+                for (int i = 0; i < List.Count; i++)
+                    if (List[i].Type == type)
+                        return List[i].Code;
+
+                Log.Info(type.FullName);
+
+                throw new NotImplementedException();
+            }
+
+            static void Register<T>(short value) where T : NetworkMessagePayload => Register(value, typeof(T));
+            static void Register(short value, Type type)
+            {
+                var element = new Element(value, type);
+
+                if (type == Target)
+                    throw new InvalidOperationException($"Cannot register {nameof(NetworkMessagePayload)} directly, please inherit from it");
+
+                if (Target.IsAssignableFrom(type) == false)
+                    throw new InvalidOperationException($"Cannot register type {type.Name} as {nameof(NetworkMessagePayload)} as it's not a sub-class");
+
+                if (type.BaseType != Target)
+                    throw new Exception($"{type.Name} must inherit from {Target.Name} directly!");
+
+                var constructor = type.GetConstructor(Type.EmptyTypes);
+
+                if (constructor == null)
+                    throw new Exception($"{type.FullName} rquires a parameter-less constructor to act as a {nameof(NetworkMessagePayload)}");
+
+                List.Add(element);
+            }
+
+            static Collection()
+            {
+                List = new List<Element>();
+
+                Register<ListRoomsPayload>(1);
+                Register<PlayerInfoPayload>(2);
+                Register<RPCPayload>(3);
+            }
+        }
+        
         public abstract void Deserialize(NetworkReader reader);
 
         public abstract void Serialize(NetworkWriter writer);
@@ -165,85 +218,61 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public sealed class RPCInfoPayload : NetworkMessagePayload
+    public sealed class RPCPayload : NetworkMessagePayload
     {
         private string target;
         public string Target { get { return target; } }
 
-        private RPCArgument[] arguments;
-        public RPCArgument[] Arguments { get { return arguments; } }
+        private byte[] raw;
+        public byte[] Raw { get { return raw; } }
+
+        public object[] Read(IList<ParameterInfo> parameters)
+        {
+            var results = new object[parameters.Count];
+
+            var reader = new NetworkReader(raw);
+
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                var value = reader.Read(parameters[i].ParameterType);
+
+                results[i] = value;
+            }
+
+            return results;
+        }
 
         public override void Serialize(NetworkWriter writer)
         {
             writer.Write(target);
-
-            writer.WriteArray(arguments);
+            writer.Write(raw);
         }
-
         public override void Deserialize(NetworkReader reader)
         {
             reader.Read(out target);
-
-            reader.Read(out arguments);
-        }
-
-        public RPCInfoPayload() { }
-        public RPCInfoPayload(string target, params RPCArgument[] arguments)
-        {
-            this.target = target;
-
-            this.arguments = arguments;
-        }
-    }
-
-    [Serializable]
-    public sealed class RPCArgument : INetSerializable
-    {
-        private string id;
-        public string ID { get { return id; } }
-
-        private byte[] raw;
-        public byte[] Raw { get { return raw; } }
-
-        public object Read()
-        {
-            var type = Type.GetType(id);
-
-            var result = NetworkSerializer.Deserialize(raw, type);
-
-            return result;
-        }
-        public T Read<T>() => (T)Read();
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(id);
-
-            writer.Write(raw);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out id);
-
             reader.Read(out raw);
         }
 
-        public RPCArgument() { }
-        public RPCArgument(string id, byte[] raw)
+        public RPCPayload() { }
+        public RPCPayload(string target, byte[] raw)
         {
-            this.id = id;
+            this.target = target;
 
             this.raw = raw;
         }
 
-        public static RPCArgument Create(object value)
+        public static RPCPayload Write(string target, params object[] arguments)
         {
-            var id = value.GetType().AssemblyQualifiedName;
+            var writer = new NetworkWriter(1024);
 
-            var data = NetworkSerializer.Serialize(value);
+            for (int i = 0; i < arguments.Length; i++)
+                writer.Write(arguments[i]);
 
-            return new RPCArgument(id, data);
+            var raw = writer.Read();
+
+            var payload = new RPCPayload(target, raw);
+
+            return payload;
         }
     }
 }

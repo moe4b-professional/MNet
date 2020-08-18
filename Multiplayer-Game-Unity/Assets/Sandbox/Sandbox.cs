@@ -29,18 +29,43 @@ namespace Game
 	{
         public string address = "localhost";
 
-        [RuntimeInitializeOnLoadMethod]
-        static void OnLoad()
-        {
-            NetworkMessagePayload.ValidateAll();
-        }
-
         void Start()
         {
             Debug.Log("Start");
 
             GetPlayerInfo();
             ListRooms();
+
+            TryRPC();
+        }
+
+        void TryRPC()
+        {
+            var bind = RPCBind.Parse(this, nameof(RpcCallback));
+
+            byte[] data;
+
+            {
+                var payload = RPCPayload.Write("Target", 42, "Hello RPC!", DateTime.UtcNow);
+
+                var message = NetworkMessage.Write(payload);
+
+                data = NetworkSerializer.Serialize(message);
+
+                Debug.Log("RPC Payload Size: " + data.Length);
+            }
+
+            {
+                var message = NetworkMessage.Read(data);
+
+                var payload = message.Read<RPCPayload>();
+
+                bind.Invoke(payload);
+            }
+        }
+        void RpcCallback(int a, string b, DateTime time)
+        {
+            Debug.Log($"RPC Callback: {a}, {b}, {time}");
         }
 
         void Update()
@@ -50,7 +75,7 @@ namespace Game
 
         void GetPlayerInfo()
         {
-            Call<NetworkMessage>(address, "GET", "/PlayerInfo", Callback);
+            RestRequest.GET(address, "GET", "/PlayerInfo", Callback, false);
             void Callback(NetworkMessage message, RestError error)
             {
                 if (error == null)
@@ -70,7 +95,7 @@ namespace Game
         }
         void ListRooms()
         {
-            Call<NetworkMessage>(address, "GET", Constants.RestAPI.Requests.ListRooms, Callback);
+            RestRequest.GET(address, "GET", Constants.RestAPI.Requests.ListRooms, Callback, false);
 
             void Callback(NetworkMessage message, RestError error)
             {
@@ -92,51 +117,7 @@ namespace Game
         }
 
         #region REST
-        public delegate void ResponseDelegate(NetworkMessage message, RestError error);
-
-        void Call<TResponse>(string address, string method, string path, ResponseDelegate callback)
-        {
-            StartCoroutine(Procedure());
-
-            IEnumerator Procedure()
-            {
-                var url = "http://" + address + ":" + Constants.RestAPI.Port + path;
-
-                var request = new UnityWebRequest(url, method);
-
-                request.downloadHandler = new DownloadHandlerBuffer();
-
-                yield return request.SendWebRequest();
-
-                if(request.isHttpError || request.isNetworkError)
-                {
-                    var error = new RestError(request);
-
-                    callback(null, error);
-                }
-                else
-                {
-                    var message = NetworkMessage.Read(request.downloadHandler.data);
-
-                    callback(message, null);
-                }
-            }
-        }
-
-        public class RestError
-        {
-            public long Code { get; protected set; }
-
-            public string Message { get; protected set; }
-
-            public RestError(long code, string message)
-            {
-                this.Code = code;
-                this.Message = message;
-            }
-
-            public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
-        }
+        
         #endregion
 
         #region WebSocket
@@ -179,6 +160,11 @@ namespace Game
             websocket.ConnectAsync();
         }
         #endregion
+    }
+
+    public class NetworkBehaviour
+    {
+
     }
 
     public partial class SampleObject : INetSerializable

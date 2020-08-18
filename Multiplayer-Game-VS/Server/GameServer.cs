@@ -21,8 +21,6 @@ namespace Game.Server
 
         static void Main(string[] args)
         {
-            NetworkMessagePayload.ValidateAll();
-
             Rest = new RestAPI(IPAddress.Any, Constants.RestAPI.Port);
             Rest.Start();
 
