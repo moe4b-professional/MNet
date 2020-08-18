@@ -4,17 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game.Fixed
+namespace Game.Shared
 {
     public class RoomInfo : INetSerializable
     {
-        public string ID { get; protected set; }
+        protected string id;
+        public string ID { get { return id; } }
 
-        public string Name { get; protected set; }
+        protected string name;
+        public string Name { get { return name; } }
 
-        public int MaxPlayers { get; protected set; }
+        protected int maxPlayers;
+        public int MaxPlayers { get { return maxPlayers; } }
 
-        public int PlayersCount { get; protected set; }
+        protected int playersCount;
+        public int PlayersCount { get { return playersCount; } }
 
         public RoomInfo()
         {
@@ -22,29 +26,25 @@ namespace Game.Fixed
         }
         public RoomInfo(string id, string name, int maxPlayers, int playersCount)
         {
-            this.ID = id;
-
-            this.Name = name;
-
-            this.MaxPlayers = maxPlayers;
-
-            this.PlayersCount = playersCount;
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            ID = reader.ReadString();
-            Name = reader.ReadString();
-            MaxPlayers = reader.ReadInt();
-            PlayersCount = reader.ReadInt();
+            this.id = id;
+            this.name = name;
+            this.maxPlayers = maxPlayers;
+            this.playersCount = playersCount;
         }
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.WriteString(ID);
-            writer.WriteString(Name);
-            writer.WriteInt(MaxPlayers);
-            writer.WriteInt(PlayersCount);
+            writer.Write(id);
+            writer.Write(name);
+            writer.Write(maxPlayers);
+            writer.Write(playersCount);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out id);
+            reader.Read(out name);
+            reader.Read(out maxPlayers);
+            reader.Read(out playersCount);
         }
 
         public override string ToString()

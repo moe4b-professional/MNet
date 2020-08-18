@@ -9,7 +9,7 @@ using WebSocketSharp.Server;
 
 using System.Threading;
 
-using Game.Fixed;
+using Game.Shared;
 
 namespace Game.Server
 {

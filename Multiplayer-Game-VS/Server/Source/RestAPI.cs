@@ -10,7 +10,7 @@ using System.Net;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 
-using Game.Fixed;
+using Game.Shared;
 
 using HttpListenerRequest = WebSocketSharp.Net.HttpListenerRequest;
 using HttpListenerResponse = WebSocketSharp.Net.HttpListenerResponse;

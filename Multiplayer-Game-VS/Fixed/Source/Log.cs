@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game.Fixed
+namespace Game.Shared
 {
     public static class Log
     {

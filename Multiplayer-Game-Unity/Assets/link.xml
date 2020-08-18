@@ -1,0 +1,3 @@
+<linker>
+  <assembly fullname="Shared" preserve="all"/>
+</linker>

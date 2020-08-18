@@ -7,29 +7,31 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
-namespace Game.Fixed
+namespace Game.Shared
 {
     [Serializable]
     public sealed class NetworkMessage : INetSerializable
     {
-        public string ID { get; private set; }
+        private string id;
+        public string ID { get { return id; } }
 
-        public byte[] Raw { get; private set; }
+        private byte[] raw;
+        public byte[] Raw { get { return raw; } }
 
         public bool Is<TType>()
             where TType : NetworkMessagePayload
         {
-            return NetworkMessagePayload.GetID<TType>() == ID;
+            return NetworkMessagePayload.GetID<TType>() == id;
         }
         public bool Is(Type type)
         {
-            return NetworkMessagePayload.GetID(type) == ID;
+            return NetworkMessagePayload.GetID(type) == id;
         }
 
         public TType Read<TType>()
             where TType : NetworkMessagePayload, new()
         {
-            var instance = NetworkSerializer.Deserialize<TType>(Raw);
+            var instance = NetworkSerializer.Deserialize<TType>(raw);
 
             return instance;
         }
@@ -47,24 +49,22 @@ namespace Game.Fixed
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.WriteString(ID);
-
-            writer.WriteArray(Raw);
+            writer.Write(id);
+            writer.Write(raw);
         }
 
         public void Deserialize(NetworkReader reader)
         {
-            ID = reader.ReadString();
-
-            Raw = reader.ReadArray<byte>();
+            reader.Read(out id);
+            reader.Read(out raw);
         }
 
         public NetworkMessage() { }
         public NetworkMessage(string id, byte[] payload)
         {
-            this.ID = id;
+            this.id = id;
 
-            this.Raw = payload;
+            this.raw = payload;
         }
 
         public static NetworkMessage Read(byte[] data)
@@ -121,16 +121,17 @@ namespace Game.Fixed
     [Serializable]
     public sealed class ListRoomsPayload : NetworkMessagePayload
     {
-        public RoomInfo[] list { get; private set; }
+        private RoomInfo[] list;
+        public RoomInfo[] List { get { return list; } }
 
         public override void Serialize(NetworkWriter writer)
         {
-            writer.WriteArray(list);
+            writer.Write(list);
         }
 
         public override void Deserialize(NetworkReader reader)
         {
-            list = reader.ReadArray<RoomInfo>();
+            reader.Read(out list);
         }
 
         public ListRoomsPayload() { }
@@ -143,61 +144,72 @@ namespace Game.Fixed
     [Serializable]
     public sealed class PlayerInfoPayload : NetworkMessagePayload
     {
-        public Dictionary<string, string> Dictionary { get; private set; }
+        private Dictionary<string, string> dictionary;
+        public Dictionary<string, string> Dictionary { get { return dictionary; } }
 
         public override void Serialize(NetworkWriter writer)
         {
-            writer.WriteDictionary(Dictionary);
+            writer.Write(dictionary);
         }
 
         public override void Deserialize(NetworkReader reader)
         {
-            Dictionary = reader.ReadDictionary<string, string>();
+            reader.Read(out dictionary);
         }
 
         public PlayerInfoPayload() { }
         public PlayerInfoPayload(Dictionary<string, string> dictionary)
         {
-            this.Dictionary = dictionary;
+            this.dictionary = dictionary;
         }
     }
 
     [Serializable]
     public sealed class RPCInfoPayload : NetworkMessagePayload
     {
-        public string Target { get; private set; }
+        private string target;
+        public string Target { get { return target; } }
 
-        public RPCArgument[] Arguments { get; private set; }
+        private RPCArgument[] arguments;
+        public RPCArgument[] Arguments { get { return arguments; } }
 
         public override void Serialize(NetworkWriter writer)
         {
-            writer.WriteString(Target);
+            writer.Write(target);
 
-            writer.WriteArray(Arguments);
+            writer.WriteArray(arguments);
         }
 
         public override void Deserialize(NetworkReader reader)
         {
-            Target = reader.ReadString();
+            reader.Read(out target);
 
-            Arguments = reader.ReadArray<RPCArgument>();
+            reader.Read(out arguments);
         }
 
         public RPCInfoPayload() { }
+        public RPCInfoPayload(string target, params RPCArgument[] arguments)
+        {
+            this.target = target;
+
+            this.arguments = arguments;
+        }
     }
 
     [Serializable]
-    public class RPCArgument : INetSerializable
+    public sealed class RPCArgument : INetSerializable
     {
-        public string ID { get; private set; }
+        private string id;
+        public string ID { get { return id; } }
 
-        public byte[] Raw { get; private set; }
+        private byte[] raw;
+        public byte[] Raw { get { return raw; } }
 
         public object Read()
         {
-            var type = Type.GetType(ID);
+            var type = Type.GetType(id);
 
-            var result = NetworkSerializer.Deserialize(Raw, type);
+            var result = NetworkSerializer.Deserialize(raw, type);
 
             return result;
         }
@@ -205,24 +217,24 @@ namespace Game.Fixed
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.WriteString(ID);
+            writer.Write(id);
 
-            writer.WriteArray(Raw);
+            writer.Write(raw);
         }
 
         public void Deserialize(NetworkReader reader)
         {
-            ID = reader.ReadString();
+            reader.Read(out id);
 
-            Raw = reader.ReadArray<byte>();
+            reader.Read(out raw);
         }
 
         public RPCArgument() { }
         public RPCArgument(string id, byte[] raw)
         {
-            this.ID = id;
+            this.id = id;
 
-            this.Raw = raw;
+            this.raw = raw;
         }
 
         public static RPCArgument Create(object value)
