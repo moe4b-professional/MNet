@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace Game
 {
-	public class Player : MonoBehaviour
+	public class Player : NetworkBehaviour
 	{
 		
 	}

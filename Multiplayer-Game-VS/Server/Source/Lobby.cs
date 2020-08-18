@@ -36,14 +36,15 @@ namespace Game.Server
         {
             Rooms = new Dictionary<string, Room>();
 
-            GameServer.Rest.Router.Register(RestRoute);
+            GameServer.Rest.Router.Register(RESTRoute);
         }
 
-        public Room CreateRoom(string name)
+        public Room CreateRoom(CreateRoomRequestPayload request) => CreateRoom(request.Name, request.Capacity);
+        public Room CreateRoom(string name, short capacity)
         {
             var id = Guid.NewGuid().ToString();
 
-            var room = new Room(id, name, 4);
+            var room = new Room(id, name, capacity);
 
             Rooms.Add(id, room);
 
@@ -52,7 +53,7 @@ namespace Game.Server
             return room;
         }
 
-        public bool RestRoute(HttpListenerRequest request, HttpListenerResponse response)
+        public bool RESTRoute(HttpListenerRequest request, HttpListenerResponse response)
         {
             if (request.RawUrl == Constants.RestAPI.Requests.ListRooms)
             {
@@ -63,6 +64,31 @@ namespace Game.Server
                 var message = NetworkMessage.Write(payload);
 
                 message.WriteTo(response);
+
+                return true;
+            }
+
+            if(request.RawUrl == Constants.RestAPI.Requests.CreateRoom)
+            {
+                Room room;
+
+                {
+                    var message = NetworkMessage.Read(request);
+
+                    var payload = message.Read<CreateRoomRequestPayload>();
+
+                    room = CreateRoom(payload);
+                }
+
+                {
+                    var info = room.ReadInfo();
+
+                    var payload = new CreateRoomResponsePayload(info);
+
+                    var message = NetworkMessage.Write(payload);
+
+                    message.WriteTo(response);
+                }
 
                 return true;
             }

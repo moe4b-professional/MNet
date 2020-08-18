@@ -33,6 +33,9 @@ namespace Game
         {
             Debug.Log("Start");
 
+            CreateRoom();
+
+            return;
             GetPlayerInfo();
             ListRooms();
 
@@ -68,14 +71,9 @@ namespace Game
             Debug.Log($"RPC Callback: {a}, {b}, {time}");
         }
 
-        void Update()
-        {
-            
-        }
-
         void GetPlayerInfo()
         {
-            RestRequest.GET(address, "GET", "/PlayerInfo", Callback, false);
+            RestRequest.GET(address, "/PlayerInfo", Callback, false);
             void Callback(NetworkMessage message, RestError error)
             {
                 if (error == null)
@@ -93,9 +91,36 @@ namespace Game
                 }
             }
         }
+
+        void CreateRoom()
+        {
+            {
+                var payload = new CreateRoomRequestPayload("Moe4B's Room", 4);
+                var message = NetworkMessage.Write(payload);
+
+                RestRequest.POST(address, Constants.RestAPI.Requests.CreateRoom, message, Callback, false);
+            }
+
+            void Callback(NetworkMessage message, RestError error)
+            {
+                if (error == null)
+                {
+                    var payload = message.Read<CreateRoomResponsePayload>();
+
+                    Debug.Log("Created Room: " + payload.Info);
+
+                    ConnectWebSocket("/" + payload.Info.ID);
+                }
+                else
+                {
+                    Debug.LogError("Error Creating Room, Message: " + error.Message);
+                }
+            }
+        }
+
         void ListRooms()
         {
-            RestRequest.GET(address, "GET", Constants.RestAPI.Requests.ListRooms, Callback, false);
+            RestRequest.GET(address, Constants.RestAPI.Requests.ListRooms, Callback, false);
 
             void Callback(NetworkMessage message, RestError error)
             {

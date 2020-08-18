@@ -125,30 +125,32 @@ namespace Game
 
         public static void GET(string address, string path, CallbackDelegate callback, bool enqueue)
         {
-            var url = JoinURL(address, path);
+            var downloader = new DownloadHandlerBuffer();
 
-            var request = new UnityWebRequest(url, method);
-
-            request.downloadHandler = new DownloadHandlerBuffer();
-
-            Register(request, callback, enqueue);
+            Send(address, path, "GET", null, downloader, callback, enqueue);
         }
 
         public static void POST(string address, string path, NetworkMessage message, CallbackDelegate callback, bool enqueue)
         {
+            var data = NetworkSerializer.Serialize(message);
 
+            var uploader = new UploadHandlerRaw(data);
+
+            var downloader = new DownloadHandlerBuffer();
+
+            Send(address, path, "POST", uploader, downloader, callback, enqueue);
         }
 
-        public static void Send(UnityWebRequest request, CallbackDelegate callback, bool enqueue)
-        {
-
-        }
-
-        public static string JoinURL(string address, string path)
+        public static void Send(string address, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue)
         {
             var url = "http://" + address + ":" + Constants.RestAPI.Port + path;
 
-            return url;
+            var request = new UnityWebRequest(url, method);
+
+            request.uploadHandler = uploader;
+            request.downloadHandler = downloader;
+
+            Register(request, callback, enqueue);
         }
 
         public delegate void CallbackDelegate(NetworkMessage message, RestError error);

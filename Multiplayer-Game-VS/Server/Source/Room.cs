@@ -22,11 +22,11 @@ namespace Game.Server
 
         public string Name { get; protected set; }
 
-        public int MaxPlayers { get; protected set; }
+        public short Capacity { get; protected set; }
 
         public int PlayersCount { get; protected set; }
 
-        public RoomInfo ReadInfo() => new RoomInfo(ID, Name, MaxPlayers, PlayersCount);
+        public RoomInfo ReadInfo() => new RoomInfo(ID, Name, Capacity, PlayersCount);
         #endregion
 
         #region Web Socket
@@ -100,11 +100,11 @@ namespace Game.Server
             GameServer.WebSocket.RemoveService(Path);
         }
 
-        public Room(string id, string name, int maxPlayers)
+        public Room(string id, string name, short capacity)
         {
             this.ID = id;
             this.Name = name;
-            this.MaxPlayers = maxPlayers;
+            this.Capacity = capacity;
 
             GameServer.WebSocket.AddService(Path, WebSocketService.Create);
 
