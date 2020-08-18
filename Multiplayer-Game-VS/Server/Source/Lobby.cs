@@ -13,7 +13,7 @@ namespace Game.Server
 {
     class Lobby
     {
-        public Dictionary<string, Room> Rooms { get; protected set; }
+        public Dictionary<ushort, Room> Rooms { get; protected set; }
 
         public RoomInfo[] ReadRoomsInfo()
         {
@@ -32,9 +32,21 @@ namespace Game.Server
             return results;
         }
 
+        ushort index;
+        public ushort GenerateRoomID()
+        {
+            var value = index;
+
+            if (index == ushort.MaxValue) index = 0; //Let's just hope that you'll never have more than 65,535 rooms in a single server :)
+
+            index += 1;
+
+            return value;
+        }
+
         public void Configure()
         {
-            Rooms = new Dictionary<string, Room>();
+            Rooms = new Dictionary<ushort, Room>();
 
             GameServer.Rest.Router.Register(RESTRoute);
         }
@@ -51,7 +63,7 @@ namespace Game.Server
         }
         public Room CreateRoom(string name, short capacity)
         {
-            var id = Guid.NewGuid().ToString();
+            var id = GenerateRoomID();
 
             var room = new Room(id, name, capacity);
 

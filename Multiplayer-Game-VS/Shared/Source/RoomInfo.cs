@@ -8,8 +8,8 @@ namespace Game.Shared
 {
     public class RoomInfo : INetSerializable
     {
-        protected string id;
-        public string ID { get { return id; } }
+        protected ushort id;
+        public ushort ID { get { return id; } }
 
         protected string name;
         public string Name { get { return name; } }
@@ -24,7 +24,7 @@ namespace Game.Shared
         {
 
         }
-        public RoomInfo(string id, string name, int maxPlayers, int playersCount)
+        public RoomInfo(ushort id, string name, int maxPlayers, int playersCount)
         {
             this.id = id;
             this.name = name;

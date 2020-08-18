@@ -30,9 +30,9 @@ namespace Game.Shared
 
             Invoke(parameters);
         }
-        public void Invoke(params object[] arameters)
+        public void Invoke(params object[] parameters)
         {
-            MethodInfo.Invoke(Owner, arameters);
+            MethodInfo.Invoke(Owner, parameters);
         }
 
         public RPCBind(object owner, MethodInfo method)

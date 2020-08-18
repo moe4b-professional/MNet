@@ -33,12 +33,16 @@ namespace Game
         {
             Debug.Log("Start");
 
+            bind = RPCBind.Parse(this, nameof(RpcCallback));
+
             CreateRoom();
         }
 
+        RPCBind bind;
+
         void TryRPC()
         {
-            var bind = RPCBind.Parse(this, nameof(RpcCallback));
+            
 
             byte[] data;
 
@@ -157,12 +161,43 @@ namespace Game
             {
                 Debug.Log("Websocket Opened");
 
-                websocket.Send("Hello Room");
+                {
+                    var payload = RPCPayload.Write("Target", 42, "Hello RPC!", DateTime.UtcNow);
+
+                    var message = NetworkMessage.Write(payload);
+
+                    var binary = NetworkSerializer.Serialize(message);
+
+                    websocket.Send(binary);
+                }
+
+                {
+                    var dictionary = new Dictionary<string, string>()
+                    {
+                        { "Name", "Moe4B" },
+                        { "Level", "14" },
+                    };
+
+                    var message = new PlayerInfoPayload(dictionary).ToMessage();
+
+                    var binary = NetworkSerializer.Serialize(message);
+
+                    websocket.Send(binary);
+                }
             }
 
             websocket.OnMessage += MessageCallback;
             void MessageCallback(object sender, MessageEventArgs args)
             {
+                var message = NetworkMessage.Read(args.RawData);
+
+                if(message.Is<RPCPayload>())
+                {
+                    var payload = message.Read<RPCPayload>();
+
+                    bind.Invoke(payload);
+                }
+
                 Debug.Log($"WebSocket API: {args.Data}");
             }
 

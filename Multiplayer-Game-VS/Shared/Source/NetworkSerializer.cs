@@ -19,7 +19,7 @@ namespace Game.Shared
 
             writer.Write(instance);
 
-            var result = writer.Read();
+            var result = writer.ToArray();
 
             return result;
         }
@@ -78,7 +78,7 @@ namespace Game.Shared
 
     public class NetworkWriter : NetworkDataOperator
     {
-        public byte[] Read()
+        public byte[] ToArray()
         {
             var result = new byte[Position];
 
@@ -107,6 +107,14 @@ namespace Game.Shared
         public void WriteByte(byte value)
         {
             Insert(value);
+        }
+
+        public void Write(ushort value) => WriteUShort(value);
+        public void WriteUShort(ushort value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            Insert(binary);
         }
 
         public void Write(short value) => WriteShort(value);
@@ -194,35 +202,12 @@ namespace Game.Shared
                 return;
             }
 
-            if (type == typeof(byte))
-            {
-                WriteByte((byte)value);
-                return;
-            }
-
-            if(type == typeof(short))
-            {
-                WriteShort((short)value);
-                return;
-            }
-
-            if (type == typeof(int))
-            {
-                WriteInt((Int32)value);
-                return;
-            }
-
-            if(type == typeof(float))
-            {
-                WriteFloat((float)value);
-                return;
-            }
-
-            if (type == typeof(string))
-            {
-                WriteString((string)value);
-                return;
-            }
+            if (TryWrite<byte>(value, type, WriteByte)) return;
+            if (TryWrite<ushort>(value, type, WriteUShort)) return;
+            if (TryWrite<short>(value, type, WriteShort)) return;
+            if (TryWrite<float>(value, type, WriteFloat)) return;
+            if (TryWrite<int>(value, type, WriteInt)) return;
+            if (TryWrite<string>(value, type, WriteString)) return;
 
             var resolver = NetworkSerializationResolver.Collection.Retrive(type);
             if (resolver != null)
@@ -232,6 +217,18 @@ namespace Game.Shared
             }
 
             throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+        }
+
+        bool TryWrite<TType>(object value, Type type, Action<TType> action)
+        {
+            if (type == typeof(TType))
+            {
+                action((TType)value);
+
+                return true;
+            }
+
+            return false;
         }
 
         public NetworkWriter(int size) : base(new byte[size]) { }
@@ -246,6 +243,16 @@ namespace Game.Shared
             var result = data[Position];
 
             Position += 1;
+
+            return result;
+        }
+
+        public void Read(out ushort value) => value = ReadUShort();
+        public ushort ReadUShort()
+        {
+            var result = BitConverter.ToUInt16(data, Position);
+
+            Position += sizeof(ushort);
 
             return result;
         }
@@ -381,18 +388,31 @@ namespace Game.Shared
         {
             if (typeof(INetSerializable).IsAssignableFrom(type)) return ReadSerializable(type);
 
-            if (type == typeof(byte)) return ReadByte();
+            object result = null;
 
-            if (type == typeof(Int32)) return ReadInt();
-
-            if (type == typeof(float)) return ReadFloat();
-
-            if (type == typeof(string)) return ReadString();
+            if (TryRead(type, ref result, ReadByte)) return result;
+            if (TryRead(type, ref result, ReadUShort)) return result;
+            if (TryRead(type, ref result, ReadShort)) return result;
+            if (TryRead(type, ref result, ReadInt)) return result;
+            if (TryRead(type, ref result, ReadFloat)) return result;
+            if (TryRead(type, ref result, ReadString)) return result;
 
             var resolver = NetworkSerializationResolver.Collection.Retrive(type);
             if (resolver != null) return resolver.Deserialize(this, type);
 
             throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+        }
+
+        bool TryRead<T>(Type type, ref object value, Func<T> method)
+        {
+            if (type == typeof(T))
+            {
+                value = method();
+
+                return true;
+            }
+
+            return false;
         }
 
         public NetworkReader(byte[] data) : base(data) { }

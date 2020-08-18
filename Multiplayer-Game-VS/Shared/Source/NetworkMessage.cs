@@ -20,6 +20,8 @@ namespace Game.Shared
         private byte[] raw;
         public byte[] Raw { get { return raw; } }
 
+        public Type Type => NetworkMessagePayload.GetType(code);
+
         public bool Is<TType>()
             where TType : NetworkMessagePayload
         {
@@ -32,9 +34,7 @@ namespace Game.Shared
 
         public object Read()
         {
-            var type = NetworkMessagePayload.GetType(Code);
-
-            var instance = NetworkSerializer.Deserialize(raw, type);
+            var instance = NetworkSerializer.Deserialize(raw, Type);
 
             return instance;
         }
@@ -281,7 +281,7 @@ namespace Game.Shared
             for (int i = 0; i < arguments.Length; i++)
                 writer.Write(arguments[i]);
 
-            var raw = writer.Read();
+            var raw = writer.ToArray();
 
             var payload = new RPCPayload(target, raw);
 
