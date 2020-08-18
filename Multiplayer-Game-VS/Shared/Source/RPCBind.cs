@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Game.Shared
 {
-    public class RPCBind
+    public class RpcBind
     {
         public object Owner { get; protected set; }
         
@@ -24,7 +24,19 @@ namespace Game.Shared
             }
         }
 
-        public void Invoke(RPCPayload payload)
+        public RpcPayload Request(RpcCallback callback) => Request();
+        public RpcPayload Request<T1>(RpcCallback<T1> callback, T1 arg1) => Request(arg1);
+        public RpcPayload Request<T1, T2>(RpcCallback<T1, T2> callback, T1 arg1, T2 arg2) => Request(arg1, arg2);
+        public RpcPayload Request<T1, T2, T3>(RpcCallback<T1, T2, T3> callback, T1 arg1, T2 arg2, T3 arg3) => Request(arg1, arg2, arg3);
+
+        public RpcPayload Request(params object[] parameters)
+        {
+            var payload = RpcPayload.Write("Target ID", parameters);
+
+            return payload;
+        }
+
+        public void Invoke(RpcPayload payload)
         {
             var parameters = payload.Read(ParametersInfo);
 
@@ -35,7 +47,7 @@ namespace Game.Shared
             MethodInfo.Invoke(Owner, parameters);
         }
 
-        public RPCBind(object owner, MethodInfo method)
+        public RpcBind(object owner, MethodInfo method)
         {
             Owner = owner;
 
@@ -44,13 +56,18 @@ namespace Game.Shared
             ParametersInfo = method.GetParameters();
         }
 
-        public static RPCBind Parse(object owner, string name)
+        public static RpcBind Parse(object owner, string name)
         {
             var method = owner.GetType().GetMethod(name, BindingFlags);
 
-            var bind = new RPCBind(owner, method);
+            var bind = new RpcBind(owner, method);
 
             return bind;
         }
     }
+
+    public delegate void RpcCallback();
+    public delegate void RpcCallback<T1>(T1 arg1);
+    public delegate void RpcCallback<T1, T2>(T1 arg1, T2 arg2);
+    public delegate void RpcCallback<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3);
 }

@@ -127,9 +127,9 @@ namespace Game.Server
         {
             Log.Info($"Room {this.ID}: Client {clientID} Sent Message With Payload of {message.Type.Name}");
 
-            if(message.Is<RPCPayload>())
+            if(message.Is<RpcPayload>())
             {
-                var payload = message.Read<RPCPayload>();
+                var payload = message.Read<RpcPayload>();
 
                 WebSocket.Sessions.Broadcast(raw);
             }

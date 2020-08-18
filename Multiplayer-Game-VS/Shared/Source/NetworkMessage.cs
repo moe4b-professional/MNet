@@ -178,7 +178,7 @@ namespace Game.Shared
 
             Register<RoomListInfoPayload>(1);
             Register<PlayerInfoPayload>(2);
-            Register<RPCPayload>(3);
+            Register<RpcPayload>(3);
             Register<CreateRoomPayload>(4);
             Register<RoomInfoPayload>(5);
         }
@@ -231,7 +231,7 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public sealed class RPCPayload : NetworkMessagePayload
+    public sealed class RpcPayload : NetworkMessagePayload
     {
         private string target;
         public string Target { get { return target; } }
@@ -266,15 +266,15 @@ namespace Game.Shared
             reader.Read(out raw);
         }
 
-        public RPCPayload() { }
-        public RPCPayload(string target, byte[] raw)
+        public RpcPayload() { }
+        public RpcPayload(string target, byte[] raw)
         {
             this.target = target;
 
             this.raw = raw;
         }
 
-        public static RPCPayload Write(string target, params object[] arguments)
+        public static RpcPayload Write(string target, params object[] arguments)
         {
             var writer = new NetworkWriter(1024);
 
@@ -283,7 +283,7 @@ namespace Game.Shared
 
             var raw = writer.ToArray();
 
-            var payload = new RPCPayload(target, raw);
+            var payload = new RpcPayload(target, raw);
 
             return payload;
         }

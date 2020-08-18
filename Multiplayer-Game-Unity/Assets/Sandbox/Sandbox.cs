@@ -33,12 +33,12 @@ namespace Game
         {
             Debug.Log("Start");
 
-            bind = RPCBind.Parse(this, nameof(RpcCallback));
+            bind = RpcBind.Parse(this, nameof(RpcCallback));
 
             CreateRoom();
         }
 
-        RPCBind bind;
+        RpcBind bind;
 
         void TryRPC()
         {
@@ -47,7 +47,7 @@ namespace Game
             byte[] data;
 
             {
-                var payload = RPCPayload.Write("Target", 42, "Hello RPC!", DateTime.UtcNow);
+                var payload = RpcPayload.Write("Target", 42, "Hello RPC!", DateTime.UtcNow);
 
                 var message = NetworkMessage.Write(payload);
 
@@ -59,7 +59,7 @@ namespace Game
             {
                 var message = NetworkMessage.Read(data);
 
-                var payload = message.Read<RPCPayload>();
+                var payload = message.Read<RpcPayload>();
 
                 bind.Invoke(payload);
             }
@@ -162,7 +162,7 @@ namespace Game
                 Debug.Log("Websocket Opened");
 
                 {
-                    var payload = RPCPayload.Write("Target", 42, "Hello RPC!", DateTime.UtcNow);
+                    var payload = bind.Request(RpcCallback, 42, "Hello RPC", DateTime.Now);
 
                     var message = NetworkMessage.Write(payload);
 
@@ -191,9 +191,9 @@ namespace Game
             {
                 var message = NetworkMessage.Read(args.RawData);
 
-                if(message.Is<RPCPayload>())
+                if(message.Is<RpcPayload>())
                 {
-                    var payload = message.Read<RPCPayload>();
+                    var payload = message.Read<RpcPayload>();
 
                     bind.Invoke(payload);
                 }
@@ -216,11 +216,6 @@ namespace Game
             websocket.ConnectAsync();
         }
         #endregion
-    }
-
-    public class NetworkBehaviour
-    {
-
     }
 
     public partial class SampleObject : INetSerializable
