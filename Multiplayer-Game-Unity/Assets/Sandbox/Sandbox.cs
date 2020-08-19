@@ -34,8 +34,29 @@ namespace Game
             NetworkClient.Configure(address);
 
             NetworkClient.RestAPI.Room.OnCreated += RoomCreatedCallback;
+            NetworkClient.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
+        }
 
-            NetworkClient.RestAPI.Room.Create("Moe4B's Game Room", 4);
+        void Update()
+        {
+            if(Input.GetKeyDown(KeyCode.F))
+            {
+                if (Application.isEditor)
+                    NetworkClient.RestAPI.Room.Create("Moe4B's Game Room", 4);
+                else
+                    NetworkClient.RestAPI.Lobby.Info();
+            }
+        }
+
+        void LobbyInfoCallback(LobbyInfo lobby)
+        {
+            var room = lobby.Rooms.FirstOrDefault();
+
+            Debug.Log("Lobby Size: " + lobby.Size);
+
+            if (room == null) return;
+
+            NetworkClient.Room.Join(room.ID);
         }
 
         void RoomCreatedCallback(RoomInfo room)
@@ -129,5 +150,28 @@ namespace Game
                 var sample = NetworkSerializer.Deserialize<SampleObject>(binary);
             }
         }
+    }
+
+    public class Vector3SerializationResolver : PocoNetworkSerializationResolver
+    {
+        public override void Serialize(NetworkWriter writer, object type)
+        {
+            var value = (Vector3)type;
+
+            writer.Write(value.x);
+            writer.Write(value.y);
+            writer.Write(value.z);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            reader.Read(out float x);
+            reader.Read(out float y);
+            reader.Read(out float z);
+
+            return new Vector3(x, y, z);
+        }
+
+        public Vector3SerializationResolver() : base(typeof(Vector3)) { }
     }
 }

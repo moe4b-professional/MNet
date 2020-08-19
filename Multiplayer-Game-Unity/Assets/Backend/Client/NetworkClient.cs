@@ -36,10 +36,14 @@ namespace Game
 
         public static string ID { get; private set; }
 
+        public static ClientInfo Info { get; private set; }
+
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
             ID = string.Empty;
+
+            Info = new ClientInfo("Moe4B");
 
             var loop = PlayerLoop.GetCurrentPlayerLoop();
 
@@ -194,7 +198,7 @@ namespace Game
                     Request.GET(Address, Constants.RestAPI.Requests.Lobby.Info, InfoCallback, false);
                 }
 
-                public delegate void InfoDelegate(LobbyInfo info);
+                public delegate void InfoDelegate(LobbyInfo lobby);
                 public static event InfoDelegate OnInfo;
                 static void InfoCallback(NetworkMessage message, RestError error)
                 {
@@ -366,6 +370,15 @@ namespace Game
 
                 Send(message);
             }
+
+            public static void RequestReady()
+            {
+                var request = new ReadyClientRequest(NetworkClient.Info);
+
+                var message = NetworkMessage.Write(request);
+
+                Send(message);
+            }
             #endregion
 
             #region Callbacks
@@ -373,15 +386,26 @@ namespace Game
             {
                 Debug.Log("Connected to Room");
 
-                RequestSpawn("Player");
+                RequestReady();
             }
 
             static void MessageCallback(NetworkMessage message)
             {
-                if (message.TryRead<SpawnEntityCommand>(out var command))
-                    SpawnEntity(command);
+                if (message.Is<ReadyClientResponse>())
+                {
+                    var response = message.Read<ReadyClientResponse>();
 
-                if(message.Is<RpcPayload>())
+                    Ready(response);
+                }
+
+                if (message.Is<SpawnEntityCommand>())
+                {
+                    var command = message.Read<SpawnEntityCommand>();
+
+                    SpawnEntity(command);
+                }
+
+                if (message.Is<RpcPayload>())
                 {
                     var payload = message.Read<RpcPayload>();
 
@@ -390,10 +414,17 @@ namespace Game
             }
             #endregion
 
+            static void Ready(ReadyClientResponse response)
+            {
+                NetworkClient.ID = response.ClientID;
+
+                RequestSpawn("Player");
+            }
+
             static void InvokeRpc(RpcPayload payload)
             {
-                if (Entities.TryGetValue(payload.Entity, out var entity))
-                    entity.InvokeRpc(payload);
+                if (Entities.TryGetValue(payload.Entity, out var target))
+                    target.InvokeRpc(payload);
                 else
                     Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {payload.Entity}");
             }
@@ -412,19 +443,19 @@ namespace Game
 
                 var instance = Object.Instantiate(prefab);
 
-                var identity = instance.GetComponent<NetworkEntity>();
+                var entity = instance.GetComponent<NetworkEntity>();
 
-                if(identity == null)
+                if(entity == null)
                 {
                     Debug.LogError($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
                     return;
                 }
 
-                Entities.Add(command.ID, identity);
+                Entities.Add(command.ID, entity);
 
-                identity.Spawn(command.ID);
+                entity.Spawn(command.Owner, command.ID);
             }
-
+            
             static Room()
             {
                 Entities = new Dictionary<string, NetworkEntity>();

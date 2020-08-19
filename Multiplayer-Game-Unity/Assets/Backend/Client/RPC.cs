@@ -12,7 +12,7 @@ namespace Game
 {
     public class RpcBind
     {
-        public NetworkEntity Identity => Behaviour.Identity;
+        public NetworkEntity Identity => Behaviour.Entity;
 
         public NetworkBehaviour Behaviour { get; protected set; }
 

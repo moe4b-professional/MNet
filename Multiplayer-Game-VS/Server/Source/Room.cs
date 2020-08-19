@@ -80,6 +80,20 @@ namespace Game.Server
         {
             service.Set(this);
         }
+
+        void SendTo(NetworkMessage message, string clientID)
+        {
+            var binary = NetworkSerializer.Serialize(message);
+
+            WebSocket.Sessions.SendTo(binary, clientID);
+        }
+
+        void Broadcast(NetworkMessage message)
+        {
+            var binary = NetworkSerializer.Serialize(message);
+
+            WebSocket.Sessions.Broadcast(binary);
+        }
         #endregion
 
         #region Schedule
@@ -127,6 +141,13 @@ namespace Game.Server
         {
             Log.Info($"Room {this.ID}: Client {clientID} Sent Message With Payload of {message.Type.Name}");
 
+            if(message.Is<ReadyClientRequest>())
+            {
+                var request = message.Read<ReadyClientRequest>();
+
+                ReadyClient(clientID, request);
+            }
+
             if(message.Is<RpcPayload>())
             {
                 var payload = message.Read<RpcPayload>();
@@ -136,9 +157,9 @@ namespace Game.Server
 
             if(message.Is<SpawnEntityRequest>())
             {
-                var payload = message.Read<SpawnEntityRequest>();
+                var request = message.Read<SpawnEntityRequest>();
 
-                SpawnEntity(clientID, payload);
+                SpawnEntity(clientID, request);
             }
         }
 
@@ -148,20 +169,29 @@ namespace Game.Server
         }
         #endregion
 
-        protected virtual void InvokeRPC(string clientID, RpcPayload payload, byte[] raw)
+        protected void ReadyClient(string clientID, ReadyClientRequest request)
+        {
+            var response = new ReadyClientResponse(clientID);
+
+            var message = NetworkMessage.Write(response);
+
+            SendTo(message, clientID);
+        }
+
+        protected void InvokeRPC(string clientID, RpcPayload payload, byte[] raw)
         {
             WebSocket.Sessions.Broadcast(raw);
         }
 
-        protected virtual void SpawnEntity(string clientID, SpawnEntityRequest payload)
+        protected void SpawnEntity(string clientID, SpawnEntityRequest request)
         {
             var id = Guid.NewGuid().ToString("N");
 
-            var command = new SpawnEntityCommand(clientID, payload, id);
+            var command = new SpawnEntityCommand(clientID, request, id);
 
             var response = NetworkMessage.Write(command);
 
-            WebSocket.Sessions.Broadcast(response);
+            Broadcast(response);
         }
 
         public void Stop()

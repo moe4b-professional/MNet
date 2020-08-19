@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Game.Shared
 {
+    [Serializable]
     public class ClientInfo : INetSerializable
     {
         protected string name;
@@ -21,6 +22,7 @@ namespace Game.Shared
 
             this.attributes = attributes;
         }
+        public ClientInfo(string name) : this(name, null) { }
 
         public void Serialize(NetworkWriter writer)
         {

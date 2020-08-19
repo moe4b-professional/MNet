@@ -48,21 +48,4 @@ namespace Game.Server
             Server.Log.Output = (data, s) => { Log.Info(data.Message); };
         }
     }
-
-    public static class WebSocketAPIExtensions
-    {
-        public static void Broadcast(this WebSocketSessionManager manager, NetworkMessage message)
-        {
-            var binary = NetworkSerializer.Serialize(message);
-
-            manager.Broadcast(binary);
-        }
-
-        public static void Send(this WebSocketSessionManager manager, NetworkMessage message, string id)
-        {
-            var binary = NetworkSerializer.Serialize(message);
-
-            manager.SendTo(binary, id);
-        }
-    }
 }

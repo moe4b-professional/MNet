@@ -144,7 +144,11 @@ namespace Game.Shared
         public void Write(string value) => WriteString(value);
         public void WriteString(string value)
         {
-            if (string.IsNullOrEmpty(value))
+            if (value == null)
+            {
+                WriteInt(-1);
+            }
+            else if (value == string.Empty)
             {
                 WriteInt(0);
             }
@@ -172,19 +176,33 @@ namespace Game.Shared
         public void Write<T>(List<T> list) => WriteList(list);
         public void WriteList<T>(IList<T> list)
         {
-            Write(list.Count);
+            if(list == null)
+            {
+                WriteInt(-1);
+            }
+            else
+            {
+                WriteInt(list.Count);
 
-            for (int i = 0; i < list.Count; i++)
-                Write(list[i]);
+                for (int i = 0; i < list.Count; i++)
+                    Write(list[i]);
+            }
         }
 
         public void Write<TKey, TValue>(Dictionary<TKey, TValue> dictionary) => WriteDictionary(dictionary);
         public void WriteDictionary<Tkey, TValue>(Dictionary<Tkey, TValue> value)
         {
-            Write(value.Count);
+            if(value == null)
+            {
+                WriteInt(-1);
+            }
+            else
+            {
+                Write(value.Count);
 
-            foreach (var pair in value)
-                WriteKeyValue(pair.Key, pair.Value);
+                foreach (var pair in value)
+                    WriteKeyValue(pair.Key, pair.Value);
+            }
         }
 
         public void Write<TKey, TValue>(KeyValuePair<TKey, TValue> pair) => WriteKeyValue(pair.Key, pair.Value);
@@ -299,8 +317,9 @@ namespace Game.Shared
         {
             var size = ReadInt();
 
-            if (size == 0)
-                return string.Empty;
+            if (size < 0) return null;
+
+            if (size == 0) return string.Empty;
 
             var result = Encoding.UTF8.GetString(data, Position, size);
 
@@ -336,6 +355,8 @@ namespace Game.Shared
         {
             Read(out int length);
 
+            if (length < 0) return null;
+
             var array = new T[length];
 
             for (int i = 0; i < length; i++)
@@ -348,6 +369,8 @@ namespace Game.Shared
         public List<T> ReadList<T>()
         {
             Read(out int length);
+
+            if (length < 0) return null;
 
             var list = new List<T>(length);
 
@@ -365,6 +388,8 @@ namespace Game.Shared
         public Dictionary<TKey, TValue> ReadDictionary<TKey, TValue>()
         {
             Read(out int count);
+
+            if (count < 0) return null;
 
             var dictionary = new Dictionary<TKey, TValue>(count);
 

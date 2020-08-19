@@ -275,4 +275,50 @@ namespace Game.Shared
             this.id = identity;
         }
     }
+
+    [Serializable]
+    [NetworkMessagePayload(7)]
+    public sealed class ReadyClientRequest : INetSerializable
+    {
+        ClientInfo info;
+        public ClientInfo Info => info;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(info);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out info);
+        }
+
+        public ReadyClientRequest() { }
+        public ReadyClientRequest(ClientInfo info)
+        {
+            this.info = info;
+        }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(8)]
+    public sealed class ReadyClientResponse : INetSerializable
+    {
+        string clientID;
+        public string ClientID => clientID;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(clientID);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out clientID);
+        }
+
+        public ReadyClientResponse() { }
+        public ReadyClientResponse(string clientID)
+        {
+            this.clientID = clientID;
+        }
+    }
 }

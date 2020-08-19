@@ -21,20 +21,40 @@ namespace Game
 {
 	public class Player : NetworkBehaviour
 	{
+        public float speed;
+
         void Start()
         {
-            RequestRPC(RpcCall, 42, "Hello!", DateTime.Now);
+            if(IsMine)
+            {
+                var x = Random.Range(-5f, 5f);
+                var z = Random.Range(-3f, 3f);
+
+                transform.position = new Vector3(x, 0, z);
+            }
         }
 
         void Update()
         {
-            
+            if(IsMine)
+            {
+                var horizontal = Input.GetAxisRaw("Horizontal");
+                var vertical = Input.GetAxisRaw("Vertical");
+
+                var direction = new Vector3(horizontal, 0f, vertical);
+
+                var velocity = Vector3.ClampMagnitude(direction * speed, speed);
+
+                var translation = velocity * Time.deltaTime;
+
+                RequestRPC(RpcSetPosition, transform.position + translation);
+            }
         }
 
 		[NetworkRPC]
-        void RpcCall(int number, string text, DateTime date)
+        void RpcSetPosition(Vector3 position)
         {
-            Debug.Log($"RPC Call! {number}, {text}, {date}");
+            transform.position = position;
         }
 	}
 }

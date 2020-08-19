@@ -24,13 +24,29 @@ using System.Reflection;
 namespace Game
 {
     [RequireComponent(typeof(NetworkEntity))]
-    public class NetworkBehaviour : NetworkObject
+    public class NetworkBehaviour : MonoBehaviour
 	{
-        public NetworkEntity Identity { get; protected set; }
+        [ReadOnly]
+        [SerializeField]
+        protected string _ID = string.Empty;
+        public string ID
+        {
+            get => _ID;
+            set => _ID = value;
+        }
+
+        public void GenerateID()
+        {
+            ID = Guid.NewGuid().ToString("N");
+        }
+
+        public NetworkEntity Entity { get; protected set; }
         public void Set(NetworkEntity reference)
         {
-            Identity = reference;
+            Entity = reference;
         }
+
+        public bool IsMine => Entity.IsMine;
 
         public RpcCollection RPCs { get; protected set; }
         public class RpcCollection
@@ -61,11 +77,6 @@ namespace Game
             }
         }
 
-        public void GenerateID()
-        {
-            ID = Guid.NewGuid().ToString("N");
-        }
-
         protected virtual void Reset()
         {
             GenerateID();
@@ -76,10 +87,8 @@ namespace Game
             if (string.IsNullOrEmpty(ID)) GenerateID();
         }
 
-        protected override void Awake()
+        protected virtual void Awake()
         {
-            base.Awake();
-
             RPCs = new RpcCollection(this);
         }
 
@@ -109,9 +118,9 @@ namespace Game
 
         public void InvokeRpc(RpcPayload payload)
         {
-            if(RPCs.Find(payload.Method, out var bind))
+            if(RPCs.Find(payload.Method, out var target))
             {
-                bind.Invoke(payload);
+                target.Invoke(payload);
             }
             else
             {
