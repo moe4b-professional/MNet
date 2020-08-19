@@ -113,21 +113,6 @@ namespace Game.Server
                 }
             }
 
-            if(request.RawUrl == "/PlayerInfo")
-            {
-                var dictionary = new Dictionary<string, string>();
-
-                dictionary.Add("Name", "Moe4B");
-
-                dictionary.Add("Level", "4");
-
-                var message = new PlayerInfoPayload(dictionary).ToMessage();
-
-                message.WriteTo(response);
-
-                return true;
-            }
-
             return false;
         }
     }

@@ -155,9 +155,9 @@ namespace Game.Server
 
         protected virtual void SpawnRequest(string clientID, SpawnObjectRequestPayload payload)
         {
-            var identityID = Guid.NewGuid().ToString("N");
+            var identity = Guid.NewGuid().ToString("N");
 
-            var response = new SpawnObjectCommandPayload(payload, identityID).ToMessage();
+            var response = new SpawnObjectCommandPayload(clientID, payload, identity).ToMessage();
 
             WebSocket.Sessions.Broadcast(response);
         }

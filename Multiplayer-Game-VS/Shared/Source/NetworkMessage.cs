@@ -177,7 +177,7 @@ namespace Game.Shared
             All = new List<Data>();
 
             Register<RoomListInfoPayload>(1);
-            Register<PlayerInfoPayload>(2);
+            Register<ClientInfoPayload>(2);
             Register<RpcPayload>(3);
             Register<CreateRoomPayload>(4);
             Register<RoomInfoPayload>(5);
@@ -210,25 +210,25 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public sealed class PlayerInfoPayload : NetworkMessagePayload
+    public sealed class ClientInfoPayload : NetworkMessagePayload
     {
-        private Dictionary<string, string> dictionary;
-        public Dictionary<string, string> Dictionary { get { return dictionary; } }
+        private Client info;
+        public Client Info { get { return info; } }
 
         public override void Serialize(NetworkWriter writer)
         {
-            writer.Write(dictionary);
+            writer.Write(info);
         }
 
         public override void Deserialize(NetworkReader reader)
         {
-            reader.Read(out dictionary);
+            reader.Read(out info);
         }
 
-        public PlayerInfoPayload() { }
-        public PlayerInfoPayload(Dictionary<string, string> dictionary)
+        public ClientInfoPayload() { }
+        public ClientInfoPayload(Client info)
         {
-            this.dictionary = dictionary;
+            this.info = info;
         }
     }
 
@@ -379,28 +379,55 @@ namespace Game.Shared
     [Serializable]
     public sealed class SpawnObjectCommandPayload : NetworkMessagePayload
     {
-        private string resource;
+        string owner;
+        public string Owner { get { return owner; } }
+
+        string resource;
         public string Resource { get { return resource; } }
 
-        private string id;
-        public string ID { get { return id; } }
+        private string identity;
+        public string Identity { get { return identity; } }
 
         public override void Serialize(NetworkWriter writer)
         {
+            writer.Write(owner);
             writer.Write(resource);
-            writer.Write(id);
+            writer.Write(identity);
         }
         public override void Deserialize(NetworkReader reader)
         {
+            reader.Read(out owner);
             reader.Read(out resource);
-            reader.Read(out id);
+            reader.Read(out identity);
         }
 
         public SpawnObjectCommandPayload() { }
-        public SpawnObjectCommandPayload(SpawnObjectRequestPayload request, string id)
+        public SpawnObjectCommandPayload(string owner, SpawnObjectRequestPayload request, string identity)
         {
             this.resource = request.Resource;
-            this.id = id;
+            this.identity = identity;
+        }
+    }
+
+    [Serializable]
+    public sealed class ClientIDPayload : NetworkMessagePayload
+    {
+        string value;
+        public string Value { get { return value; } }
+
+        public override void Serialize(NetworkWriter writer)
+        {
+            writer.Write(value);
+        }
+        public override void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out value);
+        }
+
+        public ClientIDPayload() { }
+        public ClientIDPayload(string value)
+        {
+            this.value = value;
         }
     }
 }

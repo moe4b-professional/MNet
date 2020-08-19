@@ -34,9 +34,13 @@ namespace Game
 	{
         public static string Address { get; private set; }
 
+        public static string ID { get; private set; }
+
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
+            ID = string.Empty;
+
             var loop = PlayerLoop.GetCurrentPlayerLoop();
 
             for (int i = 0; i < loop.subSystemList.Length; ++i)
@@ -243,7 +247,7 @@ namespace Game
         public static class WebSocketAPI
         {
             public static string Address => NetworkClient.Address + ":" + Constants.WebSocketAPI.Port;
-
+            
             public static WebSocket Client { get; private set; }
             public static bool IsConnected => Client == null ? false : Client.IsAlive;
 
@@ -433,6 +437,39 @@ namespace Game
             }
         }
 	}
+
+    public struct ClientID
+    {
+        [SerializeField]
+        private string value;
+        public string Value { get { return value; } }
+
+        public ClientID(string id)
+        {
+            this.value = id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == typeof(ClientID))
+            {
+                var target = (ClientID)obj;
+
+                return target.value == this.value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(ClientID a, ClientID b) => a.Equals(b);
+        public static bool operator !=(ClientID a, ClientID b) => !a.Equals(b);
+
+        public static ClientID Empty { get; private set; } = new ClientID(string.Empty);
+    }
 
     public class RestError
     {

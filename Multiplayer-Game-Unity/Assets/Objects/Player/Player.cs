@@ -34,7 +34,7 @@ namespace Game
 		[NetworkRPC]
         void RpcCall(int number, string text, DateTime date)
         {
-            //Debug.Log($"RPC Call! {number}, {text}, {date}");
+            Debug.Log($"RPC Call! {number}, {text}, {date}");
         }
 	}
 }

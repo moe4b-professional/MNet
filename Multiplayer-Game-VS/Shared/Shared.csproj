@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Source\Constants.cs" />
     <Compile Include="Source\Log.cs" />
+    <Compile Include="Source\PlayerInfo.cs" />
     <Compile Include="Source\RoomInfo.cs" />
     <Compile Include="Source\NetworkMessage.cs" />
     <Compile Include="Source\NetworkSerializer.cs" />

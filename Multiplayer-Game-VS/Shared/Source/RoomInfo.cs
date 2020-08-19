@@ -20,10 +20,7 @@ namespace Game.Shared
         protected int playersCount;
         public int PlayersCount { get { return playersCount; } }
 
-        public RoomInfo()
-        {
-
-        }
+        public RoomInfo() { }
         public RoomInfo(ushort id, string name, int maxPlayers, int playersCount)
         {
             this.id = id;
