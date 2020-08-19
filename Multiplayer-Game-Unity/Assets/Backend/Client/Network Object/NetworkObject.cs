@@ -19,19 +19,20 @@ using Random = UnityEngine.Random;
 
 namespace Game
 {
-    [DefaultExecutionOrder(-100)]
-	public class NetworkIdentity : MonoBehaviour
+	public class NetworkObject : MonoBehaviour
 	{
-		public NetworkBehaviour[] Behaviours { get; protected set; }
-
-        void Awake()
+        [ReadOnly]
+        [SerializeField]
+        protected string _ID = string.Empty;
+        public string ID
         {
-            Behaviours = GetComponentsInChildren<NetworkBehaviour>();
+            get => _ID;
+            set => _ID = value;
+        }
 
-            for (int i = 0; i < Behaviours.Length; i++)
-                Behaviours[i].Set(this);
+        protected virtual void Awake()
+        {
 
-            Debug.Log(GetInstanceID());
         }
     }
 }

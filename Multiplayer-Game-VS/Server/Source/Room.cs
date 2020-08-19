@@ -131,7 +131,14 @@ namespace Game.Server
             {
                 var payload = message.Read<RpcPayload>();
 
-                WebSocket.Sessions.Broadcast(raw);
+                InvokeRPC(clientID, payload, raw);
+            }
+
+            if(message.Is<SpawnObjectRequestPayload>())
+            {
+                var payload = message.Read<SpawnObjectRequestPayload>();
+
+                SpawnRequest(clientID, payload);
             }
         }
 
@@ -140,6 +147,20 @@ namespace Game.Server
             Log.Info($"Room {this.ID}: Client {clientID} Disconnected");
         }
         #endregion
+
+        protected virtual void InvokeRPC(string clientID, RpcPayload payload, byte[] raw)
+        {
+            WebSocket.Sessions.Broadcast(raw);
+        }
+
+        protected virtual void SpawnRequest(string clientID, SpawnObjectRequestPayload payload)
+        {
+            var identityID = Guid.NewGuid().ToString("N");
+
+            var response = new SpawnObjectCommandPayload(payload, identityID).ToMessage();
+
+            WebSocket.Sessions.Broadcast(response);
+        }
 
         public void Stop()
         {

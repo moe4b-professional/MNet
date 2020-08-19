@@ -27,195 +27,23 @@ namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{
-        public string address = "localhost";
+        public string address = "127.0.0.1";
 
         void Start()
         {
-            Debug.Log("Start");
+            NetworkClient.Configure(address);
 
-            bind = RpcBind.Parse(this, nameof(RpcCallback));
+            NetworkClient.RestAPI.Room.OnCreated += RoomCreatedCallback;
 
-            CreateRoom();
+            NetworkClient.RestAPI.Room.Create("Moe4B's Game Room", 4);
         }
 
-        RpcBind bind;
-
-        void TryRPC()
+        void RoomCreatedCallback(RoomInfo room)
         {
-            
+            Debug.Log("Created Room: " + room.ID);
 
-            byte[] data;
-
-            {
-                var payload = RpcPayload.Write("Target", 42, "Hello RPC!", DateTime.UtcNow);
-
-                var message = NetworkMessage.Write(payload);
-
-                data = NetworkSerializer.Serialize(message);
-
-                Debug.Log("RPC Payload Size: " + data.Length);
-            }
-
-            {
-                var message = NetworkMessage.Read(data);
-
-                var payload = message.Read<RpcPayload>();
-
-                bind.Invoke(payload);
-            }
+            NetworkClient.Room.Join(room.ID);
         }
-        void RpcCallback(int a, string b, DateTime time)
-        {
-            Debug.Log($"RPC Callback: {a}, {b}, {time}");
-        }
-
-        void GetPlayerInfo()
-        {
-            RestRequest.GET(address, "/PlayerInfo", Callback, false);
-            void Callback(NetworkMessage message, RestError error)
-            {
-                if (error == null)
-                {
-                    var payload = message.Read<PlayerInfoPayload>();
-
-                    foreach (var pair in payload.Dictionary)
-                    {
-                        Debug.Log(pair.Key + " : " + pair.Value);
-                    }
-                }
-                else
-                {
-                    Debug.LogError("Error Getting Player Info, Message: " + error.Message);
-                }
-            }
-        }
-
-        void CreateRoom()
-        {
-            {
-                //var payload = new CreateRoomRequestPayload("Moe4B's Room", 4);
-                //var message = NetworkMessage.Write(payload);
-
-                var message = new CreateRoomPayload("Moe4B's Room", 4).ToMessage();
-
-                RestRequest.POST(address, Constants.RestAPI.Requests.Room.Create, message, Callback, false);
-            }
-
-            void Callback(NetworkMessage message, RestError error)
-            {
-                if (error == null)
-                {
-                    var payload = message.Read<RoomInfoPayload>();
-
-                    Debug.Log("Created Room: " + payload.Info);
-
-                    ConnectWebSocket("/" + payload.Info.ID);
-                }
-                else
-                {
-                    Debug.LogError("Error Creating Room, Message: " + error.Message);
-                }
-            }
-        }
-
-        void ListRooms()
-        {
-            RestRequest.GET(address, Constants.RestAPI.Requests.Room.List, Callback, false);
-
-            void Callback(NetworkMessage message, RestError error)
-            {
-                if(error == null)
-                {
-                    var payload = message.Read<RoomListInfoPayload>();
-
-                    foreach (var room in payload.List)
-                    {
-                        Debug.Log("Room :" + room);
-                        ConnectWebSocket("/" + room.ID);
-                    }
-                }
-                else
-                {
-                    Debug.LogError("Error Listing Rooms, Message: " + error.Message);
-                }
-            }
-        }
-
-        #region REST
-        
-        #endregion
-
-        #region WebSocket
-        void ConnectWebSocket(string path)
-        {
-            var websocket = new WebSocket($"ws://{address}:{Constants.WebSocketAPI.Port}{path}");
-
-            websocket.OnError += ErrorCallback;
-            void ErrorCallback(object sender, WebSocketSharp.ErrorEventArgs args)
-            {
-                Debug.LogWarning($"WebSocket Error: {args.Message}");
-            }
-
-            websocket.OnOpen += OpenCallback;
-            void OpenCallback(object sender, EventArgs args)
-            {
-                Debug.Log("Websocket Opened");
-
-                {
-                    var payload = bind.Request(RpcCallback, 42, "Hello RPC", DateTime.Now);
-
-                    var message = NetworkMessage.Write(payload);
-
-                    var binary = NetworkSerializer.Serialize(message);
-
-                    websocket.Send(binary);
-                }
-
-                {
-                    var dictionary = new Dictionary<string, string>()
-                    {
-                        { "Name", "Moe4B" },
-                        { "Level", "14" },
-                    };
-
-                    var message = new PlayerInfoPayload(dictionary).ToMessage();
-
-                    var binary = NetworkSerializer.Serialize(message);
-
-                    websocket.Send(binary);
-                }
-            }
-
-            websocket.OnMessage += MessageCallback;
-            void MessageCallback(object sender, MessageEventArgs args)
-            {
-                var message = NetworkMessage.Read(args.RawData);
-
-                if(message.Is<RpcPayload>())
-                {
-                    var payload = message.Read<RpcPayload>();
-
-                    bind.Invoke(payload);
-                }
-
-                Debug.Log($"WebSocket API: {args.Data}");
-            }
-
-            websocket.OnClose += CloseCallback;
-            void CloseCallback(object sender, CloseEventArgs e)
-            {
-                Debug.Log($"WebSocket Closed");
-            }
-
-            Application.quitting += QuitCallback;
-            void QuitCallback()
-            {
-                if(websocket.IsAlive) websocket.Close();
-            }
-
-            websocket.ConnectAsync();
-        }
-        #endregion
     }
 
     public partial class SampleObject : INetSerializable

@@ -14,16 +14,18 @@ namespace Game.Shared
 
             public static class Requests
             {
+                public static string Path = "/REST";
+
                 public static class Room
                 {
-                    public static string Path = "/Room/";
+                    public static string Path = Requests.Path + "/Room";
 
-                    public static string List { get; private set; } = Appened(Path, nameof(List));
+                    public static string List { get; private set; } = ToAbsolute(Path, nameof(List));
 
-                    public static string Create { get; private set; } = Appened(Path, nameof(Create));
+                    public static string Create { get; private set; } = ToAbsolute(Path, nameof(Create));
                 }
 
-                public static string Appened(string path, string name) => path + name;
+                public static string ToAbsolute(string path, string name) => path + "/" + name;
             }
         }
 

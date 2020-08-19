@@ -20,12 +20,27 @@ using Random = UnityEngine.Random;
 namespace Game
 {
     [RequireComponent(typeof(NetworkIdentity))]
-    public class NetworkBehaviour : MonoBehaviour
+    public class NetworkBehaviour : NetworkObject
 	{
-		public NetworkIdentity Identity { get; protected set; }
+        public void GenerateID()
+        {
+            ID = Guid.NewGuid().ToString("N");
+        }
+
+        public NetworkIdentity Identity { get; protected set; }
         public void Set(NetworkIdentity reference)
         {
             Identity = reference;
+        }
+
+        protected virtual void Reset()
+        {
+            GenerateID();
+        }
+
+        protected virtual void OnValidate()
+        {
+            if (string.IsNullOrEmpty(ID)) GenerateID();
         }
     }
 }

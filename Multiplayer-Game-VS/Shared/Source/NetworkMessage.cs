@@ -181,6 +181,8 @@ namespace Game.Shared
             Register<RpcPayload>(3);
             Register<CreateRoomPayload>(4);
             Register<RoomInfoPayload>(5);
+            Register<SpawnObjectRequestPayload>(6);
+            Register<SpawnObjectCommandPayload>(7);
         }
     }
 
@@ -338,6 +340,56 @@ namespace Game.Shared
         public RoomInfoPayload(RoomInfo info)
         {
             this.info = info;
+        }
+    }
+
+    [Serializable]
+    public sealed class SpawnObjectRequestPayload : NetworkMessagePayload
+    {
+        private string resource;
+        public string Resource { get { return resource; } }
+
+        public override void Serialize(NetworkWriter writer)
+        {
+            writer.Write(resource);
+        }
+        public override void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out resource);
+        }
+
+        public SpawnObjectRequestPayload() { }
+        public SpawnObjectRequestPayload(string resourcePath)
+        {
+            this.resource = resourcePath;
+        }
+    }
+
+    [Serializable]
+    public sealed class SpawnObjectCommandPayload : NetworkMessagePayload
+    {
+        private string resource;
+        public string Resource { get { return resource; } }
+
+        private string id;
+        public string ID { get { return id; } }
+
+        public override void Serialize(NetworkWriter writer)
+        {
+            writer.Write(resource);
+            writer.Write(id);
+        }
+        public override void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out resource);
+            reader.Read(out id);
+        }
+
+        public SpawnObjectCommandPayload() { }
+        public SpawnObjectCommandPayload(SpawnObjectRequestPayload request, string id)
+        {
+            this.resource = request.Resource;
+            this.id = id;
         }
     }
 }
