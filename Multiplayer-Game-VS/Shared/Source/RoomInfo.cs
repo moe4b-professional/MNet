@@ -6,18 +6,19 @@ using System.Threading.Tasks;
 
 namespace Game.Shared
 {
+    [NetworkMessagePayload(2)]
     public class RoomInfo : INetSerializable
     {
-        protected ushort id;
+        ushort id;
         public ushort ID { get { return id; } }
 
-        protected string name;
+        string name;
         public string Name { get { return name; } }
 
-        protected int maxPlayers;
+        int maxPlayers;
         public int MaxPlayers { get { return maxPlayers; } }
 
-        protected int playersCount;
+        int playersCount;
         public int PlayersCount { get { return playersCount; } }
 
         public RoomInfo() { }

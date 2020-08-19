@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Game.Shared
 {
-    public class Client : INetSerializable
+    public class ClientInfo : INetSerializable
     {
         protected string name;
         public string Name { get { return name; } }
@@ -14,8 +14,8 @@ namespace Game.Shared
         protected Dictionary<string,string> attributes;
         public Dictionary<string,string> Attributes { get { return attributes; } }
 
-        public Client() { }
-        public Client(string name, Dictionary<string, string> attributes)
+        public ClientInfo() { }
+        public ClientInfo(string name, Dictionary<string, string> attributes)
         {
             this.name = name;
 

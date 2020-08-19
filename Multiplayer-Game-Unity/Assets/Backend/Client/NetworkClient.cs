@@ -186,36 +186,37 @@ namespace Game
                 }
             }
 
-            public static class Room
+            public static class Lobby
             {
                 #region List
-                public static void List()
+                public static void Info()
                 {
-                    Request.GET(Address, Constants.RestAPI.Requests.Room.List, ListCallback, false);
+                    Request.GET(Address, Constants.RestAPI.Requests.Lobby.Info, InfoCallback, false);
                 }
 
-                public delegate void ListDelegate(RoomInfo[] rooms);
-                public static event ListDelegate OnList;
-                static void ListCallback(NetworkMessage message, RestError error)
+                public delegate void InfoDelegate(LobbyInfo info);
+                public static event InfoDelegate OnInfo;
+                static void InfoCallback(NetworkMessage message, RestError error)
                 {
                     if (error == null)
                     {
-                        var payload = message.Read<RoomListInfoPayload>();
+                        var info = message.Read<LobbyInfo>();
 
-                        var list = payload.List;
-
-                        OnList?.Invoke(list);
+                        OnInfo?.Invoke(info);
                     }
                     else
                         ProcessErorr(error);
                 }
                 #endregion
+            }
 
+            public static class Room
+            {
                 #region Create
-                public static void Create(string name, short capacity) => Create(new CreateRoomPayload(name, capacity));
-                public static void Create(CreateRoomPayload payload)
+                public static void Create(string name, ushort capacity) => Create(new CreateRoomRequest(name, capacity));
+                public static void Create(CreateRoomRequest request)
                 {
-                    var message = payload.ToMessage();
+                    var message = NetworkMessage.Write(request);
 
                     Request.POST(Address, Constants.RestAPI.Requests.Room.Create, message, CreateCallback, false);
                 }
@@ -226,11 +227,9 @@ namespace Game
                 {
                     if (error == null)
                     {
-                        var payload = message.Read<RoomInfoPayload>();
+                        var info = message.Read<RoomInfo>();
 
-                        var list = payload.Info;
-
-                        OnCreated?.Invoke(list);
+                        OnCreated?.Invoke(info);
                     }
                     else
                         ProcessErorr(error);
@@ -349,7 +348,7 @@ namespace Game
 
         public static class Room
         {
-            public static Dictionary<string, NetworkIdentity> Identities { get; private set; }
+            public static Dictionary<string, NetworkEntity> Entities { get; private set; }
 
             public static void Join(ushort id)
             {
@@ -361,7 +360,9 @@ namespace Game
 
             public static void RequestSpawn(string resource)
             {
-                var message = new SpawnObjectRequestPayload(resource).ToMessage();
+                var request = new SpawnEntityRequest(resource);
+
+                var message = NetworkMessage.Write(request);
 
                 Send(message);
             }
@@ -377,12 +378,8 @@ namespace Game
 
             static void MessageCallback(NetworkMessage message)
             {
-                if (message.Is<SpawnObjectCommandPayload>())
-                {
-                    var payload = message.Read<SpawnObjectCommandPayload>();
-
-                    SpawnCommand(payload);
-                }
+                if (message.TryRead<SpawnEntityCommand>(out var command))
+                    SpawnEntity(command);
 
                 if(message.Is<RpcPayload>())
                 {
@@ -395,81 +392,48 @@ namespace Game
 
             static void InvokeRpc(RpcPayload payload)
             {
-                if (Identities.TryGetValue(payload.Identity, out var identity))
-                    identity.InvokeRpc(payload);
+                if (Entities.TryGetValue(payload.Entity, out var entity))
+                    entity.InvokeRpc(payload);
                 else
-                    Debug.LogWarning($"No {nameof(NetworkIdentity)} found with ID {payload.Identity}");
+                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {payload.Entity}");
             }
 
-            static void SpawnCommand(SpawnObjectCommandPayload payload)
+            static void SpawnEntity(SpawnEntityCommand command)
             {
-                Debug.Log($"Spawn {payload.Resource} with ID: {payload.ID}");
+                Debug.Log($"Spawn {command.Resource} with ID: {command.ID}");
 
-                var prefab = Resources.Load<GameObject>(payload.Resource);
+                var prefab = Resources.Load<GameObject>(command.Resource);
 
                 if(prefab == null)
                 {
-                    Debug.LogError($"No Resource {payload.Resource} Found to Spawn");
+                    Debug.LogError($"No Resource {command.Resource} Found to Spawn");
                     return;
                 }
 
                 var instance = Object.Instantiate(prefab);
 
-                var identity = instance.GetComponent<NetworkIdentity>();
+                var identity = instance.GetComponent<NetworkEntity>();
 
                 if(identity == null)
                 {
-                    Debug.LogError($"No {nameof(NetworkIdentity)} Found on Resource {payload.Resource}");
+                    Debug.LogError($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
                     return;
                 }
 
-                Identities.Add(payload.ID, identity);
+                Entities.Add(command.ID, identity);
 
-                identity.Spawn(payload.ID);
+                identity.Spawn(command.ID);
             }
 
             static Room()
             {
-                Identities = new Dictionary<string, NetworkIdentity>();
+                Entities = new Dictionary<string, NetworkEntity>();
 
                 WebSocketAPI.OnConnect += ConnectedCallback;
                 WebSocketAPI.OnMessage += MessageCallback;
             }
         }
 	}
-
-    public struct ClientID
-    {
-        [SerializeField]
-        private string value;
-        public string Value { get { return value; } }
-
-        public ClientID(string id)
-        {
-            this.value = id;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj.GetType() == typeof(ClientID))
-            {
-                var target = (ClientID)obj;
-
-                return target.value == this.value;
-            }
-
-            return false;
-        }
-
-        public override int GetHashCode() => value.GetHashCode();
-
-        public override string ToString() => value.ToString();
-
-        public static bool operator ==(ClientID a, ClientID b) => a.Equals(b);
-        public static bool operator !=(ClientID a, ClientID b) => !a.Equals(b);
-
-        public static ClientID Empty { get; private set; } = new ClientID(string.Empty);
-    }
 
     public class RestError
     {

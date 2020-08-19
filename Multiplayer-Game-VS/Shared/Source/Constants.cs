@@ -16,11 +16,16 @@ namespace Game.Shared
             {
                 public static string Path = "/REST";
 
+                public static class Lobby
+                {
+                    public static string Path = Requests.Path + "/Lobby";
+
+                    public static string Info { get; private set; } = ToAbsolute(Path, nameof(Info));
+                }
+
                 public static class Room
                 {
                     public static string Path = Requests.Path + "/Room";
-
-                    public static string List { get; private set; } = ToAbsolute(Path, nameof(List));
 
                     public static string Create { get; private set; } = ToAbsolute(Path, nameof(Create));
                 }

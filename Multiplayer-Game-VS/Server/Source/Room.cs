@@ -24,7 +24,7 @@ namespace Game.Server
 
         public string Name { get; protected set; }
 
-        public short Capacity { get; protected set; }
+        public ushort Capacity { get; protected set; }
 
         public int PlayersCount { get; protected set; }
 
@@ -134,11 +134,11 @@ namespace Game.Server
                 InvokeRPC(clientID, payload, raw);
             }
 
-            if(message.Is<SpawnObjectRequestPayload>())
+            if(message.Is<SpawnEntityRequest>())
             {
-                var payload = message.Read<SpawnObjectRequestPayload>();
+                var payload = message.Read<SpawnEntityRequest>();
 
-                SpawnRequest(clientID, payload);
+                SpawnEntity(clientID, payload);
             }
         }
 
@@ -153,11 +153,13 @@ namespace Game.Server
             WebSocket.Sessions.Broadcast(raw);
         }
 
-        protected virtual void SpawnRequest(string clientID, SpawnObjectRequestPayload payload)
+        protected virtual void SpawnEntity(string clientID, SpawnEntityRequest payload)
         {
-            var identity = Guid.NewGuid().ToString("N");
+            var id = Guid.NewGuid().ToString("N");
 
-            var response = new SpawnObjectCommandPayload(clientID, payload, identity).ToMessage();
+            var command = new SpawnEntityCommand(clientID, payload, id);
+
+            var response = NetworkMessage.Write(command);
 
             WebSocket.Sessions.Broadcast(response);
         }
@@ -171,7 +173,7 @@ namespace Game.Server
             GameServer.WebSocket.RemoveService(Path);
         }
 
-        public Room(ushort id, string name, short capacity)
+        public Room(ushort id, string name, ushort capacity)
         {
             this.ID = id;
             this.Name = name;

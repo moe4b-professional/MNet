@@ -43,7 +43,7 @@ namespace Game.Shared
         }
     }
 
-    public abstract class NetworkDataOperator : IDisposable
+    public abstract class NetworkStream : IDisposable
     {
         protected byte[] data;
         public byte[] Data { get { return data; } }
@@ -70,13 +70,13 @@ namespace Game.Shared
             data = null;
         }
 
-        public NetworkDataOperator(byte[] data)
+        public NetworkStream(byte[] data)
         {
             this.data = data;
         }
     }
 
-    public class NetworkWriter : NetworkDataOperator
+    public class NetworkWriter : NetworkStream
     {
         public byte[] ToArray()
         {
@@ -144,11 +144,18 @@ namespace Game.Shared
         public void Write(string value) => WriteString(value);
         public void WriteString(string value)
         {
-            var binary = Encoding.UTF8.GetBytes(value);
+            if (string.IsNullOrEmpty(value))
+            {
+                WriteInt(0);
+            }
+            else
+            {
+                var binary = Encoding.UTF8.GetBytes(value);
 
-            WriteInt(binary.Length);
+                WriteInt(binary.Length);
 
-            Insert(binary);
+                Insert(binary);
+            }
         }
         #endregion
 
@@ -234,7 +241,7 @@ namespace Game.Shared
         public NetworkWriter(int size) : base(new byte[size]) { }
     }
 
-    public class NetworkReader : NetworkDataOperator
+    public class NetworkReader : NetworkStream
     {
         #region Primitives
         public void Read(out byte value) => value = ReadByte();

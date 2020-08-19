@@ -23,11 +23,11 @@ using System.Reflection;
 
 namespace Game
 {
-    [RequireComponent(typeof(NetworkIdentity))]
+    [RequireComponent(typeof(NetworkEntity))]
     public class NetworkBehaviour : NetworkObject
 	{
-        public NetworkIdentity Identity { get; protected set; }
-        public void Set(NetworkIdentity reference)
+        public NetworkEntity Identity { get; protected set; }
+        public void Set(NetworkEntity reference)
         {
             Identity = reference;
         }
@@ -83,42 +83,29 @@ namespace Game
             RPCs = new RpcCollection(this);
         }
 
+        #region Request RPC
         public void RequestRPC(RpcCallback callback)
-        {
-            if(RPCs.Find(callback.Method.Name, out var bind))
-            {
-                var message = bind.Request().ToMessage();
-
-                NetworkClient.Room.Send(message);
-            }
-        }
+            => RequestRPC(callback.Method);
         public void RequestRPC<T1>(RpcCallback<T1> callback, T1 arg1)
-        {
-            if (RPCs.Find(callback.Method.Name, out var bind))
-            {
-                var message = bind.Request(arg1).ToMessage();
-
-                NetworkClient.Room.Send(message);
-            }
-        }
+            => RequestRPC(callback.Method, arg1);
         public void RequestRPC<T1, T2>(RpcCallback<T1, T2> callback, T1 arg1, T2 arg2)
-        {
-            if (RPCs.Find(callback.Method.Name, out var bind))
-            {
-                var message = bind.Request(arg1, arg2).ToMessage();
-
-                NetworkClient.Room.Send(message);
-            }
-        }
+            => RequestRPC(callback.Method, arg1, arg2);
         public void RequestRPC<T1, T2, T3>(RpcCallback<T1, T2, T3> callback, T1 arg1, T2 arg2, T3 arg3)
+            => RequestRPC(callback.Method, arg1, arg2, arg3);
+
+        protected void RequestRPC(MethodInfo method, params object[] parameters) => RequestRPC(method.Name, parameters);
+        protected void RequestRPC(string name, params object[] parameters)
         {
-            if (RPCs.Find(callback.Method.Name, out var bind))
+            if (RPCs.Find(name, out var bind))
             {
-                var message = bind.Request(arg1, arg2, arg3).ToMessage();
+                var payload = bind.Request(parameters);
+
+                var message = NetworkMessage.Write(payload);
 
                 NetworkClient.Room.Send(message);
             }
         }
+        #endregion
 
         public void InvokeRpc(RpcPayload payload)
         {

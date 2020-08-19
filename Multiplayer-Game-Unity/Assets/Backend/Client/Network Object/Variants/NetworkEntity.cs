@@ -22,7 +22,7 @@ using Game.Shared;
 namespace Game
 {
     [DefaultExecutionOrder(-100)]
-	public class NetworkIdentity : NetworkObject
+	public class NetworkEntity : NetworkObject
 	{
         public NetworkBehaviour[] Behaviours { get; protected set; }
 

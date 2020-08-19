@@ -51,17 +51,15 @@ namespace Game.Server
             GameServer.Rest.Router.Register(RESTRoute);
         }
 
-        public RoomInfoPayload CreateRoom(CreateRoomPayload request)
+        public RoomInfo CreateRoom(CreateRoomRequest request)
         {
             var room = CreateRoom(request.Name, request.Capacity);
 
             var info = room.ReadInfo();
 
-            var response = new RoomInfoPayload(info);
-
-            return response;
+            return info;
         }
-        public Room CreateRoom(string name, short capacity)
+        public Room CreateRoom(string name, ushort capacity)
         {
             var id = GenerateRoomID();
 
@@ -76,11 +74,13 @@ namespace Game.Server
 
         public bool RESTRoute(HttpListenerRequest request, HttpListenerResponse response)
         {
-            if (request.RawUrl == Constants.RestAPI.Requests.Room.List)
+            if (request.RawUrl == Constants.RestAPI.Requests.Lobby.Info)
             {
-                var list = ReadRoomsInfo();
+                var rooms = ReadRoomsInfo();
 
-                var message = new RoomListInfoPayload(list).ToMessage();
+                var info = new LobbyInfo(rooms);
+
+                var message = NetworkMessage.Write(info);
 
                 message.WriteTo(response);
 
@@ -89,23 +89,25 @@ namespace Game.Server
 
             if(request.RawUrl == Constants.RestAPI.Requests.Room.Create)
             {
-                CreateRoomPayload payload;
+                CreateRoomRequest payload;
 
                 try
                 {
                     var message = NetworkMessage.Read(request);
 
-                    payload = message.Read<CreateRoomPayload>();
+                    payload = message.Read<CreateRoomRequest>();
                 }
                 catch (Exception)
                 {
-                    RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomPayload)}");
+                    RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomRequest)}");
 
                     return true;
                 }
 
                 {
-                    var message = CreateRoom(payload).ToMessage();
+                    var info = CreateRoom(payload);
+
+                    var message = NetworkMessage.Write(info);
 
                     message.WriteTo(response);
 
