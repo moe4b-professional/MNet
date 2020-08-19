@@ -6,11 +6,17 @@ using System.Threading.Tasks;
 
 using System.Reflection;
 
-namespace Game.Shared
+using Game.Shared;
+
+namespace Game
 {
     public class RpcBind
     {
-        public object Owner { get; protected set; }
+        public NetworkIdentity Identity => Behaviour.Identity;
+
+        public NetworkBehaviour Behaviour { get; protected set; }
+
+        public string Name { get; protected set; }
         
         public MethodInfo MethodInfo { get; protected set; }
 
@@ -23,15 +29,10 @@ namespace Game.Shared
                 return BindingFlags.Instance | BindingFlags.NonPublic;
             }
         }
-
-        public RpcPayload Request(RpcCallback callback) => Request();
-        public RpcPayload Request<T1>(RpcCallback<T1> callback, T1 arg1) => Request(arg1);
-        public RpcPayload Request<T1, T2>(RpcCallback<T1, T2> callback, T1 arg1, T2 arg2) => Request(arg1, arg2);
-        public RpcPayload Request<T1, T2, T3>(RpcCallback<T1, T2, T3> callback, T1 arg1, T2 arg2, T3 arg3) => Request(arg1, arg2, arg3);
-
+        
         public RpcPayload Request(params object[] parameters)
         {
-            var payload = RpcPayload.Write("Target ID", parameters);
+            var payload = RpcPayload.Write(Identity.ID, Behaviour.ID, Name, parameters);
 
             return payload;
         }
@@ -44,30 +45,38 @@ namespace Game.Shared
         }
         public void Invoke(params object[] parameters)
         {
-            MethodInfo.Invoke(Owner, parameters);
+            MethodInfo.Invoke(Behaviour, parameters);
         }
 
-        public RpcBind(object owner, MethodInfo method)
+        public RpcBind(NetworkBehaviour behaviour, MethodInfo method)
         {
-            Owner = owner;
+            Behaviour = behaviour;
 
             MethodInfo = method;
+
+            Name = MethodInfo.Name;
 
             ParametersInfo = method.GetParameters();
         }
 
-        public static RpcBind Parse(object owner, string name)
+        public static RpcBind Parse(NetworkBehaviour behaviour, string name)
         {
-            var method = owner.GetType().GetMethod(name, BindingFlags);
+            var method = behaviour.GetType().GetMethod(name, BindingFlags);
 
-            var bind = new RpcBind(owner, method);
+            var bind = new RpcBind(behaviour, method);
 
             return bind;
         }
     }
-
+    
     public delegate void RpcCallback();
     public delegate void RpcCallback<T1>(T1 arg1);
     public delegate void RpcCallback<T1, T2>(T1 arg1, T2 arg2);
     public delegate void RpcCallback<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3);
+
+    [System.AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    public sealed class NetworkRPCAttribute : Attribute
+    {
+
+    }
 }

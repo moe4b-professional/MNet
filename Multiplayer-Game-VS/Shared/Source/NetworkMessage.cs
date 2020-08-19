@@ -235,8 +235,14 @@ namespace Game.Shared
     [Serializable]
     public sealed class RpcPayload : NetworkMessagePayload
     {
-        private string target;
-        public string Target { get { return target; } }
+        string identity;
+        public string Identity { get { return identity; } }
+
+        string behaviour;
+        public string Behaviour { get { return behaviour; } }
+
+        string method;
+        public string Method { get { return method; } }
 
         private byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -259,24 +265,29 @@ namespace Game.Shared
 
         public override void Serialize(NetworkWriter writer)
         {
-            writer.Write(target);
+            writer.Write(identity);
+            writer.Write(behaviour);
+            writer.Write(method);
             writer.Write(raw);
         }
         public override void Deserialize(NetworkReader reader)
         {
-            reader.Read(out target);
+            reader.Read(out identity);
+            reader.Read(out behaviour);
+            reader.Read(out method);
             reader.Read(out raw);
         }
 
         public RpcPayload() { }
-        public RpcPayload(string target, byte[] raw)
+        public RpcPayload(string identity, string behaviour, string method, byte[] raw)
         {
-            this.target = target;
-
+            this.identity = identity;
+            this.behaviour = behaviour;
+            this.method = method;
             this.raw = raw;
         }
 
-        public static RpcPayload Write(string target, params object[] arguments)
+        public static RpcPayload Write(string identity, string behaviour, string method, params object[] arguments)
         {
             var writer = new NetworkWriter(1024);
 
@@ -285,7 +296,7 @@ namespace Game.Shared
 
             var raw = writer.ToArray();
 
-            var payload = new RpcPayload(target, raw);
+            var payload = new RpcPayload(identity, behaviour, method, raw);
 
             return payload;
         }

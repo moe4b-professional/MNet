@@ -345,20 +345,30 @@ namespace Game
 
         public static class Room
         {
-            public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
+            public static Dictionary<string, NetworkIdentity> Identities { get; private set; }
 
             public static void Join(ushort id)
             {
                 WebSocketAPI.Connect("/" + id);
-
-                var message = new SpawnObjectRequestPayload("Player");
             }
 
+            #region Utility
+            public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
+
+            public static void RequestSpawn(string resource)
+            {
+                var message = new SpawnObjectRequestPayload(resource).ToMessage();
+
+                Send(message);
+            }
+            #endregion
+
+            #region Callbacks
             static void ConnectedCallback()
             {
-                var spawn = new SpawnObjectRequestPayload("Player").ToMessage();
+                Debug.Log("Connected to Room");
 
-                Send(spawn);
+                RequestSpawn("Player");
             }
 
             static void MessageCallback(NetworkMessage message)
@@ -367,12 +377,57 @@ namespace Game
                 {
                     var payload = message.Read<SpawnObjectCommandPayload>();
 
-                    Debug.Log($"Spawn {payload.Resource} with ID: {payload.ID}");
+                    SpawnCommand(payload);
                 }
+
+                if(message.Is<RpcPayload>())
+                {
+                    var payload = message.Read<RpcPayload>();
+
+                    InvokeRpc(payload);
+                }
+            }
+            #endregion
+
+            static void InvokeRpc(RpcPayload payload)
+            {
+                if (Identities.TryGetValue(payload.Identity, out var identity))
+                    identity.InvokeRpc(payload);
+                else
+                    Debug.LogWarning($"No {nameof(NetworkIdentity)} found with ID {payload.Identity}");
+            }
+
+            static void SpawnCommand(SpawnObjectCommandPayload payload)
+            {
+                Debug.Log($"Spawn {payload.Resource} with ID: {payload.ID}");
+
+                var prefab = Resources.Load<GameObject>(payload.Resource);
+
+                if(prefab == null)
+                {
+                    Debug.LogError($"No Resource {payload.Resource} Found to Spawn");
+                    return;
+                }
+
+                var instance = Object.Instantiate(prefab);
+
+                var identity = instance.GetComponent<NetworkIdentity>();
+
+                if(identity == null)
+                {
+                    Debug.LogError($"No {nameof(NetworkIdentity)} Found on Resource {payload.Resource}");
+                    return;
+                }
+
+                Identities.Add(payload.ID, identity);
+
+                identity.Spawn(payload.ID);
             }
 
             static Room()
             {
+                Identities = new Dictionary<string, NetworkIdentity>();
+
                 WebSocketAPI.OnConnect += ConnectedCallback;
                 WebSocketAPI.OnMessage += MessageCallback;
             }

@@ -56,7 +56,6 @@
     <Compile Include="Source\NetworkMessage.cs" />
     <Compile Include="Source\NetworkSerializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\RPCBind.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

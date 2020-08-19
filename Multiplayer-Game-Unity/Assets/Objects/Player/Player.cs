@@ -21,6 +21,20 @@ namespace Game
 {
 	public class Player : NetworkBehaviour
 	{
-		
+        void Start()
+        {
+            RequestRPC(RpcCall, 42, "Hello!", DateTime.Now);
+        }
+
+        void Update()
+        {
+            
+        }
+
+		[NetworkRPC]
+        void RpcCall(int number, string text, DateTime date)
+        {
+            //Debug.Log($"RPC Call! {number}, {text}, {date}");
+        }
 	}
 }
