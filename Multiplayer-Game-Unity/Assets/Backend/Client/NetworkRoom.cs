@@ -95,8 +95,6 @@ namespace Game
         {
             NetworkAPI.Client.Set(response.ID);
 
-            Debug.Log("Register");
-
             NetworkAPI.Client.Ready();
         }
 

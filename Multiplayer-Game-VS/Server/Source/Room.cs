@@ -169,7 +169,7 @@ namespace Game.Server
         #region Messages
         void ClientMessageCallback(NetworkClientID id, byte[] raw, NetworkMessage message)
         {
-            Log.Info($"Room {this.ID}: Client {id} Sent Message With Payload of {message.Type.Name}");
+            //Log.Info($"Room {this.ID}: Client {id} Sent Message With Payload of {message.Type.Name}");
 
             if(message.Is<RegisterClientRequest>())
             {
@@ -216,8 +216,6 @@ namespace Game.Server
             var info = ReadInternalInfo();
             var response = new RegisterClientResponse(id, info);
             SendTo(client, response);
-
-            Log.Info("Sending Response to " + client.ID);
 
             var payload = new ClientConnectedPayload(id, profile);
             var message = Broadcast(payload);

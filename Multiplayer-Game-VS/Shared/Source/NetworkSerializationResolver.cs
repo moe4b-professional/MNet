@@ -258,8 +258,6 @@ namespace Game.Shared
 
             var binary = value.ToByteArray();
 
-            Log.Info(binary);
-
             writer.Insert(binary);
         }
 

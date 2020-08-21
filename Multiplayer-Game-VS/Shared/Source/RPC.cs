@@ -20,8 +20,8 @@ namespace Game.Shared
         string method;
         public string Method { get { return method; } }
 
-        RpcBufferMode buffer;
-        public RpcBufferMode Buffer => buffer;
+        RpcBufferMode bufferMode;
+        public RpcBufferMode BufferMode => bufferMode;
 
         private byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -48,7 +48,7 @@ namespace Game.Shared
             writer.Write(entity);
             writer.Write(behaviour);
             writer.Write(method);
-            writer.Write(buffer);
+            writer.Write(bufferMode);
             writer.Write(raw);
         }
         public void Deserialize(NetworkReader reader)
@@ -56,13 +56,13 @@ namespace Game.Shared
             reader.Read(out entity);
             reader.Read(out behaviour);
             reader.Read(out method);
-            reader.Read(out buffer);
+            reader.Read(out bufferMode);
             reader.Read(out raw);
         }
 
         public RpcRequest() { }
 
-        public static RpcRequest Write(NetworkEntityID entityID, NetworkBehaviourID behaviour, string method, RpcBufferMode buffer, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entityID, NetworkBehaviourID behaviour, string method, RpcBufferMode bufferMode, params object[] arguments)
         {
             Byte[] raw;
 
@@ -79,7 +79,7 @@ namespace Game.Shared
                 entity = entityID,
                 behaviour = behaviour,
                 method = method,
-                buffer = buffer,
+                bufferMode = bufferMode,
                 raw = raw
             };
 
