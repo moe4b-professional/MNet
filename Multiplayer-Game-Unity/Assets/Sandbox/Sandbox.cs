@@ -31,10 +31,10 @@ namespace Game
 
         void Start()
         {
-            NetworkClient.Configure(address);
+            NetworkAPI.Configure(address);
 
-            NetworkClient.RestAPI.Room.OnCreated += RoomCreatedCallback;
-            NetworkClient.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
+            NetworkAPI.RestAPI.Room.OnCreated += RoomCreatedCallback;
+            NetworkAPI.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
         }
 
         void Update()
@@ -42,9 +42,9 @@ namespace Game
             if(Input.GetKeyDown(KeyCode.F))
             {
                 if (Application.isEditor)
-                    NetworkClient.RestAPI.Room.Create("Moe4B's Game Room", 4);
+                    NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4);
                 else
-                    NetworkClient.RestAPI.Lobby.Info();
+                    NetworkAPI.RestAPI.Lobby.Info();
             }
         }
 
@@ -56,14 +56,14 @@ namespace Game
 
             if (room == null) return;
 
-            NetworkClient.Room.Join(room.ID);
+            NetworkAPI.Room.Join(room.ID);
         }
 
         void RoomCreatedCallback(RoomInfo room)
         {
             Debug.Log("Created Room: " + room.ID);
 
-            NetworkClient.Room.Join(room.ID);
+            NetworkAPI.Room.Join(room.ID);
         }
     }
 

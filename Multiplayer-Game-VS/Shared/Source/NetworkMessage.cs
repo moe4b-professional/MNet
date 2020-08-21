@@ -235,9 +235,9 @@ namespace Game.Shared
         }
 
         public SpawnEntityRequest() { }
-        public SpawnEntityRequest(string resourcePath)
+        public SpawnEntityRequest(string resource)
         {
-            this.resource = resourcePath;
+            this.resource = resource;
         }
     }
 
@@ -286,8 +286,8 @@ namespace Game.Shared
     [NetworkMessagePayload(7)]
     public sealed class ReadyClientRequest : INetSerializable
     {
-        ClientInfo info;
-        public ClientInfo Info => info;
+        NetworkClientInfo info;
+        public NetworkClientInfo Info => info;
 
         public void Serialize(NetworkWriter writer)
         {
@@ -299,7 +299,7 @@ namespace Game.Shared
         }
 
         public ReadyClientRequest() { }
-        public ReadyClientRequest(ClientInfo info)
+        public ReadyClientRequest(NetworkClientInfo info)
         {
             this.info = info;
         }
@@ -312,19 +312,125 @@ namespace Game.Shared
         NetworkClientID clientID;
         public NetworkClientID ClientID => clientID;
 
+        List<NetworkMessage> messageBuffer;
+        public List<NetworkMessage> MessageBuffer => messageBuffer;
+
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(clientID);
+            writer.Write(messageBuffer);
         }
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out clientID);
+            reader.Read(out messageBuffer);
         }
 
         public ReadyClientResponse() { }
-        public ReadyClientResponse(NetworkClientID clientID)
+        public ReadyClientResponse(NetworkClientID clientID, List<NetworkMessage> buffer)
         {
             this.clientID = clientID;
+            this.messageBuffer = buffer;
+        }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(10)]
+    public sealed class DestroyEntityRequest : INetSerializable
+    {
+        NetworkBehaviourID id;
+        public NetworkBehaviourID ID => id;
+
+        public void Deserialize(NetworkReader reader)
+        {
+
+        }
+        public void Serialize(NetworkWriter writer)
+        {
+
+        }
+
+        public DestroyEntityRequest() { }
+        public DestroyEntityRequest(NetworkBehaviourID id)
+        {
+            this.id = id;
+        }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(11)]
+    public sealed class DestroyEntityCommand : INetSerializable
+    {
+        NetworkBehaviourID id;
+        public NetworkBehaviourID ID => id;
+
+        public void Deserialize(NetworkReader reader)
+        {
+
+        }
+        public void Serialize(NetworkWriter writer)
+        {
+
+        }
+
+        public DestroyEntityCommand() { }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(11)]
+    public sealed class ClientConnectedPayload : INetSerializable
+    {
+        NetworkClientID id;
+        public NetworkClientID ID => id;
+
+        NetworkClientInfo info;
+        public NetworkClientInfo Info => info;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(id);
+            writer.Write(info);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out id);
+            reader.Read(out info);
+        }
+
+        public ClientConnectedPayload() { }
+        public ClientConnectedPayload(NetworkClientID id, NetworkClientInfo info)
+        {
+            this.id = id;
+            this.info = info;
+        }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(12)]
+    public sealed class ClientDisconnectPayload : INetSerializable
+    {
+        NetworkClientID id;
+        public NetworkClientID ID => id;
+
+        NetworkClientInfo info;
+        public NetworkClientInfo Info => info;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(id);
+            writer.Write(info);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out id);
+            reader.Read(out info);
+        }
+
+        public ClientDisconnectPayload() { }
+        public ClientDisconnectPayload(NetworkClientID id, NetworkClientInfo info)
+        {
+            this.id = id;
+            this.info = info;
         }
     }
 }

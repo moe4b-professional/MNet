@@ -53,7 +53,7 @@
     <Compile Include="Source\Constants.cs" />
     <Compile Include="Source\LobbyInfo.cs" />
     <Compile Include="Source\Log.cs" />
-    <Compile Include="Source\ClientInfo.cs" />
+    <Compile Include="Source\NetworkClientInfo.cs" />
     <Compile Include="Source\NetworkSerializationResolver.cs" />
     <Compile Include="Source\NetworkIDs.cs" />
     <Compile Include="Source\RoomInfo.cs" />

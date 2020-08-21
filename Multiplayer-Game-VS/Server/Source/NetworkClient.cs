@@ -12,15 +12,30 @@ namespace Game.Server
     {
         public NetworkClientID ID { get; protected set; }
 
-        public ClientInfo Info { get; protected set; }
+        public NetworkClientInfo Info { get; protected set; }
 
         public string Name => Info.Name;
 
-        public NetworkClient(NetworkClientID id, ClientInfo info)
+        #region Entities
+        public List<NetworkEntity> Entities { get; protected set; }
+
+        public void RegisterEntity(NetworkEntity entity)
+        {
+            Entities.Add(entity);
+        }
+
+        public void RemoveEntity(NetworkEntity entity)
+        {
+            Entities.Remove(entity);
+        }
+        #endregion
+
+        public NetworkClient(NetworkClientID id, NetworkClientInfo info)
         {
             this.ID = id;
-
             this.Info = info;
+
+            Entities = new List<NetworkEntity>();
         }
     }
 }
