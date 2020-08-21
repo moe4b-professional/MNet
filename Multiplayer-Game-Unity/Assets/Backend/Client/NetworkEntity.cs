@@ -24,21 +24,11 @@ namespace Game
     [DefaultExecutionOrder(-100)]
 	public class NetworkEntity : MonoBehaviour
 	{
-        [ReadOnly]
-        [SerializeField]
-        protected string _ID = string.Empty;
-        public string ID
-        {
-            get => _ID;
-            set => _ID = value;
-        }
+        public NetworkClientID Owner { get; protected set; }
 
-        [ReadOnly]
-        [SerializeField]
-        string owner;
-        public string Owner => owner;
+        public NetworkEntityID ID { get; protected set; }
 
-        public bool IsMine => owner == NetworkClient.ID;
+        public bool IsMine => Owner == NetworkClient.ID;
 
         public Dictionary<string, NetworkBehaviour> Behaviours { get; protected set; }
 
@@ -56,18 +46,18 @@ namespace Game
             }
         }
 
-        public void Spawn(string owner, string id)
+        public void Spawn(NetworkClientID owner, NetworkEntityID id)
         {
-            this.owner = owner;
+            this.Owner = owner;
             this.ID = id;
         }
 
-        public void InvokeRpc(RpcPayload payload)
+        public void InvokeRpc(RpcCommand command)
         {
-            if (Behaviours.TryGetValue(payload.Behaviour, out var target))
-                target.InvokeRpc(payload);
+            if (Behaviours.TryGetValue(command.Behaviour, out var target))
+                target.InvokeRpc(command);
             else
-                Debug.LogWarning($"No Behaviour with ID {payload.Behaviour} found to invoke RPC");
+                Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
         }
     }
 }

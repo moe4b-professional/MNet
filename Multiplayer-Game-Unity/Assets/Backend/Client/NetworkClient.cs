@@ -34,7 +34,7 @@ namespace Game
 	{
         public static string Address { get; private set; }
 
-        public static string ID { get; private set; }
+        public static NetworkClientID ID { get; private set; }
 
         public static ClientInfo Info { get; private set; }
 
@@ -352,7 +352,7 @@ namespace Game
 
         public static class Room
         {
-            public static Dictionary<string, NetworkEntity> Entities { get; private set; }
+            public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
 
             public static void Join(ushort id)
             {
@@ -395,7 +395,7 @@ namespace Game
                 {
                     var response = message.Read<ReadyClientResponse>();
 
-                    Ready(response);
+                    SetReady(response);
                 }
 
                 if (message.Is<SpawnEntityCommand>())
@@ -405,33 +405,33 @@ namespace Game
                     SpawnEntity(command);
                 }
 
-                if (message.Is<RpcPayload>())
+                if (message.Is<RpcCommand>())
                 {
-                    var payload = message.Read<RpcPayload>();
+                    var command = message.Read<RpcCommand>();
 
-                    InvokeRpc(payload);
+                    InvokeRpc(command);
                 }
             }
             #endregion
 
-            static void Ready(ReadyClientResponse response)
+            static void SetReady(ReadyClientResponse response)
             {
                 NetworkClient.ID = response.ClientID;
 
                 RequestSpawn("Player");
             }
 
-            static void InvokeRpc(RpcPayload payload)
+            static void InvokeRpc(RpcCommand command)
             {
-                if (Entities.TryGetValue(payload.Entity, out var target))
-                    target.InvokeRpc(payload);
+                if (Entities.TryGetValue(command.Entity, out var target))
+                    target.InvokeRpc(command);
                 else
-                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {payload.Entity}");
+                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
             }
 
             static void SpawnEntity(SpawnEntityCommand command)
             {
-                Debug.Log($"Spawn {command.Resource} with ID: {command.ID}");
+                Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}");
 
                 var prefab = Resources.Load<GameObject>(command.Resource);
 
@@ -451,14 +451,14 @@ namespace Game
                     return;
                 }
 
-                Entities.Add(command.ID, entity);
+                Entities.Add(command.Entity, entity);
 
-                entity.Spawn(command.Owner, command.ID);
+                entity.Spawn(command.Owner, command.Entity);
             }
             
             static Room()
             {
-                Entities = new Dictionary<string, NetworkEntity>();
+                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
 
                 WebSocketAPI.OnConnect += ConnectedCallback;
                 WebSocketAPI.OnMessage += MessageCallback;

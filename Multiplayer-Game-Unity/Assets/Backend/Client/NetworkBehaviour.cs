@@ -107,7 +107,7 @@ namespace Game
         {
             if (RPCs.Find(name, out var bind))
             {
-                var payload = bind.Request(parameters);
+                var payload = bind.CreateRequest(parameters);
 
                 var message = NetworkMessage.Write(payload);
 
@@ -116,15 +116,15 @@ namespace Game
         }
         #endregion
 
-        public void InvokeRpc(RpcPayload payload)
+        public void InvokeRpc(RpcCommand command)
         {
-            if(RPCs.Find(payload.Method, out var target))
+            if(RPCs.Find(command.Method, out var bind))
             {
-                target.Invoke(payload);
+                bind.Invoke(command);
             }
             else
             {
-                Debug.Log($"No RPC with Name {payload.Method} found on {GetType().Name}");
+                Debug.Log($"No RPC with Name {command.Method} found on {GetType().Name}");
             }
         }
     }

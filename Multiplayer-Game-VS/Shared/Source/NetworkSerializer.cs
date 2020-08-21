@@ -135,7 +135,23 @@ namespace Game.Shared
     public class NetworkReader : NetworkStream
     {
         public void Read<T>(out T value) => value = Read<T>();
-        public T Read<T>() => (T)Read(typeof(T));
+        public T Read<T>()
+        {
+            var value = Read(typeof(T));
+
+            try
+            {
+                return (T)value;
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidCastException($"Trying to read {value.GetType()} as {typeof(T)}");
+            }
+            catch(Exception)
+            {
+                throw;
+            }
+        }
         public object Read(Type type)
         {
             var resolver = NetworkSerializationResolver.Collection.Retrive(type);

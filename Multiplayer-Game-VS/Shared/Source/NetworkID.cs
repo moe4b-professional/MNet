@@ -6,31 +6,30 @@ using System.Threading.Tasks;
 
 namespace Game.Shared
 {
-    public struct NetworkID : INetSerializable
+    public struct NetworkClientID : INetSerializable
     {
-        private Guid value;
-        public Guid Value { get { return value; } }
+        string value;
+        public string Value { get { return value; } }
 
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(value);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out value);
         }
 
-        public NetworkID(Guid value)
+        public NetworkClientID(string value)
         {
             this.value = value;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(NetworkID))
+            if (obj.GetType() == typeof(NetworkClientID))
             {
-                var target = (NetworkID)obj;
+                var target = (NetworkClientID)obj;
 
                 return target.value == this.value;
             }
@@ -42,24 +41,60 @@ namespace Game.Shared
 
         public override string ToString() => value.ToString();
 
-        public static bool operator ==(NetworkID a, NetworkID b) => a.Equals(b);
-        public static bool operator !=(NetworkID a, NetworkID b) => !a.Equals(b);
+        public static NetworkClientID Empty { get; private set; } = new NetworkClientID(string.Empty);
 
-        public static NetworkID Empty { get; private set; } = new NetworkID(Guid.Empty);
+        public static bool operator ==(NetworkClientID a, NetworkClientID b) => a.Equals(b);
+        public static bool operator !=(NetworkClientID a, NetworkClientID b) => !a.Equals(b);
+
+        public static implicit operator NetworkClientID(string value) => new NetworkClientID(value);
+        public static implicit operator string(NetworkClientID id) => id.value;
     }
 
-    public struct NetworkClientID
+    public struct NetworkEntityID : INetSerializable
     {
-        public Guid Value { get; private set; }
+        Guid value;
+        public Guid Value { get { return value; } }
 
-        public NetworkClientID(Guid value)
+        public void Serialize(NetworkWriter writer)
         {
-            this.Value = value;
+            writer.Write(value);
         }
-    }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out value);
+        }
 
-    public struct NetworkEntityID
-    {
-        public Guid Value { get; private set; }
+        public NetworkEntityID(Guid value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == typeof(NetworkEntityID))
+            {
+                var target = (NetworkEntityID)obj;
+
+                return target.value == this.value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(NetworkEntityID a, NetworkEntityID b) => a.Equals(b);
+        public static bool operator !=(NetworkEntityID a, NetworkEntityID b) => !a.Equals(b);
+
+        public static NetworkEntityID Empty { get; private set; } = new NetworkEntityID(Guid.Empty);
+
+        public static NetworkEntityID Generate()
+        {
+            var value = Guid.NewGuid();
+
+            return new NetworkEntityID(value);
+        }
     }
 }

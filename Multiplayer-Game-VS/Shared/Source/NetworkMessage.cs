@@ -245,34 +245,40 @@ namespace Game.Shared
     [NetworkMessagePayload(6)]
     public sealed class SpawnEntityCommand : INetSerializable
     {
-        string owner;
-        public string Owner { get { return owner; } }
+        NetworkClientID owner;
+        public NetworkClientID Owner { get { return owner; } }
+
+        NetworkEntityID entity;
+        public NetworkEntityID Entity { get { return entity; } }
 
         string resource;
         public string Resource { get { return resource; } }
 
-        string id;
-        public string ID { get { return id; } }
-
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(owner);
+            writer.Write(entity);
             writer.Write(resource);
-            writer.Write(id);
         }
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out owner);
+            reader.Read(out entity);
             reader.Read(out resource);
-            reader.Read(out id);
         }
 
         public SpawnEntityCommand() { }
-        public SpawnEntityCommand(string owner, SpawnEntityRequest request, string identity)
+        
+        public static SpawnEntityCommand Write(NetworkClientID owner, NetworkEntityID entity, string resource)
         {
-            this.owner = owner;
-            this.resource = request.Resource;
-            this.id = identity;
+            var request = new SpawnEntityCommand()
+            {
+                owner = owner,
+                entity = entity,
+                resource = resource
+            };
+
+            return request;
         }
     }
 
@@ -303,8 +309,8 @@ namespace Game.Shared
     [NetworkMessagePayload(8)]
     public sealed class ReadyClientResponse : INetSerializable
     {
-        string clientID;
-        public string ClientID => clientID;
+        NetworkClientID clientID;
+        public NetworkClientID ClientID => clientID;
 
         public void Serialize(NetworkWriter writer)
         {
@@ -316,7 +322,7 @@ namespace Game.Shared
         }
 
         public ReadyClientResponse() { }
-        public ReadyClientResponse(string clientID)
+        public ReadyClientResponse(NetworkClientID clientID)
         {
             this.clientID = clientID;
         }

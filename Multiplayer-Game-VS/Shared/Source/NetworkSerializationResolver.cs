@@ -258,6 +258,8 @@ namespace Game.Shared
 
             var binary = value.ToByteArray();
 
+            Log.Info(binary);
+
             writer.Insert(binary);
         }
 
@@ -271,7 +273,7 @@ namespace Game.Shared
 
             reader.Position += Size;
 
-            return binary;
+            return value;
         }
 
         public GuidNetworkSerializationResolver() { }

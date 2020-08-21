@@ -81,11 +81,12 @@ namespace Game.Server
             service.Set(this);
         }
 
-        void SendTo(NetworkMessage message, string clientID)
+        void SendTo(NetworkMessage message, NetworkClient client) => SendTo(message, client.ID);
+        void SendTo(NetworkMessage message, NetworkClientID id)
         {
             var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket.Sessions.SendTo(binary, clientID);
+            WebSocket.Sessions.SendTo(binary, id);
         }
 
         void Broadcast(NetworkMessage message)
@@ -101,6 +102,10 @@ namespace Game.Server
 
         public const long DefaultTickInterval = 50;
         #endregion
+
+        public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
+
+        public Dictionary<NetworkEntityID, NetworkEntity> Entities { get; protected set; }
 
         public RoomActionQueue ActionQueue { get; protected set; }
 
@@ -132,62 +137,83 @@ namespace Game.Server
         }
 
         #region Callbacks
-        void ClientConnected(string clientID)
+        void ClientConnected(NetworkClientID clientID)
         {
             Log.Info($"Room {this.ID}: Client {clientID} Connected");
         }
 
-        void ClientMessage(string clientID, byte[] raw, NetworkMessage message)
+        void ClientMessage(NetworkClientID clientID, byte[] raw, NetworkMessage message)
         {
             Log.Info($"Room {this.ID}: Client {clientID} Sent Message With Payload of {message.Type.Name}");
 
-            if(message.Is<ReadyClientRequest>())
+            if (message.Is<ReadyClientRequest>())
             {
                 var request = message.Read<ReadyClientRequest>();
 
                 ReadyClient(clientID, request);
             }
 
-            if(message.Is<RpcPayload>())
+            if (Clients.TryGetValue(clientID, out var client))
             {
-                var payload = message.Read<RpcPayload>();
+                if (message.Is<RpcRequest>())
+                {
+                    var request = message.Read<RpcRequest>();
 
-                InvokeRPC(clientID, payload, raw);
-            }
+                    InvokeRPC(client, request);
+                }
 
-            if(message.Is<SpawnEntityRequest>())
-            {
-                var request = message.Read<SpawnEntityRequest>();
+                if (message.Is<SpawnEntityRequest>())
+                {
+                    var request = message.Read<SpawnEntityRequest>();
 
-                SpawnEntity(clientID, request);
+                    SpawnEntity(client, request);
+                }
             }
         }
 
-        void ClientDisconnected(string clientID)
+        void ClientDisconnected(NetworkClientID clientID)
         {
             Log.Info($"Room {this.ID}: Client {clientID} Disconnected");
         }
         #endregion
 
-        protected void ReadyClient(string clientID, ReadyClientRequest request)
+        void ReadyClient(NetworkClientID id, ReadyClientRequest request) => ReadyClient(id, request.Info);
+        void ReadyClient(NetworkClientID id, ClientInfo info)
         {
-            var response = new ReadyClientResponse(clientID);
+            if(Clients.ContainsKey(id))
+            {
+                Log.Error($"Client {id} Already Marked Ready, Ignoring Request");
+                return;
+            }
+
+            var client = new NetworkClient(id, info);
+
+            Clients.Add(id, client);
+
+            var response = new ReadyClientResponse(id);
 
             var message = NetworkMessage.Write(response);
 
-            SendTo(message, clientID);
+            SendTo(message, id);
         }
 
-        protected void InvokeRPC(string clientID, RpcPayload payload, byte[] raw)
+        void InvokeRPC(NetworkClient sender, RpcRequest request)
         {
-            WebSocket.Sessions.Broadcast(raw);
+            var command = RpcCommand.Write(sender.ID, request);
+
+            var message = NetworkMessage.Write(command);
+
+            Broadcast(message);
         }
 
-        protected void SpawnEntity(string clientID, SpawnEntityRequest request)
+        void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource);
+        void SpawnEntity(NetworkClient owner, string resource)
         {
-            var id = Guid.NewGuid().ToString("N");
+            var id = NetworkEntityID.Generate();
 
-            var command = new SpawnEntityCommand(clientID, request, id);
+            var entity = new NetworkEntity(id);
+
+            var command = SpawnEntityCommand.Write(owner.ID, entity.ID, resource);
 
             var response = NetworkMessage.Write(command);
 
@@ -208,6 +234,10 @@ namespace Game.Server
             this.ID = id;
             this.Name = name;
             this.Capacity = capacity;
+
+            Clients = new Dictionary<NetworkClientID, NetworkClient>();
+
+            Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
 
             ActionQueue = new RoomActionQueue();
 
@@ -243,16 +273,27 @@ namespace Game.Server
 
     class NetworkClient
     {
-        public string ID { get; protected set; }
+        public NetworkClientID ID { get; protected set; }
 
-        public NetworkClient(string id)
+        public ClientInfo Info { get; protected set; }
+
+        public string Name => Info.Name;
+
+        public NetworkClient(NetworkClientID id, ClientInfo info)
         {
             this.ID = id;
+
+            this.Info = info;
         }
     }
 
     class NetworkEntity
     {
+        public NetworkEntityID ID { get; protected set; }
 
+        public NetworkEntity(NetworkEntityID id)
+        {
+            this.ID = id;
+        }
     }
 }

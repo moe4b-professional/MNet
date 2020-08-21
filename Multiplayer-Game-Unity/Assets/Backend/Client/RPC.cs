@@ -34,16 +34,16 @@ namespace Game
             }
         }
         
-        public RpcPayload Request(params object[] parameters)
+        public RpcRequest CreateRequest(params object[] parameters)
         {
-            var payload = RpcPayload.Write(Entity.ID, Behaviour.ID, Name, BufferMode, parameters);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, BufferMode, parameters);
 
-            return payload;
+            return request;
         }
 
-        public void Invoke(RpcPayload payload)
+        public void Invoke(RpcCommand command)
         {
-            var parameters = payload.Read(ParametersInfo);
+            var parameters = command.Read(ParametersInfo);
 
             Invoke(parameters);
         }
