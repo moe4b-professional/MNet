@@ -67,19 +67,6 @@ namespace Game
         }
     }
 
-    public partial class SampleObject : ISerializationCallbackReceiver
-    {
-        public void OnBeforeSerialize()
-        {
-
-        }
-
-        public void OnAfterDeserialize()
-        {
-            
-        }
-    }
-
     public class Vector3SerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(Vector3);

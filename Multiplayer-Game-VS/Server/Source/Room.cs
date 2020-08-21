@@ -270,30 +270,4 @@ namespace Game.Server
             Collection = new ConcurrentQueue<Callback>();
         }
     }
-
-    class NetworkClient
-    {
-        public NetworkClientID ID { get; protected set; }
-
-        public ClientInfo Info { get; protected set; }
-
-        public string Name => Info.Name;
-
-        public NetworkClient(NetworkClientID id, ClientInfo info)
-        {
-            this.ID = id;
-
-            this.Info = info;
-        }
-    }
-
-    class NetworkEntity
-    {
-        public NetworkEntityID ID { get; protected set; }
-
-        public NetworkEntity(NetworkEntityID id)
-        {
-            this.ID = id;
-        }
-    }
 }
