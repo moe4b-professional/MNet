@@ -42,7 +42,7 @@ namespace Game.Server
     {
         public static void Run()
         {
-            
+            //SampleObject.Test();
         }
     }
 
@@ -56,8 +56,6 @@ namespace Game.Server
 
         public List<string> list;
 
-        public KeyValuePair<string, string> keyvalue;
-
         public Dictionary<string, string> dictionary;
 
         public DateTime date;
@@ -68,7 +66,6 @@ namespace Game.Server
             writer.Write(text);
             writer.Write(array);
             writer.Write(list);
-            writer.Write(keyvalue);
             writer.Write(dictionary);
             writer.Write(date);
         }
@@ -79,7 +76,6 @@ namespace Game.Server
             reader.Read(out text);
             reader.Read(out array);
             reader.Read(out list);
-            reader.Read(out keyvalue);
             reader.Read(out dictionary);
             reader.Read(out date);
         }
@@ -113,7 +109,6 @@ namespace Game.Server
                         "Just",
                         "Beginning"
                     },
-                    keyvalue = new KeyValuePair<string, string>("One Ring", "Destruction"),
                     dictionary = new Dictionary<string, string>()
                     {
                         { "Name", "Moe4B" },
@@ -145,7 +140,6 @@ namespace Game.Server
                 Log.Info(sample.text);
                 foreach (var item in sample.array) Log.Info(item);
                 foreach (var item in sample.list) Log.Info(item);
-                Log.Info(sample.keyvalue);
                 foreach (var pair in sample.dictionary) Log.Info(pair);
                 Log.Info(sample.date);
             }

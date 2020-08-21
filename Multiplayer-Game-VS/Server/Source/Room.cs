@@ -102,8 +102,6 @@ namespace Game.Server
         public const long DefaultTickInterval = 50;
         #endregion
 
-        public Dictionary<string, >
-
         public RoomActionQueue ActionQueue { get; protected set; }
 
         public void Start()

@@ -52,24 +52,15 @@ namespace Game
             MethodInfo.Invoke(Behaviour, parameters);
         }
 
-        public RpcBind(NetworkBehaviour behaviour, MethodInfo method)
+        public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method)
         {
             Behaviour = behaviour;
 
+            Attribute = attribute;
+
             MethodInfo = method;
-
             Name = MethodInfo.Name;
-
             ParametersInfo = method.GetParameters();
-        }
-
-        public static RpcBind Parse(NetworkBehaviour behaviour, string name)
-        {
-            var method = behaviour.GetType().GetMethod(name, BindingFlags);
-
-            var bind = new RpcBind(behaviour, method);
-
-            return bind;
         }
     }
     

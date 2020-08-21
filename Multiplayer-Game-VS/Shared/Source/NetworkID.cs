@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Game.Shared
 {
-    public struct ClientID : INetSerializable
+    public struct NetworkID : INetSerializable
     {
         private Guid value;
         public Guid Value { get { return value; } }
@@ -21,16 +21,16 @@ namespace Game.Shared
             reader.Read(out value);
         }
 
-        public ClientID(Guid value)
+        public NetworkID(Guid value)
         {
             this.value = value;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(ClientID))
+            if (obj.GetType() == typeof(NetworkID))
             {
-                var target = (ClientID)obj;
+                var target = (NetworkID)obj;
 
                 return target.value == this.value;
             }
@@ -42,10 +42,10 @@ namespace Game.Shared
 
         public override string ToString() => value.ToString();
 
-        public static bool operator ==(ClientID a, ClientID b) => a.Equals(b);
-        public static bool operator !=(ClientID a, ClientID b) => !a.Equals(b);
+        public static bool operator ==(NetworkID a, NetworkID b) => a.Equals(b);
+        public static bool operator !=(NetworkID a, NetworkID b) => !a.Equals(b);
 
-        public static ClientID Empty { get; private set; } = new ClientID(Guid.Empty);
+        public static NetworkID Empty { get; private set; } = new NetworkID(Guid.Empty);
     }
 
     public struct NetworkClientID

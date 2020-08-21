@@ -152,9 +152,9 @@ namespace Game
         }
     }
 
-    public class Vector3SerializationResolver : PocoNetworkSerializationResolver
+    public class Vector3SerializationResolver : NetworkSerializationResolver
     {
-        public override Type Target => typeof(Vector3);
+        public override bool CanResolve(Type type) => type == typeof(Vector3);
 
         public override void Serialize(NetworkWriter writer, object type)
         {

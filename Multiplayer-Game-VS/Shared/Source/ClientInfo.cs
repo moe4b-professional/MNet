@@ -16,13 +16,13 @@ namespace Game.Shared
         public Dictionary<string,string> Attributes { get { return attributes; } }
 
         public ClientInfo() { }
+        public ClientInfo(string name) : this(name, new Dictionary<string, string>()) { }
         public ClientInfo(string name, Dictionary<string, string> attributes)
         {
             this.name = name;
 
             this.attributes = attributes;
         }
-        public ClientInfo(string name) : this(name, null) { }
 
         public void Serialize(NetworkWriter writer)
         {

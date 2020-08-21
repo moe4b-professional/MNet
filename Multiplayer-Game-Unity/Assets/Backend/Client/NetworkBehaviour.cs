@@ -66,11 +66,11 @@ namespace Game
 
                 foreach (var method in behaviour.GetType().GetMethods(BindingFlags))
                 {
-                    var attribute = method.GetCustomAttribute(typeof(NetworkRPCAttribute));
+                    var attribute = method.GetCustomAttribute<NetworkRPCAttribute>();
 
                     if (attribute == null) continue;
 
-                    var bind = new RpcBind(behaviour, method);
+                    var bind = new RpcBind(behaviour, attribute, method);
 
                     Dictionary.Add(bind.Name, bind);
                 }
