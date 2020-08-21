@@ -12,7 +12,7 @@ using WebSocketSharp.Net;
 namespace Game.Shared
 {
     [Serializable]
-    public sealed class NetworkMessage : INetSerializable
+    public sealed class NetworkMessage : INetworkSerializable
     {
         private ushort code;
         public ushort Code { get { return code; } }
@@ -147,17 +147,31 @@ namespace Game.Shared
             throw new NotImplementedException($"Type {type.Name} not registerd as {nameof(NetworkMessagePayload)}");
         }
 
-        static void Register<T>(ushort value) => Register(value, typeof(T));
-        static void Register(ushort value, Type type)
+        static Data Register<T>(ushort code) => Register(code, typeof(T));
+        static Data Register(ushort code, Type type)
         {
             var constructor = type.GetConstructor(Type.EmptyTypes);
 
             if (constructor == null)
                 throw new Exception($"{type.FullName} rquires a parameter-less constructor to act as a {nameof(NetworkMessagePayload)}");
 
-            var element = new Data(value, type);
+            var element = new Data(code, type);
+
+            ValidateDuplicate(code, type);
 
             List.Add(element);
+
+            return element;
+        }
+
+        static void ValidateDuplicate(ushort code, Type type)
+        {
+            var duplicate = List.Find(x => x.Code == code);
+
+            if (duplicate == null)
+                return;
+            else
+                throw new Exception($"Duplicate MessagePayload Code Detected, Both {duplicate.Type.Name} & {type.Name} Are Using Code {code}");
         }
 
         static NetworkMessagePayload()
@@ -178,7 +192,7 @@ namespace Game.Shared
         }
     }
 
-    public interface INetworkMessagePayload
+    public interface INetworkMessagePayload : INetworkSerializable
     {
 
     }
@@ -196,7 +210,7 @@ namespace Game.Shared
     
     [Serializable]
     [NetworkMessagePayload(4)]
-    public sealed class CreateRoomRequest : INetworkMessagePayload, INetSerializable
+    public sealed class CreateRoomRequest : INetworkMessagePayload
     {
         string name;
         public string Name { get { return name; } }
@@ -226,7 +240,7 @@ namespace Game.Shared
     #region Register Client
     [Serializable]
     [NetworkMessagePayload(16)]
-    public sealed class RegisterClientRequest : INetworkMessagePayload, INetSerializable
+    public sealed class RegisterClientRequest : INetworkMessagePayload
     {
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
@@ -249,7 +263,7 @@ namespace Game.Shared
 
     [Serializable]
     [NetworkMessagePayload(17)]
-    public sealed class RegisterClientResponse : INetworkMessagePayload, INetSerializable
+    public sealed class RegisterClientResponse : INetworkMessagePayload
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
@@ -280,7 +294,7 @@ namespace Game.Shared
     #region Ready Client
     [Serializable]
     [NetworkMessagePayload(7)]
-    public sealed class ReadyClientRequest : INetworkMessagePayload, INetSerializable
+    public sealed class ReadyClientRequest : INetworkMessagePayload
     {
         public void Serialize(NetworkWriter writer)
         {
@@ -296,7 +310,7 @@ namespace Game.Shared
 
     [Serializable]
     [NetworkMessagePayload(8)]
-    public sealed class ReadyClientResponse : INetworkMessagePayload, INetSerializable
+    public sealed class ReadyClientResponse : INetworkMessagePayload
     {
         List<NetworkMessage> buffer;
         public List<NetworkMessage> Buffer => buffer;
@@ -321,7 +335,7 @@ namespace Game.Shared
     #region Spawn Entity
     [Serializable]
     [NetworkMessagePayload(5)]
-    public sealed class SpawnEntityRequest : INetworkMessagePayload, INetSerializable
+    public sealed class SpawnEntityRequest : INetworkMessagePayload
     {
         string resource;
         public string Resource { get { return resource; } }
@@ -344,7 +358,7 @@ namespace Game.Shared
 
     [Serializable]
     [NetworkMessagePayload(6)]
-    public sealed class SpawnEntityCommand : INetworkMessagePayload, INetSerializable
+    public sealed class SpawnEntityCommand : INetworkMessagePayload
     {
         NetworkClientID owner;
         public NetworkClientID Owner { get { return owner; } }
@@ -387,7 +401,7 @@ namespace Game.Shared
     #region Destroy Entity
     [Serializable]
     [NetworkMessagePayload(10)]
-    public sealed class DestroyEntityRequest : INetworkMessagePayload, INetSerializable
+    public sealed class DestroyEntityRequest : INetworkMessagePayload
     {
         NetworkBehaviourID id;
         public NetworkBehaviourID ID => id;
@@ -410,7 +424,7 @@ namespace Game.Shared
 
     [Serializable]
     [NetworkMessagePayload(18)]
-    public sealed class DestroyEntityCommand : INetworkMessagePayload, INetSerializable
+    public sealed class DestroyEntityCommand : INetworkMessagePayload
     {
         NetworkEntityID id;
         public NetworkEntityID ID => id;
@@ -435,7 +449,7 @@ namespace Game.Shared
     #region Connection
     [Serializable]
     [NetworkMessagePayload(11)]
-    public sealed class ClientConnectedPayload : INetworkMessagePayload, INetSerializable
+    public sealed class ClientConnectedPayload : INetworkMessagePayload
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
@@ -464,7 +478,7 @@ namespace Game.Shared
 
     [Serializable]
     [NetworkMessagePayload(12)]
-    public sealed class ClientDisconnectPayload : INetworkMessagePayload, INetSerializable
+    public sealed class ClientDisconnectPayload : INetworkMessagePayload
     {
         NetworkClientID id;
         public NetworkClientID ID => id;

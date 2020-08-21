@@ -46,7 +46,7 @@ namespace Game.Server
         }
     }
 
-    public partial class SampleObject : INetSerializable
+    public partial class SampleObject : INetworkSerializable
     {
         public int number;
 

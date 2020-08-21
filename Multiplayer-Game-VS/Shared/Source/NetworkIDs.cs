@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Game.Shared
 {
     [Serializable]
-    public struct NetworkClientID : INetSerializable
+    public struct NetworkClientID : INetworkSerializable
     {
         string value;
         public string Value { get { return value; } }
@@ -52,7 +52,7 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public struct NetworkEntityID : INetSerializable
+    public struct NetworkEntityID : INetworkSerializable
     {
         Guid value;
         public Guid Value { get { return value; } }
@@ -101,7 +101,7 @@ namespace Game.Shared
     }
 
     [Serializable]
-    public partial struct NetworkBehaviourID : INetSerializable
+    public partial struct NetworkBehaviourID : INetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }

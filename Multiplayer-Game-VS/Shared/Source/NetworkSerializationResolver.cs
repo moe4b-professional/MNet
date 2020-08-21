@@ -327,29 +327,29 @@ namespace Game.Shared
         public EnumNetworkSerializationResolver() { }
     }
 
-    public class INetSerializableNetworkSerializationResolver : NetworkSerializationResolver
+    public class NetworkSerializableResolver : NetworkSerializationResolver
     {
-        public Type Interface => typeof(INetSerializable);
+        public Type Interface => typeof(INetworkSerializable);
 
         public override bool CanResolve(Type type) => Interface.IsAssignableFrom(type);
 
         public override void Serialize(NetworkWriter writer, object type)
         {
-            var value = type as INetSerializable;
+            var value = type as INetworkSerializable;
 
             value.Serialize(writer);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var value = Activator.CreateInstance(type) as INetSerializable;
+            var value = Activator.CreateInstance(type) as INetworkSerializable;
 
             value.Deserialize(reader);
 
             return value;
         }
 
-        public INetSerializableNetworkSerializationResolver() { }
+        public NetworkSerializableResolver() { }
     }
 
     #region Collection

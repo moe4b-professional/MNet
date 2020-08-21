@@ -8,7 +8,7 @@ namespace Game.Shared
 {
     [Serializable]
     [NetworkMessagePayload(14)]
-    public class NetworkClientInfo : INetSerializable
+    public class NetworkClientInfo : INetworkSerializable
     {
         NetworkClientID id;
         public NetworkClientID ID => id;

@@ -8,7 +8,7 @@ namespace Game.Shared
 {
     [Serializable]
     [NetworkMessagePayload(15)]
-    public class NetworkClientProfile : INetSerializable
+    public class NetworkClientProfile : INetworkSerializable
     {
         protected string name;
         public string Name { get { return name; } }

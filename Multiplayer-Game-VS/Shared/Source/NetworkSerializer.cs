@@ -163,7 +163,7 @@ namespace Game.Shared
         public NetworkReader(byte[] data) : base(data) { }
     }
 
-    public interface INetSerializable
+    public interface INetworkSerializable
     {
         void Serialize(NetworkWriter writer);
 
