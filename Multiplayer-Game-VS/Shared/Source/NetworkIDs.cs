@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Game.Shared
 {
+    [Serializable]
     public struct NetworkClientID : INetSerializable
     {
         string value;
@@ -50,6 +51,7 @@ namespace Game.Shared
         public static implicit operator string(NetworkClientID id) => id.value;
     }
 
+    [Serializable]
     public struct NetworkEntityID : INetSerializable
     {
         Guid value;
@@ -96,5 +98,45 @@ namespace Game.Shared
 
             return new NetworkEntityID(value);
         }
+    }
+
+    [Serializable]
+    public partial struct NetworkBehaviourID : INetSerializable
+    {
+        byte value;
+        public byte Value { get { return value; } }
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(value);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out value);
+        }
+
+        public NetworkBehaviourID(byte value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == typeof(NetworkBehaviourID))
+            {
+                var target = (NetworkBehaviourID)obj;
+
+                return target.value == this.value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(NetworkBehaviourID a, NetworkBehaviourID b) => a.Equals(b);
+        public static bool operator !=(NetworkBehaviourID a, NetworkBehaviourID b) => !a.Equals(b);
     }
 }

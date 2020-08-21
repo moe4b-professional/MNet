@@ -26,24 +26,14 @@ namespace Game
     [RequireComponent(typeof(NetworkEntity))]
     public class NetworkBehaviour : MonoBehaviour
 	{
-        [ReadOnly]
-        [SerializeField]
-        protected string _ID = string.Empty;
-        public string ID
-        {
-            get => _ID;
-            set => _ID = value;
-        }
-
-        public void GenerateID()
-        {
-            ID = Guid.NewGuid().ToString("N");
-        }
+        public NetworkBehaviourID ID { get; protected set; }
 
         public NetworkEntity Entity { get; protected set; }
-        public void Set(NetworkEntity reference)
+        public void Set(NetworkEntity reference, NetworkBehaviourID id)
         {
             Entity = reference;
+
+            this.ID = id;
         }
 
         public bool IsMine => Entity.IsMine;
@@ -75,16 +65,6 @@ namespace Game
                     Dictionary.Add(bind.Name, bind);
                 }
             }
-        }
-
-        protected virtual void Reset()
-        {
-            GenerateID();
-        }
-
-        protected virtual void OnValidate()
-        {
-            if (string.IsNullOrEmpty(ID)) GenerateID();
         }
 
         protected virtual void Awake()
@@ -119,13 +99,9 @@ namespace Game
         public void InvokeRpc(RpcCommand command)
         {
             if(RPCs.Find(command.Method, out var bind))
-            {
                 bind.Invoke(command);
-            }
             else
-            {
                 Debug.Log($"No RPC with Name {command.Method} found on {GetType().Name}");
-            }
         }
     }
 }

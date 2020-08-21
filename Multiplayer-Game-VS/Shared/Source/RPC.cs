@@ -14,8 +14,8 @@ namespace Game.Shared
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
 
-        string behaviour;
-        public string Behaviour { get { return behaviour; } }
+        NetworkBehaviourID behaviour;
+        public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
         string method;
         public string Method { get { return method; } }
@@ -62,7 +62,7 @@ namespace Game.Shared
 
         public RpcRequest() { }
 
-        public static RpcRequest Write(NetworkEntityID entityID, string behaviour, string method, RpcBufferMode buffer, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entityID, NetworkBehaviourID behaviour, string method, RpcBufferMode buffer, params object[] arguments)
         {
             Byte[] raw;
 
@@ -97,8 +97,8 @@ namespace Game.Shared
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
 
-        string behaviour;
-        public string Behaviour { get { return behaviour; } }
+        NetworkBehaviourID behaviour;
+        public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
         string method;
         public string Method { get { return method; } }
@@ -148,7 +148,7 @@ namespace Game.Shared
 
             return command;
         }
-        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, string behaviour, string method, byte[] raw)
+        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, string method, byte[] raw)
         {
             var command = new RpcCommand()
             {

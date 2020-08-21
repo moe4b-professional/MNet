@@ -67,88 +67,16 @@ namespace Game
         }
     }
 
-    public partial class SampleObject : INetSerializable
+    public partial class SampleObject : ISerializationCallbackReceiver
     {
-        public int number;
-
-        public string text;
-
-        public string[] array;
-
-        public List<string> list;
-
-        public KeyValuePair<string, string> keyvalue;
-
-        public Dictionary<string, string> dictionary;
-
-        public DateTime date;
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(number);
-            writer.Write(text);
-            writer.Write(array);
-            writer.Write(list);
-            writer.Write(keyvalue);
-            writer.Write(dictionary);
-            writer.Write(date);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out number);
-            reader.Read(out text);
-            reader.Read(out array);
-            reader.Read(out list);
-            reader.Read(out keyvalue);
-            reader.Read(out dictionary);
-            reader.Read(out date);
-        }
-
-        public SampleObject()
+        public void OnBeforeSerialize()
         {
 
         }
 
-        public static void Test()
+        public void OnAfterDeserialize()
         {
-            byte[] binary;
-
-            {
-                var sample = new SampleObject()
-                {
-                    number = 42,
-                    text = "Hello Serializer",
-                    array = new string[]
-                    {
-                        "Welcome",
-                        "To",
-                        "Roayal",
-                        "Mania"
-                    },
-                    list = new List<string>()
-                    {
-                        "The",
-                        "Fun",
-                        "Is",
-                        "Just",
-                        "Beginning"
-                    },
-                    keyvalue = new KeyValuePair<string, string>("One Ring", "Destruction"),
-                    dictionary = new Dictionary<string, string>()
-                    {
-                        { "Name", "Moe4B" },
-                        { "Level", "14" },
-                    },
-                    date = DateTime.Now,
-                };
-
-                binary = NetworkSerializer.Serialize(sample);
-            }
-
-            {
-                var sample = NetworkSerializer.Deserialize<SampleObject>(binary);
-            }
+            
         }
     }
 

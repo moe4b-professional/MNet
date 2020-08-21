@@ -21,28 +21,37 @@ using Game.Shared;
 
 namespace Game
 {
-    [DefaultExecutionOrder(-100)]
+    [DefaultExecutionOrder(ExecutionOrder)]
 	public class NetworkEntity : MonoBehaviour
 	{
+        public const int ExecutionOrder = -200;
+
         public NetworkClientID Owner { get; protected set; }
 
         public NetworkEntityID ID { get; protected set; }
 
         public bool IsMine => Owner == NetworkClient.ID;
 
-        public Dictionary<string, NetworkBehaviour> Behaviours { get; protected set; }
+        public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
         protected virtual void Awake()
         {
-            var list = GetComponentsInChildren<NetworkBehaviour>();
+            Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
-            Behaviours = new Dictionary<string, NetworkBehaviour>();
+            var targets = GetComponentsInChildren<NetworkBehaviour>();
 
-            for (int i = 0; i < list.Length; i++)
+            if(targets.Length > byte.MaxValue)
+                throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
+
+            var count = (byte)targets.Length;
+
+            for (byte i = 0; i < count; i++)
             {
-                Behaviours.Add(list[i].ID, list[i]);
+                Behaviours.Add(targets[i].ID, targets[i]);
 
-                list[i].Set(this);
+                var id = new NetworkBehaviourID(i);
+
+                targets[i].Set(this, id);
             }
         }
 

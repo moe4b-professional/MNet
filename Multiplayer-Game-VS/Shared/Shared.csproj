@@ -55,7 +55,7 @@
     <Compile Include="Source\Log.cs" />
     <Compile Include="Source\ClientInfo.cs" />
     <Compile Include="Source\NetworkSerializationResolver.cs" />
-    <Compile Include="Source\NetworkID.cs" />
+    <Compile Include="Source\NetworkIDs.cs" />
     <Compile Include="Source\RoomInfo.cs" />
     <Compile Include="Source\NetworkMessage.cs" />
     <Compile Include="Source\NetworkSerializer.cs" />
