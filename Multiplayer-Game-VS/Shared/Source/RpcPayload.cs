@@ -20,6 +20,9 @@ namespace Game.Shared
         string method;
         public string Method { get { return method; } }
 
+        RpcBufferMode buffer;
+        public RpcBufferMode Buffer => buffer;
+
         private byte[] raw;
         public byte[] Raw { get { return raw; } }
 
@@ -45,6 +48,7 @@ namespace Game.Shared
             writer.Write(entity);
             writer.Write(behaviour);
             writer.Write(method);
+            writer.Write(buffer);
             writer.Write(raw);
         }
         public void Deserialize(NetworkReader reader)
@@ -52,11 +56,12 @@ namespace Game.Shared
             reader.Read(out entity);
             reader.Read(out behaviour);
             reader.Read(out method);
+            reader.Read(out buffer);
             reader.Read(out raw);
         }
 
         public RpcPayload() { }
-        public RpcPayload(string entity, string behaviour, string method, byte[] raw)
+        public RpcPayload(string entity, string behaviour, string method, RpcBufferMode buffer, byte[] raw)
         {
             this.entity = entity;
             this.behaviour = behaviour;
@@ -64,7 +69,7 @@ namespace Game.Shared
             this.raw = raw;
         }
 
-        public static RpcPayload Write(string identity, string behaviour, string method, params object[] arguments)
+        public static RpcPayload Write(string entity, string behaviour, string method, RpcBufferMode buffer, params object[] arguments)
         {
             var writer = new NetworkWriter(1024);
 
@@ -73,9 +78,15 @@ namespace Game.Shared
 
             var raw = writer.ToArray();
 
-            var payload = new RpcPayload(identity, behaviour, method, raw);
+            var payload = new RpcPayload(entity, behaviour, method, buffer, raw);
 
             return payload;
         }
+    }
+
+    [Serializable]
+    public enum RpcBufferMode
+    {
+        None, Last, All
     }
 }

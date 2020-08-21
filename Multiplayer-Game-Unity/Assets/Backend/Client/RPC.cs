@@ -12,15 +12,19 @@ namespace Game
 {
     public class RpcBind
     {
-        public NetworkEntity Identity => Behaviour.Entity;
+        public NetworkEntity Entity => Behaviour.Entity;
 
         public NetworkBehaviour Behaviour { get; protected set; }
 
         public string Name { get; protected set; }
-        
+
         public MethodInfo MethodInfo { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
+
+        public NetworkRPCAttribute Attribute { get; protected set; }
+
+        public RpcBufferMode BufferMode => Attribute.BufferMode;
 
         public static BindingFlags BindingFlags
         {
@@ -32,7 +36,7 @@ namespace Game
         
         public RpcPayload Request(params object[] parameters)
         {
-            var payload = RpcPayload.Write(Identity.ID, Behaviour.ID, Name, parameters);
+            var payload = RpcPayload.Write(Entity.ID, Behaviour.ID, Name, BufferMode, parameters);
 
             return payload;
         }
@@ -74,9 +78,15 @@ namespace Game
     public delegate void RpcCallback<T1, T2>(T1 arg1, T2 arg2);
     public delegate void RpcCallback<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3);
 
-    [System.AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
+        public RpcBufferMode BufferMode { get; private set; }
 
+        public NetworkRPCAttribute() : this(RpcBufferMode.None) { }
+        public NetworkRPCAttribute(RpcBufferMode bufferMode)
+        {
+            this.BufferMode = bufferMode;
+        }
     }
 }

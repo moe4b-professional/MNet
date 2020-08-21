@@ -163,6 +163,26 @@ namespace Game.Shared
         }
         #endregion
 
+        public void WriteEnum<T>(T value)
+            where T : struct, IComparable, IFormattable, IConvertible
+        {
+            WriteEnum(value);
+        }
+        public void WriteEnum(object value)
+        {
+            var backing = Convert.ToInt16(value);
+
+            WriteShort(backing);
+        }
+
+        public void Write(Guid value) => WriteGuid(value);
+        public void WriteGuid(Guid value)
+        {
+            var bytes = value.ToByteArray();
+
+            Insert(bytes);
+        }
+
         public void WriteSerializable<T>(T value)
             where T : INetSerializable
         {
@@ -220,6 +240,8 @@ namespace Game.Shared
         public void Write(object value)
         {
             var type = value.GetType();
+
+            if (type.IsEnum) WriteEnum(value);
 
             if (typeof(INetSerializable).IsAssignableFrom(type))
             {
@@ -329,6 +351,22 @@ namespace Game.Shared
         }
         #endregion
 
+        public T ReadEnum<T>()
+            where T : struct, IComparable, IFormattable, IConvertible
+        {
+            var result = (T)ReadEnum(typeof(T));
+
+            return result;
+        }
+        public object ReadEnum(Type type)
+        {
+            var backing = ReadShort();
+
+            var result = Enum.ToObject(type, backing);
+
+            return result;
+        }
+
         public T ReadSerializable<T>()
             where T : INetSerializable, new()
         {
@@ -418,6 +456,8 @@ namespace Game.Shared
         public T Read<T>() => (T)Read(typeof(T));
         public object Read(Type type)
         {
+            if (type.IsEnum) return ReadEnum(type);
+
             if (typeof(INetSerializable).IsAssignableFrom(type)) return ReadSerializable(type);
 
             object result = null;
@@ -524,18 +564,55 @@ namespace Game.Shared
     #region POCO Resolvers
     public abstract class PocoNetworkSerializationResolver : NetworkSerializationResolver
     {
-        public Type Target { get; protected set; }
+        public abstract Type Target { get; }
 
         public override bool CanResolve(Type type) => type == Target;
+    }
 
-        public PocoNetworkSerializationResolver(Type target)
+    public class ByteNetworkSerializationResolver : PocoNetworkSerializationResolver
+    {
+        public override Type Target => typeof(byte);
+
+        public override void Serialize(NetworkWriter writer, object type)
         {
-            this.Target = target;
+            var value = (byte)type;
+
+            writer.Write(value);
         }
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            reader.Read(out byte value);
+
+            return value;
+        }
+
+        public ByteNetworkSerializationResolver() { }
+    }
+
+    public class ShortNetworkSerializationResolver : PocoNetworkSerializationResolver
+    {
+        public override Type Target => typeof(short);
+
+        public override void Serialize(NetworkWriter writer, object type)
+        {
+            var value = (short)type;
+
+            writer.Write(value);
+        }
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            reader.Read(out short value);
+
+            return value;
+        }
+
+        public ShortNetworkSerializationResolver() { }
     }
 
     public class DateTimeNetworkSerializationResolver : PocoNetworkSerializationResolver
     {
+        public override Type Target => typeof(DateTime);
+
         public override void Serialize(NetworkWriter writer, object type)
         {
             var value = (DateTime)type;
@@ -555,7 +632,7 @@ namespace Game.Shared
                 return new DateTime();
         }
 
-        public DateTimeNetworkSerializationResolver() : base(typeof(DateTime)) { }
+        public DateTimeNetworkSerializationResolver() { }
     }
     #endregion
 }

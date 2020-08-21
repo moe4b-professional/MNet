@@ -102,6 +102,8 @@ namespace Game.Server
         public const long DefaultTickInterval = 50;
         #endregion
 
+        public Dictionary<string, >
+
         public RoomActionQueue ActionQueue { get; protected set; }
 
         public void Start()
@@ -239,5 +241,20 @@ namespace Game.Server
         {
             Collection = new ConcurrentQueue<Callback>();
         }
+    }
+
+    class NetworkClient
+    {
+        public string ID { get; protected set; }
+
+        public NetworkClient(string id)
+        {
+            this.ID = id;
+        }
+    }
+
+    class NetworkEntity
+    {
+
     }
 }

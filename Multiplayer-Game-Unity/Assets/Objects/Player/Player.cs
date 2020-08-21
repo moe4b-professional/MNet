@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Game.Shared;
+
 namespace Game
 {
 	public class Player : NetworkBehaviour
@@ -51,7 +53,7 @@ namespace Game
             }
         }
 
-		[NetworkRPC]
+		[NetworkRPC(RpcBufferMode.Last)]
         void RpcSetPosition(Vector3 position)
         {
             transform.position = position;

@@ -154,6 +154,8 @@ namespace Game
 
     public class Vector3SerializationResolver : PocoNetworkSerializationResolver
     {
+        public override Type Target => typeof(Vector3);
+
         public override void Serialize(NetworkWriter writer, object type)
         {
             var value = (Vector3)type;
@@ -172,6 +174,6 @@ namespace Game
             return new Vector3(x, y, z);
         }
 
-        public Vector3SerializationResolver() : base(typeof(Vector3)) { }
+        public Vector3SerializationResolver() { }
     }
 }
