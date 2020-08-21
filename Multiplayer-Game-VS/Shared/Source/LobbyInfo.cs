@@ -9,12 +9,12 @@ namespace Game.Shared
     [NetworkMessagePayload(1)]
     public class LobbyInfo : INetSerializable
     {
-        RoomInfo[] rooms;
-        public RoomInfo[] Rooms { get { return rooms; } }
+        RoomBasicInfo[] rooms;
+        public RoomBasicInfo[] Rooms { get { return rooms; } }
 
         public int Size => rooms.Length;
 
-        public RoomInfo this[int index] => rooms[index];
+        public RoomBasicInfo this[int index] => rooms[index];
 
         public void Serialize(NetworkWriter writer)
         {
@@ -26,7 +26,7 @@ namespace Game.Shared
         }
 
         public LobbyInfo() { }
-        public LobbyInfo(RoomInfo[] rooms)
+        public LobbyInfo(RoomBasicInfo[] rooms)
         {
             this.rooms = rooms;
         }

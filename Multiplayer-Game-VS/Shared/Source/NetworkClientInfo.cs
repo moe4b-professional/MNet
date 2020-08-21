@@ -7,34 +7,32 @@ using System.Threading.Tasks;
 namespace Game.Shared
 {
     [Serializable]
+    [NetworkMessagePayload(14)]
     public class NetworkClientInfo : INetSerializable
     {
-        protected string name;
-        public string Name { get { return name; } }
+        NetworkClientID id;
+        public NetworkClientID ID => id;
 
-        protected Dictionary<string,string> attributes;
-        public Dictionary<string,string> Attributes { get { return attributes; } }
-
-        public NetworkClientInfo() { }
-        public NetworkClientInfo(string name) : this(name, new Dictionary<string, string>()) { }
-        public NetworkClientInfo(string name, Dictionary<string, string> attributes)
-        {
-            this.name = name;
-
-            this.attributes = attributes;
-        }
+        NetworkClientProfile profile;
+        public NetworkClientProfile Profile => profile;
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.Write(name);
-            writer.Write(attributes);
+            writer.Write(id);
+            writer.Write(profile);
         }
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out name);
-            reader.Read(out attributes);
+            reader.Read(out id);
+            reader.Read(out profile);
         }
 
-        public override string ToString() => name;
+        public NetworkClientInfo() { }
+        public NetworkClientInfo(NetworkClientID id, NetworkClientProfile profile)
+        {
+            this.id = id;
+
+            this.profile = profile;
+        }
     }
 }

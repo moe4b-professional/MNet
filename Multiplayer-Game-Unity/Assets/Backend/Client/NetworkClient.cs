@@ -23,8 +23,15 @@ namespace Game
 {
 	public class NetworkClient
 	{
-        public static NetworkClientID ID { get; private set; }
+        public NetworkClientID ID { get; set; }
 
-        public static ClientInfo Info { get; private set; }
+        public NetworkClientInfo Info { get; protected set; }
+
+        public NetworkClient(string name) : this(NetworkClientID.Empty, new NetworkClientInfo(name)) { }
+        public NetworkClient(NetworkClientID id, NetworkClientInfo info)
+        {
+            this.ID = id;
+            this.Info = info;
+        }
     }
 }

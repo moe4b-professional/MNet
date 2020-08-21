@@ -218,6 +218,111 @@ namespace Game.Shared
         }
     }
 
+    #region Register Client
+    [Serializable]
+    [NetworkMessagePayload(16)]
+    public sealed class RegisterClientRequest : INetSerializable
+    {
+        NetworkClientProfile profile;
+        public NetworkClientProfile Profile => profile;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(profile);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out profile);
+        }
+
+        public RegisterClientRequest() { }
+        public RegisterClientRequest(NetworkClientProfile profile)
+        {
+            this.profile = profile;
+        }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(17)]
+    public sealed class RegisterClientResponse : INetSerializable
+    {
+        NetworkClientID id;
+        public NetworkClientID ID => id;
+
+        RoomInternalInfo room;
+        public RoomInternalInfo Room => room;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(id);
+            writer.Write(room);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out id);
+            reader.Read(out room);
+        }
+
+        public RegisterClientResponse() { }
+        public RegisterClientResponse(NetworkClientID id, RoomInternalInfo room)
+        {
+            this.id = id;
+            this.room = room;
+        }
+    }
+    #endregion
+
+    #region Ready Client
+    [Serializable]
+    [NetworkMessagePayload(7)]
+    public sealed class ReadyClientRequest : INetSerializable
+    {
+        NetworkClientProfile profile;
+        public NetworkClientProfile Profile => profile;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(profile);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out profile);
+        }
+
+        public ReadyClientRequest() { }
+        public ReadyClientRequest(NetworkClientProfile profile)
+        {
+            this.profile = profile;
+        }
+    }
+
+    [Serializable]
+    [NetworkMessagePayload(8)]
+    public sealed class ReadyClientResponse : INetSerializable
+    {
+        List<NetworkMessage> buffer;
+        public List<NetworkMessage> Buffer => buffer;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Write(clientID);
+            writer.Write(buffer);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out clientID);
+            reader.Read(out buffer);
+        }
+
+        public ReadyClientResponse() { }
+        public ReadyClientResponse(List<NetworkMessage> buffer)
+        {
+            this.buffer = buffer;
+        }
+    }
+    #endregion
+
+    #region Spawn Entity
     [Serializable]
     [NetworkMessagePayload(5)]
     public sealed class SpawnEntityRequest : INetSerializable
@@ -268,7 +373,7 @@ namespace Game.Shared
         }
 
         public SpawnEntityCommand() { }
-        
+
         public static SpawnEntityCommand Write(NetworkClientID owner, NetworkEntityID entity, string resource)
         {
             var request = new SpawnEntityCommand()
@@ -281,59 +386,9 @@ namespace Game.Shared
             return request;
         }
     }
+    #endregion
 
-    [Serializable]
-    [NetworkMessagePayload(7)]
-    public sealed class ReadyClientRequest : INetSerializable
-    {
-        NetworkClientInfo info;
-        public NetworkClientInfo Info => info;
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(info);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out info);
-        }
-
-        public ReadyClientRequest() { }
-        public ReadyClientRequest(NetworkClientInfo info)
-        {
-            this.info = info;
-        }
-    }
-
-    [Serializable]
-    [NetworkMessagePayload(8)]
-    public sealed class ReadyClientResponse : INetSerializable
-    {
-        NetworkClientID clientID;
-        public NetworkClientID ClientID => clientID;
-
-        List<NetworkMessage> messageBuffer;
-        public List<NetworkMessage> MessageBuffer => messageBuffer;
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(clientID);
-            writer.Write(messageBuffer);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out clientID);
-            reader.Read(out messageBuffer);
-        }
-
-        public ReadyClientResponse() { }
-        public ReadyClientResponse(NetworkClientID clientID, List<NetworkMessage> buffer)
-        {
-            this.clientID = clientID;
-            this.messageBuffer = buffer;
-        }
-    }
-
+    #region Destroy Entity
     [Serializable]
     [NetworkMessagePayload(10)]
     public sealed class DestroyEntityRequest : INetSerializable
@@ -361,21 +416,27 @@ namespace Game.Shared
     [NetworkMessagePayload(11)]
     public sealed class DestroyEntityCommand : INetSerializable
     {
-        NetworkBehaviourID id;
-        public NetworkBehaviourID ID => id;
+        NetworkEntityID id;
+        public NetworkEntityID ID => id;
 
-        public void Deserialize(NetworkReader reader)
-        {
-
-        }
         public void Serialize(NetworkWriter writer)
         {
-
+            writer.Write(id);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out id);
         }
 
         public DestroyEntityCommand() { }
+        public DestroyEntityCommand(NetworkEntityID id)
+        {
+            this.id = id;
+        }
     }
+    #endregion
 
+    #region Connection
     [Serializable]
     [NetworkMessagePayload(11)]
     public sealed class ClientConnectedPayload : INetSerializable
@@ -383,25 +444,25 @@ namespace Game.Shared
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        NetworkClientInfo info;
-        public NetworkClientInfo Info => info;
+        NetworkClientProfile profile;
+        public NetworkClientProfile Profile => profile;
 
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(id);
-            writer.Write(info);
+            writer.Write(profile);
         }
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out id);
-            reader.Read(out info);
+            reader.Read(out profile);
         }
 
         public ClientConnectedPayload() { }
-        public ClientConnectedPayload(NetworkClientID id, NetworkClientInfo info)
+        public ClientConnectedPayload(NetworkClientID id, NetworkClientProfile profile)
         {
             this.id = id;
-            this.info = info;
+            this.profile = profile;
         }
     }
 
@@ -412,25 +473,26 @@ namespace Game.Shared
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        NetworkClientInfo info;
-        public NetworkClientInfo Info => info;
+        NetworkClientProfile profile;
+        public NetworkClientProfile Profile => profile;
 
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(id);
-            writer.Write(info);
+            writer.Write(profile);
         }
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out id);
-            reader.Read(out info);
+            reader.Read(out profile);
         }
 
         public ClientDisconnectPayload() { }
-        public ClientDisconnectPayload(NetworkClientID id, NetworkClientInfo info)
+        public ClientDisconnectPayload(NetworkClientID id, NetworkClientProfile profile)
         {
             this.id = id;
-            this.info = info;
+            this.profile = profile;
         }
     }
+    #endregion
 }

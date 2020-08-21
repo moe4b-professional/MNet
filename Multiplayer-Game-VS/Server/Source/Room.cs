@@ -26,9 +26,9 @@ namespace Game.Server
 
         public ushort Capacity { get; protected set; }
 
-        public int PlayersCount { get; protected set; }
+        public int PlayersCount => Clients.Count;
 
-        public RoomInfo ReadInfo() => new RoomInfo(ID, Name, Capacity, PlayersCount);
+        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount);
         #endregion
 
         #region Web Socket
@@ -47,7 +47,7 @@ namespace Game.Server
 
                 ActionQueue.Enqueue(Invoke);
 
-                void Invoke() => Room.ClientConnectedCallback(this.ID);
+                void Invoke() => Room.ClientConnected(this.ID);
             }
 
             protected override void OnMessage(MessageEventArgs args)
@@ -98,7 +98,8 @@ namespace Game.Server
             var binary = NetworkSerializer.Serialize(message);
 
             foreach (var client in Clients.Values)
-                WebSocket.Sessions.SendTo(binary, client.ID);
+                if (client.IsReady)
+                    WebSocket.Sessions.SendTo(binary, client.ID);
         }
         #endregion
 
@@ -107,6 +108,13 @@ namespace Game.Server
 
         public const long DefaultTickInterval = 50;
         #endregion
+
+        public RoomInternalInfo ReadInternalInfo()
+        {
+            var info = new RoomInternalInfo();
+
+            return info;
+        }
 
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
@@ -143,23 +151,29 @@ namespace Game.Server
             }
         }
 
-        void ClientConnectedCallback(NetworkClientID clientID)
+        void ClientConnected(NetworkClientID id)
         {
-            Log.Info($"Room {this.ID}: Client {clientID} Connected");
+            Log.Info($"Room {this.ID}: Client {id} Connected");
         }
 
         #region Messages
-        void ClientMessageCallback(NetworkClientID clientID, byte[] raw, NetworkMessage message)
+        void ClientMessageCallback(NetworkClientID id, byte[] raw, NetworkMessage message)
         {
-            Log.Info($"Room {this.ID}: Client {clientID} Sent Message With Payload of {message.Type.Name}");
+            Log.Info($"Room {this.ID}: Client {id} Sent Message With Payload of {message.Type.Name}");
 
-            if (message.Is<ReadyClientRequest>())
+            if(message.Is<RegisterClientRequest>())
+            {
+                var profile = message.Read<RegisterClientRequest>();
+
+                RegisterClient(id, profile);
+            }
+            else if (message.Is<ReadyClientRequest>())
             {
                 var request = message.Read<ReadyClientRequest>();
 
-                RegisterClient(clientID, request);
+                ReadyClient(id);
             }
-            else if (Clients.TryGetValue(clientID, out var client))
+            else if (Clients.TryGetValue(id, out var client))
             {
                 if (message.Is<RpcRequest>())
                 {
@@ -176,31 +190,41 @@ namespace Game.Server
             }
         }
 
-        void RegisterClient(NetworkClientID id, ReadyClientRequest request) => RegisterClient(id, request.Info);
-        void RegisterClient(NetworkClientID id, NetworkClientInfo info)
+        void RegisterClient(NetworkClientID id, RegisterClientRequest request) => RegisterClient(id, request.Profile);
+        void RegisterClient(NetworkClientID id, NetworkClientProfile profile)
         {
             if (Clients.ContainsKey(id))
             {
-                Log.Error($"Client {id} Already Marked Ready, Ignoring Request");
+                Log.Error($"Client {id} Already Registered, Ignoring Request");
                 return;
             }
 
-            var client = new NetworkClient(id, info);
-
-            ReadyClient(client);
-
-            var payload = new ClientConnectedPayload(client.ID, client.Info);
-
-            Broadcast(payload);
+            var client = new NetworkClient(id, profile);
 
             Clients.Add(id, client);
+
+            var payload = new ClientConnectedPayload(id, profile);
+            Broadcast(payload);
+
+            var info = ReadInternalInfo();
+            var response = new RegisterClientResponse(id, info);
+            SendTo(id, response);
         }
 
-        void ReadyClient(NetworkClient client)
+        void ReadyClient(NetworkClientID id)
         {
-            var response = new ReadyClientResponse(client.ID, MessageBuffer);
+            if(Clients.TryGetValue(id, out var client))
+            {
+                var response = new ReadyClientResponse(client.ID, MessageBuffer);
 
-            SendTo(client, response);
+                client.Ready();
+
+                SendTo(id, response);
+            }
+            else
+            {
+                Log.Error($"No Client With ID {id} Found to Mark Ready");
+            }
         }
 
         void InvokeRPC(NetworkClient sender, RpcRequest request)
@@ -229,11 +253,11 @@ namespace Game.Server
         }
         #endregion
 
-        void ClientDisconnected(NetworkClientID clientID)
+        void ClientDisconnected(NetworkClientID id)
         {
-            Log.Info($"Room {this.ID}: Client {clientID} Disconnected");
+            Log.Info($"Room {this.ID}: Client {id} Disconnected");
 
-            if (Clients.TryGetValue(clientID, out var client))
+            if (Clients.TryGetValue(id, out var client))
                 RemoveClient(client);
         }
 
@@ -244,7 +268,7 @@ namespace Game.Server
             for (int i = 0; i < client.Entities.Count; i++)
                 Entities.Remove(client.Entities[i].ID);
 
-            var payload = new ClientDisconnectPayload(client.ID, client.Info);
+            var payload = new ClientDisconnectPayload(client.ID, client.Profile);
 
             Broadcast(payload);
         }

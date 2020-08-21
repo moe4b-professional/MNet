@@ -15,14 +15,14 @@ namespace Game.Server
     {
         public Dictionary<ushort, Room> Rooms { get; protected set; }
 
-        public RoomInfo[] ReadRoomsInfo()
+        public RoomBasicInfo[] ReadRoomsInfo()
         {
-            var results = new RoomInfo[Rooms.Count];
+            var results = new RoomBasicInfo[Rooms.Count];
 
             var index = 0;
             foreach (var room in Rooms.Values)
             {
-                var info = room.ReadInfo();
+                var info = room.ReadBasicInfo();
 
                 results[index] = info;
 
@@ -51,11 +51,11 @@ namespace Game.Server
             GameServer.Rest.Router.Register(RESTRoute);
         }
 
-        public RoomInfo CreateRoom(CreateRoomRequest request)
+        public RoomBasicInfo CreateRoom(CreateRoomRequest request)
         {
             var room = CreateRoom(request.Name, request.Capacity);
 
-            var info = room.ReadInfo();
+            var info = room.ReadBasicInfo();
 
             return info;
         }
