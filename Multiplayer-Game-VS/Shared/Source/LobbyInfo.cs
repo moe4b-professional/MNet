@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Game.Shared
 {
     [NetworkMessagePayload(1)]
-    public class LobbyInfo : INetSerializable
+    public class LobbyInfo : INetworkMessagePayload, INetSerializable
     {
         RoomBasicInfo[] rooms;
         public RoomBasicInfo[] Rooms { get { return rooms; } }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Game.Shared
 {
     [NetworkMessagePayload(2)]
-    public class RoomBasicInfo : INetSerializable
+    public class RoomBasicInfo : INetworkMessagePayload, INetSerializable
     {
         ushort id;
         public ushort ID { get { return id; } }
@@ -55,24 +55,17 @@ namespace Game.Shared
     }
 
     [NetworkMessagePayload(13)]
-    public class RoomInternalInfo : INetSerializable
+    public class RoomInternalInfo : INetworkMessagePayload, INetSerializable
     {
-        NetworkClientInfo[] clients;
-        public NetworkClientInfo[] Clients => clients;
-
         public void Serialize(NetworkWriter writer)
         {
-            writer.Write(clients);
+
         }
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out clients);
+
         }
 
         public RoomInternalInfo() { }
-        public RoomInternalInfo(NetworkClientInfo[] clients, List<NetworkMessage> buffer)
-        {
-            this.clients = clients;
-        }
     }
 }

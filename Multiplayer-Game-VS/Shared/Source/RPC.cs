@@ -9,7 +9,7 @@ namespace Game.Shared
 {
     [Serializable]
     [NetworkMessagePayload(3)]
-    public sealed class RpcRequest : INetSerializable
+    public sealed class RpcRequest : INetworkMessagePayload, INetSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -89,7 +89,7 @@ namespace Game.Shared
 
     [Serializable]
     [NetworkMessagePayload(9)]
-    public sealed class RpcCommand : INetSerializable
+    public sealed class RpcCommand : INetworkMessagePayload, INetSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender { get { return sender; } }

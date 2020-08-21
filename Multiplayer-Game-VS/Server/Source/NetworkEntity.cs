@@ -12,13 +12,11 @@ namespace Game.Server
     {
         public NetworkEntityID ID { get; protected set; }
 
-        public NetworkMessage SpawnMessage { get; protected set; }
+        public NetworkMessage SpawnMessage { get; set; }
 
-        public NetworkEntity(NetworkEntityID id, NetworkMessage spawnMessage)
+        public NetworkEntity(NetworkEntityID id)
         {
             this.ID = id;
-
-            this.SpawnMessage = spawnMessage;
         }
     }
 }

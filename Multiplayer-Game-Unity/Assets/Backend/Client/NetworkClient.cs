@@ -25,13 +25,17 @@ namespace Game
 	{
         public NetworkClientID ID { get; set; }
 
-        public NetworkClientInfo Info { get; protected set; }
+        public NetworkClientProfile Player { get; protected set; }
 
-        public NetworkClient(string name) : this(NetworkClientID.Empty, new NetworkClientInfo(name)) { }
-        public NetworkClient(NetworkClientID id, NetworkClientInfo info)
+        public List<NetworkEntity> Entities { get; protected set; }
+
+        public NetworkClient(string name) : this(NetworkClientID.Empty, new NetworkClientProfile(name)) { }
+        public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
             this.ID = id;
-            this.Info = info;
+            this.Player = profile;
+
+            Entities = new List<NetworkEntity>();
         }
     }
 }

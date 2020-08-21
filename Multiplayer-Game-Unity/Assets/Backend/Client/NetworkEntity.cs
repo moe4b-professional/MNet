@@ -30,7 +30,7 @@ namespace Game
 
         public NetworkEntityID ID { get; protected set; }
 
-        public bool IsMine => Owner == NetworkAPI.ID;
+        public bool IsMine => Owner == NetworkAPI.Client.ID;
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 

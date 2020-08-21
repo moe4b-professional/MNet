@@ -59,7 +59,7 @@ namespace Game
             NetworkAPI.Room.Join(room.ID);
         }
 
-        void RoomCreatedCallback(RoomInfo room)
+        void RoomCreatedCallback(RoomBasicInfo room)
         {
             Debug.Log("Created Room: " + room.ID);
 

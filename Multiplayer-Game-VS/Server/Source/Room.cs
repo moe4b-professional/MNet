@@ -81,26 +81,36 @@ namespace Game.Server
             service.Set(this);
         }
 
-        void SendTo(NetworkClient client, object payload) => SendTo(client.ID, payload);
-        void SendTo(NetworkClientID id, object payload)
+        NetworkMessage SendTo(NetworkClient client, INetworkMessagePayload payload) => SendTo(client.ID, payload);
+        NetworkMessage SendTo(NetworkClientID id, INetworkMessagePayload payload)
         {
             var message = NetworkMessage.Write(payload);
 
             var binary = NetworkSerializer.Serialize(message);
 
             WebSocket.Sessions.SendTo(binary, id);
+
+            return message;
         }
 
-        void Broadcast(object payload)
+        NetworkMessage Broadcast(INetworkMessagePayload payload)
         {
             var message = NetworkMessage.Write(payload);
 
             var binary = NetworkSerializer.Serialize(message);
 
             foreach (var client in Clients.Values)
+            {
+                if (IsActive(client.ID) == false) continue;
+
                 if (client.IsReady)
                     WebSocket.Sessions.SendTo(binary, client.ID);
+            }
+
+            return message;
         }
+
+        bool IsActive(NetworkClientID id) => WebSocket.Sessions.ActiveIDs.Contains(id.Value);
         #endregion
 
         #region Schedule
@@ -163,19 +173,19 @@ namespace Game.Server
 
             if(message.Is<RegisterClientRequest>())
             {
-                var profile = message.Read<RegisterClientRequest>();
+                var request = message.Read<RegisterClientRequest>();
 
-                RegisterClient(id, profile);
-            }
-            else if (message.Is<ReadyClientRequest>())
-            {
-                var request = message.Read<ReadyClientRequest>();
-
-                ReadyClient(id);
+                RegisterClient(id, request);
             }
             else if (Clients.TryGetValue(id, out var client))
             {
-                if (message.Is<RpcRequest>())
+                if (message.Is<ReadyClientRequest>())
+                {
+                    var request = message.Read<ReadyClientRequest>();
+
+                    ReadyClient(client);
+                }
+                else if (message.Is<RpcRequest>())
                 {
                     var request = message.Read<RpcRequest>();
 
@@ -203,28 +213,25 @@ namespace Game.Server
 
             Clients.Add(id, client);
 
-            var payload = new ClientConnectedPayload(id, profile);
-            Broadcast(payload);
-
             var info = ReadInternalInfo();
             var response = new RegisterClientResponse(id, info);
-            SendTo(id, response);
+            SendTo(client, response);
+
+            Log.Info("Sending Response to " + client.ID);
+
+            var payload = new ClientConnectedPayload(id, profile);
+            var message = Broadcast(payload);
+            client.ConnectMessage = message;
+            MessageBuffer.Add(message);
         }
 
-        void ReadyClient(NetworkClientID id)
+        void ReadyClient(NetworkClient client)
         {
-            if(Clients.TryGetValue(id, out var client))
-            {
-                var response = new ReadyClientResponse(client.ID, MessageBuffer);
+            client.Ready();
 
-                client.Ready();
+            var response = new ReadyClientResponse(MessageBuffer);
 
-                SendTo(id, response);
-            }
-            else
-            {
-                Log.Error($"No Client With ID {id} Found to Mark Ready");
-            }
+            SendTo(client, response);
         }
 
         void InvokeRPC(NetworkClient sender, RpcRequest request)
@@ -239,17 +246,15 @@ namespace Game.Server
         {
             var id = NetworkEntityID.Generate();
 
-            var command = SpawnEntityCommand.Write(owner.ID, id, resource);
-            var response = NetworkMessage.Write(command);
+            var entity = new NetworkEntity(id);
 
-            MessageBuffer.Add(response);
-
-            var entity = new NetworkEntity(id, response);
-
-            owner.RegisterEntity(entity);
+            owner.Entities.Add(entity);
             Entities.Add(id, entity);
 
-            Broadcast(response);
+            var command = SpawnEntityCommand.Write(owner.ID, entity.ID, resource);
+            var message = Broadcast(command);
+            MessageBuffer.Add(message);
+            entity.SpawnMessage = message;
         }
         #endregion
 
@@ -263,13 +268,18 @@ namespace Game.Server
 
         void RemoveClient(NetworkClient client)
         {
+            MessageBuffer.Remove(client.ConnectMessage);
+
+            foreach (var entity in client.Entities)
+            {
+                Entities.Remove(entity.ID);
+
+                MessageBuffer.Remove(entity.SpawnMessage);
+            }
+
             Clients.Remove(client.ID);
 
-            for (int i = 0; i < client.Entities.Count; i++)
-                Entities.Remove(client.Entities[i].ID);
-
             var payload = new ClientDisconnectPayload(client.ID, client.Profile);
-
             Broadcast(payload);
         }
 

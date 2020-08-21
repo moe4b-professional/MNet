@@ -16,27 +16,15 @@ namespace Game.Server
 
         public string Name => Profile.Name;
 
+        public List<NetworkEntity> Entities { get; protected set; }
+
         public bool IsReady { get; protected set; }
         public void Ready()
         {
             IsReady = true;
         }
 
-        public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
-
-        #region Entities
-        public List<NetworkEntity> Entities { get; protected set; }
-
-        public void RegisterEntity(NetworkEntity entity)
-        {
-            Entities.Add(entity);
-        }
-
-        public void RemoveEntity(NetworkEntity entity)
-        {
-            Entities.Remove(entity);
-        }
-        #endregion
+        public NetworkMessage ConnectMessage { get; set; }
 
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {

@@ -34,18 +34,6 @@ namespace Game
 	{
         public static string Address { get; private set; }
 
-        public static class Client
-        {
-            public static NetworkClientInfo Info { get; private set; }
-
-            public static NetworkClient Instance { get; private set; }
-
-            public static void Register(NetworkClientID ID)
-            {
-                Instance = new NetworkClient(ID, Info);
-            }
-        }
-
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
@@ -67,6 +55,40 @@ namespace Game
         public static void Update()
         {
             OnUpdate?.Invoke();
+        }
+
+        public static class Client
+        {
+            public static NetworkClientProfile Profile { get; private set; }
+
+            public static NetworkClientID ID => Instance == null ? NetworkClientID.Empty : Instance.ID;
+
+            public static NetworkClient Instance { get; private set; }
+            public static void Set(NetworkClientID ID)
+            {
+                Instance = new NetworkClient(ID, Profile);
+            }
+
+            public static void Register()
+            {
+                Profile = new NetworkClientProfile("Moe4B");
+
+                var request = new RegisterClientRequest(Profile);
+
+                var message = NetworkMessage.Write(request);
+
+                Room.Send(message);
+            }
+
+            public static void Ready()
+            {
+                var request = new ReadyClientRequest();
+
+                var message = NetworkMessage.Write(request);
+
+                Room.Send(message);
+            }
+
         }
 
         public static class RestAPI
@@ -229,13 +251,13 @@ namespace Game
                     Request.POST(Address, Constants.RestAPI.Requests.Room.Create, message, CreateCallback, false);
                 }
 
-                public delegate void CreatedDelegate(RoomInfo room);
+                public delegate void CreatedDelegate(RoomBasicInfo room);
                 public static event CreatedDelegate OnCreated;
                 static void CreateCallback(NetworkMessage message, RestError error)
                 {
                     if (error == null)
                     {
-                        var info = message.Read<RoomInfo>();
+                        var info = message.Read<RoomBasicInfo>();
 
                         OnCreated?.Invoke(info);
                     }
@@ -354,146 +376,27 @@ namespace Game
             }
         }
 
-        public static NetworkRoom Room { get; private set; }
-    }
-
-    public class NetworkRoom
-    {
-        public static Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
-
-        public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
-
-        public static void Join(ushort id)
+        public static class Room
         {
-            NetworkAPI.WebSocketAPI.Connect("/" + id);
-        }
-
-        #region Utility
-        public void Send(NetworkMessage message) => NetworkAPI.WebSocketAPI.Send(message);
-
-        public void RequestReady()
-        {
-            var request = new ReadyClientRequest(NetworkAPI.Client.Info);
-
-            var message = NetworkMessage.Write(request);
-
-            Send(message);
-        }
-
-        public void RequestSpawn(string resource)
-        {
-            var request = new SpawnEntityRequest(resource);
-
-            var message = NetworkMessage.Write(request);
-
-            Send(message);
-        }
-        #endregion
-
-        void ConnectCallback()
-        {
-            Debug.Log("Connected to Room");
-
-            RequestReady();
-        }
-
-        #region Messages
-        void MessageCallback(NetworkMessage message)
-        {
-            if (message.Is<ReadyClientResponse>())
+            public static void Join(ushort id)
             {
-                var response = message.Read<ReadyClientResponse>();
+                Current = new NetworkRoom();
 
-                SetReady(response);
-            }
-            else if (message.Is<SpawnEntityCommand>())
-            {
-                var command = message.Read<SpawnEntityCommand>();
-
-                SpawnEntity(command);
-            }
-            else if (message.Is<RpcCommand>())
-            {
-                var command = message.Read<RpcCommand>();
-
-                InvokeRpc(command);
-            }
-            else if(message.Is<ClientConnectedPayload>())
-            {
-                var payload = message.Read<ClientConnectedPayload>();
-
-                ClientConnected(payload);
-            }
-            else if(message.Is<ClientDisconnectPayload>())
-            {
-                var payload = message.Read<ClientDisconnectPayload>();
-
-                ClientDisconnected(payload);
-            }
-        }
-
-        void ClientConnected(ClientConnectedPayload payload)
-        {
-
-        }
-
-        void SetReady(ReadyClientResponse response)
-        {
-            NetworkAPI.Client.Register(response.ClientID);
-
-            for (int i = 0; i < response.MessageBuffer.Count; i++)
-                MessageCallback(response.MessageBuffer[i]);
-
-            RequestSpawn("Player");
-        }
-
-        void InvokeRpc(RpcCommand command)
-        {
-            if (Entities.TryGetValue(command.Entity, out var target))
-                target.InvokeRpc(command);
-            else
-                Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
-        }
-
-        void SpawnEntity(SpawnEntityCommand command)
-        {
-            Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}");
-
-            var prefab = Resources.Load<GameObject>(command.Resource);
-
-            if (prefab == null)
-            {
-                Debug.LogError($"No Resource {command.Resource} Found to Spawn");
-                return;
+                WebSocketAPI.Connect("/" + id);
             }
 
-            var instance = Object.Instantiate(prefab);
+            public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
 
-            var entity = instance.GetComponent<NetworkEntity>();
-
-            if (entity == null)
+            public static void Spawn(string resource)
             {
-                Debug.LogError($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
-                return;
+                var request = new SpawnEntityRequest(resource);
+
+                var message = NetworkMessage.Write(request);
+
+                Send(message);
             }
 
-            Entities.Add(command.Entity, entity);
-
-            entity.Spawn(command.Owner, command.Entity);
-        }
-
-        void ClientDisconnected(ClientDisconnectPayload payload)
-        {
-
-        }
-        #endregion
-
-        public NetworkRoom()
-        {
-            Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-
-            NetworkAPI.WebSocketAPI.OnConnect += ConnectCallback;
-            NetworkAPI.WebSocketAPI.OnMessage += MessageCallback;
+            public static NetworkRoom Current { get; set; }
         }
     }
 
