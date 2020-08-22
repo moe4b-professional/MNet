@@ -478,7 +478,7 @@ namespace Game
 
             public static void Configure()
             {
-                Client.OnMessage += MessageCallback;
+                Client.OnMessage += ClientMessageCallback;
                 Client.OnReady += ClientReadyCallback;
             }
 
@@ -499,13 +499,7 @@ namespace Game
                 ApplyMessageBuffer(response.Buffer);
             }
 
-            static void ApplyMessageBuffer(IList<NetworkMessage> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    MessageCallback(list[i]);
-            }
-
-            static void MessageCallback(NetworkMessage message)
+            static void ClientMessageCallback(NetworkMessage message)
             {
                 if (message.Is<RpcCommand>())
                 {
@@ -533,6 +527,27 @@ namespace Game
                 }
             }
 
+            static void RegisterClientsInternal(IList<NetworkClientInfo> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    RegisterClientInternal(list[i]);
+            }
+            static NetworkClient RegisterClientInternal(NetworkClientInfo info) => RegisterClientInternal(info.ID, info.Profile);
+            static NetworkClient RegisterClientInternal(NetworkClientID id, NetworkClientProfile profile)
+            {
+                var client = new NetworkClient(id, profile);
+
+                Clients.Add(client.ID, client);
+
+                return client;
+            }
+
+            static void ApplyMessageBuffer(IList<NetworkMessage> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    ClientMessageCallback(list[i]);
+            }
+
             public delegate void ClientConnectedDelegate(NetworkClient client);
             public static event ClientConnectedDelegate OnClientConnected;
             static void ClientConnected(ClientConnectedPayload payload)
@@ -548,21 +563,6 @@ namespace Game
                 OnClientConnected?.Invoke(client);
 
                 Debug.Log($"Client {client.ID} Connected");
-            }
-
-            static void RegisterClientsInternal(IList<NetworkClientInfo> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    RegisterClientInternal(list[i]);
-            }
-            static NetworkClient RegisterClientInternal(NetworkClientInfo info) => RegisterClientInternal(info.ID, info.Profile);
-            static NetworkClient RegisterClientInternal(NetworkClientID id, NetworkClientProfile profile)
-            {
-                var client = new NetworkClient(id, profile);
-
-                Clients.Add(client.ID, client);
-
-                return client;
             }
 
             static void InvokeRpc(RpcCommand command)
@@ -612,22 +612,23 @@ namespace Game
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
                 if (Clients.TryGetValue(payload.ID, out var client))
-                {
-                    foreach (var entity in client.Entities)
-                    {
-                        Entities.Remove(entity.ID);
-
-                        Object.Destroy(entity.gameObject);
-                    }
-
-                    Clients.Remove(client.ID);
-                }
+                    RemoveClient(client);
                 else
-                {
                     Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
-                }
 
                 OnClientDisconnected?.Invoke(payload.ID, payload.Profile);
+            }
+
+            static void RemoveClient(NetworkClient client)
+            {
+                foreach (var entity in client.Entities)
+                {
+                    Entities.Remove(entity.ID);
+
+                    Object.Destroy(entity.gameObject);
+                }
+
+                Clients.Remove(client.ID);
             }
 
             public static void Leave()
