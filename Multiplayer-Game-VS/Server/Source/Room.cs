@@ -132,6 +132,22 @@ namespace Game.Server
 
         public List<NetworkMessage> MessageBuffer { get; protected set; }
 
+        public void BufferMessage(NetworkMessage message)
+        {
+            MessageBuffer.Add(message);
+        }
+
+        public void UnbufferMessage(NetworkMessage message)
+        {
+            MessageBuffer.Remove(message);
+        }
+        public void UnbufferMessages(IList<NetworkMessage> list)
+        {
+            MessageBuffer.RemoveAll(Contained);
+
+            bool Contained(NetworkMessage message) => list.Contains(message);
+        }
+
         public RoomActionQueue ActionQueue { get; protected set; }
 
         public void Start()
@@ -169,6 +185,10 @@ namespace Game.Server
         #region Messages
         void ClientMessageCallback(NetworkClientID id, byte[] raw, NetworkMessage message)
         {
+            var binary = NetworkSerializer.Serialize(message);
+
+            Log.Info(binary.Length);
+
             //Log.Info($"Room {this.ID}: Client {id} Sent Message With Payload of {message.Type.Name}");
 
             if(message.Is<RegisterClientRequest>())
@@ -220,7 +240,7 @@ namespace Game.Server
             var payload = new ClientConnectedPayload(id, profile);
             var message = Broadcast(payload);
             client.ConnectMessage = message;
-            MessageBuffer.Add(message);
+            BufferMessage(message);
         }
 
         void ReadyClient(NetworkClient client)
@@ -234,9 +254,43 @@ namespace Game.Server
 
         void InvokeRPC(NetworkClient sender, RpcRequest request)
         {
+            if (Entities.TryGetValue(request.Entity, out var entity))
+                InvokeRPC(sender, entity, request);
+            else
+                Log.Error($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+        }
+        void InvokeRPC(NetworkClient sender, NetworkEntity entity, RpcRequest request)
+        {
             var command = RpcCommand.Write(sender.ID, request);
 
-            Broadcast(command);
+            var response = Broadcast(command);
+
+            if (request.BufferMode == RpcBufferMode.All)
+            {
+                entity.RPCBuffer.Add(response);
+
+                BufferMessage(response);
+            }
+            else if(request.BufferMode == RpcBufferMode.Last)
+            {
+                if (entity.RPCBuffer.Count == 1)
+                {
+                    UnbufferMessage(entity.RPCBuffer[0]);
+
+                    entity.RPCBuffer[0] = response;
+
+                    BufferMessage(entity.RPCBuffer[0]);
+                }
+                else
+                {
+                    UnbufferMessages(entity.RPCBuffer);
+
+                    entity.RPCBuffer.Clear();
+                    entity.RPCBuffer.Add(response);
+
+                    BufferMessage(response);
+                }
+            }
         }
 
         void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource);
@@ -251,7 +305,7 @@ namespace Game.Server
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, resource);
             var message = Broadcast(command);
-            MessageBuffer.Add(message);
+            BufferMessage(message);
             entity.SpawnMessage = message;
         }
         #endregion
@@ -266,13 +320,15 @@ namespace Game.Server
 
         void RemoveClient(NetworkClient client)
         {
-            MessageBuffer.Remove(client.ConnectMessage);
+            UnbufferMessage(client.ConnectMessage);
 
             foreach (var entity in client.Entities)
             {
                 Entities.Remove(entity.ID);
 
-                MessageBuffer.Remove(entity.SpawnMessage);
+                UnbufferMessage(entity.SpawnMessage);
+
+                UnbufferMessages(entity.RPCBuffer);
             }
 
             Clients.Remove(client.ID);

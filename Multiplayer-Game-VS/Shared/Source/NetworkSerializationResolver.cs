@@ -75,7 +75,7 @@ namespace Game.Shared
     }
 
     #region Primitive
-    public class ByteNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class ByteNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(byte);
 
@@ -98,7 +98,28 @@ namespace Game.Shared
         public ByteNetworkSerializationResolver() { }
     }
 
-    public class ShortNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class BoolNetworkSerializationResolver : NetworkSerializationResolver
+    {
+        public override bool CanResolve(Type type) => type == typeof(bool);
+
+        public override void Serialize(NetworkWriter writer, object type)
+        {
+            var value = (bool)type;
+
+            writer.Write(value ? (byte)1 : (byte)0);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            reader.Read(out byte value);
+
+            return value == 0 ? false : true;
+        }
+
+        public BoolNetworkSerializationResolver() { }
+    }
+
+    public sealed class ShortNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(short);
 
@@ -123,7 +144,7 @@ namespace Game.Shared
         public ShortNetworkSerializationResolver() { }
     }
 
-    public class UShortNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class UShortNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(ushort);
 
@@ -148,7 +169,7 @@ namespace Game.Shared
         public UShortNetworkSerializationResolver() { }
     }
 
-    public class IntNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class IntNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(int);
 
@@ -173,7 +194,7 @@ namespace Game.Shared
         public IntNetworkSerializationResolver() { }
     }
 
-    public class FloatNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class FloatNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(float);
 
@@ -198,7 +219,7 @@ namespace Game.Shared
         public FloatNetworkSerializationResolver() { }
     }
 
-    public class StringNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class StringNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type == typeof(string);
 
@@ -304,7 +325,7 @@ namespace Game.Shared
     }
     #endregion
 
-    public class EnumNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class EnumNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type.IsEnum;
 
@@ -327,7 +348,7 @@ namespace Game.Shared
         public EnumNetworkSerializationResolver() { }
     }
 
-    public class NetworkSerializableResolver : NetworkSerializationResolver
+    public sealed class INetworkSerializableResolver : NetworkSerializationResolver
     {
         public Type Interface => typeof(INetworkSerializable);
 
@@ -349,11 +370,11 @@ namespace Game.Shared
             return value;
         }
 
-        public NetworkSerializableResolver() { }
+        public INetworkSerializableResolver() { }
     }
 
     #region Collection
-    public class ArrayNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class ArrayNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type) => type.IsArray;
 
@@ -388,7 +409,7 @@ namespace Game.Shared
         public ArrayNetworkSerializationResolver() { }
     }
 
-    public class ListNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class ListNetworkSerializationResolver : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type)
         {
@@ -428,7 +449,7 @@ namespace Game.Shared
         public ListNetworkSerializationResolver() { }
     }
 
-    public class DictionarNetworkSerializationResolvery : NetworkSerializationResolver
+    public sealed class DictionarNetworkSerializationResolvery : NetworkSerializationResolver
     {
         public override bool CanResolve(Type type)
         {

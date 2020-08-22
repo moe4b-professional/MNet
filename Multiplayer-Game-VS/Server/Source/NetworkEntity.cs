@@ -14,9 +14,13 @@ namespace Game.Server
 
         public NetworkMessage SpawnMessage { get; set; }
 
+        public List<NetworkMessage> RPCBuffer { get; protected set; }
+
         public NetworkEntity(NetworkEntityID id)
         {
             this.ID = id;
+
+            this.RPCBuffer = new List<NetworkMessage>();
         }
     }
 }

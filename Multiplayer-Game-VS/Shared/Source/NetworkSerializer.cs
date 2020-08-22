@@ -75,6 +75,8 @@ namespace Game.Shared
         {
             this.data = data;
         }
+
+        public static bool IsNullable(Type type) => type.IsValueType == false;
     }
 
     public class NetworkWriter : NetworkStream
@@ -105,7 +107,15 @@ namespace Game.Shared
 
         public void Write(object value)
         {
+            if(value == null)
+            {
+                Write(true); //Is Null Flag Value
+                return;
+            }
+
             var type = value.GetType();
+
+            if (IsNullable(type)) Write(false); //Is Not Null Flag
 
             var resolver = NetworkSerializationResolver.Collection.Retrive(type);
             if (resolver != null)
@@ -115,18 +125,6 @@ namespace Game.Shared
             }
 
             throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
-        }
-
-        bool TryWrite<TType>(object value, Type type, Action<TType> action)
-        {
-            if (type == typeof(TType))
-            {
-                action((TType)value);
-
-                return true;
-            }
-
-            return false;
         }
 
         public NetworkWriter(int size) : base(new byte[size]) { }
@@ -154,6 +152,13 @@ namespace Game.Shared
         }
         public object Read(Type type)
         {
+            if(IsNullable(type))
+            {
+                Read(out bool isNull);
+
+                if (isNull) return null;
+            }
+
             var resolver = NetworkSerializationResolver.Collection.Retrive(type);
             if (resolver != null) return resolver.Deserialize(this, type);
 
