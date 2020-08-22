@@ -487,6 +487,8 @@ namespace Game.Shared
             {
                 var key = reader.Read(arguments[0]);
                 var value = reader.Read(arguments[1]);
+
+                dictionary.Add(key, value);
             }
 
             return dictionary;

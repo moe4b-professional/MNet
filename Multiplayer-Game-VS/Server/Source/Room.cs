@@ -81,8 +81,8 @@ namespace Game.Server
             service.Set(this);
         }
 
-        NetworkMessage SendTo(NetworkClient client, INetworkMessagePayload payload) => SendTo(client.ID, payload);
-        NetworkMessage SendTo(NetworkClientID id, INetworkMessagePayload payload)
+        NetworkMessage SendTo(NetworkClient client, object payload) => SendTo(client.ID, payload);
+        NetworkMessage SendTo(NetworkClientID id, object payload)
         {
             var message = NetworkMessage.Write(payload);
 
@@ -93,7 +93,7 @@ namespace Game.Server
             return message;
         }
 
-        NetworkMessage BroadcastToReady(INetworkMessagePayload payload)
+        NetworkMessage BroadcastToReady(INetworkSerializable payload)
         {
             var message = NetworkMessage.Write(payload);
 

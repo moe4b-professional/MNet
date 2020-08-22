@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace Game.Shared
 {
     [Serializable]
-    [NetworkMessagePayload(15)]
     public class NetworkClientProfile : INetworkSerializable
     {
         protected string name;

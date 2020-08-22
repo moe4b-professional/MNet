@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace Game.Shared
 {
     [Serializable]
-    [NetworkMessagePayload(14)]
     public class NetworkClientInfo : INetworkSerializable
     {
         NetworkClientID id;

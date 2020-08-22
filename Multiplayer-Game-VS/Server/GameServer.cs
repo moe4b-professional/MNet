@@ -60,6 +60,8 @@ namespace Game.Server
 
         public DateTime date;
 
+        public Dictionary<string, string> attribute;
+
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(number);
@@ -68,6 +70,7 @@ namespace Game.Server
             writer.Write(list);
             writer.Write(dictionary);
             writer.Write(date);
+            writer.Write(attribute);
         }
 
         public void Deserialize(NetworkReader reader)
@@ -78,6 +81,7 @@ namespace Game.Server
             reader.Read(out list);
             reader.Read(out dictionary);
             reader.Read(out date);
+            reader.Read(out attribute);
         }
 
         public SampleObject()
@@ -87,7 +91,7 @@ namespace Game.Server
 
         public static void Test()
         {
-            var data = new byte[1024];
+            byte[] data;
 
             {
                 var sample = new SampleObject()
@@ -115,6 +119,10 @@ namespace Game.Server
                         { "Level", "14" },
                     },
                     date = DateTime.Now,
+                    attribute = new Dictionary<string, string>()
+                    {
+                        { "Level", "4" }
+                    }
                 };
 
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -142,6 +150,7 @@ namespace Game.Server
                 foreach (var item in sample.list) Log.Info(item);
                 foreach (var pair in sample.dictionary) Log.Info(pair);
                 Log.Info(sample.date);
+                foreach (var pair in sample.attribute) Log.Info(pair);
             }
         }
     }
