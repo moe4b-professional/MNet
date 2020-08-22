@@ -443,20 +443,21 @@ namespace Game
             #endregion
 
             #region Spawn Entity
-            public static void RequestSpawnEntity(string resource)
+            public static void RequestSpawnEntity(string resource) => RequestSpawnEntity(resource, null);
+            public static void RequestSpawnEntity(string resource, AttributesCollection attributes)
             {
-                var request = new SpawnEntityRequest(resource);
+                var request = new SpawnEntityRequest(resource, attributes);
 
                 var message = NetworkMessage.Write(request);
 
                 Send(message);
             }
 
-            public delegate void SpawnEntityDelegate(NetworkEntity entity, string resource);
-            public static SpawnEntityDelegate OnSpawnEntity;
-            static void SpawnEntityCallback(NetworkEntity entity, NetworkClient owner, string resource)
+            public delegate void SpawnEntityDelegate(NetworkEntity entity, string resource, AttributesCollection attributes);
+            public static event SpawnEntityDelegate OnSpawnEntity;
+            static void SpawnEntityCallback(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes)
             {
-                if (owner?.ID == Client.ID) OnSpawnEntity?.Invoke(entity, resource);
+                if (owner?.ID == Client.ID) OnSpawnEntity?.Invoke(entity, resource, attributes);
             }
             #endregion
 
@@ -466,7 +467,7 @@ namespace Game
             {
                 Debug.Log("Client Disconnected");
 
-                OnDisconnect.Invoke(code, reason);
+                OnDisconnect?.Invoke(code, reason);
             }
         }
 
@@ -573,7 +574,7 @@ namespace Game
                     Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
             }
 
-            public delegate void SpawnEntityDelegate(NetworkEntity entity, NetworkClient owner, string resource);
+            public delegate void SpawnEntityDelegate(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes);
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
@@ -604,7 +605,7 @@ namespace Game
                 entity.Spawn(owner, command.Entity);
                 Entities.Add(entity.ID, entity);
 
-                OnSpawnEntity?.Invoke(entity, owner, command.Resource);
+                OnSpawnEntity?.Invoke(entity, owner, command.Resource, command.Attributes);
             }
 
             public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientProfile info);

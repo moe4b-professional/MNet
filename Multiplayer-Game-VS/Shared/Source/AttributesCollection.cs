@@ -13,9 +13,9 @@ namespace Game.Shared
 
         Dictionary<string, object> objects;
 
+        public IReadOnlyCollection<string> Keys => payload.Keys;
+
         public const int DefaultValueBufferSize = 256;
-
-
 
         public void Set<T>(string key, T value)
         {
@@ -66,29 +66,17 @@ namespace Game.Shared
         }
         public bool TryGetValue<T>(string key, out T value)
         {
-            if (TryGetValue(key, out object obj))
+            if (TryGetValue(key, out object instance))
             {
-                try
+                if(instance is T)
                 {
-                    value = (T)obj;
-
+                    value = (T)instance;
                     return true;
                 }
-                catch (InvalidCastException)
-                {
-                    throw new InvalidCastException($"Error Casting {obj.GetType()} to {typeof(T)}");
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
             }
-            else
-            {
-                value = default(T);
 
-                return false;
-            }
+            value = default(T);
+            return false;
         }
 
         public void Serialize(NetworkWriter writer)

@@ -280,8 +280,8 @@ namespace Game.Server
             entity.RPCBuffer.Set(message, request, UnbufferMessages);
         }
 
-        void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource);
-        void SpawnEntity(NetworkClient owner, string resource)
+        void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource, request.Attributes);
+        void SpawnEntity(NetworkClient owner, string resource, AttributesCollection attributes)
         {
             var id = NetworkEntityID.Generate();
 
@@ -290,7 +290,7 @@ namespace Game.Server
             owner.Entities.Add(entity);
             Entities.Add(id, entity);
 
-            var command = SpawnEntityCommand.Write(owner.ID, entity.ID, resource);
+            var command = new SpawnEntityCommand(owner.ID, entity.ID, resource, attributes);
             var message = BroadcastToReady(command);
 
             entity.SpawnMessage = message;

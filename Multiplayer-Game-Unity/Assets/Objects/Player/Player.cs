@@ -24,18 +24,7 @@ namespace Game
 	public class Player : NetworkBehaviour
 	{
         public float speed;
-
-        void Start()
-        {
-            if(IsMine)
-            {
-                var x = Random.Range(-5f, 5f);
-                var z = Random.Range(-3f, 3f);
-
-                transform.position = new Vector3(x, 0, z);
-            }
-        }
-
+        
         void Update()
         {
             if(IsMine)
