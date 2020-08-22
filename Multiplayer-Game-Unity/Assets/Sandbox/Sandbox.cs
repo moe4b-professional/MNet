@@ -41,7 +41,7 @@ namespace Game
 
         void ClientReadyCallback()
         {
-            NetworkAPI.Client.Spawn("Player");
+            NetworkAPI.Client.RequestSpawn("Player");
         }
 
         void Update()
@@ -68,7 +68,7 @@ namespace Game
 
         void RoomCreatedCallback(RoomBasicInfo room)
         {
-            Debug.Log("Created Room: " + room.ID);
+            Debug.Log("Created Room " + room.ID);
 
             NetworkAPI.Room.Join(room);
         }

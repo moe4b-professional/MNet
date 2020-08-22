@@ -358,17 +358,22 @@ namespace Game
             public static void Configure()
             {
                 WebSocketAPI.OnConnect += ConnectCallback;
-                WebSocketAPI.OnMessage += MessageCallback;
+                Room.OnMessage += MessageCallback;
                 WebSocketAPI.OnDisconnect += DisconnectedCallback;
+
+                Room.OnSpawnCommand += SpawnCallback;
             }
 
             public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
 
+            public static event Action OnConnect;
             static void ConnectCallback()
             {
                 Debug.Log("Client Connected");
 
                 if (AutoReady) RequestRegister();
+
+                OnConnect?.Invoke();
             }
 
             static void MessageCallback(NetworkMessage message)
@@ -427,19 +432,11 @@ namespace Game
             public static event Action OnReady;
             static void ReadyCallback(ReadyClientResponse response)
             {
-                ApplyMessageBuffer(response.Buffer);
-
                 OnReady?.Invoke();
             }
             #endregion
-
-            static void ApplyMessageBuffer(IList<NetworkMessage> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    MessageCallback(list[i]);
-            }
-
-            public static void Spawn(string resource)
+            
+            public static void RequestSpawn(string resource)
             {
                 var request = new SpawnEntityRequest(resource);
 
@@ -448,9 +445,19 @@ namespace Game
                 Send(message);
             }
 
+            public delegate void SpawnCommandDelegate(NetworkEntity entity, string resource);
+            public static SpawnCommandDelegate OnSpawnCommand;
+            static void SpawnCallback(NetworkEntity entity, NetworkClient owner, string resource)
+            {
+                if (owner?.ID == Client.ID) OnSpawnCommand?.Invoke(entity, resource);
+            }
+
+            public static event Action OnDisconnect;
             static void DisconnectedCallback(CloseStatusCode code, string reason)
             {
                 Debug.Log("Client Disconnected");
+
+                OnDisconnect.Invoke();
             }
         }
 
@@ -475,7 +482,15 @@ namespace Game
                 WebSocketAPI.OnMessage += MessageCallback;
             }
 
+            static void ApplyMessageBuffer(IList<NetworkMessage> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    MessageCallback(list[i]);
+            }
+
             #region Messages
+            public delegate void MessageDelegate(NetworkMessage message);
+            public static event MessageDelegate OnMessage;
             static void MessageCallback(NetworkMessage message)
             {
                 if (message.Is<RpcCommand>())
@@ -502,13 +517,33 @@ namespace Game
 
                     ClientDisconnected(payload);
                 }
+                else if(message.Is<ReadyClientResponse>())
+                {
+                    var response = message.Read<ReadyClientResponse>();
+
+                    ApplyMessageBuffer(response.Buffer);
+                }
+
+                OnMessage?.Invoke(message);
             }
 
+            public delegate void ClientConnectedDelegate(NetworkClient client);
+            public static event ClientConnectedDelegate OnClientConnected;
             static void ClientConnected(ClientConnectedPayload payload)
             {
+                if(Clients.ContainsKey(payload.ID))
+                {
+                    Debug.Log($"Connecting Client {payload.ID} Already Registered With Room");
+                    return;
+                }
+
                 var client = new NetworkClient(payload.ID, payload.Profile);
 
                 Clients.Add(client.ID, client);
+
+                OnClientConnected?.Invoke(client);
+
+                Debug.Log($"Client {client.ID} Connected");
             }
 
             static void InvokeRpc(RpcCommand command)
@@ -519,6 +554,8 @@ namespace Game
                     Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
             }
 
+            public delegate void SpawnCommandDelegate(NetworkEntity entity, NetworkClient owner, string resource);
+            public static event SpawnCommandDelegate OnSpawnCommand;
             static void SpawnCommand(SpawnEntityCommand command)
             {
                 Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}");
@@ -543,15 +580,15 @@ namespace Game
                 Entities.Add(entity.ID, entity);
 
                 if (Clients.TryGetValue(entity.Owner, out var client))
-                {
                     client.Entities.Add(entity);
-                }
                 else
-                {
-                    Debug.Log($"Spawned Entity {entity.name} Has No Client Owner");
-                }
+                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Client Owner");
+
+                OnSpawnCommand?.Invoke(entity, client, command.Resource);
             }
 
+            public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientProfile info);
+            public static event ClientDisconnectedDelegate OnClientDisconnected;
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
                 if (Clients.TryGetValue(payload.ID, out var client))
@@ -567,8 +604,10 @@ namespace Game
                 }
                 else
                 {
-
+                    Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
                 }
+
+                OnClientDisconnected?.Invoke(payload.ID, payload.Profile);
             }
             #endregion
 

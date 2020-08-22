@@ -49,14 +49,17 @@ namespace Game
 
                 var translation = velocity * Time.deltaTime;
 
-                RequestRPC(RpcSetPosition, transform.position + translation);
+                var rotation = translation.magnitude > 0.1f ? Quaternion.LookRotation(translation) : transform.rotation;
+
+                RequestRPC(RpcSetPosition, transform.position + translation, rotation);
             }
         }
 
 		[NetworkRPC(RpcBufferMode.Last)]
-        void RpcSetPosition(Vector3 position)
+        void RpcSetPosition(Vector3 position, Quaternion rotation)
         {
             transform.position = position;
+            transform.rotation = rotation;
         }
 	}
 }
