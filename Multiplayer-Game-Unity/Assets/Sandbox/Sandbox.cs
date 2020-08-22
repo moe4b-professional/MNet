@@ -35,6 +35,13 @@ namespace Game
 
             NetworkAPI.RestAPI.Room.OnCreated += RoomCreatedCallback;
             NetworkAPI.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
+
+            NetworkAPI.Client.OnReady += ClientReadyCallback;
+        }
+
+        void ClientReadyCallback()
+        {
+            NetworkAPI.Client.Spawn("Player");
         }
 
         void Update()
@@ -56,14 +63,14 @@ namespace Game
 
             if (room == null) return;
 
-            NetworkAPI.Room.Join(room.ID);
+            NetworkAPI.Room.Join(room);
         }
 
         void RoomCreatedCallback(RoomBasicInfo room)
         {
             Debug.Log("Created Room: " + room.ID);
 
-            NetworkAPI.Room.Join(room.ID);
+            NetworkAPI.Room.Join(room);
         }
     }
 
@@ -90,5 +97,32 @@ namespace Game
         }
 
         public Vector3SerializationResolver() { }
+    }
+
+    public class QuaternionNetworkSerializationResolver : NetworkSerializationResolver
+    {
+        public override bool CanResolve(Type type) => type == typeof(Quaternion);
+
+        public override void Serialize(NetworkWriter writer, object type)
+        {
+            var value = (Quaternion)type;
+
+            writer.Write(value.x);
+            writer.Write(value.y);
+            writer.Write(value.z);
+            writer.Write(value.w);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            reader.Read(out float x);
+            reader.Read(out float y);
+            reader.Read(out float z);
+            reader.Read(out float w);
+
+            return new Quaternion(x, y, z, w);
+        }
+
+        public QuaternionNetworkSerializationResolver() { }
     }
 }

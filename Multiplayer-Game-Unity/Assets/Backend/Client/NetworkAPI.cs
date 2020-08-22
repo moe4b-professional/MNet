@@ -49,46 +49,16 @@ namespace Game
         public static void Configure(string address)
         {
             NetworkAPI.Address = address;
+
+            Client.Configure();
+
+            Room.Configure();
         }
 
         public static event Action OnUpdate;
         public static void Update()
         {
             OnUpdate?.Invoke();
-        }
-
-        public static class Client
-        {
-            public static NetworkClientProfile Profile { get; private set; }
-
-            public static NetworkClientID ID => Instance == null ? NetworkClientID.Empty : Instance.ID;
-
-            public static NetworkClient Instance { get; private set; }
-            public static void Set(NetworkClientID ID)
-            {
-                Instance = new NetworkClient(ID, Profile);
-            }
-
-            public static void Register()
-            {
-                Profile = new NetworkClientProfile("Moe4B");
-
-                var request = new RegisterClientRequest(Profile);
-
-                var message = NetworkMessage.Write(request);
-
-                Room.Send(message);
-            }
-
-            public static void Ready()
-            {
-                var request = new ReadyClientRequest();
-
-                var message = NetworkMessage.Write(request);
-
-                Room.Send(message);
-            }
-
         }
 
         public static class RestAPI
@@ -293,7 +263,7 @@ namespace Game
 
                 Client.OnOpen += ConnectCallback;
                 Client.OnMessage += MessageCallback;
-                Client.OnClose += CloseCallback;
+                Client.OnClose += DisconnectCallback;
                 Client.OnError += ErrorCallback;
 
                 Client.ConnectAsync();
@@ -334,15 +304,15 @@ namespace Game
             }
 
             public delegate void CloseDelegate(CloseStatusCode code, string reason);
-            public static event CloseDelegate OnClose;
-            static void CloseCallback(object sender, CloseEventArgs args)
+            public static event CloseDelegate OnDisconnect;
+            static void DisconnectCallback(object sender, CloseEventArgs args)
             {
                 var code = (CloseStatusCode)args.Code;
                 var reason = args.Reason;
 
                 ActionQueue.Enqueue(Invoke);
 
-                void Invoke() => OnClose?.Invoke(code, reason);
+                void Invoke() => OnDisconnect?.Invoke(code, reason);
             }
 
             public delegate void ErrorDelegate(Exception exception, string message);
@@ -376,16 +346,98 @@ namespace Game
             }
         }
 
-        public static class Room
+        public static class Client
         {
-            public static void Join(ushort id)
-            {
-                Current = new NetworkRoom();
+            public static NetworkClientProfile Profile { get; private set; }
 
-                WebSocketAPI.Connect("/" + id);
+            public static NetworkClientID ID => Instance == null ? NetworkClientID.Empty : Instance.ID;
+
+            public static NetworkClient Instance { get; private set; }
+            public static void Set(NetworkClientID ID) => Instance = new NetworkClient(ID, Profile);
+
+            public static void Configure()
+            {
+                WebSocketAPI.OnConnect += ConnectCallback;
+                WebSocketAPI.OnMessage += MessageCallback;
+                WebSocketAPI.OnDisconnect += DisconnectedCallback;
             }
 
             public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
+
+            static void ConnectCallback()
+            {
+                Debug.Log("Client Connected");
+
+                if (AutoReady) RequestRegister();
+            }
+
+            static void MessageCallback(NetworkMessage message)
+            {
+                if (message.Is<RegisterClientResponse>())
+                {
+                    var response = message.Read<RegisterClientResponse>();
+
+                    RegisterCallback(response);
+                }
+                else if (message.Is<ReadyClientResponse>())
+                {
+                    var response = message.Read<ReadyClientResponse>();
+
+                    ReadyCallback(response);
+                }
+            }
+
+            #region Register
+            public static bool AutoRegister { get; set; } = true;
+
+            public static void RequestRegister()
+            {
+                Profile = new NetworkClientProfile("Moe4B");
+
+                var request = new RegisterClientRequest(Profile);
+
+                var message = NetworkMessage.Write(request);
+
+                Send(message);
+            }
+
+            public static event Action OnRegister;
+            static void RegisterCallback(RegisterClientResponse response)
+            {
+                Set(response.ID);
+
+                if (AutoReady) RequestReady();
+
+                OnRegister?.Invoke();
+            }
+            #endregion
+
+            #region Ready
+            public static bool AutoReady { get; set; } = true;
+
+            public static void RequestReady()
+            {
+                var request = new ReadyClientRequest();
+
+                var message = NetworkMessage.Write(request);
+
+                Send(message);
+            }
+
+            public static event Action OnReady;
+            static void ReadyCallback(ReadyClientResponse response)
+            {
+                ApplyMessageBuffer(response.Buffer);
+
+                OnReady?.Invoke();
+            }
+            #endregion
+
+            static void ApplyMessageBuffer(IList<NetworkMessage> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    MessageCallback(list[i]);
+            }
 
             public static void Spawn(string resource)
             {
@@ -396,22 +448,134 @@ namespace Game
                 Send(message);
             }
 
-            public static NetworkRoom Current { get; set; }
+            static void DisconnectedCallback(CloseStatusCode code, string reason)
+            {
+                Debug.Log("Client Disconnected");
+            }
         }
-    }
 
-    public class RestError
-    {
-        public long Code { get; protected set; }
-
-        public string Message { get; protected set; }
-
-        public RestError(long code, string message)
+        public static class Room
         {
-            this.Code = code;
-            this.Message = message;
-        }
+            public static void Join(RoomBasicInfo info) => Join(info.ID);
+            public static void Join(ushort id)
+            {
+                Clients = new Dictionary<NetworkClientID, NetworkClient>();
 
-        public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
+                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
+
+                WebSocketAPI.Connect("/" + id);
+            }
+
+            public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
+
+            public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
+
+            public static void Configure()
+            {
+                WebSocketAPI.OnMessage += MessageCallback;
+            }
+
+            #region Messages
+            static void MessageCallback(NetworkMessage message)
+            {
+                if (message.Is<RpcCommand>())
+                {
+                    var command = message.Read<RpcCommand>();
+
+                    InvokeRpc(command);
+                }
+                else if (message.Is<SpawnEntityCommand>())
+                {
+                    var command = message.Read<SpawnEntityCommand>();
+
+                    SpawnCommand(command);
+                }
+                else if (message.Is<ClientConnectedPayload>())
+                {
+                    var payload = message.Read<ClientConnectedPayload>();
+
+                    ClientConnected(payload);
+                }
+                else if (message.Is<ClientDisconnectPayload>())
+                {
+                    var payload = message.Read<ClientDisconnectPayload>();
+
+                    ClientDisconnected(payload);
+                }
+            }
+
+            static void ClientConnected(ClientConnectedPayload payload)
+            {
+                var client = new NetworkClient(payload.ID, payload.Profile);
+
+                Clients.Add(client.ID, client);
+            }
+
+            static void InvokeRpc(RpcCommand command)
+            {
+                if (Entities.TryGetValue(command.Entity, out var target))
+                    target.InvokeRpc(command);
+                else
+                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+            }
+
+            static void SpawnCommand(SpawnEntityCommand command)
+            {
+                Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}");
+
+                var prefab = Resources.Load<GameObject>(command.Resource);
+                if (prefab == null)
+                {
+                    Debug.LogError($"No Resource {command.Resource} Found to Spawn");
+                    return;
+                }
+
+                var instance = Object.Instantiate(prefab);
+
+                var entity = instance.GetComponent<NetworkEntity>();
+                if (entity == null)
+                {
+                    Debug.LogError($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
+                    return;
+                }
+
+                entity.Spawn(command.Owner, command.Entity);
+                Entities.Add(entity.ID, entity);
+
+                if (Clients.TryGetValue(entity.Owner, out var client))
+                {
+                    client.Entities.Add(entity);
+                }
+                else
+                {
+                    Debug.Log($"Spawned Entity {entity.name} Has No Client Owner");
+                }
+            }
+
+            static void ClientDisconnected(ClientDisconnectPayload payload)
+            {
+                if (Clients.TryGetValue(payload.ID, out var client))
+                {
+                    foreach (var entity in client.Entities)
+                    {
+                        Entities.Remove(entity.ID);
+
+                        Object.Destroy(entity.gameObject);
+                    }
+
+                    Clients.Remove(client.ID);
+                }
+                else
+                {
+
+                }
+            }
+            #endregion
+
+            public static void Leave()
+            {
+                WebSocketAPI.Disconnect();
+            }
+        }
     }
 }

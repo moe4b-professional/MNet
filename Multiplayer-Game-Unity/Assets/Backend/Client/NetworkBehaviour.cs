@@ -91,7 +91,7 @@ namespace Game
 
                 var message = NetworkMessage.Write(payload);
 
-                NetworkAPI.Room.Send(message);
+                NetworkAPI.Client.Send(message);
             }
         }
         #endregion
