@@ -29,7 +29,7 @@ namespace Game
         static void OnLoad()
         {
             NetworkPayload.Register<Vector3>(Start + 1);
-            NetworkPayload.Register<Quaternion>(Start + 1);
+            NetworkPayload.Register<Quaternion>(Start + 2);
         }
 	}
 

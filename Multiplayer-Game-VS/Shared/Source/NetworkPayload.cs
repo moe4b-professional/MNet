@@ -94,6 +94,10 @@ namespace Game.Shared
 
             Register<RpcRequest>(26);
             Register<RpcCommand>(27);
+
+            Register<AttributesCollection>(28);
+
+            Register<RpcBufferMode>(29);
         }
         #endregion
 

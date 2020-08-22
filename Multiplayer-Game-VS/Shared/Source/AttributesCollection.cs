@@ -15,6 +15,8 @@ namespace Game.Shared
 
         public const int DefaultValueBufferSize = 256;
 
+
+
         public void Set<T>(string key, T value)
         {
             using (var writer = new NetworkWriter(DefaultValueBufferSize))

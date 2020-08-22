@@ -12,8 +12,8 @@ namespace Game.Shared
         protected string name;
         public string Name { get { return name; } }
 
-        protected Dictionary<string,string> attributes;
-        public Dictionary<string,string> Attributes { get { return attributes; } }
+        protected AttributesCollection attributes;
+        public AttributesCollection Attributes { get { return attributes; } }
 
         public void Serialize(NetworkWriter writer)
         {
@@ -27,8 +27,8 @@ namespace Game.Shared
         }
 
         public NetworkClientProfile() { }
-        public NetworkClientProfile(string name) : this(name, new Dictionary<string, string>()) { }
-        public NetworkClientProfile(string name, Dictionary<string, string> attributes)
+        public NetworkClientProfile(string name) : this(name, new AttributesCollection()) { }
+        public NetworkClientProfile(string name, AttributesCollection attributes)
         {
             this.name = name;
 
