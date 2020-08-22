@@ -37,26 +37,8 @@ namespace Game
             NetworkAPI.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
 
             NetworkAPI.Client.OnReady += ClientReadyCallback;
-
-            NetworkAPI.Room.OnSpawnEntity += SpawnEntityCallback;
         }
-
-        void SpawnEntityCallback(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes)
-        {
-            Debug.Log(attributes);
-
-            if (attributes.TryGetValue("Position", out Vector3 position))
-                entity.transform.position = position;
-
-            if (attributes.TryGetValue("Rotation", out Quaternion rotation))
-                entity.transform.rotation = rotation;
-
-            foreach (var key in attributes.Keys)
-            {
-                Debug.Log(key);
-            }
-        }
-
+        
         void ClientReadyCallback(ReadyClientResponse response)
         {
             var attributes = new AttributesCollection();

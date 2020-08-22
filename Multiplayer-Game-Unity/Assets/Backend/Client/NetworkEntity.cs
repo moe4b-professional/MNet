@@ -32,14 +32,19 @@ namespace Game
 
         public bool IsMine => Owner?.ID == NetworkAPI.Client.ID;
 
+        public AttributesCollection Attributes { get; protected set; }
+
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
-        public void Spawn(NetworkClient owner, NetworkEntityID id)
+        public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes)
         {
             this.Owner = owner;
             this.ID = id;
+            this.Attributes = attributes;
 
             RegisterBehaviours();
+
+            OnSpawn();
         }
 
         void RegisterBehaviours()
@@ -59,7 +64,7 @@ namespace Game
 
                 var id = new NetworkBehaviourID(i);
 
-                targets[i].Set(this, id);
+                targets[i].Configure(this, id);
             }
         }
 
@@ -69,6 +74,11 @@ namespace Game
                 target.InvokeRpc(command);
             else
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
+        }
+
+        protected virtual void OnSpawn()
+        {
+
         }
     }
 }

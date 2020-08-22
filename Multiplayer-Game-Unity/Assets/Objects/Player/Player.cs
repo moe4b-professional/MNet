@@ -24,7 +24,21 @@ namespace Game
 	public class Player : NetworkBehaviour
 	{
         public float speed;
-        
+
+        protected override void OnSpawn()
+        {
+            base.OnSpawn();
+
+            if(Attributes != null)
+            {
+                if (Attributes.TryGetValue("Position", out Vector3 position))
+                    transform.position = position;
+
+                if (Attributes.TryGetValue("Rotation", out Quaternion rotation))
+                    transform.rotation = rotation;
+            }
+        }
+
         void Update()
         {
             if(IsMine)

@@ -602,7 +602,7 @@ namespace Game
                 else
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Client Owner");
 
-                entity.Spawn(owner, command.Entity);
+                entity.Configure(owner, command.Entity, command.Attributes);
                 Entities.Add(entity.ID, entity);
 
                 OnSpawnEntity?.Invoke(entity, owner, command.Resource, command.Attributes);

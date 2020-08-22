@@ -29,12 +29,21 @@ namespace Game
         public NetworkBehaviourID ID { get; protected set; }
 
         public NetworkEntity Entity { get; protected set; }
-        public void Set(NetworkEntity reference, NetworkBehaviourID id)
+
+        public AttributesCollection Attributes => Entity?.Attributes;
+
+        public void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
-            Entity = reference;
+            Entity = entity;
 
             this.ID = id;
+
+            RPCs = new RpcCollection(this);
+
+            OnSpawn();
         }
+
+        protected virtual void OnSpawn() { }
 
         public bool IsMine => Entity.IsMine;
 
@@ -66,12 +75,7 @@ namespace Game
                 }
             }
         }
-
-        protected virtual void Awake()
-        {
-            RPCs = new RpcCollection(this);
-        }
-
+        
         #region Request RPC
         public void RequestRPC(RpcCallback callback)
             => RequestRPC(callback.Method);
