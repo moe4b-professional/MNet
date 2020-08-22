@@ -39,9 +39,9 @@ namespace Game
             NetworkAPI.Client.OnReady += ClientReadyCallback;
         }
 
-        void ClientReadyCallback()
+        void ClientReadyCallback(ReadyClientResponse response)
         {
-            NetworkAPI.Client.RequestSpawn("Player");
+            NetworkAPI.Client.RequestSpawnEntity("Player");
         }
 
         void Update()

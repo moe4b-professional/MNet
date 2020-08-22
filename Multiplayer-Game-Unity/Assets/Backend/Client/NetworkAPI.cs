@@ -358,15 +358,16 @@ namespace Game
             public static void Configure()
             {
                 WebSocketAPI.OnConnect += ConnectCallback;
-                Room.OnMessage += MessageCallback;
+                WebSocketAPI.OnMessage += MessageCallback;
                 WebSocketAPI.OnDisconnect += DisconnectedCallback;
 
-                Room.OnSpawnCommand += SpawnCallback;
+                Room.OnSpawnEntity += SpawnEntityCallback;
             }
 
             public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
 
-            public static event Action OnConnect;
+            public delegate void ConnectDelegate();
+            public static event ConnectDelegate OnConnect;
             static void ConnectCallback()
             {
                 Debug.Log("Client Connected");
@@ -376,6 +377,8 @@ namespace Game
                 OnConnect?.Invoke();
             }
 
+            public delegate void MessageDelegate(NetworkMessage message);
+            public static event MessageDelegate OnMessage;
             static void MessageCallback(NetworkMessage message)
             {
                 if (message.Is<RegisterClientResponse>())
@@ -390,6 +393,8 @@ namespace Game
 
                     ReadyCallback(response);
                 }
+
+                OnMessage?.Invoke(message);
             }
 
             #region Register
@@ -429,14 +434,16 @@ namespace Game
                 Send(message);
             }
 
-            public static event Action OnReady;
+            public delegate void ReadyDelegate(ReadyClientResponse response);
+            public static event ReadyDelegate OnReady;
             static void ReadyCallback(ReadyClientResponse response)
             {
-                OnReady?.Invoke();
+                OnReady?.Invoke(response);
             }
             #endregion
-            
-            public static void RequestSpawn(string resource)
+
+            #region Spawn Entity
+            public static void RequestSpawnEntity(string resource)
             {
                 var request = new SpawnEntityRequest(resource);
 
@@ -445,24 +452,36 @@ namespace Game
                 Send(message);
             }
 
-            public delegate void SpawnCommandDelegate(NetworkEntity entity, string resource);
-            public static SpawnCommandDelegate OnSpawnCommand;
-            static void SpawnCallback(NetworkEntity entity, NetworkClient owner, string resource)
+            public delegate void SpawnEntityDelegate(NetworkEntity entity, string resource);
+            public static SpawnEntityDelegate OnSpawnEntity;
+            static void SpawnEntityCallback(NetworkEntity entity, NetworkClient owner, string resource)
             {
-                if (owner?.ID == Client.ID) OnSpawnCommand?.Invoke(entity, resource);
+                if (owner?.ID == Client.ID) OnSpawnEntity?.Invoke(entity, resource);
             }
+            #endregion
 
-            public static event Action OnDisconnect;
+            public delegate void DisconnectDelegate(CloseStatusCode code, string reason);
+            public static event DisconnectDelegate OnDisconnect;
             static void DisconnectedCallback(CloseStatusCode code, string reason)
             {
                 Debug.Log("Client Disconnected");
 
-                OnDisconnect.Invoke();
+                OnDisconnect.Invoke(code, reason);
             }
         }
 
         public static class Room
         {
+            public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
+
+            public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
+
+            public static void Configure()
+            {
+                Client.OnMessage += MessageCallback;
+                Client.OnReady += ClientReadyCallback;
+            }
+
             public static void Join(RoomBasicInfo info) => Join(info.ID);
             public static void Join(ushort id)
             {
@@ -473,13 +492,11 @@ namespace Game
                 WebSocketAPI.Connect("/" + id);
             }
 
-            public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
-
-            public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
-
-            public static void Configure()
+            static void ClientReadyCallback(ReadyClientResponse response)
             {
-                WebSocketAPI.OnMessage += MessageCallback;
+                RegisterClientsInternal(response.Clients);
+
+                ApplyMessageBuffer(response.Buffer);
             }
 
             static void ApplyMessageBuffer(IList<NetworkMessage> list)
@@ -488,9 +505,6 @@ namespace Game
                     MessageCallback(list[i]);
             }
 
-            #region Messages
-            public delegate void MessageDelegate(NetworkMessage message);
-            public static event MessageDelegate OnMessage;
             static void MessageCallback(NetworkMessage message)
             {
                 if (message.Is<RpcCommand>())
@@ -503,7 +517,7 @@ namespace Game
                 {
                     var command = message.Read<SpawnEntityCommand>();
 
-                    SpawnCommand(command);
+                    SpawnEntity(command);
                 }
                 else if (message.Is<ClientConnectedPayload>())
                 {
@@ -517,14 +531,6 @@ namespace Game
 
                     ClientDisconnected(payload);
                 }
-                else if(message.Is<ReadyClientResponse>())
-                {
-                    var response = message.Read<ReadyClientResponse>();
-
-                    ApplyMessageBuffer(response.Buffer);
-                }
-
-                OnMessage?.Invoke(message);
             }
 
             public delegate void ClientConnectedDelegate(NetworkClient client);
@@ -537,13 +543,26 @@ namespace Game
                     return;
                 }
 
-                var client = new NetworkClient(payload.ID, payload.Profile);
-
-                Clients.Add(client.ID, client);
+                var client = RegisterClientInternal(payload.ID, payload.Profile);
 
                 OnClientConnected?.Invoke(client);
 
                 Debug.Log($"Client {client.ID} Connected");
+            }
+
+            static void RegisterClientsInternal(IList<NetworkClientInfo> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    RegisterClientInternal(list[i]);
+            }
+            static NetworkClient RegisterClientInternal(NetworkClientInfo info) => RegisterClientInternal(info.ID, info.Profile);
+            static NetworkClient RegisterClientInternal(NetworkClientID id, NetworkClientProfile profile)
+            {
+                var client = new NetworkClient(id, profile);
+
+                Clients.Add(client.ID, client);
+
+                return client;
             }
 
             static void InvokeRpc(RpcCommand command)
@@ -554,9 +573,9 @@ namespace Game
                     Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
             }
 
-            public delegate void SpawnCommandDelegate(NetworkEntity entity, NetworkClient owner, string resource);
-            public static event SpawnCommandDelegate OnSpawnCommand;
-            static void SpawnCommand(SpawnEntityCommand command)
+            public delegate void SpawnEntityDelegate(NetworkEntity entity, NetworkClient owner, string resource);
+            public static event SpawnEntityDelegate OnSpawnEntity;
+            static void SpawnEntity(SpawnEntityCommand command)
             {
                 Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}");
 
@@ -573,18 +592,19 @@ namespace Game
                 if (entity == null)
                 {
                     Debug.LogError($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
+                    Object.Destroy(instance);
                     return;
                 }
 
-                entity.Spawn(command.Owner, command.Entity);
-                Entities.Add(entity.ID, entity);
-
-                if (Clients.TryGetValue(entity.Owner, out var client))
-                    client.Entities.Add(entity);
+                if (Clients.TryGetValue(command.Owner, out var owner))
+                    owner.Entities.Add(entity);
                 else
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Client Owner");
 
-                OnSpawnCommand?.Invoke(entity, client, command.Resource);
+                entity.Spawn(owner, command.Entity);
+                Entities.Add(entity.ID, entity);
+
+                OnSpawnEntity?.Invoke(entity, owner, command.Resource);
             }
 
             public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientProfile info);
@@ -609,7 +629,6 @@ namespace Game
 
                 OnClientDisconnected?.Invoke(payload.ID, payload.Profile);
             }
-            #endregion
 
             public static void Leave()
             {

@@ -93,7 +93,7 @@ namespace Game.Server
             return message;
         }
 
-        NetworkMessage Broadcast(INetworkMessagePayload payload)
+        NetworkMessage BroadcastToReady(INetworkMessagePayload payload)
         {
             var message = NetworkMessage.Write(payload);
 
@@ -124,6 +124,22 @@ namespace Game.Server
             var info = new RoomInternalInfo();
 
             return info;
+        }
+
+        public NetworkClientInfo[] GetClientsInfo()
+        {
+            var list = new NetworkClientInfo[Clients.Count];
+
+            var index = 0;
+
+            foreach (var client in Clients.Values)
+            {
+                list[index] = client.ReadInfo();
+
+                index += 1;
+            }
+
+            return list;
         }
 
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
@@ -234,9 +250,7 @@ namespace Game.Server
             SendTo(client, response);
 
             var payload = new ClientConnectedPayload(id, profile);
-            var message = Broadcast(payload);
-            client.ConnectMessage = message;
-            BufferMessage(message);
+            BroadcastToReady(payload);
         }
 
         void ReadyClient(NetworkClient client)
@@ -245,7 +259,7 @@ namespace Game.Server
 
             client.Ready();
 
-            var response = new ReadyClientResponse(MessageBuffer);
+            var response = new ReadyClientResponse(GetClientsInfo(), MessageBuffer);
 
             SendTo(client, response);
         }
@@ -261,34 +275,9 @@ namespace Game.Server
         {
             var command = RpcCommand.Write(sender.ID, request);
 
-            var message = Broadcast(command);
+            var message = BroadcastToReady(command);
 
-            if (request.BufferMode == RpcBufferMode.All)
-            {
-                entity.RPCBuffer.Add(message);
-
-                BufferMessage(message);
-            }
-            else if(request.BufferMode == RpcBufferMode.Last)
-            {
-                if (entity.RPCBuffer.Count == 1)
-                {
-                    UnbufferMessage(entity.RPCBuffer[0]);
-
-                    entity.RPCBuffer[0] = message;
-
-                    BufferMessage(entity.RPCBuffer[0]);
-                }
-                else
-                {
-                    UnbufferMessages(entity.RPCBuffer);
-
-                    entity.RPCBuffer.Clear();
-                    entity.RPCBuffer.Add(message);
-
-                    BufferMessage(message);
-                }
-            }
+            entity.RPCBuffer.Set(message, request, UnbufferMessages);
         }
 
         void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource);
@@ -302,7 +291,7 @@ namespace Game.Server
             Entities.Add(id, entity);
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, resource);
-            var message = Broadcast(command);
+            var message = BroadcastToReady(command);
 
             entity.SpawnMessage = message;
             BufferMessage(message);
@@ -318,13 +307,11 @@ namespace Game.Server
 
         void RemoveClient(NetworkClient client)
         {
-            UnbufferMessage(client.ConnectMessage);
-
             foreach (var entity in client.Entities)
             {
                 UnbufferMessage(entity.SpawnMessage);
 
-                UnbufferMessages(entity.RPCBuffer);
+                entity.RPCBuffer.UnBufferAll(UnbufferMessages);
 
                 Entities.Remove(entity.ID);
             }
@@ -332,7 +319,7 @@ namespace Game.Server
             Clients.Remove(client.ID);
 
             var payload = new ClientDisconnectPayload(client.ID, client.Profile);
-            Broadcast(payload);
+            BroadcastToReady(payload);
         }
 
         public void Stop()

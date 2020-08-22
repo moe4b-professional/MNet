@@ -312,21 +312,27 @@ namespace Game.Shared
     [NetworkMessagePayload(8)]
     public sealed class ReadyClientResponse : INetworkMessagePayload
     {
+        NetworkClientInfo[] clients;
+        public NetworkClientInfo[] Clients => clients;
+
         List<NetworkMessage> buffer;
         public List<NetworkMessage> Buffer => buffer;
 
         public void Serialize(NetworkWriter writer)
         {
+            writer.Write(clients);
             writer.Write(buffer);
         }
         public void Deserialize(NetworkReader reader)
         {
+            reader.Read(out clients);
             reader.Read(out buffer);
         }
 
         public ReadyClientResponse() { }
-        public ReadyClientResponse(List<NetworkMessage> buffer)
+        public ReadyClientResponse(NetworkClientInfo[] clients, List<NetworkMessage> buffer)
         {
+            this.clients = clients;
             this.buffer = buffer;
         }
     }

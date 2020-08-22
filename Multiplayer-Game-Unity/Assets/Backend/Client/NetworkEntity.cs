@@ -26,21 +26,29 @@ namespace Game
 	{
         public const int ExecutionOrder = -200;
 
-        public NetworkClientID Owner { get; protected set; }
+        public NetworkClient Owner { get; protected set; }
 
         public NetworkEntityID ID { get; protected set; }
 
-        public bool IsMine => Owner == NetworkAPI.Client.ID;
+        public bool IsMine => Owner?.ID == NetworkAPI.Client.ID;
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
-        protected virtual void Awake()
+        public void Spawn(NetworkClient owner, NetworkEntityID id)
+        {
+            this.Owner = owner;
+            this.ID = id;
+
+            RegisterBehaviours();
+        }
+
+        void RegisterBehaviours()
         {
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
             var targets = GetComponentsInChildren<NetworkBehaviour>();
 
-            if(targets.Length > byte.MaxValue)
+            if (targets.Length > byte.MaxValue)
                 throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
 
             var count = (byte)targets.Length;
@@ -53,12 +61,6 @@ namespace Game
 
                 targets[i].Set(this, id);
             }
-        }
-
-        public void Spawn(NetworkClientID owner, NetworkEntityID id)
-        {
-            this.Owner = owner;
-            this.ID = id;
         }
 
         public void InvokeRpc(RpcCommand command)

@@ -24,7 +24,7 @@ namespace Game.Server
             IsReady = true;
         }
 
-        public NetworkMessage ConnectMessage { get; set; }
+        public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
 
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
