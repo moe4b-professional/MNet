@@ -54,8 +54,8 @@ namespace Game.Shared
     [Serializable]
     public struct NetworkEntityID : INetworkSerializable
     {
-        Guid value;
-        public Guid Value { get { return value; } }
+        ushort value;
+        public ushort Value { get { return value; } }
 
         public void Serialize(NetworkWriter writer)
         {
@@ -66,7 +66,7 @@ namespace Game.Shared
             reader.Read(out value);
         }
 
-        public NetworkEntityID(Guid value)
+        public NetworkEntityID(ushort value)
         {
             this.value = value;
         }
@@ -90,18 +90,11 @@ namespace Game.Shared
         public static bool operator ==(NetworkEntityID a, NetworkEntityID b) => a.Equals(b);
         public static bool operator !=(NetworkEntityID a, NetworkEntityID b) => !a.Equals(b);
 
-        public static NetworkEntityID Empty { get; private set; } = new NetworkEntityID(Guid.Empty);
-
-        public static NetworkEntityID Generate()
-        {
-            var value = Guid.NewGuid();
-
-            return new NetworkEntityID(value);
-        }
+        public static NetworkEntityID Empty { get; private set; } = new NetworkEntityID(0);
     }
 
     [Serializable]
-    public partial struct NetworkBehaviourID : INetworkSerializable
+    public struct NetworkBehaviourID : INetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }

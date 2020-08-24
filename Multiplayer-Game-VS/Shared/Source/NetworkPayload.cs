@@ -141,22 +141,29 @@ namespace Game.Shared
         ushort capacity;
         public ushort Capacity { get { return capacity; } }
 
+        AttributesCollection attributes;
+        public AttributesCollection Attributes => attributes;
+
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(name);
             writer.Write(capacity);
+            writer.Write(attributes);
         }
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out name);
             reader.Read(out capacity);
+            reader.Read(out attributes);
         }
 
         public CreateRoomRequest() { }
-        public CreateRoomRequest(string name, ushort capacity)
+        public CreateRoomRequest(string name, ushort capacity) : this(name, capacity, null) { }
+        public CreateRoomRequest(string name, ushort capacity, AttributesCollection attributes)
         {
             this.name = name;
             this.capacity = capacity;
+            this.attributes = attributes;
         }
     }
 

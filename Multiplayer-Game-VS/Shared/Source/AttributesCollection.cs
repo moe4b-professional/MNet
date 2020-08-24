@@ -17,6 +17,17 @@ namespace Game.Shared
 
         public const int DefaultValueBufferSize = 256;
 
+        public object this[string key]
+        {
+            get
+            {
+                if (TryGetValue(key, out var value) == false)
+                    return new KeyNotFoundException($"No Key: '{key}' registerd in {nameof(AttributesCollection)}");
+
+                return value;
+            }
+        }
+
         public void Set<T>(string key, T value)
         {
             using (var writer = new NetworkWriter(DefaultValueBufferSize))
@@ -86,8 +97,6 @@ namespace Game.Shared
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out payload);
-
-            Log.Info(payload.Count);
 
             objects = new Dictionary<string, object>();
         }

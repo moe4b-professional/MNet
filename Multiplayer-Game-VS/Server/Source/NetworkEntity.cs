@@ -11,15 +11,17 @@ namespace Game.Server
     class NetworkEntity
     {
         public NetworkEntityID ID { get; protected set; }
+        public void Configure(NetworkEntityID id)
+        {
+            this.ID = id;
+        }
 
         public NetworkMessage SpawnMessage { get; set; }
 
         public NetworkEntityRPCBuffer RPCBuffer { get; protected set; }
 
-        public NetworkEntity(NetworkEntityID id)
+        public NetworkEntity()
         {
-            this.ID = id;
-
             RPCBuffer = new NetworkEntityRPCBuffer();
         }
     }

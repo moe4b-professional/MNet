@@ -20,13 +20,17 @@ namespace Game.Shared
         int playersCount;
         public int PlayersCount { get { return playersCount; } }
 
+        AttributesCollection attributes;
+        public AttributesCollection Attributes => attributes;
+
         public RoomBasicInfo() { }
-        public RoomBasicInfo(ushort id, string name, int maxPlayers, int playersCount)
+        public RoomBasicInfo(ushort id, string name, int maxPlayers, int playersCount, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
             this.maxPlayers = maxPlayers;
             this.playersCount = playersCount;
+            this.attributes = attributes;
         }
 
         public void Serialize(NetworkWriter writer)
@@ -35,6 +39,7 @@ namespace Game.Shared
             writer.Write(name);
             writer.Write(maxPlayers);
             writer.Write(playersCount);
+            writer.Write(attributes);
         }
         public void Deserialize(NetworkReader reader)
         {
@@ -42,6 +47,7 @@ namespace Game.Shared
             reader.Read(out name);
             reader.Read(out maxPlayers);
             reader.Read(out playersCount);
+            reader.Read(out attributes);
         }
 
         public override string ToString()

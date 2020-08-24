@@ -57,9 +57,17 @@ namespace Game
             if(Input.GetKeyDown(KeyCode.F))
             {
                 if (Application.isEditor)
-                    NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4);
+                {
+                    var attributes = new AttributesCollection();
+
+                    attributes.Set("Scene", "Level");
+
+                    NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
+                }
                 else
+                {
                     NetworkAPI.RestAPI.Lobby.Info();
+                }
             }
         }
 
@@ -69,6 +77,14 @@ namespace Game
 
             Debug.Log("Lobby Size: " + lobby.Size);
 
+            if (room.Attributes == null)
+                Debug.LogError("Null Room Attributes");
+            else
+            {
+                foreach (var key in room.Attributes.Keys)
+                    Debug.Log(room.Attributes[key]);
+            }
+
             if (room == null) return;
 
             NetworkAPI.Room.Join(room);
@@ -77,6 +93,14 @@ namespace Game
         void RoomCreatedCallback(RoomBasicInfo room)
         {
             Debug.Log("Created Room " + room.ID);
+
+            if (room.Attributes == null)
+                Debug.LogError("Null Room Attributes");
+            else
+            {
+                foreach (var key in room.Attributes.Keys)
+                    Debug.Log(room.Attributes[key]);
+            }
 
             NetworkAPI.Room.Join(room);
         }

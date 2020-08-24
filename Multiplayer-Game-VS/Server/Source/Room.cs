@@ -28,7 +28,34 @@ namespace Game.Server
 
         public int PlayersCount => Clients.Count;
 
-        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount);
+        public AttributesCollection Attributes { get; protected set; }
+
+        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount, Attributes);
+        #endregion
+
+        #region Internal Properties
+        public RoomInternalInfo ReadInternalInfo()
+        {
+            var info = new RoomInternalInfo();
+
+            return info;
+        }
+
+        public NetworkClientInfo[] GetClientsInfo()
+        {
+            var list = new NetworkClientInfo[Clients.Count];
+
+            var index = 0;
+
+            foreach (var client in Clients.Values)
+            {
+                list[index] = client.ReadInfo();
+
+                index += 1;
+            }
+
+            return list;
+        }
         #endregion
 
         #region Web Socket
@@ -88,7 +115,7 @@ namespace Game.Server
 
             var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket.Sessions.SendTo(binary, id);
+            WebSocket.Sessions.SendToAsync(binary, id, null);
 
             return message;
         }
@@ -101,10 +128,11 @@ namespace Game.Server
 
             foreach (var client in Clients.Values)
             {
+                if (client.IsReady == false) continue;
+
                 if (IsActive(client.ID) == false) continue;
 
-                if (client.IsReady)
-                    WebSocket.Sessions.SendTo(binary, client.ID);
+                WebSocket.Sessions.SendToAsync(binary, client.ID, null);
             }
 
             return message;
@@ -119,32 +147,9 @@ namespace Game.Server
         public const long DefaultTickInterval = 50;
         #endregion
 
-        public RoomInternalInfo ReadInternalInfo()
-        {
-            var info = new RoomInternalInfo();
-
-            return info;
-        }
-
-        public NetworkClientInfo[] GetClientsInfo()
-        {
-            var list = new NetworkClientInfo[Clients.Count];
-
-            var index = 0;
-
-            foreach (var client in Clients.Values)
-            {
-                list[index] = client.ReadInfo();
-
-                index += 1;
-            }
-
-            return list;
-        }
-
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
-        public Dictionary<NetworkEntityID, NetworkEntity> Entities { get; protected set; }
+        public IDCollection<NetworkEntity> Entities { get; protected set; }
 
         #region Message Buffer
         public List<NetworkMessage> MessageBuffer { get; protected set; }
@@ -167,6 +172,11 @@ namespace Game.Server
         #endregion
 
         public RoomActionQueue ActionQueue { get; protected set; }
+
+        public void Configure(ushort id)
+        {
+            this.ID = id;
+        }
 
         public void Start()
         {
@@ -266,7 +276,7 @@ namespace Game.Server
 
         void InvokeRPC(NetworkClient sender, RpcRequest request)
         {
-            if (Entities.TryGetValue(request.Entity, out var entity))
+            if (Entities.TryGetValue(request.Entity.Value, out var entity))
                 InvokeRPC(sender, entity, request);
             else
                 Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
@@ -283,12 +293,14 @@ namespace Game.Server
         void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource, request.Attributes);
         void SpawnEntity(NetworkClient owner, string resource, AttributesCollection attributes)
         {
-            var id = NetworkEntityID.Generate();
-
-            var entity = new NetworkEntity(id);
+            var entity = new NetworkEntity();
 
             owner.Entities.Add(entity);
-            Entities.Add(id, entity);
+            var code = Entities.Add(entity);
+
+            var id = new NetworkEntityID(code);
+
+            entity.Configure(id);
 
             var command = new SpawnEntityCommand(owner.ID, entity.ID, resource, attributes);
             var message = BroadcastToReady(command);
@@ -313,7 +325,7 @@ namespace Game.Server
 
                 entity.RPCBuffer.UnBufferAll(UnbufferMessages);
 
-                Entities.Remove(entity.ID);
+                Entities.Remove(entity);
             }
 
             Clients.Remove(client.ID);
@@ -331,17 +343,17 @@ namespace Game.Server
             GameServer.WebSocket.RemoveService(Path);
         }
 
-        public Room(ushort id, string name, ushort capacity)
+        public Room(string name, ushort capacity, AttributesCollection attributes)
         {
-            this.ID = id;
             this.Name = name;
             this.Capacity = capacity;
+            this.Attributes = attributes;
 
             MessageBuffer = new List<NetworkMessage>();
 
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
 
-            Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
+            Entities = new IDCollection<NetworkEntity>();
 
             GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
 

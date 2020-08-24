@@ -49,6 +49,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Source\IDCollection.cs" />
     <Compile Include="Source\Lobby.cs" />
     <Compile Include="GameServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -13,60 +13,46 @@ namespace Game.Server
 {
     class Lobby
     {
-        public Dictionary<ushort, Room> Rooms { get; protected set; }
+        public IDCollection<Room> Rooms { get; protected set; }
 
         public RoomBasicInfo[] ReadRoomsInfo()
         {
             var results = new RoomBasicInfo[Rooms.Count];
 
             var index = 0;
-            foreach (var room in Rooms.Values)
+
+            foreach (var room in Rooms.Collection)
             {
                 var info = room.ReadBasicInfo();
 
                 results[index] = info;
 
-                index++;
+                index += 1;
             }
 
             return results;
         }
 
-        ushort index;
-        public ushort GenerateRoomID()
-        {
-            var value = index;
-
-            if (index == ushort.MaxValue) index = 0; //Let's just hope that you'll never have more than 65,535 rooms in a single server :)
-
-            index += 1;
-
-            return value;
-        }
-
         public void Configure()
         {
-            Rooms = new Dictionary<ushort, Room>();
-
             GameServer.Rest.Router.Register(RESTRoute);
         }
 
         public RoomBasicInfo CreateRoom(CreateRoomRequest request)
         {
-            var room = CreateRoom(request.Name, request.Capacity);
+            var room = CreateRoom(request.Name, request.Capacity, request.Attributes);
 
             var info = room.ReadBasicInfo();
 
             return info;
         }
-        public Room CreateRoom(string name, ushort capacity)
+        public Room CreateRoom(string name, ushort capacity, AttributesCollection attributes)
         {
-            var id = GenerateRoomID();
+            var room = new Room(name, capacity, attributes);
 
-            var room = new Room(id, name, capacity);
+            var id = Rooms.Add(room);
 
-            Rooms.Add(id, room);
-
+            room.Configure(id);
             room.Start();
 
             return room;
@@ -116,6 +102,11 @@ namespace Game.Server
             }
 
             return false;
+        }
+
+        public Lobby()
+        {
+            Rooms = new IDCollection<Room>();
         }
     }
 }

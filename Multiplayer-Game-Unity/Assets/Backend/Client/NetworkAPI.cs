@@ -213,7 +213,18 @@ namespace Game
             public static class Room
             {
                 #region Create
-                public static void Create(string name, ushort capacity) => Create(new CreateRoomRequest(name, capacity));
+                public static void Create(string name, ushort capacity)
+                {
+                    var request = new CreateRoomRequest(name, capacity);
+
+                    Create(request);
+                }
+                public static void Create(string name, ushort capacity, AttributesCollection attributes)
+                {
+                    var request = new CreateRoomRequest(name, capacity, attributes);
+
+                    Create(request);
+                }
                 public static void Create(CreateRoomRequest request)
                 {
                     var message = NetworkMessage.Write(request);
