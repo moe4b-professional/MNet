@@ -131,6 +131,7 @@ namespace Game.Server
                 if (client.IsReady == false) continue;
 
                 if (IsActive(client.ID) == false) continue;
+                if (IsInactive(client.ID)) continue;
 
                 WebSocket.Sessions.SendToAsync(binary, client.ID, null);
             }
@@ -139,6 +140,8 @@ namespace Game.Server
         }
 
         bool IsActive(NetworkClientID id) => WebSocket.Sessions.ActiveIDs.Contains(id.Value);
+
+        bool IsInactive(NetworkClientID id) => WebSocket.Sessions.InactiveIDs.Contains(id.Value);
         #endregion
 
         #region Schedule
@@ -176,6 +179,8 @@ namespace Game.Server
         public void Configure(ushort id)
         {
             this.ID = id;
+
+            GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
         }
 
         public void Start()
@@ -208,6 +213,8 @@ namespace Game.Server
         #region Messages
         void ClientMessageCallback(NetworkClientID id, byte[] raw, NetworkMessage message)
         {
+            //Log.Info($"{message.Type} Binary Size: {raw.Length}");
+
             if (Clients.TryGetValue(id, out var client))
             {
                 if (message.Is<RpcRequest>())
@@ -354,8 +361,6 @@ namespace Game.Server
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
 
             Entities = new IDCollection<NetworkEntity>();
-
-            GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
 
             ActionQueue = new RoomActionQueue();
 
