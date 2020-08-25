@@ -95,6 +95,12 @@ namespace Game
 
                 var message = NetworkMessage.Write(payload);
 
+                if (NetworkAPI.Client.IsConnected == false)
+                {
+                    Debug.LogWarning($"Cannot Send RPC {name} When Client Isn't Connected");
+                    return;
+                }
+
                 NetworkAPI.Client.Send(message);
             }
         }

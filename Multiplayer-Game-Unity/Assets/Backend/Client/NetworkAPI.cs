@@ -259,16 +259,17 @@ namespace Game
             public static string Address => NetworkAPI.Address + ":" + Constants.WebSocketAPI.Port;
             
             public static WebSocket Client { get; private set; }
-            public static bool IsConnected => Client == null ? false : Client.IsAlive;
+            public static bool IsConnected => Client == null ? false : Client.ReadyState == WebSocketState.Open;
 
-            public static ConcurrentQueue<ActionCallback> ActionQueue { get; private set; }
-            public delegate void ActionCallback();
+            public static ConcurrentQueue<Action> ActionQueue { get; private set; }
 
             public static void Connect(string path)
             {
                 if (IsConnected) Disconnect();
 
                 var url = "ws://" + Address + path;
+
+                ActionQueue = new ConcurrentQueue<Action>();
 
                 Client = new WebSocket(url);
 
@@ -321,6 +322,7 @@ namespace Game
                 var code = (CloseStatusCode)args.Code;
                 var reason = args.Reason;
 
+                ActionQueue = new ConcurrentQueue<Action>();
                 ActionQueue.Enqueue(Invoke);
 
                 void Invoke() => OnDisconnect?.Invoke(code, reason);
@@ -344,12 +346,14 @@ namespace Game
             public static void Disconnect() => Disconnect(CloseStatusCode.Normal);
             public static void Disconnect(CloseStatusCode code)
             {
-                if (IsConnected) Client.CloseAsync(code);
+                if (IsConnected == false) return;
+
+                Client.CloseAsync(code);
             }
 
             static WebSocketAPI()
             {
-                ActionQueue = new ConcurrentQueue<ActionCallback>();
+                ActionQueue = new ConcurrentQueue<Action>();
 
                 NetworkAPI.OnUpdate += Update;
 
@@ -362,6 +366,8 @@ namespace Game
             public static NetworkClientProfile Profile { get; private set; }
 
             public static NetworkClientID ID => Instance == null ? NetworkClientID.Empty : Instance.ID;
+
+            public static bool IsConnected => WebSocketAPI.IsConnected;
 
             public static NetworkClient Instance { get; private set; }
             public static void Set(NetworkClientID ID) => Instance = new NetworkClient(ID, Profile);
@@ -574,7 +580,7 @@ namespace Game
 
                 OnClientConnected?.Invoke(client);
 
-                Debug.Log($"Client {client.ID} Connected");
+                Debug.Log($"Client {client.ID} Connected to Room");
             }
 
             static void InvokeRpc(RpcCommand command)
