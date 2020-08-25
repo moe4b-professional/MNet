@@ -52,7 +52,7 @@ namespace Game.Server
             {
                 if (codes.TryGetValue(type, out var id) == false) return false;
 
-                types[id] = null;
+                types.Remove(id);
                 codes.Remove(type);
 
                 vacant.Enqueue(id);
