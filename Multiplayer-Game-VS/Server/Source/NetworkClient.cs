@@ -6,11 +6,17 @@ using System.Threading.Tasks;
 
 using Game.Shared;
 
+using WebSocketSharp;
+using WebSocketSharp.Net;
+using WebSocketSharp.Server;
+
 namespace Game.Server
 {
     class NetworkClient
     {
         public NetworkClientID ID { get; protected set; }
+
+        public IWebSocketSession Session { get; protected set; }
 
         public NetworkClientProfile Profile { get; protected set; }
 
@@ -26,9 +32,10 @@ namespace Game.Server
 
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
 
-        public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
+        public NetworkClient(NetworkClientID id, IWebSocketSession session, NetworkClientProfile profile)
         {
             this.ID = id;
+            this.Session = session;
             this.Profile = profile;
 
             Entities = new List<NetworkEntity>();

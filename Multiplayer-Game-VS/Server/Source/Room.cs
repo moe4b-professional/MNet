@@ -66,7 +66,7 @@ namespace Game.Server
             public Room Room { get; protected set; }
             public void Set(Room reference) => Room = reference;
 
-            public RoomActionQueue ActionQueue => Room.ActionQueue;
+            public ActionQueue ActionQueue => Room.InputQueue;
 
             protected override void OnOpen()
             {
@@ -108,19 +108,18 @@ namespace Game.Server
             service.Set(this);
         }
 
-        NetworkMessage SendTo(NetworkClient client, object payload) => SendTo(client.ID, payload);
-        NetworkMessage SendTo(NetworkClientID id, object payload)
+        NetworkMessage SendTo(NetworkClient client, object payload)
         {
             var message = NetworkMessage.Write(payload);
 
             var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket.Sessions.SendToAsync(binary, id, null);
+            WebSocket.Sessions.SendToAsync(binary, client.ID, null);
 
             return message;
         }
 
-        NetworkMessage BroadcastToReady(INetworkSerializable payload)
+        NetworkMessage BroadcastToReady(object payload)
         {
             var message = NetworkMessage.Write(payload);
 
@@ -128,10 +127,11 @@ namespace Game.Server
 
             foreach (var client in Clients.Values)
             {
+                if (client == null) continue;
+
                 if (client.IsReady == false) continue;
 
-                if (IsActive(client.ID) == false) continue;
-                if (IsInactive(client.ID)) continue;
+                if (client.Session.State != WebSocketState.Open) continue;
 
                 WebSocket.Sessions.SendToAsync(binary, client.ID, null);
             }
@@ -174,7 +174,7 @@ namespace Game.Server
         }
         #endregion
 
-        public RoomActionQueue ActionQueue { get; protected set; }
+        public ActionQueue InputQueue { get; protected set; }
 
         public void Configure(ushort id)
         {
@@ -201,7 +201,10 @@ namespace Game.Server
         {
             OnTick?.Invoke();
 
-            while (ActionQueue.Dequeue(out var callback))
+            var log = $"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}";
+            Log.Info(log);
+
+            while (InputQueue.Dequeue(out var callback))
                 callback();
         }
 
@@ -252,13 +255,19 @@ namespace Game.Server
         {
             if (Clients.ContainsKey(id))
             {
-                Log.Warning($"Client {id} Already Registered With Room {this.ID}, Ignoring Request");
+                Log.Warning($"Client {id} Already Registered With Room {this.ID}, Ignoring Register Request");
+                return;
+            }
+
+            if(WebSocket.Sessions.TryGetSession(id, out var session) == false)
+            {
+                Log.Warning($"No WebSocket Session Found for Client {id}, Ignoring Register Request");
                 return;
             }
 
             Log.Info($"Room {this.ID}: Client {id} Registerd");
 
-            var client = new NetworkClient(id, profile);
+            var client = new NetworkClient(id, session, profile);
 
             Clients.Add(id, client);
 
@@ -362,33 +371,9 @@ namespace Game.Server
 
             Entities = new IDCollection<NetworkEntity>();
 
-            ActionQueue = new RoomActionQueue();
+            InputQueue = new ActionQueue();
 
             Schedule = new Schedule(DefaultTickInterval, Init, Tick);
-        }
-    }
-
-    class RoomActionQueue
-    {
-        public ConcurrentQueue<Callback> Collection { get; protected set; }
-
-        public int Count => Collection.Count;
-
-        public delegate void Callback();
-
-        public void Enqueue(Callback callback)
-        {
-            Collection.Enqueue(callback);
-        }
-
-        public bool Dequeue(out Callback callback)
-        {
-            return Collection.TryDequeue(out callback);
-        }
-
-        public RoomActionQueue()
-        {
-            Collection = new ConcurrentQueue<Callback>();
         }
     }
 }

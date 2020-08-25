@@ -12,27 +12,30 @@ namespace Game.Shared
 {
     public static class NetworkSerializer
     {
-        public const int BufferSize = 2048;
+        public const int DefaultBufferSize = 2048;
 
-        public static byte[] Serialize(object instance)
+        public static byte[] Serialize(object instance) => Serialize(instance, DefaultBufferSize);
+        public static byte[] Serialize(object instance, int bufferSize)
         {
-            var writer = new NetworkWriter(BufferSize);
+            using (var writer = new NetworkWriter(bufferSize))
+            {
+                writer.Write(instance);
 
-            writer.Write(instance);
+                var result = writer.ToArray();
 
-            var result = writer.ToArray();
-
-            return result;
+                return result;
+            }
         }
 
         public static T Deserialize<T>(byte[] data)
             where T : new()
         {
-            var reader = new NetworkReader(data);
+            using (var reader = new NetworkReader(data))
+            {
+                var result = reader.Read<T>();
 
-            var result = reader.Read<T>();
-
-            return result;
+                return result;
+            }
         }
         public static object Deserialize(byte[] data, Type type)
         {
@@ -66,9 +69,31 @@ namespace Game.Shared
 
         public int Remaining => Size - position;
 
+        public const uint DefaultResizeLength = 512;
+
         public virtual void Dispose()
         {
             data = null;
+        }
+
+        protected void Resize(uint extra)
+        {
+            var value = new byte[Size + extra];
+
+            Buffer.BlockCopy(data, 0, value, 0, position);
+
+            this.data = value;
+        }
+        protected void ResizeToFit(int capacity)
+        {
+            if (capacity <= 0) throw new Exception($"Cannot Resize Network Buffer to Fit {capacity}");
+
+            uint extra = DefaultResizeLength;
+
+            while (capacity > Size + extra)
+                extra += DefaultResizeLength;
+
+            Resize(extra);
         }
 
         public NetworkStream(byte[] data)
@@ -94,13 +119,25 @@ namespace Game.Shared
         {
             var count = source.Length;
 
+            if (count > Remaining) ResizeToFit(count);
+
             Buffer.BlockCopy(source, 0, data, Position, count);
 
             Position += count;
         }
         public void Insert(byte value)
         {
-            data[Position] = value;
+            if (Remaining == 0) Resize(DefaultResizeLength);
+
+            try
+            {
+                data[Position] = value;
+            }
+            catch (Exception)
+            {
+                Log.Info(Remaining);
+                throw;
+            }
 
             Position += 1;
         }

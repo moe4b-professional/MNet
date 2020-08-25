@@ -284,7 +284,7 @@ namespace Game
             {
                 var binary = NetworkSerializer.Serialize(message);
 
-                Client.Send(binary);
+                Client.SendAsync(binary, null);
             }
 
             static void Update()

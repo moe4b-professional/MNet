@@ -54,20 +54,18 @@ namespace Game
 
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.F))
+            if(Input.GetKeyDown(KeyCode.C))
             {
-                if (Application.isEditor)
-                {
-                    var attributes = new AttributesCollection();
+                var attributes = new AttributesCollection();
 
-                    attributes.Set("Scene", "Level");
+                attributes.Set("Scene", "Level");
 
-                    NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
-                }
-                else
-                {
-                    NetworkAPI.RestAPI.Lobby.Info();
-                }
+                NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
+            }
+
+            if(Input.GetKeyDown(KeyCode.V))
+            {
+                NetworkAPI.RestAPI.Lobby.Info();
             }
         }
 
@@ -77,6 +75,8 @@ namespace Game
 
             Debug.Log("Lobby Size: " + lobby.Size);
 
+            if (room == null) return;
+
             if (room.Attributes == null)
                 Debug.LogError("Null Room Attributes");
             else
@@ -84,8 +84,6 @@ namespace Game
                 foreach (var key in room.Attributes.Keys)
                     Debug.Log(room.Attributes[key]);
             }
-
-            if (room == null) return;
 
             NetworkAPI.Room.Join(room);
         }

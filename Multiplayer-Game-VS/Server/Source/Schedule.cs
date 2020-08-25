@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Game.Shared;
+
 namespace Game.Server
 {
     public class Schedule
@@ -47,6 +49,8 @@ namespace Game.Server
 
             while (run)
             {
+                stopwatch.Start();
+
                 tickCallback?.Invoke();
 
                 var elapsed = stopwatch.ElapsedMilliseconds;
@@ -57,7 +61,7 @@ namespace Game.Server
 
                 ElapsedTime += DeltaTime;
 
-                stopwatch.Restart();
+                stopwatch.Reset();
             }
         }
 
