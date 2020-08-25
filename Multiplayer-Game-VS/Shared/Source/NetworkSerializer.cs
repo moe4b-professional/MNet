@@ -142,15 +142,25 @@ namespace Game.Shared
             Position += 1;
         }
 
+        public void Write<T>(T value)
+        {
+            var type = typeof(T);
+
+            Write(value, type);
+        }
         public void Write(object value)
         {
-            if(value == null)
+            var type = value.GetType();
+
+            Write(value, type);
+        }
+        public void Write(object value, Type type)
+        {
+            if (value == null)
             {
                 Write(true); //Is Null Flag Value
                 return;
             }
-
-            var type = value.GetType();
 
             if (IsNullable(type)) Write(false); //Is Not Null Flag
 
@@ -182,7 +192,7 @@ namespace Game.Shared
             {
                 throw new InvalidCastException($"Trying to read {value.GetType()} as {typeof(T)}");
             }
-            catch(Exception)
+            catch (Exception)
             {
                 throw;
             }
