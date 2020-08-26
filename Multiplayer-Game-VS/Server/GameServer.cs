@@ -21,10 +21,12 @@ namespace Game.Server
 
         static void Main(string[] args)
         {
-            Rest = new RestAPI(IPAddress.Any, Constants.RestAPI.Port);
+            var address = IPAddress.Any;
+
+            Rest = new RestAPI(address, Constants.RestAPI.Port);
             Rest.Start();
 
-            WebSocket = new WebSocketAPI(IPAddress.Any, Constants.WebSocketAPI.Port);
+            WebSocket = new WebSocketAPI(address, Constants.WebSocketAPI.Port);
             WebSocket.Start();
 
             Lobby = new Lobby();
@@ -40,11 +42,11 @@ namespace Game.Server
     {
         public static void Run()
         {
-            SampleObject.Test();
+            
         }
     }
 
-    public partial class SampleObject : INetworkSerializable
+    public class SerializationSample : INetworkSerializable
     {
         public int number;
 
@@ -82,7 +84,7 @@ namespace Game.Server
             reader.Read(out attribute);
         }
 
-        public SampleObject()
+        public SerializationSample()
         {
 
         }
@@ -92,7 +94,7 @@ namespace Game.Server
             byte[] data;
 
             {
-                var sample = new SampleObject()
+                var sample = new SerializationSample()
                 {
                     number = 42,
                     text = "Hello Serializer",
@@ -136,7 +138,7 @@ namespace Game.Server
             {
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-                var sample = NetworkSerializer.Deserialize<SampleObject>(data);
+                var sample = NetworkSerializer.Deserialize<SerializationSample>(data);
 
                 stopwatch.Stop();
 

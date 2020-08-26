@@ -369,7 +369,7 @@ namespace Game
 
             public static bool IsConnected => WebSocketAPI.IsConnected;
 
-            public static bool IsReady { get; private set; } = false;
+            public static bool IsReady { get; private set; }
 
             public static NetworkClient Instance { get; private set; }
             public static void Set(NetworkClientID ID) => Instance = new NetworkClient(ID, Profile);
@@ -381,6 +381,8 @@ namespace Game
                 WebSocketAPI.OnDisconnect += DisconnectedCallback;
 
                 Room.OnSpawnEntity += SpawnEntityCallback;
+
+                IsReady = false;
             }
 
             public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
@@ -487,6 +489,8 @@ namespace Game
             static void DisconnectedCallback(CloseStatusCode code, string reason)
             {
                 Debug.Log("Client Disconnected");
+
+                IsReady = false;
 
                 OnDisconnect?.Invoke(code, reason);
             }
