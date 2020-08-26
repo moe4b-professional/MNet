@@ -101,7 +101,7 @@ namespace StressTest
             {
                 var command = message.Read<SpawnEntityCommand>();
 
-                if(command.Owner == clientID)
+                if (command.Owner == clientID)
                 {
                     entityID = command.Entity;
 
