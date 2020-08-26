@@ -14,6 +14,20 @@ namespace Game.Shared
     {
         public const int DefaultBufferSize = 2048;
 
+        #region Serialize
+        public static byte[] Serialize<T>(T instance) => Serialize(instance, DefaultBufferSize);
+        public static byte[] Serialize<T>(T instance, int bufferSize)
+        {
+            using (var writer = new NetworkWriter(bufferSize))
+            {
+                writer.Write(instance);
+
+                var result = writer.ToArray();
+
+                return result;
+            }
+        }
+
         public static byte[] Serialize(object instance) => Serialize(instance, DefaultBufferSize);
         public static byte[] Serialize(object instance, int bufferSize)
         {
@@ -26,25 +40,30 @@ namespace Game.Shared
                 return result;
             }
         }
+        #endregion
 
+        #region Deserialize
         public static T Deserialize<T>(byte[] data)
             where T : new()
         {
             using (var reader = new NetworkReader(data))
             {
-                var result = reader.Read<T>();
+                reader.Read(out T result);
 
                 return result;
             }
         }
+
         public static object Deserialize(byte[] data, Type type)
         {
-            var reader = new NetworkReader(data);
+            using (var reader = new NetworkReader(data))
+            {
+                var result = reader.Read(type);
 
-            var result = reader.Read(type);
-
-            return result;
+                return result;
+            }
         }
+        #endregion
     }
 
     public abstract class NetworkStream : IDisposable
@@ -101,7 +120,7 @@ namespace Game.Shared
             this.data = data;
         }
 
-        public static bool IsNullable(Type type) => type.IsValueType == false;
+        public static bool IsNullable(Type type) => NetworkNullable.Check(type);
     }
 
     public class NetworkWriter : NetworkStream
@@ -146,15 +165,55 @@ namespace Game.Shared
         {
             var type = typeof(T);
 
-            Write(value, type);
-        }
-        public void Write(object value)
-        {
-            var type = value.GetType();
+            if (WriteExplicit(value, type))
+            {
 
-            Write(value, type);
+            }
+            else if (WriteImplicit(value, type))
+            {
+
+            }
+            else
+            {
+                throw new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+            }
         }
-        public void Write(object value, Type type)
+        bool WriteExplicit<T>(T value, Type type)
+        {
+            var resolver = NetworkSerializationExplicitResolver<T>.Instance;
+
+            if (resolver == null) return false;
+
+            if (value == null)
+            {
+                Write(true); //Is Null Flag Value
+                return true;
+            }
+            if (IsNullable(type)) Write(false); //Is Not Null Flag
+
+            resolver.Serialize(this, value);
+
+            return true;
+        }
+        bool WriteImplicit(object value, Type type)
+        {
+            var resolver = NetworkSerializationImplicitResolver.Retrive(type);
+
+            if (resolver == null) return false;
+
+            if (value == null)
+            {
+                Write(true); //Is Null Flag Value
+                return true;
+            }
+            if (IsNullable(type)) Write(false); //Is Not Null Flag
+
+            resolver.Serialize(this, value);
+
+            return true;
+        }
+
+        public void Write(object value)
         {
             if (value == null)
             {
@@ -162,16 +221,16 @@ namespace Game.Shared
                 return;
             }
 
+            var type = value.GetType();
+
             if (IsNullable(type)) Write(false); //Is Not Null Flag
 
-            var resolver = NetworkSerializationResolver.Collection.Retrive(type);
-            if (resolver != null)
-            {
-                resolver.Serialize(this, value);
-                return;
-            }
+            var resolver = NetworkSerializationResolver.Retrive(type);
 
-            throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+            if(resolver == null)
+                throw new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+
+            resolver.Serialize(this, value);
         }
 
         public NetworkWriter(int size) : base(new byte[size]) { }
@@ -182,34 +241,102 @@ namespace Game.Shared
         public void Read<T>(out T value) => value = Read<T>();
         public T Read<T>()
         {
-            var value = Read(typeof(T));
+            var type = typeof(T);
 
-            try
+            T value;
+
+            if(ReadExplicit(out value, type))
             {
-                return (T)value;
+
             }
-            catch (InvalidCastException)
+            else if(ReadImplicit(out var instance, type))
             {
-                throw new InvalidCastException($"Trying to read {value.GetType()} as {typeof(T)}");
+                try
+                {
+                    value = (T)instance;
+                }
+                catch (InvalidCastException)
+                {
+                    throw new InvalidCastException($"Trying to read {instance.GetType()} as {typeof(T)}");
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
             }
-            catch (Exception)
+            else
             {
-                throw;
+                throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
             }
+
+            return value;
         }
+        bool ReadExplicit<T>(out T value, Type type)
+        {
+            var resolver = NetworkSerializationExplicitResolver<T>.Instance;
+
+            if(resolver == null)
+            {
+                value = default(T);
+                return false;
+            }
+
+            if (IsNullable(type))
+            {
+                Read(out bool isNull);
+
+                if (isNull)
+                {
+                    value = default(T);
+                    return true;
+                }
+            }
+
+            value = resolver.Deserialize(this);
+            return true;
+        }
+        bool ReadImplicit(out object value, Type type)
+        {
+            var resolver = NetworkSerializationImplicitResolver.Retrive(type);
+
+            if (resolver == null)
+            {
+                value = null;
+                return false;
+            }
+
+            if (IsNullable(type))
+            {
+                Read(out bool isNull);
+
+                if (isNull)
+                {
+                    value = null;
+                    return true;
+                }
+            }
+
+            value = resolver.Deserialize(this, type);
+            return true;
+        }
+
         public object Read(Type type)
         {
-            if(IsNullable(type))
+            var serializer = NetworkSerializationResolver.Retrive(type);
+
+            if(serializer == null)
+                throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+
+            if (IsNullable(type))
             {
                 Read(out bool isNull);
 
                 if (isNull) return null;
             }
 
-            var resolver = NetworkSerializationResolver.Collection.Retrive(type);
-            if (resolver != null) return resolver.Deserialize(this, type);
+            var value = serializer.Deserialize(this, type);
 
-            throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+            return value;
         }
 
         public NetworkReader(byte[] data) : base(data) { }

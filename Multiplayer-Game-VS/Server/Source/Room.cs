@@ -201,7 +201,7 @@ namespace Game.Server
         {
             OnTick?.Invoke();
 
-            //Log.Info($"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}");
+            Log.Info($"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}");
 
             while (InputQueue.Dequeue(out var callback))
                 callback();

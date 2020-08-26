@@ -10,6 +10,27 @@ using System.Reflection;
 
 namespace Game.Shared
 {
+    public static class NetworkNullable
+    {
+        public static Dictionary<Type, bool> Dictionary { get; private set; }
+
+        public static bool Check(Type type)
+        {
+            if (Dictionary.TryGetValue(type, out var result)) return result;
+
+            result = type.IsValueType == false;
+
+            Dictionary.Add(type, result);
+
+            return result;
+        }
+
+        static NetworkNullable()
+        {
+            Dictionary = new Dictionary<Type, bool>();
+        }
+    }
+
     public abstract class NetworkSerializationResolver
     {
         public abstract bool CanResolve(Type type);
@@ -18,75 +39,96 @@ namespace Game.Shared
 
         public abstract object Deserialize(NetworkReader reader, Type type);
 
-        public static class Collection
+        public NetworkSerializationResolver() { }
+
+        //Static Utility
+        public static List<NetworkSerializationResolver> List { get; private set; }
+
+        public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
+
+        public static NetworkSerializationResolver Retrive(Type type)
         {
-            public static List<NetworkSerializationResolver> List { get; private set; }
+            if (Dictionary.TryGetValue(type, out var value))
+                return value;
 
-            public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
-
-            public static NetworkSerializationResolver Retrive(Type type)
+            for (int i = 0; i < List.Count; i++)
             {
-                if (Dictionary.TryGetValue(type, out var value))
-                    return value;
-
-                for (int i = 0; i < List.Count; i++)
+                if (List[i].CanResolve(type))
                 {
-                    if (List[i].CanResolve(type))
-                    {
-                        Dictionary.Add(type, List[i]);
+                    Dictionary.Add(type, List[i]);
 
-                        return List[i];
-                    }
+                    return List[i];
                 }
-
-                return null;
             }
 
-            static Collection()
+            return null;
+        }
+
+        static NetworkSerializationResolver()
+        {
+            List = new List<NetworkSerializationResolver>();
+
+            Dictionary = new Dictionary<Type, NetworkSerializationResolver>();
+
+            var target = typeof(NetworkSerializationResolver);
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                List = new List<NetworkSerializationResolver>();
-
-                Dictionary = new Dictionary<Type, NetworkSerializationResolver>();
-
-                var target = typeof(NetworkSerializationResolver);
-
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var type in assembly.GetTypes())
                 {
-                    foreach (var type in assembly.GetTypes())
-                    {
-                        if (type == target) continue;
+                    if (type == target) continue;
 
-                        if (type.IsAbstract) continue;
+                    if (type.IsAbstract) continue;
 
-                        if (target.IsAssignableFrom(type) == false) continue;
+                    if (target.IsAssignableFrom(type) == false) continue;
 
-                        var constructor = type.GetConstructor(Type.EmptyTypes);
+                    var constructor = type.GetConstructor(Type.EmptyTypes);
 
-                        if (constructor == null)
-                            throw new InvalidOperationException($"{type.FullName} needs to have an empty constructor to be registered as a {nameof(NetworkSerializationResolver)}");
+                    if (constructor == null)
+                        throw new InvalidOperationException($"{type.FullName} needs to have an empty constructor to be registered as a {nameof(NetworkSerializationResolver)}");
 
-                        var instance = Activator.CreateInstance(type) as NetworkSerializationResolver;
+                    var instance = Activator.CreateInstance(type) as NetworkSerializationResolver;
 
-                        List.Add(instance);
-                    }
+                    List.Add(instance);
                 }
             }
         }
     }
 
-    #region Primitive
-    public sealed class ByteNetworkSerializationResolver : NetworkSerializationResolver
+    public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
     {
-        public override bool CanResolve(Type type) => type == typeof(byte);
+        public static NetworkSerializationExplicitResolver<T> Instance { get; private set; }
 
-        public override void Serialize(NetworkWriter writer, object type)
+        public Type Target { get; private set; } = typeof(T);
+
+        public override bool CanResolve(Type type) => type == Target;
+
+        public override void Serialize(NetworkWriter writer, object type) => Serialize(writer, (T)type);
+        public abstract void Serialize(NetworkWriter writer, T value);
+
+        public override object Deserialize(NetworkReader reader, Type type) => Deserialize(reader);
+        public abstract T Deserialize(NetworkReader reader);
+
+        public NetworkSerializationExplicitResolver()
         {
-            var value = (byte)type;
+            Instance = this;
+        }
+    }
 
+    public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
+    {
+
+    }
+
+    #region Primitive
+    public sealed class ByteNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte>
+    {
+        public override void Serialize(NetworkWriter writer, byte value)
+        {
             writer.Insert(value);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override byte Deserialize(NetworkReader reader)
         {
             var value = reader.Data[reader.Position];
 
@@ -94,45 +136,33 @@ namespace Game.Shared
 
             return value;
         }
-
-        public ByteNetworkSerializationResolver() { }
     }
 
-    public sealed class BoolNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class BoolNetworkSerializationResolver : NetworkSerializationExplicitResolver<bool>
     {
-        public override bool CanResolve(Type type) => type == typeof(bool);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, bool value)
         {
-            var value = (bool)type;
-
             writer.Write(value ? (byte)1 : (byte)0);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override bool Deserialize(NetworkReader reader)
         {
             reader.Read(out byte value);
 
             return value == 0 ? false : true;
         }
-
-        public BoolNetworkSerializationResolver() { }
     }
 
-    public sealed class ShortNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class ShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<short>
     {
-        public override bool CanResolve(Type type) => type == typeof(short);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, short value)
         {
-            var value = (short)type;
-
             var binary = BitConverter.GetBytes(value);
 
             writer.Insert(binary);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override short Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToInt16(reader.Data, reader.Position);
 
@@ -140,24 +170,18 @@ namespace Game.Shared
 
             return value;
         }
-
-        public ShortNetworkSerializationResolver() { }
     }
 
-    public sealed class UShortNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class UShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<ushort>
     {
-        public override bool CanResolve(Type type) => type == typeof(ushort);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, ushort value)
         {
-            var value = (ushort)type;
-
             var binary = BitConverter.GetBytes(value);
 
             writer.Insert(binary);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override ushort Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToUInt16(reader.Data, reader.Position);
 
@@ -165,24 +189,18 @@ namespace Game.Shared
 
             return value;
         }
-
-        public UShortNetworkSerializationResolver() { }
     }
 
-    public sealed class IntNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class IntNetworkSerializationResolver : NetworkSerializationExplicitResolver<int>
     {
-        public override bool CanResolve(Type type) => type == typeof(int);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, int value)
         {
-            var value = (int)type;
-
             var binary = BitConverter.GetBytes(value);
 
             writer.Insert(binary);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override int Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToInt32(reader.Data, reader.Position);
 
@@ -190,24 +208,37 @@ namespace Game.Shared
 
             return value;
         }
-
-        public IntNetworkSerializationResolver() { }
     }
 
-    public sealed class FloatNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class UIntNetworkSerializationResolver : NetworkSerializationExplicitResolver<uint>
     {
-        public override bool CanResolve(Type type) => type == typeof(float);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, uint value)
         {
-            var value = (float)type;
-
             var binary = BitConverter.GetBytes(value);
 
             writer.Insert(binary);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override uint Deserialize(NetworkReader reader)
+        {
+            var value = BitConverter.ToUInt32(reader.Data, reader.Position);
+
+            reader.Position += sizeof(uint);
+
+            return value;
+        }
+    }
+
+    public sealed class FloatNetworkSerializationResolver : NetworkSerializationExplicitResolver<float>
+    {
+        public override void Serialize(NetworkWriter writer, float value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            writer.Insert(binary);
+        }
+
+        public override float Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToSingle(reader.Data, reader.Position);
 
@@ -215,18 +246,12 @@ namespace Game.Shared
 
             return value;
         }
-
-        public FloatNetworkSerializationResolver() { }
     }
 
-    public sealed class StringNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class StringNetworkSerializationResolver : NetworkSerializationExplicitResolver<string>
     {
-        public override bool CanResolve(Type type) => type == typeof(string);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, string value)
         {
-            var value = (string)type;
-
             if (value == null)
             {
                 writer.Write(-1);
@@ -247,7 +272,7 @@ namespace Game.Shared
             }
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override string Deserialize(NetworkReader reader)
         {
             reader.Read(out int count);
 
@@ -261,28 +286,22 @@ namespace Game.Shared
 
             return value;
         }
-
-        public StringNetworkSerializationResolver() { }
     }
     #endregion
 
     #region POCO
-    public class GuidNetworkSerializationResolver : NetworkSerializationResolver
+    public class GuidNetworkSerializationResolver : NetworkSerializationExplicitResolver<Guid>
     {
         public const byte Size = 16;
 
-        public override bool CanResolve(Type type) => type == typeof(Guid);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, Guid value)
         {
-            var value = (Guid)type;
-
             var binary = value.ToByteArray();
 
             writer.Insert(binary);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override Guid Deserialize(NetworkReader reader)
         {
             var binary = new byte[Size];
 
@@ -294,24 +313,18 @@ namespace Game.Shared
 
             return value;
         }
-
-        public GuidNetworkSerializationResolver() { }
     }
 
-    public class DateTimeNetworkSerializationResolver : NetworkSerializationResolver
+    public class DateTimeNetworkSerializationResolver : NetworkSerializationExplicitResolver<DateTime>
     {
-        public override bool CanResolve(Type type) => type == typeof(DateTime);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, DateTime value)
         {
-            var value = (DateTime)type;
-
             var text = value.ToString();
 
             writer.Write(text);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override DateTime Deserialize(NetworkReader reader)
         {
             reader.Read(out string text);
 
@@ -320,12 +333,10 @@ namespace Game.Shared
             else
                 return new DateTime();
         }
-
-        public DateTimeNetworkSerializationResolver() { }
     }
     #endregion
 
-    public sealed class EnumNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class EnumNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type) => type.IsEnum;
 
@@ -348,7 +359,7 @@ namespace Game.Shared
         public EnumNetworkSerializationResolver() { }
     }
 
-    public sealed class INetworkSerializableResolver : NetworkSerializationResolver
+    public sealed class INetworkSerializableResolver : NetworkSerializationImplicitResolver
     {
         public Type Interface => typeof(INetworkSerializable);
 
@@ -374,7 +385,7 @@ namespace Game.Shared
     }
 
     #region Collection
-    public sealed class ArrayNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class ArrayNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type) => type.IsArray;
 
@@ -409,7 +420,7 @@ namespace Game.Shared
         public ArrayNetworkSerializationResolver() { }
     }
 
-    public sealed class ListNetworkSerializationResolver : NetworkSerializationResolver
+    public sealed class ListNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type)
         {
@@ -449,7 +460,7 @@ namespace Game.Shared
         public ListNetworkSerializationResolver() { }
     }
 
-    public sealed class DictionarNetworkSerializationResolvery : NetworkSerializationResolver
+    public sealed class DictionaryNetworkSerializationResolvery : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type)
         {
@@ -494,7 +505,30 @@ namespace Game.Shared
             return dictionary;
         }
 
-        public DictionarNetworkSerializationResolvery() { }
+        public DictionaryNetworkSerializationResolvery() { }
     }
     #endregion
+
+    public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
+    {
+        public override void Serialize(NetworkWriter writer, byte[] value)
+        {
+            writer.Write(value.Length);
+
+            writer.Insert(value);
+        }
+
+        public override byte[] Deserialize(NetworkReader reader)
+        {
+            reader.Read(out int length);
+
+            var value = new byte[length];
+
+            Buffer.BlockCopy(reader.Data, reader.Position, value, 0, length);
+
+            reader.Position += length;
+
+            return value;
+        }
+    }
 }
