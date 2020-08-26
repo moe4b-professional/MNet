@@ -42,7 +42,11 @@ namespace Game.Server
     {
         public static void Run()
         {
-            
+            SerializationSample.Test();
+
+            var binary = Encoding.UTF8.GetByteCount("HALF");
+
+            Log.Info(binary);
         }
     }
 

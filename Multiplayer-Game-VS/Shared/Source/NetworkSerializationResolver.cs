@@ -97,7 +97,7 @@ namespace Game.Shared
 
         public override bool CanResolve(Type type) => type == Target;
 
-        public override void Serialize(NetworkWriter writer, object type) => Serialize(writer, (T)type);
+        public override void Serialize(NetworkWriter writer, object instance) => Serialize(writer, (T)instance);
         public abstract void Serialize(NetworkWriter writer, T value);
 
         public override object Deserialize(NetworkReader reader, Type type) => Deserialize(reader);
@@ -246,13 +246,9 @@ namespace Game.Shared
     {
         public override void Serialize(NetworkWriter writer, string value)
         {
-            if (value == null)
+            if (value.Length == 0)
             {
-                writer.Write(-1);
-            }
-            else if (value == string.Empty)
-            {
-                writer.Write(0);
+                NetworkSerializationLengthHelper.Writer(0, writer);
             }
             else
             {
@@ -260,7 +256,7 @@ namespace Game.Shared
 
                 var count = binary.Length;
 
-                writer.Write(count);
+                NetworkSerializationLengthHelper.Writer(count, writer);
 
                 writer.Insert(binary);
             }
@@ -268,10 +264,8 @@ namespace Game.Shared
 
         public override string Deserialize(NetworkReader reader)
         {
-            reader.Read(out int count);
-
-            if (count < 0) return null;
-
+            NetworkSerializationLengthHelper.Read(out var count, reader);
+            
             if (count == 0) return string.Empty;
 
             var value = Encoding.UTF8.GetString(reader.Data, reader.Position, count);
@@ -349,8 +343,6 @@ namespace Game.Shared
 
             return result;
         }
-
-        public EnumNetworkSerializationResolver() { }
     }
 
     public sealed class INetworkSerializableResolver : NetworkSerializationImplicitResolver
@@ -359,9 +351,9 @@ namespace Game.Shared
 
         public override bool CanResolve(Type type) => Interface.IsAssignableFrom(type);
 
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, object instance)
         {
-            var value = type as INetworkSerializable;
+            var value = instance as INetworkSerializable;
 
             value.Serialize(writer);
         }
@@ -383,21 +375,21 @@ namespace Game.Shared
     {
         public override bool CanResolve(Type type) => type.IsArray;
 
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, object instance)
         {
-            var array = (Array)type;
+            var array = (IList)instance;
 
-            writer.Write(array.Length);
+            NetworkSerializationLengthHelper.Writer(array.Count, writer);
 
-            for (int i = 0; i < array.Length; i++)
-                writer.Write(array.GetValue(i));
+            for (int i = 0; i < array.Count; i++)
+                writer.Write(array[i]);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
             var element = type.GetElementType();
 
-            reader.Read(out int length);
+            NetworkSerializationLengthHelper.Read(out var length, reader);
 
             var array = Array.CreateInstance(element, length);
 
@@ -423,11 +415,11 @@ namespace Game.Shared
             return type.GetGenericTypeDefinition() == typeof(List<>);
         }
 
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, object instance)
         {
-            var list = type as IList;
+            var list = instance as IList;
 
-            writer.Write(list.Count);
+            NetworkSerializationLengthHelper.Writer(list.Count, writer);
 
             for (int i = 0; i < list.Count; i++)
                 writer.Write(list[i]);
@@ -435,7 +427,7 @@ namespace Game.Shared
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            reader.Read(out int count);
+            NetworkSerializationLengthHelper.Read(out var count, reader);
 
             var list = Activator.CreateInstance(type, count) as IList;
 
@@ -463,15 +455,11 @@ namespace Game.Shared
             return type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
         }
 
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, object instance)
         {
-            var dictionary = (IDictionary)type;
+            var dictionary = (IDictionary)instance;
 
-            if (dictionary == null) throw new Exception("Dictionary");
-
-            var count = dictionary.Count;
-
-            writer.Write(count);
+            NetworkSerializationLengthHelper.Writer(dictionary.Count, writer);
 
             foreach (DictionaryEntry entry in dictionary)
             {
@@ -484,7 +472,7 @@ namespace Game.Shared
         {
             var arguments = type.GetGenericArguments();
 
-            reader.Read(out int count);
+            NetworkSerializationLengthHelper.Read(out var count, reader);
 
             var dictionary = Activator.CreateInstance(type, count) as IDictionary;
 
@@ -507,14 +495,14 @@ namespace Game.Shared
     {
         public override void Serialize(NetworkWriter writer, byte[] value)
         {
-            writer.Write(value.Length);
+            NetworkSerializationLengthHelper.Writer(value.Length, writer);
 
             writer.Insert(value);
         }
 
         public override byte[] Deserialize(NetworkReader reader)
         {
-            reader.Read(out int length);
+            NetworkSerializationLengthHelper.Read(out var length, reader);
 
             var value = new byte[length];
 

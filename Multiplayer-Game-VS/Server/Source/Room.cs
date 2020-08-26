@@ -161,6 +161,8 @@ namespace Game.Server
 
             var binary = NetworkSerializer.Serialize(message);
 
+            Log.Info($"{typeof(T)} Binary Size: {binary.Length}");
+
             WebSocket.Sessions.BroadcastAsync(binary, null);
 
             return message;
@@ -172,7 +174,6 @@ namespace Game.Server
             Log.Info($"Starting Room {ID}");
 
             GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
-
             WebSocket = GameServer.WebSocket.Services[Path];
 
             Schedule.Start();
@@ -356,7 +357,6 @@ namespace Game.Server
             MessageBuffer = new List<NetworkMessage>();
 
             Clients = new IDCollection<NetworkClient>();
-
             Entities = new IDCollection<NetworkEntity>();
 
             InputQueue = new ActionQueue();

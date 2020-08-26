@@ -369,4 +369,19 @@ namespace Game.Shared
             Dictionary = new Dictionary<Type, bool>();
         }
     }
+
+    public static class NetworkSerializationLengthHelper
+    {
+        public static void Writer(int source, NetworkWriter writer)
+        {
+            if (source > ushort.MaxValue)
+                throw new Exception($"Cannot Serialize {source} as a ushort Code, It's Value is Above the Maximum Value of {ushort.MaxValue}");
+
+            var length = (ushort)source;
+
+            writer.Write(length);
+        }
+
+        public static void Read(out ushort length, NetworkReader reader) => reader.Read(out length);
+    }
 }
