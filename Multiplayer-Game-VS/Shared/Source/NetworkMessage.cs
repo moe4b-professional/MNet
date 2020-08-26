@@ -25,18 +25,32 @@ namespace Game.Shared
         public bool Is<TType>() => NetworkPayload.GetCode<TType>() == code;
         public bool Is(Type type) => NetworkPayload.GetCode(type) == code;
 
+        #region Read
+        object payload = null;
+
         public object Read()
         {
-            var instance = NetworkSerializer.Deserialize(raw, Type);
+            if (payload == null) payload = NetworkSerializer.Deserialize(raw, Type);
 
-            return instance;
+            return payload;
         }
-        public TType Read<TType>()
-            where TType : new()
-        {
-            var instance = NetworkSerializer.Deserialize<TType>(raw);
 
-            return instance;
+        public T Read<T>()
+        {
+            var instance = Read();
+
+            try
+            {
+                return (T)instance;
+            }
+            catch(InvalidCastException)
+            {
+                throw new InvalidCastException($"Trying to read {Type} as {typeof(T).Name}");
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         public bool TryRead<T>(out T payload)
@@ -53,6 +67,7 @@ namespace Game.Shared
                 return false;
             }
         }
+        #endregion
 
         public void WriteTo(HttpListenerResponse response)
         {
@@ -100,11 +115,9 @@ namespace Game.Shared
             }
         }
 
-        public static NetworkMessage Write(object payload)
+        public static NetworkMessage Write<T>(T payload)
         {
-            var type = payload.GetType();
-
-            var code = NetworkPayload.GetCode(type);
+            var code = NetworkPayload.GetCode<T>();
 
             var raw = NetworkSerializer.Serialize(payload);
 

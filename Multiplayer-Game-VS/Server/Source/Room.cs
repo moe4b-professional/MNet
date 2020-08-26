@@ -108,7 +108,7 @@ namespace Game.Server
             service.Set(this);
         }
 
-        NetworkMessage SendTo(NetworkClient client, object payload)
+        NetworkMessage SendTo<T>(NetworkClient client, T payload)
         {
             var message = NetworkMessage.Write(payload);
 
@@ -119,7 +119,7 @@ namespace Game.Server
             return message;
         }
 
-        NetworkMessage BroadcastToReady(object payload)
+        NetworkMessage BroadcastToReady<T>(T payload)
         {
             var message = NetworkMessage.Write(payload);
 
