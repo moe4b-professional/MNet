@@ -47,7 +47,7 @@ namespace Game.Server
 
             var index = 0;
 
-            foreach (var client in Clients.Values)
+            foreach (var client in Clients.Collection)
             {
                 list[index] = client.ReadInfo();
 
@@ -108,31 +108,7 @@ namespace Game.Server
             service.Set(this);
         }
 
-        NetworkMessage SendTo<T>(NetworkClient client, T payload)
-        {
-            var message = NetworkMessage.Write(payload);
-
-            var binary = NetworkSerializer.Serialize(message);
-
-            WebSocket.Sessions.SendToAsync(binary, client.ID, null);
-
-            return message;
-        }
-
-        NetworkMessage Broadcast<T>(T payload)
-        {
-            var message = NetworkMessage.Write(payload);
-
-            var binary = NetworkSerializer.Serialize(message);
-
-            WebSocket.Sessions.BroadcastAsync(binary, null);
-
-            return message;
-        }
-
-        bool IsActive(NetworkClientID id) => WebSocket.Sessions.ActiveIDs.Contains(id.Value);
-
-        bool IsInactive(NetworkClientID id) => WebSocket.Sessions.InactiveIDs.Contains(id.Value);
+        public Dictionary<string, NetworkClient> WebSocketClients { get; protected set; }
         #endregion
 
         #region Schedule
@@ -141,7 +117,7 @@ namespace Game.Server
         public const long DefaultTickInterval = 50;
         #endregion
 
-        public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
+        public IDCollection<NetworkClient> Clients { get; protected set; }
 
         public IDCollection<NetworkEntity> Entities { get; protected set; }
 
@@ -167,18 +143,37 @@ namespace Game.Server
 
         public ActionQueue InputQueue { get; protected set; }
 
-        public void Configure(ushort id)
+        #region Communication
+        NetworkMessage SendTo<T>(NetworkClient client, T payload)
         {
-            this.ID = id;
+            var message = NetworkMessage.Write(payload);
 
-            GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
+            var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket = GameServer.WebSocket.Services[Path];
+            WebSocket.Sessions.SendToAsync(binary, client.WebsocketID, null);
+
+            return message;
         }
+
+        NetworkMessage Broadcast<T>(T payload)
+        {
+            var message = NetworkMessage.Write(payload);
+
+            var binary = NetworkSerializer.Serialize(message);
+
+            WebSocket.Sessions.BroadcastAsync(binary, null);
+
+            return message;
+        }
+        #endregion
 
         public void Start()
         {
             Log.Info($"Starting Room {ID}");
+
+            GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
+
+            WebSocket = GameServer.WebSocket.Services[Path];
 
             Schedule.Start();
         }
@@ -186,25 +181,25 @@ namespace Game.Server
         public event Action OnTick;
         void Tick()
         {
-            OnTick?.Invoke();
-
-            Log.Info($"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}");
+            //Log.Info($"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}");
 
             while (InputQueue.Dequeue(out var callback))
                 callback();
+
+            OnTick?.Invoke();
         }
 
-        void ClientConnected(NetworkClientID id)
+        void ClientConnected(string websocketID)
         {
-            Log.Info($"Room {this.ID}: Client {id} Connected");
+            Log.Info($"Room {this.ID}: Client {websocketID} Connected");
         }
 
         #region Messages
-        void ClientMessageCallback(NetworkClientID id, byte[] raw, NetworkMessage message)
+        void ClientMessageCallback(string websocketID, byte[] raw, NetworkMessage message)
         {
             //Log.Info($"{message.Type} Binary Size: {raw.Length}");
 
-            if (Clients.TryGetValue(id, out var client))
+            if(WebSocketClients.TryGetValue(websocketID, out var client))
             {
                 if (message.Is<RpcRequest>())
                 {
@@ -231,31 +226,35 @@ namespace Game.Server
                 {
                     var request = message.Read<RegisterClientRequest>();
 
-                    RegisterClient(id, request);
+                    RegisterClient(websocketID, request);
                 }
             }
         }
 
-        void RegisterClient(NetworkClientID id, RegisterClientRequest request) => RegisterClient(id, request.Profile);
-        void RegisterClient(NetworkClientID id, NetworkClientProfile profile)
+        void RegisterClient(string websocketID, RegisterClientRequest request) => RegisterClient(websocketID, request.Profile);
+        void RegisterClient(string websocketID, NetworkClientProfile profile)
         {
-            if (Clients.ContainsKey(id))
+            if (WebSocketClients.ContainsKey(websocketID))
             {
-                Log.Warning($"Client {id} Already Registered With Room {this.ID}, Ignoring Register Request");
+                Log.Warning($"Client {websocketID} Already Registered With Room {this.ID}, Ignoring Register Request");
                 return;
             }
 
-            if(WebSocket.Sessions.TryGetSession(id, out var session) == false)
+            if(WebSocket.Sessions.TryGetSession(websocketID, out var session) == false) //TODO remember why I needed this?
             {
-                Log.Warning($"No WebSocket Session Found for Client {id}, Ignoring Register Request");
+                Log.Warning($"No WebSocket Session Found for Client {websocketID}, Ignoring Register Request");
                 return;
             }
 
-            Log.Info($"Room {this.ID}: Client {id} Registerd");
+            var code = Clients.Reserve();
+            var id = new NetworkClientID(code);
 
             var client = new NetworkClient(id, session, profile);
 
-            Clients.Add(id, client);
+            Clients.Assign(client, code);
+            WebSocketClients.Add(websocketID, client);
+
+            Log.Info($"Room {this.ID}: Client {websocketID} Registerd");
 
             var info = ReadInternalInfo();
             var response = new RegisterClientResponse(id, info);
@@ -295,14 +294,13 @@ namespace Game.Server
         void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource, request.Attributes);
         void SpawnEntity(NetworkClient owner, string resource, AttributesCollection attributes)
         {
-            var entity = new NetworkEntity();
-
-            owner.Entities.Add(entity);
-            var code = Entities.Add(entity);
-
+            var code = Entities.Reserve();
             var id = new NetworkEntityID(code);
 
-            entity.Configure(id);
+            var entity = new NetworkEntity(id);
+
+            owner.Entities.Add(entity);
+            Entities.Assign(entity, code);
 
             var command = new SpawnEntityCommand(owner.ID, entity.ID, resource, attributes);
             var message = Broadcast(command);
@@ -312,11 +310,11 @@ namespace Game.Server
         }
         #endregion
 
-        void ClientDisconnected(NetworkClientID id)
+        void ClientDisconnected(string websocketID)
         {
-            Log.Info($"Room {this.ID}: Client {id} Disconnected");
+            Log.Info($"Room {this.ID}: Client {websocketID} Disconnected");
 
-            if (Clients.TryGetValue(id, out var client)) RemoveClient(client);
+            if (WebSocketClients.TryGetValue(websocketID, out var client)) RemoveClient(client);
         }
 
         void RemoveClient(NetworkClient client)
@@ -330,7 +328,8 @@ namespace Game.Server
                 Entities.Remove(entity);
             }
 
-            Clients.Remove(client.ID);
+            WebSocketClients.Remove(client.WebsocketID);
+            Clients.Remove(client);
 
             var payload = new ClientDisconnectPayload(client.ID, client.Profile);
             Broadcast(payload);
@@ -345,15 +344,18 @@ namespace Game.Server
             GameServer.WebSocket.RemoveService(Path);
         }
 
-        public Room(string name, ushort capacity, AttributesCollection attributes)
+        public Room(ushort id, string name, ushort capacity, AttributesCollection attributes)
         {
+            this.ID = id;
             this.Name = name;
             this.Capacity = capacity;
             this.Attributes = attributes;
 
+            WebSocketClients = new Dictionary<string, NetworkClient>();
+
             MessageBuffer = new List<NetworkMessage>();
 
-            Clients = new Dictionary<NetworkClientID, NetworkClient>();
+            Clients = new IDCollection<NetworkClient>();
 
             Entities = new IDCollection<NetworkEntity>();
 

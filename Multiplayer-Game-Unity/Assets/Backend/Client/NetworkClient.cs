@@ -29,7 +29,6 @@ namespace Game
 
         public List<NetworkEntity> Entities { get; protected set; }
 
-        public NetworkClient(string name) : this(NetworkClientID.Empty, new NetworkClientProfile(name)) { }
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
             this.ID = id;

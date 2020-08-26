@@ -16,7 +16,7 @@ namespace Game.Server
         Dictionary<TType, ushort> codes;
 
         ConcurrentQueue<ushort> vacant;
-
+        
         ushort index;
 
         object sync = new object();
@@ -25,24 +25,48 @@ namespace Game.Server
 
         public int Count => Collection.Count;
 
-        public TType this[ushort index] => types[index];
+        public TType this[ushort code] => types[code];
         public ushort this[TType type] => codes[type];
 
         public ushort Add(TType type)
         {
             lock (sync)
             {
-                if (vacant.TryDequeue(out var id) == false)
+                if (vacant.TryDequeue(out var code) == false)
                 {
-                    id = index;
+                    code = index;
 
                     index += 1;
                 }
 
-                types[id] = type;
-                codes[type] = id;
+                types[code] = type;
+                codes[type] = code;
 
-                return id;
+                return code;
+            }
+        }
+
+        public void Assign(TType type, ushort code)
+        {
+            lock (sync)
+            {
+                types[code] = type;
+                codes[type] = code;
+            }
+        }
+
+        public ushort Reserve()
+        {
+            lock (sync)
+            {
+                if (vacant.TryDequeue(out var code) == false)
+                {
+                    code = index;
+
+                    index += 1;
+                }
+
+                return code;
             }
         }
 
@@ -50,18 +74,21 @@ namespace Game.Server
         {
             lock(sync)
             {
-                if (codes.TryGetValue(type, out var id) == false) return false;
+                if (codes.TryGetValue(type, out var code) == false) return false;
 
-                types.Remove(id);
+                types.Remove(code);
                 codes.Remove(type);
 
-                vacant.Enqueue(id);
+                vacant.Enqueue(code);
 
                 return true;
             }
         }
 
-        public bool TryGetValue(ushort id, out TType type) => types.TryGetValue(id, out type);
+        public bool TryGetValue(ushort code, out TType type) => types.TryGetValue(code, out type);
+
+        public bool Contains(TType type) => codes.ContainsKey(type);
+        public bool Contains(ushort code) => types.ContainsKey(code);
 
         public IDCollection()
         {

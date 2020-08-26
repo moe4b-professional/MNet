@@ -48,11 +48,12 @@ namespace Game.Server
         }
         public Room CreateRoom(string name, ushort capacity, AttributesCollection attributes)
         {
-            var room = new Room(name, capacity, attributes);
+            var code = Rooms.Reserve();
 
-            var id = Rooms.Add(room);
+            var room = new Room(code, name, capacity, attributes);
 
-            room.Configure(id);
+            Rooms.Assign(room, code);
+
             room.Start();
 
             return room;

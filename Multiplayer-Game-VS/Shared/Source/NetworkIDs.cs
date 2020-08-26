@@ -9,8 +9,8 @@ namespace Game.Shared
     [Serializable]
     public struct NetworkClientID : INetworkSerializable
     {
-        string value;
-        public string Value { get { return value; } }
+        ushort value;
+        public ushort Value { get { return value; } }
 
         public void Serialize(NetworkWriter writer)
         {
@@ -21,7 +21,7 @@ namespace Game.Shared
             reader.Read(out value);
         }
 
-        public NetworkClientID(string value)
+        public NetworkClientID(ushort value)
         {
             this.value = value;
         }
@@ -41,14 +41,9 @@ namespace Game.Shared
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
-
-        public static NetworkClientID Empty { get; private set; } = new NetworkClientID(string.Empty);
-
+        
         public static bool operator ==(NetworkClientID a, NetworkClientID b) => a.Equals(b);
         public static bool operator !=(NetworkClientID a, NetworkClientID b) => !a.Equals(b);
-
-        public static implicit operator NetworkClientID(string value) => new NetworkClientID(value);
-        public static implicit operator string(NetworkClientID id) => id.value;
     }
 
     [Serializable]
@@ -89,8 +84,6 @@ namespace Game.Shared
 
         public static bool operator ==(NetworkEntityID a, NetworkEntityID b) => a.Equals(b);
         public static bool operator !=(NetworkEntityID a, NetworkEntityID b) => !a.Equals(b);
-
-        public static NetworkEntityID Empty { get; private set; } = new NetworkEntityID(0);
     }
 
     [Serializable]

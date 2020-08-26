@@ -17,9 +17,9 @@ namespace Game.Server
         public NetworkClientID ID { get; protected set; }
 
         public IWebSocketSession Session { get; protected set; }
+        public string WebsocketID => Session.ID;
 
         public NetworkClientProfile Profile { get; protected set; }
-
         public string Name => Profile.Name;
 
         public List<NetworkEntity> Entities { get; protected set; }

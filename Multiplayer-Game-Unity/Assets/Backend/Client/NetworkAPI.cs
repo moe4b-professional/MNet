@@ -365,7 +365,7 @@ namespace Game
         {
             public static NetworkClientProfile Profile { get; private set; }
 
-            public static NetworkClientID ID => Instance == null ? NetworkClientID.Empty : Instance.ID;
+            public static NetworkClientID ID => Instance.ID;
 
             public static bool IsConnected => WebSocketAPI.IsConnected;
 
