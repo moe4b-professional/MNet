@@ -119,22 +119,13 @@ namespace Game.Server
             return message;
         }
 
-        NetworkMessage BroadcastToReady<T>(T payload)
+        NetworkMessage Broadcast<T>(T payload)
         {
             var message = NetworkMessage.Write(payload);
 
             var binary = NetworkSerializer.Serialize(message);
 
-            foreach (var client in Clients.Values)
-            {
-                if (client == null) continue;
-
-                if (client.IsReady == false) continue;
-
-                if (client.Session.State != WebSocketState.Open) continue;
-
-                WebSocket.Sessions.SendToAsync(binary, client.ID, null);
-            }
+            WebSocket.Sessions.BroadcastAsync(binary, null);
 
             return message;
         }
@@ -192,12 +183,6 @@ namespace Game.Server
             Schedule.Start();
         }
 
-        public event Action OnInit;
-        void Init()
-        {
-            OnInit?.Invoke();
-        }
-        
         public event Action OnTick;
         void Tick()
         {
@@ -277,7 +262,7 @@ namespace Game.Server
             SendTo(client, response);
 
             var payload = new ClientConnectedPayload(id, profile);
-            BroadcastToReady(payload);
+            Broadcast(payload);
         }
 
         void ReadyClient(NetworkClient client)
@@ -302,7 +287,7 @@ namespace Game.Server
         {
             var command = RpcCommand.Write(sender.ID, request);
 
-            var message = BroadcastToReady(command);
+            var message = Broadcast(command);
 
             entity.RPCBuffer.Set(message, request, UnbufferMessages);
         }
@@ -320,7 +305,7 @@ namespace Game.Server
             entity.Configure(id);
 
             var command = new SpawnEntityCommand(owner.ID, entity.ID, resource, attributes);
-            var message = BroadcastToReady(command);
+            var message = Broadcast(command);
 
             entity.SpawnMessage = message;
             BufferMessage(message);
@@ -348,7 +333,7 @@ namespace Game.Server
             Clients.Remove(client.ID);
 
             var payload = new ClientDisconnectPayload(client.ID, client.Profile);
-            BroadcastToReady(payload);
+            Broadcast(payload);
         }
 
         public void Stop()
@@ -374,7 +359,7 @@ namespace Game.Server
 
             InputQueue = new ActionQueue();
 
-            Schedule = new Schedule(DefaultTickInterval, Init, Tick);
+            Schedule = new Schedule(DefaultTickInterval, Tick);
         }
     }
 }

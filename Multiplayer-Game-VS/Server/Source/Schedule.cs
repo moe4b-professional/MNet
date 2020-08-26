@@ -29,16 +29,7 @@ namespace Game.Server
 
         void Connect()
         {
-            Init();
-
             Tick();
-        }
-
-        public delegate void InitDelegate();
-        InitDelegate initCallback;
-        void Init()
-        {
-            initCallback?.Invoke();
         }
 
         public delegate void TickDelegate();
@@ -72,14 +63,13 @@ namespace Game.Server
             run = false;
         }
 
-        public Schedule(long interval, InitDelegate initCallback, TickDelegate tickCallback)
+        public Schedule(long interval, TickDelegate tickCallback)
         {
             this.interval = interval;
 
             ElapsedTime = 0f;
             DeltaTime = interval / 1000;
 
-            this.initCallback = initCallback;
             this.tickCallback = tickCallback;
 
             thread = new Thread(Connect);

@@ -19,6 +19,8 @@ namespace StressTest
 
         static NetworkClientID clientID;
 
+        static bool isReady = false;
+
         static NetworkEntityID entityID;
 
         static void Main(string[] args)
@@ -94,20 +96,25 @@ namespace StressTest
             {
                 var response = message.Read<RegisterClientResponse>();
 
+                isReady = true;
+
                 clientID = response.ID;
             }
 
-            if (message.Type == typeof(SpawnEntityCommand))
+            if(isReady)
             {
-                var command = message.Read<SpawnEntityCommand>();
-
-                if (command.Owner == clientID)
+                if (message.Type == typeof(SpawnEntityCommand))
                 {
-                    entityID = command.Entity;
+                    var command = message.Read<SpawnEntityCommand>();
 
-                    var thread = new Thread(Tick);
+                    if (command.Owner == clientID)
+                    {
+                        entityID = command.Entity;
 
-                    thread.Start();
+                        var thread = new Thread(Tick);
+
+                        thread.Start();
+                    }
                 }
             }
         }

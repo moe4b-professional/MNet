@@ -369,6 +369,8 @@ namespace Game
 
             public static bool IsConnected => WebSocketAPI.IsConnected;
 
+            public static bool IsReady { get; private set; } = false;
+
             public static NetworkClient Instance { get; private set; }
             public static void Set(NetworkClientID ID) => Instance = new NetworkClient(ID, Profile);
 
@@ -455,6 +457,8 @@ namespace Game
             public static event ReadyDelegate OnReady;
             static void ReadyCallback(ReadyClientResponse response)
             {
+                IsReady = true;
+
                 OnReady?.Invoke(response);
             }
             #endregion
@@ -519,29 +523,32 @@ namespace Game
 
             static void ClientMessageCallback(NetworkMessage message)
             {
-                if (message.Is<RpcCommand>())
+                if(Client.IsReady)
                 {
-                    var command = message.Read<RpcCommand>();
+                    if (message.Is<RpcCommand>())
+                    {
+                        var command = message.Read<RpcCommand>();
 
-                    InvokeRpc(command);
-                }
-                else if (message.Is<SpawnEntityCommand>())
-                {
-                    var command = message.Read<SpawnEntityCommand>();
+                        InvokeRpc(command);
+                    }
+                    else if (message.Is<SpawnEntityCommand>())
+                    {
+                        var command = message.Read<SpawnEntityCommand>();
 
-                    SpawnEntity(command);
-                }
-                else if (message.Is<ClientConnectedPayload>())
-                {
-                    var payload = message.Read<ClientConnectedPayload>();
+                        SpawnEntity(command);
+                    }
+                    else if (message.Is<ClientConnectedPayload>())
+                    {
+                        var payload = message.Read<ClientConnectedPayload>();
 
-                    ClientConnected(payload);
-                }
-                else if (message.Is<ClientDisconnectPayload>())
-                {
-                    var payload = message.Read<ClientDisconnectPayload>();
+                        ClientConnected(payload);
+                    }
+                    else if (message.Is<ClientDisconnectPayload>())
+                    {
+                        var payload = message.Read<ClientDisconnectPayload>();
 
-                    ClientDisconnected(payload);
+                        ClientDisconnected(payload);
+                    }
                 }
             }
 
@@ -629,6 +636,8 @@ namespace Game
             public static event ClientDisconnectedDelegate OnClientDisconnected;
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
+                Debug.Log($"Client {payload.ID} Disconnected to Room");
+
                 if (Clients.TryGetValue(payload.ID, out var client))
                     RemoveClient(client);
                 else
