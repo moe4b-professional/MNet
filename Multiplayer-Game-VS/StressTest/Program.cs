@@ -122,7 +122,7 @@ namespace StressTest
             {
                 socket.SendAsync(binary, null);
 
-                Thread.Sleep(1000/10);
+                Thread.Sleep(16);
             }
         }
     }

@@ -59,7 +59,7 @@ namespace Game.Server
         #endregion
 
         #region Web Socket
-        public WebSocketServiceHost WebSocket => GameServer.WebSocket.Services[Path];
+        public WebSocketServiceHost WebSocket { get; protected set; }
 
         public class WebSocketService : WebSocketBehavior
         {
@@ -181,6 +181,8 @@ namespace Game.Server
             this.ID = id;
 
             GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
+
+            WebSocket = GameServer.WebSocket.Services[Path];
         }
 
         public void Start()

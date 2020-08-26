@@ -10,27 +10,6 @@ using System.Reflection;
 
 namespace Game.Shared
 {
-    public static class NetworkNullable
-    {
-        public static Dictionary<Type, bool> Dictionary { get; private set; }
-
-        public static bool Check(Type type)
-        {
-            if (Dictionary.TryGetValue(type, out var result)) return result;
-
-            result = type.IsValueType == false;
-
-            Dictionary.Add(type, result);
-
-            return result;
-        }
-
-        static NetworkNullable()
-        {
-            Dictionary = new Dictionary<Type, bool>();
-        }
-    }
-
     public abstract class NetworkSerializationResolver
     {
         public abstract bool CanResolve(Type type);
@@ -42,7 +21,8 @@ namespace Game.Shared
         public NetworkSerializationResolver() { }
 
         //Static Utility
-        public static List<NetworkSerializationResolver> List { get; private set; }
+        public static List<NetworkSerializationResolver> Explicit { get; private set; }
+        public static List<NetworkSerializationResolver> Implicit { get; private set; }
 
         public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
 
@@ -51,13 +31,23 @@ namespace Game.Shared
             if (Dictionary.TryGetValue(type, out var value))
                 return value;
 
-            for (int i = 0; i < List.Count; i++)
+            for (int i = 0; i < Explicit.Count; i++)
             {
-                if (List[i].CanResolve(type))
+                if (Explicit[i].CanResolve(type))
                 {
-                    Dictionary.Add(type, List[i]);
+                    Dictionary.Add(type, Explicit[i]);
 
-                    return List[i];
+                    return Explicit[i];
+                }
+            }
+
+            for (int i = 0; i < Implicit.Count; i++)
+            {
+                if (Implicit[i].CanResolve(type))
+                {
+                    Dictionary.Add(type, Implicit[i]);
+
+                    return Implicit[i];
                 }
             }
 
@@ -66,7 +56,8 @@ namespace Game.Shared
 
         static NetworkSerializationResolver()
         {
-            List = new List<NetworkSerializationResolver>();
+            Explicit = new List<NetworkSerializationResolver>();
+            Implicit = new List<NetworkSerializationResolver>();
 
             Dictionary = new Dictionary<Type, NetworkSerializationResolver>();
 
@@ -89,7 +80,10 @@ namespace Game.Shared
 
                     var instance = Activator.CreateInstance(type) as NetworkSerializationResolver;
 
-                    List.Add(instance);
+                    if (instance is NetworkSerializationImplicitResolver)
+                        Implicit.Add(instance);
+                    else
+                        Explicit.Add(instance);
                 }
             }
         }

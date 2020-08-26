@@ -348,4 +348,25 @@ namespace Game.Shared
 
         void Deserialize(NetworkReader reader);
     }
+
+    public static class NetworkNullable
+    {
+        public static Dictionary<Type, bool> Dictionary { get; private set; }
+
+        public static bool Check(Type type)
+        {
+            if (Dictionary.TryGetValue(type, out var result)) return result;
+
+            result = type.IsValueType == false;
+
+            Dictionary.Add(type, result);
+
+            return result;
+        }
+
+        static NetworkNullable()
+        {
+            Dictionary = new Dictionary<Type, bool>();
+        }
+    }
 }
