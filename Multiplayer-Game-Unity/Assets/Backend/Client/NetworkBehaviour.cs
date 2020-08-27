@@ -21,7 +21,7 @@ using Backend.Shared;
 
 using System.Reflection;
 
-namespace Backend
+namespace Backend.Client
 {
     [RequireComponent(typeof(NetworkEntity))]
     public class NetworkBehaviour : MonoBehaviour

@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 using UnityEngine.Networking;
 
-namespace Backend
+namespace Backend.Client
 {
     public class RestError
     {

@@ -8,7 +8,7 @@ using System.Reflection;
 
 using Backend.Shared;
 
-namespace Backend
+namespace Backend.Client
 {
     public class RpcBind
     {

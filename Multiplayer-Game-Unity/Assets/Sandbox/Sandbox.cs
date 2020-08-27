@@ -22,8 +22,9 @@ using UnityEngine.Networking;
 using WebSocketSharp;
 
 using Backend.Shared;
+using Backend.Client;
 
-namespace Backend
+namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{

@@ -18,8 +18,9 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using Backend.Shared;
+using Backend.Client;
 
-namespace Backend
+namespace Game
 {
 	public class Player : NetworkBehaviour
 	{

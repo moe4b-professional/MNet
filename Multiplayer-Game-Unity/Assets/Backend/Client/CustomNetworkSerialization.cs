@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 using Backend.Shared;
 
-namespace Backend
+namespace Backend.Client
 {
 	public class CustomNetworkSerialization
 	{

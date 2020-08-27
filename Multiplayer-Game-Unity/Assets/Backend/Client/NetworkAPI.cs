@@ -28,7 +28,7 @@ using WebSocketSharp.Net;
 
 using System.Collections.Concurrent;
 
-namespace Backend
+namespace Backend.Client
 {
 	public static class NetworkAPI
 	{
