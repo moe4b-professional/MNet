@@ -122,7 +122,7 @@ namespace Game.Server
         public IDCollection<NetworkEntity> Entities { get; protected set; }
 
         #region Message Buffer
-        public List<NetworkMessage> MessageBuffer { get; protected set; }
+        public NetworkMessageCollection MessageBuffer { get; protected set; }
 
         public void BufferMessage(NetworkMessage message)
         {
@@ -354,7 +354,7 @@ namespace Game.Server
 
             WebSocketClients = new Dictionary<string, NetworkClient>();
 
-            MessageBuffer = new List<NetworkMessage>();
+            MessageBuffer = new NetworkMessageCollection();
 
             Clients = new IDCollection<NetworkClient>();
             Entities = new IDCollection<NetworkEntity>();
