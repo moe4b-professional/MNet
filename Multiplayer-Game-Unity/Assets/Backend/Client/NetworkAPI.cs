@@ -297,6 +297,14 @@ namespace Backend
             {
                 if (IsConnected == false)
                 {
+                    ///Sending the client back with a gentle slap on the butt
+                    ///because the client disconnection can occur at any time
+                    ///and the DisconnectCallback gets called on a worker thread
+                    ///so the client's connected state can change literally at anytime
+                    ///and the client's code can find themselves rightfully checking connection state
+                    ///and sending data after state validation but then the client
+                    ///gets disconnected before the Send method is called
+                    ///which will result in an exception
                     Debug.LogWarning("Cannot Send Data When Client Isn't Connected");
                     return;
                 }
@@ -529,26 +537,35 @@ namespace Backend
 
             public static void Configure()
             {
-                Client.OnConnect += Setup;
+                Client.OnConnect += SelfConnectCallback;
+                Client.OnReady += SelfReadyCallback;
+                Client.OnDisconnect += SelfDisconnectCallback;
+
                 Client.OnMessage += MessageCallback;
-                Client.OnReady += ReadyCallback;
-                Client.OnDisconnect += LeaveCallback;
             }
 
             public static void Join(RoomBasicInfo info) => Join(info.ID);
             public static void Join(ushort id) => WebSocketAPI.Connect("/" + id);
 
-            static void Setup()
-            {
-                Clients = new Dictionary<NetworkClientID, NetworkClient>();
-                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-            }
+            #region Self Callbacks
+            static void SelfConnectCallback() => Setup();
 
-            static void ReadyCallback(ReadyClientResponse response)
+            static void SelfReadyCallback(ReadyClientResponse response)
             {
                 AddClients(response.Clients);
 
                 ApplyMessageBuffer(response.Buffer);
+            }
+
+            static void SelfDisconnectCallback(CloseStatusCode code, string reason) => Clear();
+            #endregion
+
+            #region Internal
+            static void Setup()
+            {
+                Clients = new Dictionary<NetworkClientID, NetworkClient>();
+
+                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
             }
 
             static void ApplyMessageBuffer(IList<NetworkMessage> list)
@@ -557,6 +574,34 @@ namespace Backend
                     MessageCallback(list[i]);
             }
 
+            static void AddClients(IList<NetworkClientInfo> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    AddClient(list[i]);
+            }
+            static NetworkClient AddClient(NetworkClientInfo info)
+            {
+                var client = new NetworkClient(info);
+
+                Clients.Add(client.ID, client);
+
+                return client;
+            }
+            #endregion
+
+            static void RemoveClient(NetworkClient client)
+            {
+                foreach (var entity in client.Entities)
+                {
+                    Entities.Remove(entity.ID);
+
+                    Object.Destroy(entity.gameObject);
+                }
+
+                Clients.Remove(client.ID);
+            }
+
+            #region Messages
             static void MessageCallback(NetworkMessage message)
             {
                 if (Client.IsReady)
@@ -604,21 +649,7 @@ namespace Backend
 
                 Debug.Log($"Client {client.ID} Connected to Room");
             }
-
-            static void AddClients(IList<NetworkClientInfo> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    AddClient(list[i]);
-            }
-            static NetworkClient AddClient(NetworkClientInfo info)
-            {
-                var client = new NetworkClient(info);
-
-                Clients.Add(client.ID, client);
-
-                return client;
-            }
-
+            
             static void InvokeRpc(RpcCommand command)
             {
                 if (Entities.TryGetValue(command.Entity, out var target))
@@ -674,19 +705,8 @@ namespace Backend
 
                 OnClientDisconnected?.Invoke(payload.ID, client?.Info);
             }
-
-            static void RemoveClient(NetworkClient client)
-            {
-                foreach (var entity in client.Entities)
-                {
-                    Entities.Remove(entity.ID);
-
-                    Object.Destroy(entity.gameObject);
-                }
-
-                Clients.Remove(client.ID);
-            }
-
+            #endregion
+            
             static void Clear()
             {
                 foreach (var entity in Entities.Values)
@@ -701,7 +721,6 @@ namespace Backend
             }
 
             public static void Leave() => Client.Disconnect();
-            static void LeaveCallback(CloseStatusCode code, string reason) => Clear();
         }
     }
 }
