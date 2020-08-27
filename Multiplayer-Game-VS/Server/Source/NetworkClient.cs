@@ -12,13 +12,17 @@ namespace Backend
 {
     class NetworkClient
     {
-        public NetworkClientID ID { get; protected set; }
+        public NetworkClientInfo Info { get; protected set; }
+
+        public NetworkClientID ID => Info.ID;
+
+        public NetworkClientProfile Profile => Info.Profile;
+        public string Name => Profile.Name;
+        public AttributesCollection Attributes => Profile.Attributes;
 
         public IWebSocketSession Session { get; protected set; }
         public string WebsocketID => Session.ID;
-
-        public NetworkClientProfile Profile { get; protected set; }
-        public string Name => Profile.Name;
+        public bool IsConnected => Session.State == WebSocketState.Open;
 
         public List<NetworkEntity> Entities { get; protected set; }
 
@@ -30,11 +34,10 @@ namespace Backend
 
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
 
-        public NetworkClient(NetworkClientID id, IWebSocketSession session, NetworkClientProfile profile)
+        public NetworkClient(NetworkClientInfo info, IWebSocketSession session)
         {
-            this.ID = id;
+            this.Info = info;
             this.Session = session;
-            this.Profile = profile;
 
             Entities = new List<NetworkEntity>();
         }

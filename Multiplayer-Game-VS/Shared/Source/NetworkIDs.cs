@@ -7,46 +7,6 @@ using System.Threading.Tasks;
 namespace Backend
 {
     [Serializable]
-    public struct NetworkClientID : INetworkSerializable
-    {
-        ushort value;
-        public ushort Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(value);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out value);
-        }
-
-        public NetworkClientID(ushort value)
-        {
-            this.value = value;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj.GetType() == typeof(NetworkClientID))
-            {
-                var target = (NetworkClientID)obj;
-
-                return target.value == this.value;
-            }
-
-            return false;
-        }
-
-        public override int GetHashCode() => value.GetHashCode();
-
-        public override string ToString() => value.ToString();
-        
-        public static bool operator ==(NetworkClientID a, NetworkClientID b) => a.Equals(b);
-        public static bool operator !=(NetworkClientID a, NetworkClientID b) => !a.Equals(b);
-    }
-
-    [Serializable]
     public struct NetworkEntityID : INetworkSerializable
     {
         ushort value;

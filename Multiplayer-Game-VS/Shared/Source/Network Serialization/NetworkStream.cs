@@ -4,68 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using System.IO;
-using System.Collections;
-using System.Reflection;
-
 namespace Backend
 {
-    public static class NetworkSerializer
-    {
-        public const int DefaultBufferSize = 2048;
-
-        #region Serialize
-        public static byte[] Serialize<T>(T instance) => Serialize(instance, DefaultBufferSize);
-        public static byte[] Serialize<T>(T instance, int bufferSize)
-        {
-            using (var writer = new NetworkWriter(bufferSize))
-            {
-                writer.Write(instance);
-
-                var result = writer.ToArray();
-
-                return result;
-            }
-        }
-
-        public static byte[] Serialize(object instance) => Serialize(instance, DefaultBufferSize);
-        public static byte[] Serialize(object instance, int bufferSize)
-        {
-            using (var writer = new NetworkWriter(bufferSize))
-            {
-                writer.Write(instance);
-
-                var result = writer.ToArray();
-
-                return result;
-            }
-        }
-        #endregion
-
-        #region Deserialize
-        public static T Deserialize<T>(byte[] data)
-            where T : new()
-        {
-            using (var reader = new NetworkReader(data))
-            {
-                reader.Read(out T result);
-
-                return result;
-            }
-        }
-
-        public static object Deserialize(byte[] data, Type type)
-        {
-            using (var reader = new NetworkReader(data))
-            {
-                var result = reader.Read(type);
-
-                return result;
-            }
-        }
-        #endregion
-    }
-
     public abstract class NetworkStream : IDisposable
     {
         protected byte[] data;
@@ -120,7 +60,7 @@ namespace Backend
             this.data = data;
         }
 
-        public static bool IsNullable(Type type) => NetworkNullable.Check(type);
+        public static bool IsNullable(Type type) => NetworkSerializationHelper.Nullable.Check(type);
     }
 
     public class NetworkWriter : NetworkStream
@@ -227,7 +167,7 @@ namespace Backend
 
             var resolver = NetworkSerializationResolver.Retrive(type);
 
-            if(resolver == null)
+            if (resolver == null)
                 throw new NotImplementedException($"Type {type} isn't supported for Network Serialization");
 
             resolver.Serialize(this, value);
@@ -245,11 +185,11 @@ namespace Backend
 
             T value;
 
-            if(ReadExplicit(out value, type))
+            if (ReadExplicit(out value, type))
             {
 
             }
-            else if(ReadImplicit(out var instance, type))
+            else if (ReadImplicit(out var instance, type))
             {
                 try
                 {
@@ -275,7 +215,7 @@ namespace Backend
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
-            if(resolver == null)
+            if (resolver == null)
             {
                 value = default(T);
                 return false;
@@ -324,7 +264,7 @@ namespace Backend
         {
             var serializer = NetworkSerializationResolver.Retrive(type);
 
-            if(serializer == null)
+            if (serializer == null)
                 throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
 
             if (IsNullable(type))
@@ -340,48 +280,5 @@ namespace Backend
         }
 
         public NetworkReader(byte[] data) : base(data) { }
-    }
-
-    public interface INetworkSerializable
-    {
-        void Serialize(NetworkWriter writer);
-
-        void Deserialize(NetworkReader reader);
-    }
-
-    public static class NetworkNullable
-    {
-        public static Dictionary<Type, bool> Dictionary { get; private set; }
-
-        public static bool Check(Type type)
-        {
-            if (Dictionary.TryGetValue(type, out var result)) return result;
-
-            result = type.IsValueType == false;
-
-            Dictionary.Add(type, result);
-
-            return result;
-        }
-
-        static NetworkNullable()
-        {
-            Dictionary = new Dictionary<Type, bool>();
-        }
-    }
-
-    public static class NetworkSerializationLengthHelper
-    {
-        public static void Writer(int source, NetworkWriter writer)
-        {
-            if (source > ushort.MaxValue)
-                throw new Exception($"Cannot Serialize {source} as a ushort Code, It's Value is Above the Maximum Value of {ushort.MaxValue}");
-
-            var length = (ushort)source;
-
-            writer.Write(length);
-        }
-
-        public static void Read(out ushort length, NetworkReader reader) => reader.Read(out length);
     }
 }

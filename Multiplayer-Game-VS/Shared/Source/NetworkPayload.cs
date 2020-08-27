@@ -385,28 +385,26 @@ namespace Backend
     [Serializable]
     public sealed class ClientConnectedPayload : INetworkSerializable
     {
-        NetworkClientID id;
-        public NetworkClientID ID => id;
+        NetworkClientInfo info;
+        public NetworkClientInfo Info => info;
 
-        NetworkClientProfile profile;
-        public NetworkClientProfile Profile => profile;
+        public NetworkClientID ID => info.ID;
+
+        public NetworkClientProfile Profile => info.Profile;
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.Write(id);
-            writer.Write(profile);
+            writer.Write(info);
         }
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out id);
-            reader.Read(out profile);
+            reader.Read(out info);
         }
 
         public ClientConnectedPayload() { }
-        public ClientConnectedPayload(NetworkClientID id, NetworkClientProfile profile)
+        public ClientConnectedPayload(NetworkClientInfo info)
         {
-            this.id = id;
-            this.profile = profile;
+            this.info = info;
         }
     }
 
@@ -416,25 +414,19 @@ namespace Backend
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        NetworkClientProfile profile;
-        public NetworkClientProfile Profile => profile;
-
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(id);
-            writer.Write(profile);
         }
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out id);
-            reader.Read(out profile);
         }
 
         public ClientDisconnectPayload() { }
-        public ClientDisconnectPayload(NetworkClientID id, NetworkClientProfile profile)
+        public ClientDisconnectPayload(NetworkClientID id)
         {
             this.id = id;
-            this.profile = profile;
         }
     }
     #endregion

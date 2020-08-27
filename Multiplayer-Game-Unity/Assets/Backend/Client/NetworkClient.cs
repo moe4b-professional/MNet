@@ -21,16 +21,20 @@ namespace Backend
 {
 	public class NetworkClient
 	{
-        public NetworkClientID ID { get; set; }
+        public NetworkClientInfo Info { get; protected set; }
 
-        public NetworkClientProfile Player { get; protected set; }
+        public NetworkClientID ID => Info.ID;
+
+        public NetworkClientProfile Profile => Info.Profile;
+
+        public string Name => Profile.Name;
+        public AttributesCollection Attributes => Profile.Attributes;
 
         public List<NetworkEntity> Entities { get; protected set; }
 
-        public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
+        public NetworkClient(NetworkClientInfo info)
         {
-            this.ID = id;
-            this.Player = profile;
+            this.Info = info;
 
             Entities = new List<NetworkEntity>();
         }

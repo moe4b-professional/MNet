@@ -148,7 +148,8 @@ namespace Backend
 
             var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket.Sessions.SendToAsync(binary, client.WebsocketID, null);
+            if(client.IsConnected)
+                WebSocket.Sessions.SendToAsync(binary, client.WebsocketID, null);
 
             return message;
         }
@@ -248,18 +249,20 @@ namespace Backend
             var code = Clients.Reserve();
             var id = new NetworkClientID(code);
 
-            var client = new NetworkClient(id, session, profile);
+            var info = new NetworkClientInfo(id, profile);
+
+            var client = new NetworkClient(info, session);
 
             Clients.Assign(client, code);
             WebSocketClients.Add(websocketID, client);
 
-            Log.Info($"Room {this.ID}: Client {websocketID} Registerd");
+            Log.Info($"Room {this.ID}: Client {websocketID} Registerd as Client {id}");
 
-            var info = ReadInternalInfo();
-            var response = new RegisterClientResponse(id, info);
+            var room = ReadInternalInfo();
+            var response = new RegisterClientResponse(id, room);
             SendTo(client, response);
 
-            var payload = new ClientConnectedPayload(id, profile);
+            var payload = new ClientConnectedPayload(info);
             Broadcast(payload);
         }
 
@@ -330,7 +333,7 @@ namespace Backend
             WebSocketClients.Remove(client.WebsocketID);
             Clients.Remove(client);
 
-            var payload = new ClientDisconnectPayload(client.ID, client.Profile);
+            var payload = new ClientDisconnectPayload(client.ID);
             Broadcast(payload);
         }
 

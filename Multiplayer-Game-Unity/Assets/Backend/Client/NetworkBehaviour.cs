@@ -89,17 +89,15 @@ namespace Backend
         {
             if (RPCs.Find(name, out var bind))
             {
-                var payload = bind.CreateRequest(parameters);
-
-                var message = NetworkMessage.Write(payload);
-
                 if (NetworkAPI.Client.IsConnected == false)
                 {
                     Debug.LogWarning($"Cannot Send RPC {name} When Client Isn't Connected");
                     return;
                 }
 
-                NetworkAPI.Client.Send(message);
+                var payload = bind.CreateRequest(parameters);
+
+                NetworkAPI.Client.Send(payload);
             }
         }
         #endregion

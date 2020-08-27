@@ -248,7 +248,7 @@ namespace Backend
         {
             if (value.Length == 0)
             {
-                NetworkSerializationLengthHelper.Writer(0, writer);
+                NetworkSerializationHelper.Length.Write(0, writer);
             }
             else
             {
@@ -256,7 +256,7 @@ namespace Backend
 
                 var count = binary.Length;
 
-                NetworkSerializationLengthHelper.Writer(count, writer);
+                NetworkSerializationHelper.Length.Write(count, writer);
 
                 writer.Insert(binary);
             }
@@ -264,7 +264,7 @@ namespace Backend
 
         public override string Deserialize(NetworkReader reader)
         {
-            NetworkSerializationLengthHelper.Read(out var count, reader);
+            NetworkSerializationHelper.Length.Read(out var count, reader);
             
             if (count == 0) return string.Empty;
 
@@ -379,7 +379,7 @@ namespace Backend
         {
             var array = (IList)instance;
 
-            NetworkSerializationLengthHelper.Writer(array.Count, writer);
+            NetworkSerializationHelper.Length.Write(array.Count, writer);
 
             for (int i = 0; i < array.Count; i++)
                 writer.Write(array[i]);
@@ -389,7 +389,7 @@ namespace Backend
         {
             var element = type.GetElementType();
 
-            NetworkSerializationLengthHelper.Read(out var length, reader);
+            NetworkSerializationHelper.Length.Read(out var length, reader);
 
             var array = Array.CreateInstance(element, length);
 
@@ -419,7 +419,7 @@ namespace Backend
         {
             var list = instance as IList;
 
-            NetworkSerializationLengthHelper.Writer(list.Count, writer);
+            NetworkSerializationHelper.Length.Write(list.Count, writer);
 
             for (int i = 0; i < list.Count; i++)
                 writer.Write(list[i]);
@@ -427,7 +427,7 @@ namespace Backend
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            NetworkSerializationLengthHelper.Read(out var count, reader);
+            NetworkSerializationHelper.Length.Read(out var count, reader);
 
             var list = Activator.CreateInstance(type, count) as IList;
 
@@ -459,7 +459,7 @@ namespace Backend
         {
             var dictionary = (IDictionary)instance;
 
-            NetworkSerializationLengthHelper.Writer(dictionary.Count, writer);
+            NetworkSerializationHelper.Length.Write(dictionary.Count, writer);
 
             foreach (DictionaryEntry entry in dictionary)
             {
@@ -472,7 +472,7 @@ namespace Backend
         {
             var arguments = type.GetGenericArguments();
 
-            NetworkSerializationLengthHelper.Read(out var count, reader);
+            NetworkSerializationHelper.Length.Read(out var count, reader);
 
             var dictionary = Activator.CreateInstance(type, count) as IDictionary;
 
@@ -495,14 +495,14 @@ namespace Backend
     {
         public override void Serialize(NetworkWriter writer, byte[] value)
         {
-            NetworkSerializationLengthHelper.Writer(value.Length, writer);
+            NetworkSerializationHelper.Length.Write(value.Length, writer);
 
             writer.Insert(value);
         }
 
         public override byte[] Deserialize(NetworkReader reader)
         {
-            NetworkSerializationLengthHelper.Read(out var length, reader);
+            NetworkSerializationHelper.Length.Read(out var length, reader);
 
             var value = new byte[length];
 

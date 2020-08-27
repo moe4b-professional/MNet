@@ -59,7 +59,7 @@ namespace Game
 
         void Update()
         {
-            if(Input.GetKeyDown(KeyCode.C))
+            if (Input.GetKeyDown(KeyCode.C))
             {
                 var attributes = new AttributesCollection();
 
@@ -68,36 +68,47 @@ namespace Game
                 NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
             }
 
-            if(Input.GetKeyDown(KeyCode.V))
+            if (Input.GetKeyDown(KeyCode.V))
             {
                 NetworkAPI.RestAPI.Lobby.Info();
             }
+
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                NetworkAPI.Client.Disconnect();
+            }
         }
 
-        void LobbyInfoCallback(LobbyInfo lobby)
+        void LobbyInfoCallback(LobbyInfo lobby, RestError error)
         {
-            var room = lobby.Rooms.FirstOrDefault();
+            if(error == null)
+            {
+                var room = lobby.Rooms.FirstOrDefault();
 
-            Debug.Log("Lobby Size: " + lobby.Size);
+                Debug.Log("Lobby Size: " + lobby.Size);
 
-            if (room == null) return;
+                if (room == null) return;
 
-            if (room.Attributes == null)
-                Debug.LogError("Null Room Attributes");
+                NetworkAPI.Room.Join(room);
+            }
             else
             {
-                foreach (var key in room.Attributes.Keys)
-                    Debug.Log(room.Attributes[key]);
+                Debug.LogError(error);
             }
-
-            NetworkAPI.Room.Join(room);
         }
 
-        void RoomCreatedCallback(RoomBasicInfo room)
+        void RoomCreatedCallback(RoomBasicInfo room, RestError error)
         {
-            Debug.Log("Created Room " + room.ID);
+            if (error == null)
+            {
+                Debug.Log("Created Room " + room.ID);
 
-            NetworkAPI.Room.Join(room);
+                NetworkAPI.Room.Join(room);
+            }
+            else
+            {
+                Debug.LogError(error);
+            }
         }
     }
 }

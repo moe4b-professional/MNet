@@ -34,5 +34,7 @@ namespace Backend
         }
 
         public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
+
+        public override string ToString() => $"REST Error: {Message}";
     }
 }

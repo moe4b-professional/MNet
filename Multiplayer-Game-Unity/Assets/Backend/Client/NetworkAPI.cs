@@ -38,7 +38,7 @@ namespace Backend
             var loop = PlayerLoop.GetCurrentPlayerLoop();
 
             for (int i = 0; i < loop.subSystemList.Length; ++i)
-                if (loop.subSystemList[i].type == typeof(Update))
+                if (loop.subSystemList[i].type == typeof(EarlyUpdate))
                     loop.subSystemList[i].updateDelegate += Update;
 
             PlayerLoop.SetPlayerLoop(loop);
@@ -216,18 +216,13 @@ namespace Backend
                     Request.GET(Address, Constants.RestAPI.Requests.Lobby.Info, InfoCallback, false);
                 }
 
-                public delegate void InfoDelegate(LobbyInfo lobby);
+                public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
                 public static event InfoDelegate OnInfo;
                 static void InfoCallback(NetworkMessage message, RestError error)
                 {
-                    if (error == null)
-                    {
-                        var info = message.Read<LobbyInfo>();
+                    var info = message?.Read<LobbyInfo>();
 
-                        OnInfo?.Invoke(info);
-                    }
-                    else
-                        ProcessErorr(error);
+                    OnInfo?.Invoke(info, error);
                 }
                 #endregion
             }
@@ -254,25 +249,15 @@ namespace Backend
                     Request.POST(Address, Constants.RestAPI.Requests.Room.Create, message, CreateCallback, false);
                 }
 
-                public delegate void CreatedDelegate(RoomBasicInfo room);
+                public delegate void CreatedDelegate(RoomBasicInfo room, RestError error);
                 public static event CreatedDelegate OnCreated;
                 static void CreateCallback(NetworkMessage message, RestError error)
                 {
-                    if (error == null)
-                    {
-                        var info = message.Read<RoomBasicInfo>();
+                    var info = message?.Read<RoomBasicInfo>();
 
-                        OnCreated?.Invoke(info);
-                    }
-                    else
-                        ProcessErorr(error);
+                    OnCreated?.Invoke(info, error);
                 }
                 #endregion
-            }
-
-            static void ProcessErorr(RestError error)
-            {
-                Debug.LogError("Rest Error: " + error.Message);
             }
         }
 
@@ -280,34 +265,43 @@ namespace Backend
         {
             public static string Address => NetworkAPI.Address + ":" + Constants.WebSocketAPI.Port;
             
-            public static WebSocket Client { get; private set; }
-            public static bool IsConnected => Client == null ? false : Client.ReadyState == WebSocketState.Open;
+            public static WebSocket Socket { get; private set; }
+            public static bool IsConnected => Socket == null ? false : Socket.ReadyState == WebSocketState.Open;
+            public static bool IsDisconnected => Socket == null ? true : Socket.ReadyState == WebSocketState.Closed;
 
             public static ConcurrentQueue<Action> ActionQueue { get; private set; }
 
             public static void Connect(string path)
             {
-                if (IsConnected) Disconnect();
+                if (IsDisconnected == false)
+                {
+                    Debug.LogError("Client Must Be Disconnected Before Reconnecting");
+                    return;
+                }
 
                 var url = "ws://" + Address + path;
 
                 ActionQueue = new ConcurrentQueue<Action>();
 
-                Client = new WebSocket(url);
+                Socket = new WebSocket(url);
 
-                Client.OnOpen += ConnectCallback;
-                Client.OnMessage += MessageCallback;
-                Client.OnClose += DisconnectCallback;
-                Client.OnError += ErrorCallback;
+                Socket.OnOpen += ConnectCallback;
+                Socket.OnMessage += MessageCallback;
+                Socket.OnClose += DisconnectCallback;
+                Socket.OnError += ErrorCallback;
 
-                Client.ConnectAsync();
+                Socket.ConnectAsync();
             }
 
-            public static void Send(NetworkMessage message)
+            public static void Send(byte[] binary)
             {
-                var binary = NetworkSerializer.Serialize(message);
+                if (IsConnected == false)
+                {
+                    Debug.LogWarning("Cannot Send Data When Client Isn't Connected");
+                    return;
+                }
 
-                Client.SendAsync(binary, null);
+                Socket.SendAsync(binary, null);
             }
 
             static void Update()
@@ -347,7 +341,7 @@ namespace Backend
                 ActionQueue = new ConcurrentQueue<Action>();
                 ActionQueue.Enqueue(Invoke);
 
-                void Invoke() => OnDisconnect?.Invoke(code, reason);
+                void Invoke()=> OnDisconnect?.Invoke(code, reason);
             }
 
             public delegate void ErrorDelegate(Exception exception, string message);
@@ -360,17 +354,17 @@ namespace Backend
             }
             #endregion
             
-            static void ApplicationQuitCallback()
-            {
-                if (IsConnected) Disconnect(CloseStatusCode.Normal);
-            }
-
             public static void Disconnect() => Disconnect(CloseStatusCode.Normal);
             public static void Disconnect(CloseStatusCode code)
             {
                 if (IsConnected == false) return;
 
-                Client.CloseAsync(code);
+                Socket.CloseAsync(code);
+            }
+
+            static void ApplicationQuitCallback()
+            {
+                if (IsConnected) Disconnect(CloseStatusCode.Normal);
             }
 
             static WebSocketAPI()
@@ -394,7 +388,12 @@ namespace Backend
             public static bool IsReady { get; private set; }
 
             public static NetworkClient Instance { get; private set; }
-            public static void Set(NetworkClientID ID) => Instance = new NetworkClient(ID, Profile);
+            public static void Set(NetworkClientID ID)
+            {
+                var info = new NetworkClientInfo(ID, Profile);
+
+                Instance = new NetworkClient(info);
+            }
 
             public static void Configure()
             {
@@ -407,7 +406,16 @@ namespace Backend
                 IsReady = false;
             }
 
-            public static void Send(NetworkMessage message) => WebSocketAPI.Send(message);
+            public static NetworkMessage Send<T>(T payload)
+            {
+                var message = NetworkMessage.Write(payload);
+
+                var binary = NetworkSerializer.Serialize(message);
+
+                WebSocketAPI.Send(binary);
+
+                return message;
+            }
 
             public delegate void ConnectDelegate();
             public static event ConnectDelegate OnConnect;
@@ -449,9 +457,7 @@ namespace Backend
 
                 var request = new RegisterClientRequest(Profile);
 
-                var message = NetworkMessage.Write(request);
-
-                Send(message);
+                Send(request);
             }
 
             public static event Action OnRegister;
@@ -472,9 +478,7 @@ namespace Backend
             {
                 var request = new ReadyClientRequest();
 
-                var message = NetworkMessage.Write(request);
-
-                Send(message);
+                Send(request);
             }
 
             public delegate void ReadyDelegate(ReadyClientResponse response);
@@ -493,9 +497,7 @@ namespace Backend
             {
                 var request = new SpawnEntityRequest(resource, attributes);
 
-                var message = NetworkMessage.Write(request);
-
-                Send(message);
+                Send(request);
             }
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity, string resource, AttributesCollection attributes);
@@ -505,6 +507,8 @@ namespace Backend
                 if (owner?.ID == Client.ID) OnSpawnEntity?.Invoke(entity, resource, attributes);
             }
             #endregion
+
+            public static void Disconnect() => WebSocketAPI.Disconnect();
 
             public delegate void DisconnectDelegate(CloseStatusCode code, string reason);
             public static event DisconnectDelegate OnDisconnect;
@@ -521,35 +525,41 @@ namespace Backend
         public static class Room
         {
             public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
-
             public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
 
             public static void Configure()
             {
-                Client.OnMessage += ClientMessageCallback;
-                Client.OnReady += ClientReadyCallback;
+                Client.OnConnect += Setup;
+                Client.OnMessage += MessageCallback;
+                Client.OnReady += ReadyCallback;
+                Client.OnDisconnect += LeaveCallback;
             }
 
             public static void Join(RoomBasicInfo info) => Join(info.ID);
-            public static void Join(ushort id)
+            public static void Join(ushort id) => WebSocketAPI.Connect("/" + id);
+
+            static void Setup()
             {
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
-
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-
-                WebSocketAPI.Connect("/" + id);
             }
 
-            static void ClientReadyCallback(ReadyClientResponse response)
+            static void ReadyCallback(ReadyClientResponse response)
             {
-                RegisterClientsInternal(response.Clients);
+                AddClients(response.Clients);
 
                 ApplyMessageBuffer(response.Buffer);
             }
 
-            static void ClientMessageCallback(NetworkMessage message)
+            static void ApplyMessageBuffer(IList<NetworkMessage> list)
             {
-                if(Client.IsReady)
+                for (int i = 0; i < list.Count; i++)
+                    MessageCallback(list[i]);
+            }
+
+            static void MessageCallback(NetworkMessage message)
+            {
+                if (Client.IsReady)
                 {
                     if (message.Is<RpcCommand>())
                     {
@@ -578,27 +588,6 @@ namespace Backend
                 }
             }
 
-            static void RegisterClientsInternal(IList<NetworkClientInfo> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    RegisterClientInternal(list[i]);
-            }
-            static NetworkClient RegisterClientInternal(NetworkClientInfo info) => RegisterClientInternal(info.ID, info.Profile);
-            static NetworkClient RegisterClientInternal(NetworkClientID id, NetworkClientProfile profile)
-            {
-                var client = new NetworkClient(id, profile);
-
-                Clients.Add(client.ID, client);
-
-                return client;
-            }
-
-            static void ApplyMessageBuffer(IList<NetworkMessage> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    ClientMessageCallback(list[i]);
-            }
-
             public delegate void ClientConnectedDelegate(NetworkClient client);
             public static event ClientConnectedDelegate OnClientConnected;
             static void ClientConnected(ClientConnectedPayload payload)
@@ -609,11 +598,25 @@ namespace Backend
                     return;
                 }
 
-                var client = RegisterClientInternal(payload.ID, payload.Profile);
+                var client = AddClient(payload.Info);
 
                 OnClientConnected?.Invoke(client);
 
                 Debug.Log($"Client {client.ID} Connected to Room");
+            }
+
+            static void AddClients(IList<NetworkClientInfo> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    AddClient(list[i]);
+            }
+            static NetworkClient AddClient(NetworkClientInfo info)
+            {
+                var client = new NetworkClient(info);
+
+                Clients.Add(client.ID, client);
+
+                return client;
             }
 
             static void InvokeRpc(RpcCommand command)
@@ -628,8 +631,6 @@ namespace Backend
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
-                Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}");
-
                 var prefab = Resources.Load<GameObject>(command.Resource);
                 if (prefab == null)
                 {
@@ -647,18 +648,20 @@ namespace Backend
                     return;
                 }
 
+                Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}, Owned By Client {command.Owner}");
+
                 if (Clients.TryGetValue(command.Owner, out var owner))
                     owner.Entities.Add(entity);
                 else
-                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Client Owner");
+                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Client Owner");
 
                 entity.Configure(owner, command.Entity, command.Attributes);
                 Entities.Add(entity.ID, entity);
 
-                OnSpawnEntity?.Invoke(entity, owner, command.Resource, command.Attributes);
+                OnSpawnEntity?.Invoke(entity, owner, command.Resource, entity.Attributes);
             }
 
-            public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientProfile info);
+            public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientInfo info);
             public static event ClientDisconnectedDelegate OnClientDisconnected;
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
@@ -669,7 +672,7 @@ namespace Backend
                 else
                     Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
 
-                OnClientDisconnected?.Invoke(payload.ID, payload.Profile);
+                OnClientDisconnected?.Invoke(payload.ID, client?.Info);
             }
 
             static void RemoveClient(NetworkClient client)
@@ -684,10 +687,21 @@ namespace Backend
                 Clients.Remove(client.ID);
             }
 
-            public static void Leave()
+            static void Clear()
             {
-                WebSocketAPI.Disconnect();
+                foreach (var entity in Entities.Values)
+                {
+                    if (entity == null) continue;
+
+                    Object.Destroy(entity.gameObject);
+                }
+
+                Entities.Clear();
+                Clients.Clear();
             }
+
+            public static void Leave() => Client.Disconnect();
+            static void LeaveCallback(CloseStatusCode code, string reason) => Clear();
         }
     }
 }
