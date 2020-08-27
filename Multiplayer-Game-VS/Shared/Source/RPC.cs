@@ -90,7 +90,7 @@ namespace Backend
     public sealed class RpcCommand : INetworkSerializable
     {
         NetworkClientID sender;
-        public NetworkClientID Sender { get { return sender; } }
+        public NetworkClientID Sender => sender;
 
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -110,7 +110,7 @@ namespace Backend
             {
                 var results = new object[parameters.Count];
 
-                for (int i = 0; i < parameters.Count; i++)
+                for (int i = 0; i < parameters.Count - 1; i++)
                 {
                     var value = reader.Read(parameters[i].ParameterType);
 
@@ -139,25 +139,13 @@ namespace Backend
         }
 
         public RpcCommand() { }
-
-        public static RpcCommand Write(NetworkClientID sender, RpcRequest request)
+        public RpcCommand(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, string method, byte[] raw)
         {
-            var command = Write(sender, request.Entity, request.Behaviour, request.Method, request.Raw);
-
-            return command;
-        }
-        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, string method, byte[] raw)
-        {
-            var command = new RpcCommand()
-            {
-                sender = sender,
-                entity = entity,
-                behaviour = behaviour,
-                method = method,
-                raw = raw,
-            };
-
-            return command;
+            this.sender = sender;
+            this.entity = entity;
+            this.method = method;
+            this.behaviour = behaviour;
+            this.raw = raw;
         }
     }
 

@@ -22,7 +22,7 @@ using System.Reflection;
 namespace Backend
 {
     [RequireComponent(typeof(NetworkEntity))]
-    public class NetworkBehaviour : MonoBehaviour
+    public partial class NetworkBehaviour : MonoBehaviour
 	{
         public NetworkBehaviourID ID { get; protected set; }
 
@@ -46,46 +46,9 @@ namespace Backend
         public bool IsMine => Entity.IsMine;
 
         public RpcCollection RPCs { get; protected set; }
-        public class RpcCollection
-        {
-            public Dictionary<string, RpcBind> Dictionary { get; protected set; }
 
-            public BindingFlags BindingFlags => BindingFlags.Instance | BindingFlags.NonPublic;
-
-            public bool Find(string name, out RpcBind bind)
-            {
-                return Dictionary.TryGetValue(name, out bind);
-            }
-
-            public RpcCollection(NetworkBehaviour behaviour)
-            {
-                Dictionary = new Dictionary<string, RpcBind>();
-
-                foreach (var method in behaviour.GetType().GetMethods(BindingFlags))
-                {
-                    var attribute = method.GetCustomAttribute<NetworkRPCAttribute>();
-
-                    if (attribute == null) continue;
-
-                    var bind = new RpcBind(behaviour, attribute, method);
-
-                    Dictionary.Add(bind.Name, bind);
-                }
-            }
-        }
-        
-        #region Request RPC
-        public void RequestRPC(RpcCallback callback)
-            => RequestRPC(callback.Method);
-        public void RequestRPC<T1>(RpcCallback<T1> callback, T1 arg1)
-            => RequestRPC(callback.Method, arg1);
-        public void RequestRPC<T1, T2>(RpcCallback<T1, T2> callback, T1 arg1, T2 arg2)
-            => RequestRPC(callback.Method, arg1, arg2);
-        public void RequestRPC<T1, T2, T3>(RpcCallback<T1, T2, T3> callback, T1 arg1, T2 arg2, T3 arg3)
-            => RequestRPC(callback.Method, arg1, arg2, arg3);
-
-        protected void RequestRPC(MethodInfo method, params object[] parameters) => RequestRPC(method.Name, parameters);
-        protected void RequestRPC(string name, params object[] parameters)
+        protected void RequestRPC(MethodInfo method, params object[] arguments) => RequestRPC(method.Name, arguments);
+        protected void RequestRPC(string name, params object[] arguments)
         {
             if (RPCs.Find(name, out var bind))
             {
@@ -95,17 +58,18 @@ namespace Backend
                     return;
                 }
 
-                var payload = bind.CreateRequest(parameters);
+                var payload = bind.CreateRequest(arguments);
 
                 NetworkAPI.Client.Send(payload);
             }
+            else
+                Debug.LogWarning($"No RPC Found With Name {name}");
         }
-        #endregion
 
         public void InvokeRpc(RpcCommand command)
         {
             if(RPCs.Find(command.Method, out var bind))
-                bind.Invoke(command);
+                bind.InvokeCommand(command);
             else
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
         }

@@ -8,14 +8,17 @@ namespace Backend
 {
     class NetworkEntity
     {
+        public NetworkClient Owner { get; protected set; }
+
         public NetworkEntityID ID { get; protected set; }
 
         public NetworkMessage SpawnMessage { get; set; }
 
         public RpcBuffer RPCBuffer { get; protected set; }
 
-        public NetworkEntity(NetworkEntityID id)
+        public NetworkEntity(NetworkClient owner, NetworkEntityID id)
         {
+            this.Owner = owner;
             this.ID = id;
 
             RPCBuffer = new RpcBuffer();

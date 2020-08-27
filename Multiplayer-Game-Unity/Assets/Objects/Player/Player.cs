@@ -59,7 +59,7 @@ namespace Game
         }
 
 		[NetworkRPC(RpcBufferMode.Last)]
-        void RpcSetPosition(Vector3 position, Quaternion rotation)
+        void RpcSetPosition(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             transform.position = position;
             transform.rotation = rotation;

@@ -58,11 +58,11 @@ namespace Backend
 
             for (byte i = 0; i < count; i++)
             {
-                Behaviours.Add(targets[i].ID, targets[i]);
-
                 var id = new NetworkBehaviourID(i);
 
                 targets[i].Configure(this, id);
+
+                Behaviours.Add(id, targets[i]);
             }
         }
 

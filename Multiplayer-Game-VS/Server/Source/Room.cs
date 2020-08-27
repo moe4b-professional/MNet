@@ -286,7 +286,7 @@ namespace Backend
         }
         void InvokeRPC(NetworkClient sender, NetworkEntity entity, RpcRequest request)
         {
-            var command = RpcCommand.Write(sender.ID, request);
+            var command = new RpcCommand(sender.ID, request.Entity, request.Behaviour, request.Method, request.Raw);
 
             var message = Broadcast(command);
 
@@ -299,7 +299,7 @@ namespace Backend
             var code = Entities.Reserve();
             var id = new NetworkEntityID(code);
 
-            var entity = new NetworkEntity(id);
+            var entity = new NetworkEntity(owner, id);
 
             owner.Entities.Add(entity);
             Entities.Assign(entity, code);
