@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
-namespace Backend.Shared
+namespace Backend
 {
     public static class NetworkPayload
     {

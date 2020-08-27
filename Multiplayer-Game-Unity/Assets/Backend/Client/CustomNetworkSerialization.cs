@@ -17,9 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Backend.Shared;
-
-namespace Backend.Client
+namespace Backend
 {
 	public class CustomNetworkSerialization
 	{

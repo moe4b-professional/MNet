@@ -4,9 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Backend.Shared;
-
-namespace Backend.Server
+namespace Backend
 {
     class RpcBuffer
     {

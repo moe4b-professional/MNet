@@ -11,9 +11,7 @@ using WebSocketSharp.Server;
 
 using System.Net;
 
-using Backend.Shared;
-
-namespace Backend.Server
+namespace Backend
 {
     class WebSocketAPI
     {

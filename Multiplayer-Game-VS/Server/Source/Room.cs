@@ -9,11 +9,9 @@ using WebSocketSharp.Server;
 
 using System.Threading;
 
-using Backend.Shared;
-
 using System.Collections.Concurrent;
 
-namespace Backend.Server
+namespace Backend
 {
     class Room
     {

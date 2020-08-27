@@ -8,7 +8,7 @@ using System.IO;
 using System.Collections;
 using System.Reflection;
 
-namespace Backend.Shared
+namespace Backend
 {
     public abstract class NetworkSerializationResolver
     {

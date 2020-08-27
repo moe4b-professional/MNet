@@ -17,11 +17,9 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Backend.Shared;
-
 using System.Reflection;
 
-namespace Backend.Client
+namespace Backend
 {
     [RequireComponent(typeof(NetworkEntity))]
     public class NetworkBehaviour : MonoBehaviour

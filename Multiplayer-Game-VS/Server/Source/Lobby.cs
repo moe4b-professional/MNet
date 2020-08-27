@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Backend.Shared;
-
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
-namespace Backend.Server
+namespace Backend
 {
     class Lobby
     {

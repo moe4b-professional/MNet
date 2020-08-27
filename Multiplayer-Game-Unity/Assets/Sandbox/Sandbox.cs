@@ -21,8 +21,7 @@ using UnityEngine.Networking;
 
 using WebSocketSharp;
 
-using Backend.Shared;
-using Backend.Client;
+using Backend;
 
 namespace Game
 {

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
-namespace Backend.Shared
+namespace Backend
 {
     [Serializable]
     public sealed class NetworkMessage : INetworkSerializable

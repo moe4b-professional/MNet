@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 using System.Reflection;
 
-using Backend.Shared;
-
-namespace Backend.Client
+namespace Backend
 {
     public class RpcBind
     {

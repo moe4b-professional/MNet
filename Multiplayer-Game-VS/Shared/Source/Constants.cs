@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Backend.Shared
+namespace Backend
 {
     public static class Constants
     {

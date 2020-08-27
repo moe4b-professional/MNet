@@ -10,14 +10,12 @@ using WebSocketSharp.Server;
 using System.IO;
 using System.Net;
 
-using Backend.Shared;
-
 using HttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using HttpResponse = WebSocketSharp.Net.HttpListenerResponse;
 
 using HttpCode = WebSocketSharp.Net.HttpStatusCode;
 
-namespace Backend.Server
+namespace Backend
 {
     class RestAPI
     {

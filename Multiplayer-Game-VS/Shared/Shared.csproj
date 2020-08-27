@@ -7,7 +7,7 @@
     <ProjectGuid>{1D7748A0-D914-4D0E-BDF3-489AEAEA46E2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Backend.Shared</RootNamespace>
+    <RootNamespace>Backend</RootNamespace>
     <AssemblyName>Shared</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

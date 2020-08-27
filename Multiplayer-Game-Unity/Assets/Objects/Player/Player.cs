@@ -17,8 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Backend.Shared;
-using Backend.Client;
+using Backend;
 
 namespace Game
 {

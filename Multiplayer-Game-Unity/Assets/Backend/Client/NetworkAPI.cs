@@ -17,8 +17,6 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Backend.Shared;
-
 using UnityEngine.Networking;
 using UnityEngine.PlayerLoop;
 using UnityEngine.LowLevel;
@@ -28,7 +26,7 @@ using WebSocketSharp.Net;
 
 using System.Collections.Concurrent;
 
-namespace Backend.Client
+namespace Backend
 {
 	public static class NetworkAPI
 	{
