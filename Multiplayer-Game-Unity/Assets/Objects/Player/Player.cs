@@ -23,6 +23,8 @@ namespace Game
 {
 	public class Player : NetworkBehaviour
 	{
+        new public Renderer renderer;
+
         public float speed;
 
         protected override void OnSpawn()
@@ -37,6 +39,13 @@ namespace Game
                 if (Attributes.TryGetValue("Rotation", out Quaternion rotation))
                     transform.rotation = rotation;
             }
+        }
+
+        void Start()
+        {
+            var block = new MaterialPropertyBlock();
+            block.SetColor("_Color", IsMine ? Color.green : Color.red);
+            renderer.SetPropertyBlock(block);
         }
 
         void Update()

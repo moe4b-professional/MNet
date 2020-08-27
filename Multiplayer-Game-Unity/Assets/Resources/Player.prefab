@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 443937104889386628}
   - component: {fileID: 5225140791520895883}
   m_Layer: 0
-  m_Name: Mesh
+  m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -139,6 +139,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a85cecc3c922e540851058ec281264d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  renderer: {fileID: 443937104889386628}
   speed: 35
 --- !u!114 &930935886341592173
 MonoBehaviour:
@@ -165,7 +166,7 @@ GameObject:
   - component: {fileID: 298764519196477288}
   - component: {fileID: 6817356374258212166}
   m_Layer: 0
-  m_Name: Mesh (1)
+  m_Name: Glasses
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -180,7 +181,7 @@ Transform:
   m_GameObject: {fileID: 8956671673172351465}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.637, z: 0.496}
-  m_LocalScale: {x: 0.82662, y: 0.36138, z: 0.27412}
+  m_LocalScale: {x: 1.1955405, y: 0.36138, z: 0.27412}
   m_Children: []
   m_Father: {fileID: 5791388815324586387}
   m_RootOrder: 1
@@ -211,7 +212,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 8acb58d8a4e3750449dd7d1a6d04ad54, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
