@@ -37,6 +37,11 @@ namespace Backend
             NetworkAPI.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
 
             NetworkAPI.Client.OnReady += ClientReadyCallback;
+
+            if(Application.isMobilePlatform)
+            {
+                NetworkAPI.RestAPI.Lobby.Info();
+            }
         }
         
         void ClientReadyCallback(ReadyClientResponse response)
@@ -91,14 +96,6 @@ namespace Backend
         void RoomCreatedCallback(RoomBasicInfo room)
         {
             Debug.Log("Created Room " + room.ID);
-
-            if (room.Attributes == null)
-                Debug.LogError("Null Room Attributes");
-            else
-            {
-                foreach (var key in room.Attributes.Keys)
-                    Debug.Log(room.Attributes[key]);
-            }
 
             NetworkAPI.Room.Join(room);
         }

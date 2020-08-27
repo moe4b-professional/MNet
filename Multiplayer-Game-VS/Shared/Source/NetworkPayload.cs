@@ -13,7 +13,7 @@ namespace Backend.Shared
 {
     public static class NetworkPayload
     {
-        public const short MinCode = 400;
+        public const ushort MinCode = 400;
 
         public static Dictionary<ushort, Type> Types { get; private set; }
 

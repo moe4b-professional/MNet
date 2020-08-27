@@ -50,9 +50,33 @@ namespace Backend
         {
             NetworkAPI.Address = address;
 
-            Client.Configure();
+            Log.Output = LogOutput;
 
+            Client.Configure();
             Room.Configure();
+        }
+
+        static void LogOutput(object target, Log.Level level)
+        {
+            switch (level)
+            {
+                case Log.Level.Info:
+                    Debug.Log(target);
+                    break;
+
+                case Log.Level.Warning:
+                    Debug.LogWarning(target);
+                    break;
+
+                case Log.Level.Error:
+                    Debug.LogError(target);
+                    break;
+
+                default:
+                    Debug.LogWarning($"No Logging Case Made For Log Level {level}");
+                    Debug.Log(target);
+                    break;
+            }
         }
 
         public static event Action OnUpdate;

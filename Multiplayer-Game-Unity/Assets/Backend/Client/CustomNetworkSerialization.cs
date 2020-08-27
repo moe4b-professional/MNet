@@ -21,32 +21,34 @@ using Backend.Shared;
 
 namespace Backend
 {
-	public class UnityTypesNetworkSerialization
+	public class CustomNetworkSerialization
 	{
-        public const short Start = NetworkPayload.MinCode;
+        public static class IDs
+        {
+            public const ushort Start = NetworkPayload.MinCode;
+
+            public const ushort Vector3 = Start + 1;
+            public const ushort Quaternion = Vector3 + 1;
+        }
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
-            NetworkPayload.Register<Vector3>(Start + 1);
-            NetworkPayload.Register<Quaternion>(Start + 2);
+            NetworkPayload.Register<Vector3>(IDs.Vector3);
+            NetworkPayload.Register<Quaternion>(IDs.Quaternion);
         }
 	}
 
-    public class Vector3SerializationResolver : NetworkSerializationResolver
+    public class Vector3SerializationResolver : NetworkSerializationExplicitResolver<Vector3>
     {
-        public override bool CanResolve(Type type) => type == typeof(Vector3);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, Vector3 value)
         {
-            var value = (Vector3)type;
-
             writer.Write(value.x);
             writer.Write(value.y);
             writer.Write(value.z);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override Vector3 Deserialize(NetworkReader reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
@@ -54,25 +56,19 @@ namespace Backend
 
             return new Vector3(x, y, z);
         }
-
-        public Vector3SerializationResolver() { }
     }
 
-    public class QuaternionNetworkSerializationResolver : NetworkSerializationResolver
+    public class QuaternionNetworkSerializationResolver : NetworkSerializationExplicitResolver<Quaternion>
     {
-        public override bool CanResolve(Type type) => type == typeof(Quaternion);
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, Quaternion value)
         {
-            var value = (Quaternion)type;
-
             writer.Write(value.x);
             writer.Write(value.y);
             writer.Write(value.z);
             writer.Write(value.w);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override Quaternion Deserialize(NetworkReader reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
@@ -81,7 +77,5 @@ namespace Backend
 
             return new Quaternion(x, y, z, w);
         }
-
-        public QuaternionNetworkSerializationResolver() { }
     }
 }

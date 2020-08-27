@@ -161,7 +161,7 @@ namespace Backend.Server
 
             var binary = NetworkSerializer.Serialize(message);
 
-            Log.Info($"{typeof(T)} Binary Size: {binary.Length}");
+            //Log.Info($"{typeof(T)} Binary Size: {binary.Length}");
 
             WebSocket.Sessions.BroadcastAsync(binary, null);
 
