@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using System.Collections.Concurrent;
 
-namespace Game.Server
+namespace Backend.Server
 {
     public class IDCollection<TType>
         where TType : class

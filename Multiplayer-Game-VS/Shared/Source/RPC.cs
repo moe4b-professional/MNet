@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game.Shared
+namespace Backend.Shared
 {
     [Serializable]
     public sealed class RpcRequest : INetworkSerializable

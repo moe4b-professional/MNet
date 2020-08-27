@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Game.Shared;
+using Backend.Shared;
 
-namespace Game.Server
+namespace Backend.Server
 {
     public class Schedule
     {

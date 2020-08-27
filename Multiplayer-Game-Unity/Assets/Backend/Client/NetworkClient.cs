@@ -17,9 +17,9 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Game.Shared;
+using Backend.Shared;
 
-namespace Game
+namespace Backend
 {
 	public class NetworkClient
 	{

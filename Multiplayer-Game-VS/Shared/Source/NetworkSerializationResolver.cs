@@ -8,7 +8,7 @@ using System.IO;
 using System.Collections;
 using System.Reflection;
 
-namespace Game.Shared
+namespace Backend.Shared
 {
     public abstract class NetworkSerializationResolver
     {

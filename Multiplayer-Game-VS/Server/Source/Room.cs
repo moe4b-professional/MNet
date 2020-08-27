@@ -9,11 +9,11 @@ using WebSocketSharp.Server;
 
 using System.Threading;
 
-using Game.Shared;
+using Backend.Shared;
 
 using System.Collections.Concurrent;
 
-namespace Game.Server
+namespace Backend.Server
 {
     class Room
     {

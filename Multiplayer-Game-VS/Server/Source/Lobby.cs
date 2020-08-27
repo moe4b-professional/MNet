@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Game.Shared;
+using Backend.Shared;
 
 using WebSocketSharp;
 using WebSocketSharp.Net;
 
-namespace Game.Server
+namespace Backend.Server
 {
     class Lobby
     {

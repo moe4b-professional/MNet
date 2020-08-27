@@ -11,9 +11,9 @@ using WebSocketSharp.Server;
 
 using System.Net;
 
-using Game.Shared;
+using Backend.Shared;
 
-namespace Game.Server
+namespace Backend.Server
 {
     class WebSocketAPI
     {

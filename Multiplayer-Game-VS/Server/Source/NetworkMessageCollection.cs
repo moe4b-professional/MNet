@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Game.Shared;
+using Backend.Shared;
 
-namespace Game.Server
+namespace Backend.Server
 {
     class NetworkMessageCollection : List<NetworkMessage> //Yeah, I Know, But It's Easier Than Typing List<NetworkMessage> Everywhere!
     {

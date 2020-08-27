@@ -17,7 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Game.Shared;
+using Backend.Shared;
 
 using UnityEngine.Networking;
 using UnityEngine.PlayerLoop;
@@ -28,7 +28,7 @@ using WebSocketSharp.Net;
 
 using System.Collections.Concurrent;
 
-namespace Game
+namespace Backend
 {
 	public static class NetworkAPI
 	{

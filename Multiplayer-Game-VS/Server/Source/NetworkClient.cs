@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Game.Shared;
+using Backend.Shared;
 
 using WebSocketSharp;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 
-namespace Game.Server
+namespace Backend.Server
 {
     class NetworkClient
     {

@@ -8,7 +8,7 @@ using WebSocketSharp;
 using WebSocketSharp.Net;
 using WebSocketSharp.Server;
 
-using Game.Shared;
+using Backend.Shared;
 using System.Threading;
 
 namespace StressTest

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game.Shared
+namespace Backend.Shared
 {
     public class AttributesCollection : INetworkSerializable
     {

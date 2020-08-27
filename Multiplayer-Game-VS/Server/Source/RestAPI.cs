@@ -10,14 +10,14 @@ using WebSocketSharp.Server;
 using System.IO;
 using System.Net;
 
-using Game.Shared;
+using Backend.Shared;
 
 using HttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using HttpResponse = WebSocketSharp.Net.HttpListenerResponse;
 
 using HttpCode = WebSocketSharp.Net.HttpStatusCode;
 
-namespace Game.Server
+namespace Backend.Server
 {
     class RestAPI
     {

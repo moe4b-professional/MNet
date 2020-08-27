@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 using System.Reflection;
 
-using Game.Shared;
+using Backend.Shared;
 
-namespace Game
+namespace Backend
 {
     public class RpcBind
     {

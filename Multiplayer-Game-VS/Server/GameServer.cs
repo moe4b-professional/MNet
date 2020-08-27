@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net;
 
-using Game.Shared;
+using Backend.Shared;
 
-namespace Game.Server
+namespace Backend.Server
 {
     static class GameServer
     {

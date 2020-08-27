@@ -17,11 +17,11 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Game.Shared;
+using Backend.Shared;
 
 using System.Reflection;
 
-namespace Game
+namespace Backend
 {
     [RequireComponent(typeof(NetworkEntity))]
     public class NetworkBehaviour : MonoBehaviour
@@ -111,7 +111,7 @@ namespace Game
             if(RPCs.Find(command.Method, out var bind))
                 bind.Invoke(command);
             else
-                Debug.Log($"No RPC with Name {command.Method} found on {GetType().Name}");
+                Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
         }
     }
 }
