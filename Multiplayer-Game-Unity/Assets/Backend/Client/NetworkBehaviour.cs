@@ -46,12 +46,13 @@ namespace Backend
         public bool IsMine => Entity.IsMine;
 
         public RpcCollection RPCs { get; protected set; }
-
-        protected void RequestRPC(string method, NetworkClient client, params object[] arguments)
+        
+        protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
+        protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
         {
             if (RPCs.Find(method, out var bind))
             {
-                var payload = bind.CreateRequest(client.ID, arguments);
+                var payload = bind.CreateRequest(bufferMode, arguments);
 
                 SendRpc(payload);
             }
@@ -59,12 +60,11 @@ namespace Backend
                 Debug.LogWarning($"No RPC Found With Name {method}");
         }
 
-        protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
-        protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
+        protected void RequestRPC(string method, NetworkClient client, params object[] arguments)
         {
             if (RPCs.Find(method, out var bind))
             {
-                var payload = bind.CreateRequest(bufferMode, arguments);
+                var payload = bind.CreateRequest(client.ID, arguments);
 
                 SendRpc(payload);
             }

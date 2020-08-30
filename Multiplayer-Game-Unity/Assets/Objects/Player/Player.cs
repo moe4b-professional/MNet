@@ -59,11 +59,11 @@ namespace Game
 
                 var velocity = Vector3.ClampMagnitude(direction * speed, speed);
 
-                var translation = velocity * Time.deltaTime;
+                var position = transform.position + (velocity * Time.deltaTime);
 
-                var rotation = translation.magnitude > 0.1f ? Quaternion.LookRotation(translation) : transform.rotation;
+                var rotation = velocity.magnitude > 0.1f ? Quaternion.LookRotation(velocity) : transform.rotation;
 
-                RequestRPC(RpcMove, Entity.Owner, transform.position + translation, rotation);
+                RequestRPC(RpcMove, position, rotation);
             }
         }
 
