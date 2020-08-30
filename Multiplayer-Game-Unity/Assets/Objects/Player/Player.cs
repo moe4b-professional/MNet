@@ -63,11 +63,11 @@ namespace Game
 
                 var rotation = translation.magnitude > 0.1f ? Quaternion.LookRotation(translation) : transform.rotation;
 
-                RequestRPC(RpcMove, transform.position + translation, rotation);
+                RequestRPC(RpcMove, Entity.Owner, transform.position + translation, rotation);
             }
         }
 
-		[NetworkRPC(RpcBufferMode.Last)]
+		[NetworkRPC]
         void RpcMove(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             transform.position = position;

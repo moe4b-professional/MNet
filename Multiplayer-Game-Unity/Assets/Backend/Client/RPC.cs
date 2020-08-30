@@ -22,8 +22,6 @@ namespace Backend
 
         public NetworkRPCAttribute Attribute { get; protected set; }
 
-        public RpcBufferMode BufferMode => Attribute.BufferMode;
-
         public static BindingFlags BindingFlags
         {
             get
@@ -31,10 +29,16 @@ namespace Backend
                 return BindingFlags.Instance | BindingFlags.NonPublic;
             }
         }
-        
-        public RpcRequest CreateRequest(params object[] parameters)
+
+        public BroadcastRpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, BufferMode, parameters);
+            var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, ID, bufferMode, arguments);
+
+            return request;
+        }
+        public TargetRpcRequest CreateRequest(NetworkClientID client, params object[] arguments)
+        {
+            var request = TargetRpcRequest.Write(client, Entity.ID, Behaviour.ID, ID, arguments);
 
             return request;
         }
@@ -79,13 +83,7 @@ namespace Backend
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
-        public RpcBufferMode BufferMode { get; private set; }
-
-        public NetworkRPCAttribute() : this(RpcBufferMode.None) { }
-        public NetworkRPCAttribute(RpcBufferMode bufferMode)
-        {
-            this.BufferMode = bufferMode;
-        }
+        public NetworkRPCAttribute() { }
     }
 
     public class RpcCollection
@@ -126,22 +124,4 @@ namespace Backend
     public delegate void RpcMethod<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
     public delegate void RpcMethod<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
     public delegate void RpcMethod<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
-
-    public partial class NetworkBehaviour
-    {
-        public void RequestRPC(RpcMethod callback)
-            => RequestRPC(callback.Method);
-        public void RequestRPC<T1>(RpcMethod<T1> callback, T1 arg1)
-            => RequestRPC(callback.Method, arg1);
-        public void RequestRPC<T1, T2>(RpcMethod<T1, T2> callback, T1 arg1, T2 arg2)
-            => RequestRPC(callback.Method, arg1, arg2);
-        public void RequestRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> callback, T1 arg1, T2 arg2, T3 arg3)
-            => RequestRPC(callback.Method, arg1, arg2, arg3);
-        public void RequestRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RequestRPC(callback.Method, arg1, arg2, arg3, arg4);
-        public void RequestRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RequestRPC(callback.Method, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RequestRPC(callback.Method, arg1, arg2, arg3, arg4, arg5, arg6);
-    }
 }

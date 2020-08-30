@@ -8,21 +8,18 @@ using System.Threading.Tasks;
 namespace Backend
 {
     [Serializable]
-    public sealed class RpcRequest : INetworkSerializable
+    public abstract class RpcRequest : INetworkSerializable
     {
-        NetworkEntityID entity;
+        protected NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
 
-        NetworkBehaviourID behaviour;
+        protected NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        string method;
+        protected string method;
         public string Method { get { return method; } }
 
-        RpcBufferMode bufferMode;
-        public RpcBufferMode BufferMode => bufferMode;
-
-        private byte[] raw;
+        protected byte[] raw;
         public byte[] Raw { get { return raw; } }
 
         public object[] Read(IList<ParameterInfo> parameters)
@@ -42,26 +39,24 @@ namespace Backend
             }
         }
 
-        public void Serialize(NetworkWriter writer)
+        public virtual void Serialize(NetworkWriter writer)
         {
             writer.Write(entity);
             writer.Write(behaviour);
             writer.Write(method);
-            writer.Write(bufferMode);
             writer.Write(raw);
         }
-        public void Deserialize(NetworkReader reader)
+        public virtual void Deserialize(NetworkReader reader)
         {
             reader.Read(out entity);
             reader.Read(out behaviour);
             reader.Read(out method);
-            reader.Read(out bufferMode);
             reader.Read(out raw);
         }
 
         public RpcRequest() { }
 
-        public static RpcRequest Write(NetworkEntityID entityID, NetworkBehaviourID behaviour, string method, RpcBufferMode bufferMode, params object[] arguments)
+        public static byte[] Serialize(params object[] arguments)
         {
             Byte[] raw;
 
@@ -73,12 +68,77 @@ namespace Backend
                 raw = writer.ToArray();
             }
 
-            var request = new RpcRequest()
+            return raw;
+        }
+    }
+
+    [Serializable]
+    public class BroadcastRpcRequest : RpcRequest
+    {
+        protected RpcBufferMode bufferMode;
+        public RpcBufferMode BufferMode => bufferMode;
+
+        public override void Serialize(NetworkWriter writer)
+        {
+            base.Serialize(writer);
+
+            writer.Write(bufferMode);
+        }
+
+        public override void Deserialize(NetworkReader reader)
+        {
+            base.Deserialize(reader);
+
+            reader.Read(out bufferMode);
+        }
+
+        public static BroadcastRpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string method, RpcBufferMode bufferMode, params object[] arguments)
+        {
+            var raw = Serialize(arguments);
+
+            var request = new BroadcastRpcRequest()
             {
-                entity = entityID,
+                entity = entity,
                 behaviour = behaviour,
                 method = method,
                 bufferMode = bufferMode,
+                raw = raw
+            };
+
+            return request;
+        }
+    }
+
+    [Serializable]
+    public class TargetRpcRequest : RpcRequest
+    {
+        NetworkClientID client;
+        public NetworkClientID Client => client;
+
+        public override void Serialize(NetworkWriter writer)
+        {
+            base.Serialize(writer);
+
+            writer.Write(client);
+        }
+
+        public override void Deserialize(NetworkReader reader)
+        {
+            base.Deserialize(reader);
+
+            reader.Read(out client);
+        }
+
+        public static TargetRpcRequest Write(NetworkClientID client, NetworkEntityID entity, NetworkBehaviourID behaviour, string method, params object[] arguments)
+        {
+            var raw = Serialize(arguments);
+
+            var request = new TargetRpcRequest()
+            {
+                client = client,
+                entity = entity,
+                behaviour = behaviour,
+                method = method,
                 raw = raw
             };
 

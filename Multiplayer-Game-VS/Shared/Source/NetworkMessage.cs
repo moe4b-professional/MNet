@@ -14,34 +14,42 @@ namespace Backend
     [Serializable]
     public sealed class NetworkMessage : INetworkSerializable
     {
-        private ushort code;
+        ushort code;
         public ushort Code { get { return code; } }
 
-        private byte[] raw;
+        byte[] raw;
         public byte[] Raw { get { return raw; } }
 
-        public Type Type => NetworkPayload.GetType(code);
-
-        public bool Is<TType>() => NetworkPayload.GetCode<TType>() == code;
-        public bool Is(Type type) => NetworkPayload.GetCode(type) == code;
-
-        #region Read
-        object payload = null;
-
-        public object Read()
+        Type _type;
+        public Type Type
         {
-            if (payload == null) payload = NetworkSerializer.Deserialize(raw, Type);
+            get
+            {
+                if (_type == null) NetworkPayload.TryGetType(code, out _type);
 
-            return payload;
+                return _type;
+            }
         }
+
+        object _payload;
+        public object Payload
+        {
+            get
+            {
+                if (_payload == null) _payload = NetworkSerializer.Deserialize(raw, Type);
+
+                return _payload;
+            }
+        }
+
+        public bool Is<TType>() => Is(typeof(TType));
+        public bool Is(Type target) => target.IsAssignableFrom(Type);
 
         public T Read<T>()
         {
-            var instance = Read();
-
             try
             {
-                return (T)instance;
+                return (T)Payload;
             }
             catch(InvalidCastException)
             {
@@ -52,7 +60,6 @@ namespace Backend
                 throw;
             }
         }
-
         public bool TryRead<T>(out T payload)
             where T : new()
         {
@@ -67,7 +74,6 @@ namespace Backend
                 return false;
             }
         }
-        #endregion
 
         public void WriteTo(HttpListenerResponse response)
         {
@@ -92,12 +98,6 @@ namespace Backend
         }
 
         public NetworkMessage() { }
-        public NetworkMessage(ushort id, byte[] payload)
-        {
-            this.code = id;
-
-            this.raw = payload;
-        }
 
         public static NetworkMessage Read(byte[] data)
         {
@@ -118,10 +118,15 @@ namespace Backend
         public static NetworkMessage Write<T>(T payload)
         {
             var code = NetworkPayload.GetCode<T>();
-
             var raw = NetworkSerializer.Serialize(payload);
 
-            return new NetworkMessage(code, raw);
+            var message = new NetworkMessage()
+            {
+                code = code,
+                raw = raw,
+            };
+
+            return message;
         }
     }
 }

@@ -21,10 +21,14 @@ namespace Backend
 
         public static Type GetType(ushort code)
         {
-            if (Types.TryGetValue(code, out var type))
+            if (TryGetType(code, out var type))
                 return type;
             else
                 throw new Exception($"No NetworkPayload Registerd With Code {code}");
+        }
+        public static bool TryGetType(ushort code, out Type type)
+        {
+            return Types.TryGetValue(code, out type);
         }
 
         public static ushort GetCode<T>() => GetCode(typeof(T));
@@ -46,6 +50,28 @@ namespace Backend
             Types.Add(code, type);
             Codes.Add(type, code);
         }
+        #endregion
+
+        #region Validate
+        static void ValidateDuplicate(ushort code, Type type)
+        {
+            ValidateTypeDuplicate(code, type);
+
+            ValidateCodeDuplicate(code, type);
+        }
+
+        static void ValidateTypeDuplicate(ushort code, Type type)
+        {
+            if (Types.TryGetValue(code, out var duplicate))
+                throw new Exception($"NetworkPayload Type Duplicate Found, {type} & {duplicate} both registered with code {code}");
+        }
+
+        static void ValidateCodeDuplicate(ushort code, Type type)
+        {
+            if (Codes.TryGetValue(type, out var duplicate))
+                throw new Exception($"NetworkPayload Type Duplicate Found, Code {code} & {duplicate} Both Registered to {type}");
+        }
+        #endregion
 
         static void RegisterInternal()
         {
@@ -98,29 +124,11 @@ namespace Backend
             Register<AttributesCollection>(28);
 
             Register<RpcBufferMode>(29);
-        }
-        #endregion
 
-        #region Validate
-        static void ValidateDuplicate(ushort code, Type type)
-        {
-            ValidateTypeDuplicate(code, type);
+            Register<BroadcastRpcRequest>(30);
 
-            ValidateCodeDuplicate(code, type);
+            Register<TargetRpcRequest>(31);
         }
-
-        static void ValidateTypeDuplicate(ushort code, Type type)
-        {
-            if (Types.TryGetValue(code, out var duplicate))
-                throw new Exception($"NetworkPayload Type Duplicate Found, {type} & {duplicate} both registered with code {code}");
-        }
-
-        static void ValidateCodeDuplicate(ushort code, Type type)
-        {
-            if (Codes.TryGetValue(type, out var duplicate))
-                throw new Exception($"NetworkPayload Type Duplicate Found, Code {code} & {duplicate} Both Registered to {type}");
-        }
-        #endregion
 
         static NetworkPayload()
         {

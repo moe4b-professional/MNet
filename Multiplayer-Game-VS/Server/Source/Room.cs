@@ -288,9 +288,22 @@ namespace Backend
         {
             var command = new RpcCommand(sender.ID, request.Entity, request.Behaviour, request.Method, request.Raw);
 
-            var message = Broadcast(command);
+            if(request is BroadcastRpcRequest broadcast)
+            {
+                var message = Broadcast(command);
 
-            entity.RPCBuffer.Set(message, request, UnbufferMessages);
+                entity.RPCBuffer.Set(message, broadcast, UnbufferMessages);
+            }
+
+            if(request is TargetRpcRequest target)
+            {
+                if (Clients.TryGetValue(target.Client.Value, out var client))
+                {
+                    var message = SendTo(client, command);
+                }
+                else
+                    Log.Warning($"No NetworkClient With ID {target.Client} Found to Send RPC {target.Method} To");
+            }
         }
 
         void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource, request.Attributes);

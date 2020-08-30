@@ -25,13 +25,13 @@ namespace Game
     {
         void Start()
         {
-            RequestRPC(Rpc0);
-            RequestRPC(Rpc1, 1);
-            RequestRPC(Rpc2, 1, 2);
-            RequestRPC(Rpc3, 1, 2, 3);
-            RequestRPC(Rpc4, 1, 2, 3, 4);
-            RequestRPC(Rpc5, 1, 2, 3, 4, 5);
-            RequestRPC(Rpc6, 1, 2, 3, 4, 5, 6);
+            RequestRPC(nameof(Rpc0), RpcBufferMode.None);
+            RequestRPC(nameof(Rpc1), RpcBufferMode.None, 1);
+            RequestRPC(nameof(Rpc2), RpcBufferMode.None, 1, 2);
+            RequestRPC(nameof(Rpc3), RpcBufferMode.None, 1, 2, 3);
+            RequestRPC(nameof(Rpc4), RpcBufferMode.None, 1, 2, 3, 4);
+            RequestRPC(nameof(Rpc5), RpcBufferMode.None, 1, 2, 3, 4, 5);
+            RequestRPC(nameof(Rpc6), RpcBufferMode.None, 1, 2, 3, 4, 5, 6);
         }
 
         [NetworkRPC]

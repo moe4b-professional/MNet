@@ -122,7 +122,7 @@ namespace StressTest
 
         static void Tick()
         {
-            var rpc = RpcRequest.Write(entityID, new NetworkBehaviourID(0), "RpcMove", RpcBufferMode.Last, 0, 0, 0, 0, 0, 0);
+            var rpc = BroadcastRpcRequest.Write(entityID, new NetworkBehaviourID(0), "RpcMove", RpcBufferMode.Last, 0, 0, 0, 0, 0, 0);
             var message = NetworkMessage.Write(rpc);
             var binary = NetworkSerializer.Serialize(message);
 

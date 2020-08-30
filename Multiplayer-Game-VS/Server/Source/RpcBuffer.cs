@@ -18,7 +18,7 @@ namespace Backend
                 action(collection);
         }
 
-        public void Set(NetworkMessage message, RpcRequest request, UnBufferDelegate unbuffer)
+        public void Set(NetworkMessage message, BroadcastRpcRequest request, UnBufferDelegate unbuffer)
         {
             if (request.BufferMode == RpcBufferMode.None) return;
 
