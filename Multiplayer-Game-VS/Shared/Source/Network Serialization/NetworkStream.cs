@@ -13,7 +13,7 @@ namespace Backend
 
         public int Size => data.Length;
 
-        private int position;
+        int position;
         public int Position
         {
             get => position;

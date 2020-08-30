@@ -165,7 +165,6 @@ namespace Backend
             return value;
         }
     }
-
     public sealed class UShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<ushort>
     {
         public override void Serialize(NetworkWriter writer, ushort value)
@@ -203,7 +202,6 @@ namespace Backend
             return value;
         }
     }
-
     public sealed class UIntNetworkSerializationResolver : NetworkSerializationExplicitResolver<uint>
     {
         public override void Serialize(NetworkWriter writer, uint value)
@@ -495,14 +493,14 @@ namespace Backend
     {
         public override void Serialize(NetworkWriter writer, byte[] value)
         {
-            NetworkSerializationHelper.Length.Write(value.Length, writer);
+            writer.Write(value.Length);
 
             writer.Insert(value);
         }
 
         public override byte[] Deserialize(NetworkReader reader)
         {
-            NetworkSerializationHelper.Length.Read(out var length, reader);
+            reader.Read(out int length);
 
             var value = new byte[length];
 

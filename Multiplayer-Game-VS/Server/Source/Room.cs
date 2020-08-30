@@ -122,21 +122,11 @@ namespace Backend
         #region Message Buffer
         public NetworkMessageCollection MessageBuffer { get; protected set; }
 
-        public void BufferMessage(NetworkMessage message)
-        {
-            MessageBuffer.Add(message);
-        }
+        public void BufferMessage(NetworkMessage message) => MessageBuffer.Add(message);
 
-        public void UnbufferMessage(NetworkMessage message)
-        {
-            MessageBuffer.Remove(message);
-        }
-        public void UnbufferMessages(IList<NetworkMessage> list)
-        {
-            MessageBuffer.RemoveAll(Contained);
+        public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
 
-            bool Contained(NetworkMessage message) => list.Contains(message);
-        }
+        public void UnbufferMessages(NetworkMessageCollection collection) => MessageBuffer.RemoveAll(x => collection.Contains(x));
         #endregion
 
         public ActionQueue InputQueue { get; protected set; }
@@ -272,7 +262,7 @@ namespace Backend
 
             client.Ready();
 
-            var response = new ReadyClientResponse(GetClientsInfo(), MessageBuffer);
+            var response = new ReadyClientResponse(GetClientsInfo(), MessageBuffer.List);
 
             SendTo(client, response);
         }
@@ -292,15 +282,13 @@ namespace Backend
             {
                 var message = Broadcast(command);
 
-                entity.RPCBuffer.Set(message, broadcast, UnbufferMessages);
+                entity.RPCBuffer.Set(message, broadcast, BufferMessage, UnbufferMessages);
             }
 
             if(request is TargetRpcRequest target)
             {
                 if (Clients.TryGetValue(target.Client.Value, out var client))
-                {
-                    var message = SendTo(client, command);
-                }
+                    SendTo(client, command);
                 else
                     Log.Warning($"No NetworkClient With ID {target.Client} Found to Send RPC {target.Method} To");
             }
@@ -338,7 +326,7 @@ namespace Backend
             {
                 UnbufferMessage(entity.SpawnMessage);
 
-                entity.RPCBuffer.UnBufferAll(UnbufferMessages);
+                entity.RPCBuffer.Clear(UnbufferMessages);
 
                 Entities.Remove(entity);
             }

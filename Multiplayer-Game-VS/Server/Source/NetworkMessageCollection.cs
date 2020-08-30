@@ -6,8 +6,45 @@ using System.Threading.Tasks;
 
 namespace Backend
 {
-    class NetworkMessageCollection : List<NetworkMessage> //Yeah, I Know, But It's Easier Than Typing List<NetworkMessage> Everywhere!
+    class NetworkMessageCollection
     {
-        public NetworkMessageCollection() : base() { }
+        public List<NetworkMessage> List { get; protected set; }
+
+        public HashSet<NetworkMessage> HashSet { get; protected set; }
+
+        public void Add(NetworkMessage message)
+        {
+            List.Add(message);
+
+            HashSet.Add(message);
+        }
+
+        public bool Remove(NetworkMessage message)
+        {
+            HashSet.Remove(message);
+
+            return List.Remove(message);
+        }
+        public int RemoveAll(Predicate<NetworkMessage> match)
+        {
+            HashSet.RemoveWhere(match);
+
+            return List.RemoveAll(match);
+        }
+
+        public bool Contains(NetworkMessage message) => HashSet.Contains(message);
+
+        public void Clear()
+        {
+            List.Clear();
+
+            HashSet.Clear();
+        }
+
+        public NetworkMessageCollection()
+        {
+            List = new List<NetworkMessage>();
+            HashSet = new HashSet<NetworkMessage>();
+        }
     }
 }

@@ -63,7 +63,7 @@ namespace Game
 
                 var rotation = velocity.magnitude > 0.1f ? Quaternion.LookRotation(velocity) : transform.rotation;
 
-                RequestRPC(RpcMove, position, rotation);
+                if(velocity.magnitude > 0.1f) RequestRPC(RpcMove, RpcBufferMode.Last, position, rotation);
             }
         }
 
