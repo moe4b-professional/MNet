@@ -38,5 +38,7 @@ namespace Backend
 
             Entities = new List<NetworkEntity>();
         }
+
+        public override string ToString() => ID.ToString();
     }
 }

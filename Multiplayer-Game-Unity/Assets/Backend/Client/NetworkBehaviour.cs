@@ -134,7 +134,7 @@ namespace Backend
         public void InvokeRpc(RpcCommand command)
         {
             if(RPCs.Find(command.Method, out var bind))
-                bind.InvokeCommand(command);
+                bind.Invoke(command);
             else
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
         }

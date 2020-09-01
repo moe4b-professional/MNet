@@ -164,13 +164,13 @@ namespace Backend
         private byte[] raw;
         public byte[] Raw { get { return raw; } }
 
-        public object[] Read(IList<ParameterInfo> parameters)
+        public object[] Read(IList<ParameterInfo> parameters, int optional)
         {
             using (var reader = new NetworkReader(raw))
             {
                 var results = new object[parameters.Count];
 
-                for (int i = 0; i < parameters.Count - 1; i++)
+                for (int i = 0; i < parameters.Count - optional; i++)
                 {
                     var value = reader.Read(parameters[i].ParameterType);
 

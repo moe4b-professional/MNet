@@ -14,13 +14,13 @@ namespace Backend
 
         public NetworkBehaviour Behaviour { get; protected set; }
 
-        public string ID { get; protected set; }
+        public NetworkRPCAttribute Attribute { get; protected set; }
 
         public MethodInfo MethodInfo { get; protected set; }
-
+        public string ID { get; protected set; }
         public ParameterInfo[] ParametersInfo { get; protected set; }
 
-        public NetworkRPCAttribute Attribute { get; protected set; }
+        public bool HasInfoParameter { get; protected set; }
 
         public static BindingFlags BindingFlags
         {
@@ -43,19 +43,24 @@ namespace Backend
             return request;
         }
 
-        public void InvokeCommand(RpcCommand command)
+        public void Invoke(RpcCommand command)
         {
-            var parameters = command.Read(ParametersInfo);
+            var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
 
-            NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
-            var info = new RpcInfo(sender);
-            parameters[parameters.Length - 1] = info;
+            if(HasInfoParameter)
+            {
+                NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
-            Invoke(parameters);
+                var info = new RpcInfo(sender);
+
+                arguments[arguments.Length - 1] = info;
+            }
+
+            Invoke(arguments);
         }
-        public void Invoke(params object[] parameters)
+        public void Invoke(params object[] arguments)
         {
-            MethodInfo.Invoke(Behaviour, parameters);
+            MethodInfo.Invoke(Behaviour, arguments);
         }
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method)
@@ -67,6 +72,8 @@ namespace Backend
             MethodInfo = method;
             ParametersInfo = method.GetParameters();
             ID = MethodInfo.Name;
+
+            HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
         }
     }
 
