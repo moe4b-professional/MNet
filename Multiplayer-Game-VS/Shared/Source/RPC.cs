@@ -75,7 +75,7 @@ namespace Backend
     [Serializable]
     public class BroadcastRpcRequest : RpcRequest
     {
-        protected RpcBufferMode bufferMode;
+        RpcBufferMode bufferMode;
         public RpcBufferMode BufferMode => bufferMode;
 
         public override void Serialize(NetworkWriter writer)
@@ -161,7 +161,7 @@ namespace Backend
         string method;
         public string Method { get { return method; } }
 
-        private byte[] raw;
+        byte[] raw;
         public byte[] Raw { get { return raw; } }
 
         public object[] Read(IList<ParameterInfo> parameters, int optional)
