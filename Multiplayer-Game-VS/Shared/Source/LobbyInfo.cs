@@ -15,13 +15,9 @@ namespace Backend
 
         public RoomBasicInfo this[int index] => rooms[index];
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(rooms);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out rooms);
+            context.Select(ref rooms);
         }
 
         public LobbyInfo() { }

@@ -31,7 +31,7 @@ namespace Game
         {
             base.OnSpawn();
 
-            if(Attributes != null)
+            if (Attributes != null)
             {
                 if (Attributes.TryGetValue("Position", out Vector3 position))
                     transform.position = position;
@@ -50,28 +50,38 @@ namespace Game
 
         void Update()
         {
-            if(IsMine)
+            if (IsMine)
             {
-                var horizontal = Input.GetAxisRaw("Horizontal");
-                var vertical = Input.GetAxisRaw("Vertical");
+                var input = new Vector2()
+                {
+                    x = Input.GetAxisRaw("Horizontal"),
+                    y = Input.GetAxisRaw("Vertical"),
+                };
 
-                var direction = new Vector3(horizontal, 0f, vertical);
-
-                var velocity = Vector3.ClampMagnitude(direction * speed, speed);
-
-                var position = transform.position + (velocity * Time.deltaTime);
-
-                var rotation = velocity.magnitude > 0.1f ? Quaternion.LookRotation(velocity) : transform.rotation;
-
-                if(velocity.magnitude > 0.1f) RequestRPC(RpcMove, RpcBufferMode.Last, position, rotation);
+                if (input.magnitude > 0.1f) RequestRPC(RequestMove, NetworkAPI.Room.Master, input);
             }
         }
 
-		[NetworkRPC]
-        void RpcMove(Vector3 position, Quaternion rotation, RpcInfo info)
+        [NetworkRPC(RpcAuthority.Owner)]
+        void RequestMove(Vector2 input, RpcInfo info)
+        {
+            input = Vector2.ClampMagnitude(input, 1f);
+
+            var direction = new Vector3(input.x, 0f, input.y);
+
+            var velocity = Vector3.ClampMagnitude(direction * speed, speed);
+
+            var position = transform.position + (velocity * Time.deltaTime);
+            var rotation = velocity.magnitude > 0.1f ? Quaternion.LookRotation(velocity) : transform.rotation;
+
+            RequestRPC(SetCoordinates, position, rotation);
+        }
+
+        [NetworkRPC(RpcAuthority.Master)]
+        void SetCoordinates(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             transform.position = position;
             transform.rotation = rotation;
         }
-	}
+    }
 }

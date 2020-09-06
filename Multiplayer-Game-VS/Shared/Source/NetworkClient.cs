@@ -15,15 +15,10 @@ namespace Backend
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(id);
-            writer.Write(profile);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out id);
-            reader.Read(out profile);
+            context.Select(ref id);
+            context.Select(ref profile);
         }
 
         public NetworkClientInfo() { }
@@ -41,13 +36,9 @@ namespace Backend
         ushort value;
         public ushort Value { get { return value; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(value);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out value);
+            context.Select(ref value);
         }
 
         public NetworkClientID(ushort value)
@@ -84,15 +75,10 @@ namespace Backend
         protected AttributesCollection attributes;
         public AttributesCollection Attributes { get { return attributes; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(name);
-            writer.Write(attributes);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out name);
-            reader.Read(out attributes);
+            context.Select(ref name);
+            context.Select(ref attributes);
         }
 
         public NetworkClientProfile() { }

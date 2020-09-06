@@ -60,26 +60,15 @@ namespace Backend
 
         public Dictionary<string, string> attribute;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(number);
-            writer.Write(text);
-            writer.Write(array);
-            writer.Write(list);
-            writer.Write(dictionary);
-            writer.Write(date);
-            writer.Write(attribute);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out number);
-            reader.Read(out text);
-            reader.Read(out array);
-            reader.Read(out list);
-            reader.Read(out dictionary);
-            reader.Read(out date);
-            reader.Read(out attribute);
+            context.Select(ref number);
+            context.Select(ref text);
+            context.Select(ref array);
+            context.Select(ref list);
+            context.Select(ref dictionary);
+            context.Select(ref date);
+            context.Select(ref attribute);
         }
 
         public SerializationSample()

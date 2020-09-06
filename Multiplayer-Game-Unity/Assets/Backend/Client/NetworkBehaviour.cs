@@ -28,6 +28,8 @@ namespace Backend
 
         public NetworkEntity Entity { get; protected set; }
 
+        public NetworkClient Owner => Entity.Owner;
+
         public AttributesCollection Attributes => Entity?.Attributes;
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
@@ -45,6 +47,7 @@ namespace Backend
 
         public bool IsMine => Entity.IsMine;
 
+        #region RPC
         public RpcCollection RPCs { get; protected set; }
         
         protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
@@ -72,7 +75,7 @@ namespace Backend
                 Debug.LogWarning($"No RPC Found With Name {method}");
         }
 
-        #region Generic RPC Methods
+        #region Generic Methods
         public void RequestRPC(RpcMethod callback)
             => RequestRPC(callback.Method.Name);
         public void RequestRPC<T1>(RpcMethod<T1> callback, T1 arg1)
@@ -134,9 +137,26 @@ namespace Backend
         public void InvokeRpc(RpcCommand command)
         {
             if(RPCs.Find(command.Method, out var bind))
-                bind.Invoke(command);
+            {
+                if (ValidateRpcAuthority(command, bind))
+                    bind.Invoke(command);
+                else
+                    Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.ID} Sent From Client {command.Sender}");
+            }
             else
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
         }
+
+        public bool ValidateRpcAuthority(RpcCommand command, RpcBind bind)
+        {
+            if (bind.Authority == RpcAuthority.Any) return true;
+
+            if (bind.Authority == RpcAuthority.Owner) return command.Sender == Owner.ID;
+
+            if (bind.Authority == RpcAuthority.Master) return command.Sender == NetworkAPI.Room.Master?.ID;
+
+            return true;
+        }
+        #endregion
     }
 }

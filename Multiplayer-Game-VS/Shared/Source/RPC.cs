@@ -39,19 +39,12 @@ namespace Backend
             }
         }
 
-        public virtual void Serialize(NetworkWriter writer)
+        public virtual void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(entity);
-            writer.Write(behaviour);
-            writer.Write(method);
-            writer.Write(raw);
-        }
-        public virtual void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out entity);
-            reader.Read(out behaviour);
-            reader.Read(out method);
-            reader.Read(out raw);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
         }
 
         public RpcRequest() { }
@@ -78,18 +71,11 @@ namespace Backend
         RpcBufferMode bufferMode;
         public RpcBufferMode BufferMode => bufferMode;
 
-        public override void Serialize(NetworkWriter writer)
+        public override void Select(INetworkSerializableResolver.Context context)
         {
-            base.Serialize(writer);
+            base.Select(context);
 
-            writer.Write(bufferMode);
-        }
-
-        public override void Deserialize(NetworkReader reader)
-        {
-            base.Deserialize(reader);
-
-            reader.Read(out bufferMode);
+            context.Select(ref bufferMode);
         }
 
         public static BroadcastRpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string method, RpcBufferMode bufferMode, params object[] arguments)
@@ -115,18 +101,11 @@ namespace Backend
         NetworkClientID client;
         public NetworkClientID Client => client;
 
-        public override void Serialize(NetworkWriter writer)
+        public override void Select(INetworkSerializableResolver.Context context)
         {
-            base.Serialize(writer);
+            base.Select(context);
 
-            writer.Write(client);
-        }
-
-        public override void Deserialize(NetworkReader reader)
-        {
-            base.Deserialize(reader);
-
-            reader.Read(out client);
+            context.Select(ref client);
         }
 
         public static TargetRpcRequest Write(NetworkClientID client, NetworkEntityID entity, NetworkBehaviourID behaviour, string method, params object[] arguments)
@@ -181,21 +160,13 @@ namespace Backend
             }
         }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(sender);
-            writer.Write(entity);
-            writer.Write(behaviour);
-            writer.Write(method);
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out sender);
-            reader.Read(out entity);
-            reader.Read(out behaviour);
-            reader.Read(out method);
-            reader.Read(out raw);
+            context.Select(ref sender);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
         }
 
         public RpcCommand() { }

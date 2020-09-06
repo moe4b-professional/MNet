@@ -16,6 +16,8 @@ namespace Backend
 
         public NetworkRPCAttribute Attribute { get; protected set; }
 
+        public RpcAuthority Authority => Attribute.Authority;
+
         public MethodInfo MethodInfo { get; protected set; }
         public string ID { get; protected set; }
         public ParameterInfo[] ParametersInfo { get; protected set; }
@@ -87,10 +89,22 @@ namespace Backend
         }
     }
 
+    public enum RpcAuthority
+    {
+        Any,
+        Owner,
+        Master,
+    }
+
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
-        public NetworkRPCAttribute() { }
+        public RpcAuthority Authority { get; private set; }
+
+        public NetworkRPCAttribute(RpcAuthority authority = RpcAuthority.Any)
+        {
+            this.Authority = authority;
+        }
     }
 
     public class RpcCollection

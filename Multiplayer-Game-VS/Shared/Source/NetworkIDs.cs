@@ -12,13 +12,9 @@ namespace Backend
         ushort value;
         public ushort Value { get { return value; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(value);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out value);
+            context.Select(ref value);
         }
 
         public NetworkEntityID(ushort value)
@@ -52,13 +48,9 @@ namespace Backend
         byte value;
         public byte Value { get { return value; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(value);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out value);
+            context.Select(ref value);
         }
 
         public NetworkBehaviourID(byte value)

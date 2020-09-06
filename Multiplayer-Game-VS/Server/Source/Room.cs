@@ -117,6 +117,12 @@ namespace Backend
 
         public IDCollection<NetworkClient> Clients { get; protected set; }
 
+        public NetworkClient Master { get; protected set; }
+        void SetMaster(NetworkClient target)
+        {
+            Master = target;
+        }
+
         public IDCollection<NetworkEntity> Entities { get; protected set; }
 
         #region Message Buffer
@@ -243,6 +249,8 @@ namespace Backend
 
             var client = new NetworkClient(info, session);
 
+            if (Clients.Count == 0) SetMaster(client);
+
             Clients.Assign(client, code);
             WebSocketClients.Add(websocketID, client);
 
@@ -262,7 +270,7 @@ namespace Backend
 
             client.Ready();
 
-            var response = new ReadyClientResponse(GetClientsInfo(), MessageBuffer.List);
+            var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, MessageBuffer.List);
 
             SendTo(client, response);
         }

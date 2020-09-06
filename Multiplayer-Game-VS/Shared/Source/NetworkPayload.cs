@@ -152,17 +152,11 @@ namespace Backend
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(name);
-            writer.Write(capacity);
-            writer.Write(attributes);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out name);
-            reader.Read(out capacity);
-            reader.Read(out attributes);
+            context.Select(ref name);
+            context.Select(ref capacity);
+            context.Select(ref attributes);
         }
 
         public CreateRoomRequest() { }
@@ -182,13 +176,9 @@ namespace Backend
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(profile);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out profile);
+            context.Select(ref profile);
         }
 
         public RegisterClientRequest() { }
@@ -207,15 +197,10 @@ namespace Backend
         RoomInternalInfo room;
         public RoomInternalInfo Room => room;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(id);
-            writer.Write(room);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out id);
-            reader.Read(out room);
+            context.Select(ref id);
+            context.Select(ref room);
         }
 
         public RegisterClientResponse() { }
@@ -231,11 +216,7 @@ namespace Backend
     [Serializable]
     public sealed class ReadyClientRequest : INetworkSerializable
     {
-        public void Serialize(NetworkWriter writer)
-        {
-
-        }
-        public void Deserialize(NetworkReader reader)
+        public void Select(INetworkSerializableResolver.Context context)
         {
 
         }
@@ -249,24 +230,24 @@ namespace Backend
         NetworkClientInfo[] clients;
         public NetworkClientInfo[] Clients => clients;
 
+        NetworkClientID master;
+        public NetworkClientID Master => master;
+
         List<NetworkMessage> buffer;
         public List<NetworkMessage> Buffer => buffer;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(clients);
-            writer.Write(buffer);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out clients);
-            reader.Read(out buffer);
+            context.Select(ref clients);
+            context.Select(ref buffer);
+            context.Select(ref master);
         }
 
         public ReadyClientResponse() { }
-        public ReadyClientResponse(NetworkClientInfo[] clients, List<NetworkMessage> buffer)
+        public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, List<NetworkMessage> buffer)
         {
             this.clients = clients;
+            this.master = master;
             this.buffer = buffer;
         }
     }
@@ -282,15 +263,10 @@ namespace Backend
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(resource);
-            writer.Write(attributes);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out resource);
-            reader.Read(out attributes);
+            context.Select(ref resource);
+            context.Select(ref attributes);
         }
 
         public SpawnEntityRequest() { }
@@ -317,19 +293,12 @@ namespace Backend
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(owner);
-            writer.Write(entity);
-            writer.Write(resource);
-            writer.Write(attributes);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out owner);
-            reader.Read(out entity);
-            reader.Read(out resource);
-            reader.Read(out attributes);
+            context.Select(ref owner);
+            context.Select(ref entity);
+            context.Select(ref resource);
+            context.Select(ref attributes);
         }
 
         public SpawnEntityCommand() { }
@@ -350,11 +319,7 @@ namespace Backend
         NetworkBehaviourID id;
         public NetworkBehaviourID ID => id;
 
-        public void Deserialize(NetworkReader reader)
-        {
-
-        }
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
 
         }
@@ -372,13 +337,9 @@ namespace Backend
         NetworkEntityID id;
         public NetworkEntityID ID => id;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(id);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out id);
+            context.Select(ref id);
         }
 
         public DestroyEntityCommand() { }
@@ -400,13 +361,9 @@ namespace Backend
 
         public NetworkClientProfile Profile => info.Profile;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(info);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out info);
+            context.Select(ref info);
         }
 
         public ClientConnectedPayload() { }
@@ -422,13 +379,9 @@ namespace Backend
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(id);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out id);
+            context.Select(ref id);
         }
 
         public ClientDisconnectPayload() { }

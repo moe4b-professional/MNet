@@ -86,15 +86,10 @@ namespace Backend
             response.Close();
         }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(code);
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out code);
-            reader.Read(out raw);
+            context.Select(ref code);
+            context.Select(ref raw);
         }
 
         public NetworkMessage() { }

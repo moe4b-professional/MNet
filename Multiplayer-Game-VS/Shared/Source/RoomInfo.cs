@@ -23,6 +23,15 @@ namespace Backend
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref id);
+            context.Select(ref name);
+            context.Select(ref maxPlayers);
+            context.Select(ref playersCount);
+            context.Select(ref attributes);
+        }
+
         public RoomBasicInfo() { }
         public RoomBasicInfo(ushort id, string name, int maxPlayers, int playersCount, AttributesCollection attributes)
         {
@@ -31,23 +40,6 @@ namespace Backend
             this.maxPlayers = maxPlayers;
             this.playersCount = playersCount;
             this.attributes = attributes;
-        }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(id);
-            writer.Write(name);
-            writer.Write(maxPlayers);
-            writer.Write(playersCount);
-            writer.Write(attributes);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out id);
-            reader.Read(out name);
-            reader.Read(out maxPlayers);
-            reader.Read(out playersCount);
-            reader.Read(out attributes);
         }
 
         public override string ToString()
@@ -61,11 +53,7 @@ namespace Backend
 
     public class RoomInternalInfo : INetworkSerializable
     {
-        public void Serialize(NetworkWriter writer)
-        {
-
-        }
-        public void Deserialize(NetworkReader reader)
+        public void Select(INetworkSerializableResolver.Context context)
         {
 
         }

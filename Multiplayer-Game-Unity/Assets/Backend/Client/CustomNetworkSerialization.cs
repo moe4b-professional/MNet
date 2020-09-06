@@ -27,6 +27,7 @@ namespace Backend
 
             public const ushort Vector3 = Start + 1;
             public const ushort Quaternion = Vector3 + 1;
+            public const ushort Vector2 = Quaternion + 1;
         }
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
@@ -34,6 +35,7 @@ namespace Backend
         {
             NetworkPayload.Register<Vector3>(IDs.Vector3);
             NetworkPayload.Register<Quaternion>(IDs.Quaternion);
+            NetworkPayload.Register<Vector2>(IDs.Vector2);
         }
 	}
 
@@ -53,6 +55,23 @@ namespace Backend
             reader.Read(out float z);
 
             return new Vector3(x, y, z);
+        }
+    }
+
+    public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
+    {
+        public override void Serialize(NetworkWriter writer, Vector2 value)
+        {
+            writer.Write(value.x);
+            writer.Write(value.y);
+        }
+
+        public override Vector2 Deserialize(NetworkReader reader)
+        {
+            reader.Read(out float x);
+            reader.Read(out float y);
+
+            return new Vector2(x, y);
         }
     }
 

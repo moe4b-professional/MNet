@@ -90,15 +90,11 @@ namespace Backend
             return false;
         }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(INetworkSerializableResolver.Context context)
         {
-            writer.Write(payload);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out payload);
+            context.Select(ref payload);
 
-            objects = new Dictionary<string, object>();
+            if (context.IsReading) objects = new Dictionary<string, object>();
         }
 
         public AttributesCollection()

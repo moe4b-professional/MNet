@@ -264,7 +264,7 @@ namespace Backend
         public static class WebSocketAPI
         {
             public static string Address => NetworkAPI.Address + ":" + Constants.WebSocketAPI.Port;
-            
+
             public static WebSocket Socket { get; private set; }
             public static bool IsConnected => Socket == null ? false : Socket.ReadyState == WebSocketState.Open;
             public static bool IsDisconnected => Socket == null ? true : Socket.ReadyState == WebSocketState.Closed;
@@ -349,7 +349,7 @@ namespace Backend
                 ActionQueue = new ConcurrentQueue<Action>();
                 ActionQueue.Enqueue(Invoke);
 
-                void Invoke()=> OnDisconnect?.Invoke(code, reason);
+                void Invoke() => OnDisconnect?.Invoke(code, reason);
             }
 
             public delegate void ErrorDelegate(Exception exception, string message);
@@ -361,7 +361,7 @@ namespace Backend
                 void Invoke() => OnError?.Invoke(args.Exception, args.Message);
             }
             #endregion
-            
+
             public static void Disconnect() => Disconnect(CloseStatusCode.Normal);
             public static void Disconnect(CloseStatusCode code)
             {
@@ -391,7 +391,25 @@ namespace Backend
 
             public static NetworkClientID ID => Instance.ID;
 
-            public static bool IsConnected => WebSocketAPI.IsConnected;
+            public static bool IsConnected
+            {
+                get
+                {
+                    if (Instance == null) return false;
+
+                    return WebSocketAPI.IsConnected;
+                }
+            }
+
+            public static bool IsMaster
+            {
+                get
+                {
+                    if (Instance == null) return false;
+
+                    return Room.Master == Instance;
+                }
+            }
 
             public static bool IsReady { get; private set; }
 
@@ -524,14 +542,23 @@ namespace Backend
             {
                 Debug.Log("Client Disconnected");
 
-                IsReady = false;
+                Clear();
 
                 OnDisconnect?.Invoke(code, reason);
+            }
+
+            static void Clear()
+            {
+                IsReady = false;
+
+                Instance = null;
             }
         }
 
         public static class Room
         {
+            public static NetworkClient Master { get; private set; }
+
             public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
             public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
 
@@ -553,6 +580,13 @@ namespace Backend
             static void SelfReadyCallback(ReadyClientResponse response)
             {
                 AddClients(response.Clients);
+
+                if (Clients.ContainsKey(response.Master))
+                    Master = Clients[response.Master];
+                else
+                    Debug.LogError($"No Master Client With ID {response.Master} Could be Found");
+
+                Debug.Log("Master Client: " + Master);
 
                 ApplyMessageBuffer(response.Buffer);
             }
@@ -637,7 +671,7 @@ namespace Backend
             public static event ClientConnectedDelegate OnClientConnected;
             static void ClientConnected(ClientConnectedPayload payload)
             {
-                if(Clients.ContainsKey(payload.ID))
+                if (Clients.ContainsKey(payload.ID))
                 {
                     Debug.Log($"Connecting Client {payload.ID} Already Registered With Room");
                     return;
@@ -649,7 +683,7 @@ namespace Backend
 
                 Debug.Log($"Client {client.ID} Connected to Room");
             }
-            
+
             static void InvokeRpc(RpcCommand command)
             {
                 if (Entities.TryGetValue(command.Entity, out var target))
@@ -706,7 +740,7 @@ namespace Backend
                 OnClientDisconnected?.Invoke(payload.ID, client?.Info);
             }
             #endregion
-            
+
             static void Clear()
             {
                 foreach (var entity in Entities.Values)
@@ -715,6 +749,8 @@ namespace Backend
 
                     Object.Destroy(entity.gameObject);
                 }
+
+                Master = null;
 
                 Entities.Clear();
                 Clients.Clear();

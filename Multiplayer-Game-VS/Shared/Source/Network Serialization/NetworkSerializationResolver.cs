@@ -353,19 +353,48 @@ namespace Backend
         {
             var value = instance as INetworkSerializable;
 
-            value.Serialize(writer);
+            var context = new Context(writer);
+
+            value.Select(context);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
             var value = Activator.CreateInstance(type) as INetworkSerializable;
 
-            value.Deserialize(reader);
+            var context = new Context(reader);
+
+            value.Select(context);
 
             return value;
         }
 
         public INetworkSerializableResolver() { }
+
+        public class Context
+        {
+            public NetworkWriter Writer { get; protected set; }
+            public bool IsWriting => Writer != null;
+
+            public NetworkReader Reader { get; protected set; }
+            public bool IsReading => Reader != null;
+
+            public void Select<T>(ref T value)
+            {
+                if (Writer != null) Writer.Write(value);
+
+                if (Reader != null) Reader.Read(out value);
+            }
+
+            public Context(NetworkWriter writer)
+            {
+                this.Writer = writer;
+            }
+            public Context(NetworkReader reader)
+            {
+                this.Reader = reader;
+            }
+        }
     }
 
     #region Collection
