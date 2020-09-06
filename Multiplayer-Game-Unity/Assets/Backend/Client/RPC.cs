@@ -91,8 +91,19 @@ namespace Backend
 
     public enum RpcAuthority
     {
+        /// <summary>
+        /// As the name implies, any client will be able to invoke this RPC
+        /// </summary>
         Any,
+
+        /// <summary>
+        /// Only the owner of this entity may invoke this RPC
+        /// </summary>
         Owner,
+
+        /// <summary>
+        /// Only the master client may invoke this RPC
+        /// </summary>
         Master,
     }
 
