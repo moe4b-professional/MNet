@@ -89,6 +89,7 @@ namespace Backend
         }
     }
 
+    #region Explicit
     public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
     {
         public static NetworkSerializationExplicitResolver<T> Instance { get; private set; }
@@ -107,11 +108,6 @@ namespace Backend
         {
             Instance = this;
         }
-    }
-
-    public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
-    {
-
     }
 
     #region Primitive
@@ -322,25 +318,34 @@ namespace Backend
     }
     #endregion
 
-    public sealed class EnumNetworkSerializationResolver : NetworkSerializationImplicitResolver
+    public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
     {
-        public override bool CanResolve(Type type) => type.IsEnum;
-
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, byte[] value)
         {
-            short backing = Convert.ToInt16(type);
+            writer.Write(value.Length);
 
-            writer.Write(backing);
+            writer.Insert(value);
         }
 
-        public override object Deserialize(NetworkReader reader, Type type)
+        public override byte[] Deserialize(NetworkReader reader)
         {
-            reader.Read(out short backing);
+            reader.Read(out int length);
 
-            var result = Enum.ToObject(type, backing);
+            var value = new byte[length];
 
-            return result;
+            Buffer.BlockCopy(reader.Data, reader.Position, value, 0, length);
+
+            reader.Position += length;
+
+            return value;
         }
+    }
+    #endregion
+
+    #region Implicit
+    public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
+    {
+
     }
 
     public sealed class INetworkSerializableResolver : NetworkSerializationImplicitResolver
@@ -518,26 +523,25 @@ namespace Backend
     }
     #endregion
 
-    public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
+    public sealed class EnumNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public override void Serialize(NetworkWriter writer, byte[] value)
-        {
-            writer.Write(value.Length);
+        public override bool CanResolve(Type type) => type.IsEnum;
 
-            writer.Insert(value);
+        public override void Serialize(NetworkWriter writer, object type)
+        {
+            short backing = Convert.ToInt16(type);
+
+            writer.Write(backing);
         }
 
-        public override byte[] Deserialize(NetworkReader reader)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
-            reader.Read(out int length);
+            reader.Read(out short backing);
 
-            var value = new byte[length];
+            var result = Enum.ToObject(type, backing);
 
-            Buffer.BlockCopy(reader.Data, reader.Position, value, 0, length);
-
-            reader.Position += length;
-
-            return value;
+            return result;
         }
     }
+    #endregion
 }
