@@ -27,10 +27,11 @@ namespace Backend
         public NetworkBehaviourID ID { get; protected set; }
 
         public NetworkEntity Entity { get; protected set; }
+        public bool IsMine => Entity.IsMine;
 
         public NetworkClient Owner => Entity.Owner;
 
-        public AttributesCollection Attributes => Entity?.Attributes;
+        public AttributesCollection Attributes => Entity.Attributes;
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
@@ -45,8 +46,6 @@ namespace Backend
 
         protected virtual void OnSpawn() { }
 
-        public bool IsMine => Entity.IsMine;
-
         #region RPC
         public RpcCollection RPCs { get; protected set; }
         
@@ -57,7 +56,7 @@ namespace Backend
             {
                 var payload = bind.CreateRequest(bufferMode, arguments);
 
-                SendRpc(payload);
+                SendRPC(payload);
             }
             else
                 Debug.LogWarning($"No RPC Found With Name {method}");
@@ -69,7 +68,7 @@ namespace Backend
             {
                 var payload = bind.CreateRequest(client.ID, arguments);
 
-                SendRpc(payload);
+                SendRPC(payload);
             }
             else
                 Debug.LogWarning($"No RPC Found With Name {method}");
@@ -122,7 +121,7 @@ namespace Backend
             => RequestRPC(callback.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
-        protected void SendRpc<T>(T request)
+        protected void SendRPC<T>(T request)
             where T : RpcRequest
         {
             if (NetworkAPI.Client.IsConnected == false)
@@ -134,7 +133,7 @@ namespace Backend
             NetworkAPI.Client.Send(request);
         }
 
-        public void InvokeRpc(RpcCommand command)
+        public void InvokeRPC(RpcCommand command)
         {
             if(RPCs.Find(command.Method, out var bind))
             {

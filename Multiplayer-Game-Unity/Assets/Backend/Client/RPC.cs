@@ -19,18 +19,11 @@ namespace Backend
         public RpcAuthority Authority => Attribute.Authority;
 
         public MethodInfo MethodInfo { get; protected set; }
+
         public string ID { get; protected set; }
+
         public ParameterInfo[] ParametersInfo { get; protected set; }
-
         public bool HasInfoParameter { get; protected set; }
-
-        public static BindingFlags BindingFlags
-        {
-            get
-            {
-                return BindingFlags.Instance | BindingFlags.NonPublic;
-            }
-        }
 
         public BroadcastRpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
@@ -72,9 +65,9 @@ namespace Backend
             Attribute = attribute;
 
             MethodInfo = method;
-            ParametersInfo = method.GetParameters();
             ID = MethodInfo.Name;
 
+            ParametersInfo = method.GetParameters();
             HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
         }
     }
@@ -122,7 +115,7 @@ namespace Backend
     {
         public Dictionary<string, RpcBind> Dictionary { get; protected set; }
 
-        public BindingFlags BindingFlags => BindingFlags.Instance | BindingFlags.NonPublic;
+        public BindingFlags BindingFlags => BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
         public bool Find(string name, out RpcBind bind)
         {
@@ -133,7 +126,9 @@ namespace Backend
         {
             Dictionary = new Dictionary<string, RpcBind>();
 
-            foreach (var method in behaviour.GetType().GetMethods(BindingFlags))
+            var type = behaviour.GetType();
+
+            foreach (var method in type.GetMethods(BindingFlags))
             {
                 var attribute = method.GetCustomAttribute<NetworkRPCAttribute>();
 

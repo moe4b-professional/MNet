@@ -69,7 +69,7 @@ namespace Backend
         public void InvokeRpc(RpcCommand command)
         {
             if (Behaviours.TryGetValue(command.Behaviour, out var target))
-                target.InvokeRpc(command);
+                target.InvokeRPC(command);
             else
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
         }
