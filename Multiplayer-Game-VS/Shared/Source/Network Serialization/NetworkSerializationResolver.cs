@@ -386,9 +386,9 @@ namespace Backend
 
             public void Select<T>(ref T value)
             {
-                if (Writer != null) Writer.Write(value);
+                if (IsWriting) Writer.Write(value);
 
-                if (Reader != null) Reader.Read(out value);
+                if (IsReading) Reader.Read(out value);
             }
 
             public Context(NetworkWriter writer)

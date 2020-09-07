@@ -45,7 +45,7 @@ namespace Backend
         public static void Register<T>(ushort code) => Register(code, typeof(T));
         public static void Register(ushort code, Type type)
         {
-            ValidateDuplicate(code, type);
+            Validate(code, type);
 
             Types.Add(code, type);
             Codes.Add(type, code);
@@ -53,19 +53,22 @@ namespace Backend
         #endregion
 
         #region Validate
+        static void Validate(ushort code, Type type)
+        {
+            ValidateDuplicate(code, type);
+        }
+
         static void ValidateDuplicate(ushort code, Type type)
         {
             ValidateTypeDuplicate(code, type);
 
             ValidateCodeDuplicate(code, type);
         }
-
         static void ValidateTypeDuplicate(ushort code, Type type)
         {
             if (Types.TryGetValue(code, out var duplicate))
                 throw new Exception($"NetworkPayload Type Duplicate Found, {type} & {duplicate} both registered with code {code}");
         }
-
         static void ValidateCodeDuplicate(ushort code, Type type)
         {
             if (Codes.TryGetValue(type, out var duplicate))
@@ -128,6 +131,8 @@ namespace Backend
             Register<BroadcastRpcRequest>(30);
 
             Register<TargetRpcRequest>(31);
+
+            Register<ChangeMasterCommand>(32);
         }
 
         static NetworkPayload()
@@ -391,4 +396,21 @@ namespace Backend
         }
     }
     #endregion
+
+    public sealed class ChangeMasterCommand : INetworkSerializable
+    {
+        NetworkClientID id;
+        public NetworkClientID ID => id;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref id);
+        }
+
+        public ChangeMasterCommand() { }
+        public ChangeMasterCommand(NetworkClientID id)
+        {
+            this.id = id;
+        }
+    }
 }

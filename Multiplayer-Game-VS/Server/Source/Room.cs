@@ -101,10 +101,7 @@ namespace Backend
             }
         }
 
-        public void InitializeService(WebSocketService service)
-        {
-            service.Set(this);
-        }
+        public void InitializeService(WebSocketService service) => service.Set(this);
 
         public Dictionary<string, NetworkClient> WebSocketClients { get; protected set; }
         #endregion
@@ -117,13 +114,39 @@ namespace Backend
 
         public IDCollection<NetworkClient> Clients { get; protected set; }
 
+        public IDCollection<NetworkEntity> Entities { get; protected set; }
+
+        #region Master
         public NetworkClient Master { get; protected set; }
+
         void SetMaster(NetworkClient target)
         {
             Master = target;
         }
+        
+        void ChangeMaster(NetworkClient target)
+        {
+            SetMaster(target);
 
-        public IDCollection<NetworkEntity> Entities { get; protected set; }
+            var command = new ChangeMasterCommand(Master.ID);
+
+            Broadcast(command);
+        }
+
+        void ChangeMaster()
+        {
+            if (Clients.Count > 0)
+            {
+                var target = Clients.Collection.First();
+
+                ChangeMaster(target);
+            }
+            else
+            {
+                SetMaster(null);
+            }
+        }
+        #endregion
 
         #region Message Buffer
         public NetworkMessageCollection MessageBuffer { get; protected set; }
@@ -190,7 +213,7 @@ namespace Backend
             Log.Info($"Room {this.ID}: Client {websocketID} Connected");
         }
 
-        #region Messages
+        #region Client Messages
         void ClientMessageCallback(string websocketID, byte[] raw, NetworkMessage message)
         {
             //Log.Info($"{message.Type} Binary Size: {raw.Length}");
@@ -341,6 +364,8 @@ namespace Backend
 
             WebSocketClients.Remove(client.WebsocketID);
             Clients.Remove(client);
+
+            if (client == Master) ChangeMaster();
 
             var payload = new ClientDisconnectPayload(client.ID);
             Broadcast(payload);

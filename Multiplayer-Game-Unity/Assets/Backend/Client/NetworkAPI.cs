@@ -559,6 +559,21 @@ namespace Backend
         {
             public static NetworkClient Master { get; private set; }
 
+            static bool AssignMaster(NetworkClientID id)
+            {
+                if(Clients.TryGetValue(id, out var target) == false)
+                {
+                    Debug.LogError($"No Master Client With ID {id} Could be Found, Assigning Null!");
+                    Master = null;
+                    return false;
+                }
+
+                Master = target;
+                Debug.Log($"Assigned {Master} as Master Client");
+
+                return true;
+            }
+
             public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
             public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
 
@@ -581,12 +596,7 @@ namespace Backend
             {
                 AddClients(response.Clients);
 
-                if (Clients.ContainsKey(response.Master))
-                    Master = Clients[response.Master];
-                else
-                    Debug.LogError($"No Master Client With ID {response.Master} Could be Found");
-
-                Debug.Log("Master Client: " + Master);
+                AssignMaster(response.Master);
 
                 ApplyMessageBuffer(response.Buffer);
             }
@@ -664,6 +674,12 @@ namespace Backend
 
                         ClientDisconnected(payload);
                     }
+                    else if(message.Is<ChangeMasterCommand>())
+                    {
+                        var command = message.Read<ChangeMasterCommand>();
+                        
+                        ChangeMaster(command);
+                    }
                 }
             }
 
@@ -724,6 +740,15 @@ namespace Backend
                 Entities.Add(entity.ID, entity);
 
                 OnSpawnEntity?.Invoke(entity, owner, command.Resource, entity.Attributes);
+            }
+
+            public delegate void ChangeMasterDelegate(NetworkClient client);
+            public static event ChangeMasterDelegate OnChangeMaster;
+            static void ChangeMaster(ChangeMasterCommand command)
+            {
+                AssignMaster(command.ID);
+
+                OnChangeMaster?.Invoke(Master);
             }
 
             public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientInfo info);
