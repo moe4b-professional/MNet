@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "ES3",
+        "module": "None",
+        "sourceMap": false,
+        "strict": true,
+        "alwaysStrict": true,
+        "outFile": "NativeWebSocket.jslib"
+    }
+}
