@@ -133,6 +133,11 @@ namespace Backend
             Register<TargetRpcRequest>(31);
 
             Register<ChangeMasterCommand>(32);
+
+            Register<SpawnSceneObjectRequest>(33);
+            Register<SpawnSceneObjectCommand>(34);
+
+            Register<NetworkSceneObjectInfo>(35);
         }
 
         static NetworkPayload()
@@ -289,8 +294,8 @@ namespace Backend
         NetworkClientID owner;
         public NetworkClientID Owner { get { return owner; } }
 
-        NetworkEntityID entity;
-        public NetworkEntityID Entity { get { return entity; } }
+        NetworkEntityID id;
+        public NetworkEntityID ID { get { return id; } }
 
         string resource;
         public string Resource { get { return resource; } }
@@ -301,18 +306,69 @@ namespace Backend
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref owner);
-            context.Select(ref entity);
+            context.Select(ref id);
             context.Select(ref resource);
             context.Select(ref attributes);
         }
 
         public SpawnEntityCommand() { }
-        public SpawnEntityCommand(NetworkClientID owner, NetworkEntityID entity, string resource, AttributesCollection attributes)
+        public SpawnEntityCommand(NetworkClientID owner, NetworkEntityID id, string resource, AttributesCollection attributes)
         {
             this.owner = owner;
-            this.entity = entity;
+            this.id = id;
             this.resource = resource;
             this.attributes = attributes;
+        }
+    }
+    #endregion
+
+    #region Spawn Scene Object
+    public sealed class SpawnSceneObjectRequest : INetworkSerializable
+    {
+        int scene;
+        public int Scene => scene;
+
+        int index;
+        public int Index => index;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref scene);
+            context.Select(ref index);
+        }
+
+        public SpawnSceneObjectRequest() { }
+        public SpawnSceneObjectRequest(int scene, int index)
+        {
+            this.scene = scene;
+            this.index = index;
+        }
+    }
+
+    public sealed class SpawnSceneObjectCommand : INetworkSerializable
+    {
+        int scene;
+        public int Scene => scene;
+
+        int index;
+        public int Index => index;
+
+        NetworkEntityID id;
+        public NetworkEntityID ID => id;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref scene);
+            context.Select(ref index);
+            context.Select(ref id);
+        }
+
+        public SpawnSceneObjectCommand() { }
+        public SpawnSceneObjectCommand(int scene, int index, NetworkEntityID id)
+        {
+            this.scene = scene;
+            this.index = index;
+            this.id = id;
         }
     }
     #endregion

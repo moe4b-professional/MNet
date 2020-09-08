@@ -19,9 +19,11 @@ using Random = UnityEngine.Random;
 
 namespace Backend
 {
+    [ExecuteInEditMode]
+    [DisallowMultipleComponent]
     [DefaultExecutionOrder(ExecutionOrder)]
-	public class NetworkEntity : MonoBehaviour
-	{
+    public class NetworkEntity : MonoBehaviour
+    {
         public const int ExecutionOrder = -200;
 
         public NetworkClient Owner { get; protected set; }
@@ -34,8 +36,19 @@ namespace Backend
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
+        public bool IsReady { get; protected set; } = false;
+
+        public Scene Scene => gameObject.scene;
+
+        protected virtual void Awake()
+        {
+            NetworkScene.Get(Scene)?.Register(this);
+        }
+
         public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes)
         {
+            IsReady = true;
+
             this.Owner = owner;
             this.ID = id;
             this.Attributes = attributes;
@@ -77,6 +90,11 @@ namespace Backend
         protected virtual void OnSpawn()
         {
 
+        }
+
+        protected virtual void OnDestroy()
+        {
+            NetworkScene.Get(Scene)?.Remove(this);
         }
     }
 }

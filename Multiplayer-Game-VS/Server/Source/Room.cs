@@ -15,7 +15,6 @@ namespace Backend
 {
     class Room
     {
-        #region Basic Properties
         public ushort ID { get; protected set; }
 
         public string Path => "/" + ID;
@@ -29,32 +28,13 @@ namespace Backend
         public AttributesCollection Attributes { get; protected set; }
 
         public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount, Attributes);
-        #endregion
 
-        #region Internal Properties
         public RoomInternalInfo ReadInternalInfo()
         {
             var info = new RoomInternalInfo();
 
             return info;
         }
-
-        public NetworkClientInfo[] GetClientsInfo()
-        {
-            var list = new NetworkClientInfo[Clients.Count];
-
-            var index = 0;
-
-            foreach (var client in Clients.Collection)
-            {
-                list[index] = client.ReadInfo();
-
-                index += 1;
-            }
-
-            return list;
-        }
-        #endregion
 
         #region Web Socket
         public WebSocketServiceHost WebSocket { get; protected set; }
@@ -112,7 +92,25 @@ namespace Backend
         public const long DefaultTickInterval = 50;
         #endregion
 
+        public List<NetworkEntity> SceneObjects { get; protected set; }
+
         public IDCollection<NetworkClient> Clients { get; protected set; }
+
+        public NetworkClientInfo[] GetClientsInfo()
+        {
+            var list = new NetworkClientInfo[Clients.Count];
+
+            var index = 0;
+
+            foreach (var client in Clients.Collection)
+            {
+                list[index] = client.ReadInfo();
+
+                index += 1;
+            }
+
+            return list;
+        }
 
         public IDCollection<NetworkEntity> Entities { get; protected set; }
 
@@ -161,14 +159,14 @@ namespace Backend
         public ActionQueue InputQueue { get; protected set; }
 
         #region Communication
-        NetworkMessage SendTo<T>(NetworkClient client, T payload)
+        NetworkMessage SendTo<T>(NetworkClient client, T payload) => SendTo(client.WebsocketID, payload);
+        NetworkMessage SendTo<T>(string websocketID, T payload)
         {
             var message = NetworkMessage.Write(payload);
 
             var binary = NetworkSerializer.Serialize(message);
 
-            if(client.IsConnected)
-                WebSocket.Sessions.SendToAsync(binary, client.WebsocketID, null);
+            WebSocket.Sessions.SendToAsync(binary, websocketID, null);
 
             return message;
         }
@@ -237,6 +235,12 @@ namespace Backend
                     var request = message.Read<ReadyClientRequest>();
 
                     ReadyClient(client);
+                }
+                else if(message.Is<SpawnSceneObjectRequest>())
+                {
+                    var request = message.Read<SpawnSceneObjectRequest>();
+
+                    SpawnSceneObject(client, request);
                 }
             }
             else
@@ -342,6 +346,36 @@ namespace Backend
             entity.SpawnMessage = message;
             BufferMessage(message);
         }
+
+        NetworkEntity SpawnSceneObject(NetworkClient client, SpawnSceneObjectRequest request)
+        {
+            if(client != Master)
+            {
+                Log.Warning($"Non Master Client {client.ID} Trying to Spawn Scene Object");
+                return null;
+            }
+
+            return SpawnSceneObject(request.Scene, request.Index);
+        }
+        NetworkEntity SpawnSceneObject(int scene, int index)
+        {
+            var code = Entities.Reserve();
+            var id = new NetworkEntityID(code);
+
+            var entity = new NetworkEntity(null, id);
+
+            SceneObjects.Add(entity);
+            Entities.Assign(entity, code);
+
+            var command = new SpawnSceneObjectCommand(scene, index, id);
+
+            var message = Broadcast(command);
+
+            entity.SpawnMessage = message;
+            BufferMessage(message);
+
+            return entity;
+        }
         #endregion
 
         void ClientDisconnected(string websocketID)
@@ -393,6 +427,8 @@ namespace Backend
 
             Clients = new IDCollection<NetworkClient>();
             Entities = new IDCollection<NetworkEntity>();
+
+            SceneObjects = new List<NetworkEntity>();
 
             InputQueue = new ActionQueue();
 

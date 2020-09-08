@@ -23,8 +23,12 @@ namespace Game
 {
     public class RpcTestBehaviour : NetworkBehaviour
     {
-        void Start()
+        protected override void OnSpawn()
         {
+            base.OnSpawn();
+
+            Debug.Log("Spawned " + name);
+
             RequestRPC(nameof(Rpc0), RpcBufferMode.None);
             RequestRPC(nameof(Rpc1), RpcBufferMode.None, 1);
             RequestRPC(nameof(Rpc2), RpcBufferMode.None, 1, 2);

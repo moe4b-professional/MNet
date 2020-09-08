@@ -41,8 +41,10 @@ namespace Game
             }
         }
 
-        void Start()
+        protected override void Start()
         {
+            base.Start();
+
             var block = new MaterialPropertyBlock();
             block.SetColor("_Color", IsMine ? Color.green : Color.red);
             renderer.SetPropertyBlock(block);
@@ -74,7 +76,7 @@ namespace Game
             var position = transform.position + (velocity * Time.deltaTime);
             var rotation = velocity.magnitude > 0.1f ? Quaternion.LookRotation(velocity) : transform.rotation;
 
-            RequestRPC(SetCoordinates, position, rotation);
+            RequestRPC(SetCoordinates, RpcBufferMode.Last, position, rotation);
         }
 
         [NetworkRPC(RpcAuthority.Master)]

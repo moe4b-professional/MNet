@@ -32,7 +32,7 @@ namespace Backend
 	{
         public static string Address { get; private set; }
 
-        [RuntimeInitializeOnLoadMethod]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
         {
             var loop = PlayerLoop.GetCurrentPlayerLoop();
@@ -387,19 +387,13 @@ namespace Backend
 
         public static class Client
         {
-            public static NetworkClientProfile Profile { get; private set; }
+            public static NetworkClientProfile Profile { get; set; }
+
+            public static NetworkClient Instance { get; private set; }
 
             public static NetworkClientID ID => Instance.ID;
 
-            public static bool IsConnected
-            {
-                get
-                {
-                    if (Instance == null) return false;
-
-                    return WebSocketAPI.IsConnected;
-                }
-            }
+            public static bool IsConnected => WebSocketAPI.IsConnected;
 
             public static bool IsMaster
             {
@@ -412,14 +406,6 @@ namespace Backend
             }
 
             public static bool IsReady { get; private set; }
-
-            public static NetworkClient Instance { get; private set; }
-            public static void Set(NetworkClientID ID)
-            {
-                var info = new NetworkClientInfo(ID, Profile);
-
-                Instance = new NetworkClient(info);
-            }
 
             public static void Configure()
             {
@@ -479,8 +465,6 @@ namespace Backend
 
             public static void RequestRegister()
             {
-                Profile = new NetworkClientProfile("Moe4B");
-
                 var request = new RegisterClientRequest(Profile);
 
                 Send(request);
@@ -489,7 +473,7 @@ namespace Backend
             public static event Action OnRegister;
             static void RegisterCallback(RegisterClientResponse response)
             {
-                Set(response.ID);
+                Instance = new NetworkClient(response.ID, Profile);
 
                 if (AutoReady) RequestReady();
 
@@ -531,6 +515,21 @@ namespace Backend
             static void SpawnEntityCallback(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes)
             {
                 if (owner?.ID == Client.ID) OnSpawnEntity?.Invoke(entity, resource, attributes);
+            }
+            #endregion
+
+            #region Spawn Scene Object
+            public static void RequestSpawnSceneObject(int scene, int index)
+            {
+                if(IsMaster == false)
+                {
+                    Debug.LogError("Only the Master Client May Spawn Scene Objects, Ignoring Request");
+                    return;
+                }
+
+                var request = new SpawnSceneObjectRequest(scene, index);
+
+                Send(request);
             }
             #endregion
 
@@ -592,14 +591,7 @@ namespace Backend
             #region Self Callbacks
             static void SelfConnectCallback() => Setup();
 
-            static void SelfReadyCallback(ReadyClientResponse response)
-            {
-                AddClients(response.Clients);
-
-                AssignMaster(response.Master);
-
-                ApplyMessageBuffer(response.Buffer);
-            }
+            static void SelfReadyCallback(ReadyClientResponse response) => Ready(response);
 
             static void SelfDisconnectCallback(CloseStatusCode code, string reason) => Clear();
             #endregion
@@ -610,6 +602,17 @@ namespace Backend
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
 
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
+            }
+
+            public delegate void ReadyDelegate(ReadyClientResponse response);
+            public static event ReadyDelegate OnReady;
+            static void Ready(ReadyClientResponse response)
+            {
+                AddClients(response.Clients);
+                AssignMaster(response.Master);
+                ApplyMessageBuffer(response.Buffer);
+
+                OnReady?.Invoke(response);
             }
 
             static void ApplyMessageBuffer(IList<NetworkMessage> list)
@@ -623,16 +626,29 @@ namespace Backend
                 for (int i = 0; i < list.Count; i++)
                     AddClient(list[i]);
             }
+
+            public delegate void AddClientDelegate(NetworkClient client);
+            public static event AddClientDelegate OnAddClient;
             static NetworkClient AddClient(NetworkClientInfo info)
             {
-                var client = new NetworkClient(info);
+                var client = CreateClient(info);
 
                 Clients.Add(client.ID, client);
 
+                OnAddClient?.Invoke(client);
+
                 return client;
             }
-            #endregion
 
+            static NetworkClient CreateClient(NetworkClientInfo info)
+            {
+                if (Client.Instance?.ID == info.ID) return Client.Instance;
+
+                return new NetworkClient(info);
+            }
+
+            public delegate void RemoveClientDelegate(NetworkClient client);
+            public static event RemoveClientDelegate OnRemoveClient;
             static void RemoveClient(NetworkClient client)
             {
                 foreach (var entity in client.Entities)
@@ -643,7 +659,10 @@ namespace Backend
                 }
 
                 Clients.Remove(client.ID);
+
+                OnRemoveClient?.Invoke(client);
             }
+            #endregion
 
             #region Messages
             static void MessageCallback(NetworkMessage message)
@@ -661,6 +680,12 @@ namespace Backend
                         var command = message.Read<SpawnEntityCommand>();
 
                         SpawnEntity(command);
+                    }
+                    else if(message.Is<SpawnSceneObjectCommand>())
+                    {
+                        var command = message.Read<SpawnSceneObjectCommand>();
+
+                        SpawnSceneObject(command);
                     }
                     else if (message.Is<ClientConnectedPayload>())
                     {
@@ -729,17 +754,41 @@ namespace Backend
                     return;
                 }
 
-                Debug.Log($"Spawned {command.Resource} with ID: {command.Entity}, Owned By Client {command.Owner}");
+                Debug.Log($"Spawned {command.Resource} with ID: {command.ID}, Owned By Client {command.Owner}");
 
                 if (Clients.TryGetValue(command.Owner, out var owner))
                     owner.Entities.Add(entity);
                 else
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Client Owner");
 
-                entity.Configure(owner, command.Entity, command.Attributes);
+                entity.Configure(owner, command.ID, command.Attributes);
                 Entities.Add(entity.ID, entity);
 
                 OnSpawnEntity?.Invoke(entity, owner, command.Resource, entity.Attributes);
+            }
+
+            public delegate void SpawnSceneObjectDelegate(NetworkEntity entity, int scene, int index);
+            public static event SpawnSceneObjectDelegate OnSpawnSceneObject;
+            static void SpawnSceneObject(SpawnSceneObjectCommand command)
+            {
+                var scene = NetworkScene.Get(command.Scene);
+
+                if(scene == null)
+                {
+                    Debug.LogError($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Index}");
+                    return;
+                }
+
+                if (scene.FindObject(command.Index, out var entity) == false)
+                {
+                    Debug.LogError($"Couldn't Find NetworkBehaviour {command.Index} In Scene {command.Scene}");
+                    return;
+                }
+
+                entity.Configure(null, command.ID, null);
+                Entities.Add(entity.ID, entity);
+
+                OnSpawnSceneObject?.Invoke(entity, command.Scene, command.Index);
             }
 
             public delegate void ChangeMasterDelegate(NetworkClient client);
@@ -751,7 +800,7 @@ namespace Backend
                 OnChangeMaster?.Invoke(Master);
             }
 
-            public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientInfo info);
+            public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientProfile profile);
             public static event ClientDisconnectedDelegate OnClientDisconnected;
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
@@ -762,7 +811,7 @@ namespace Backend
                 else
                     Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
 
-                OnClientDisconnected?.Invoke(payload.ID, client?.Info);
+                OnClientDisconnected?.Invoke(payload.ID, client?.Profile);
             }
             #endregion
 

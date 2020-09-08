@@ -60,6 +60,7 @@
     <Compile Include="Source\Network Serialization\NetworkSerializationResolver.cs" />
     <Compile Include="Source\NetworkIDs.cs" />
     <Compile Include="Source\Network Serialization\NetworkStream.cs" />
+    <Compile Include="Source\NetworkSceneObject.cs" />
     <Compile Include="Source\RoomInfo.cs" />
     <Compile Include="Source\NetworkMessage.cs" />
     <Compile Include="Source\Network Serialization\NetworkSerializer.cs" />

@@ -36,6 +36,7 @@ namespace Game
             NetworkAPI.RestAPI.Room.OnCreated += RoomCreatedCallback;
             NetworkAPI.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
 
+            NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
             NetworkAPI.Client.OnReady += ClientReadyCallback;
 
             if(Application.isMobilePlatform)

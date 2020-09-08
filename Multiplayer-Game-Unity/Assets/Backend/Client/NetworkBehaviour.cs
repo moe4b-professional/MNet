@@ -27,11 +27,22 @@ namespace Backend
         public NetworkBehaviourID ID { get; protected set; }
 
         public NetworkEntity Entity { get; protected set; }
-        public bool IsMine => Entity.IsMine;
+        public bool IsMine => Entity == null ? false : Entity.IsMine;
+        public bool IsReady => Entity == null ? false : Entity.IsReady;
 
-        public NetworkClient Owner => Entity.Owner;
+        public NetworkClient Owner => Entity?.Owner;
 
-        public AttributesCollection Attributes => Entity.Attributes;
+        public AttributesCollection Attributes => Entity?.Attributes;
+
+        protected virtual void Awake()
+        {
+            if (IsReady == false) enabled = false;
+        }
+
+        protected virtual void Start()
+        {
+
+        }
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
@@ -40,6 +51,8 @@ namespace Backend
             this.ID = id;
 
             RPCs = new RpcCollection(this);
+
+            enabled = true;
 
             OnSpawn();
         }
@@ -52,6 +65,12 @@ namespace Backend
         protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
         protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
         {
+            if(IsReady == false)
+            {
+                Debug.LogError($"Trying to Invoke RPC {method} on {name} Before It's Ready, Please Wait Untill IsReady or After OnSpawn Method");
+                return;
+            }
+
             if (RPCs.Find(method, out var bind))
             {
                 var payload = bind.CreateRequest(bufferMode, arguments);
@@ -64,6 +83,12 @@ namespace Backend
 
         protected void RequestRPC(string method, NetworkClient client, params object[] arguments)
         {
+            if (IsReady == false)
+            {
+                Debug.LogError($"Trying to Invoke RPC {method} on {name} Before It's Ready, Please Wait Untill IsReady or After OnSpawn Method");
+                return;
+            }
+
             if (RPCs.Find(method, out var bind))
             {
                 var payload = bind.CreateRequest(client.ID, arguments);

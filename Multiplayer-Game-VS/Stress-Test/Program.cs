@@ -110,7 +110,7 @@ namespace StressTest
 
                     if (command.Owner == clientID)
                     {
-                        entityID = command.Entity;
+                        entityID = command.ID;
 
                         var thread = new Thread(Tick);
 
