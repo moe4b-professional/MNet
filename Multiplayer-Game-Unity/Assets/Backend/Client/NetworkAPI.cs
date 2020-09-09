@@ -519,6 +519,8 @@ namespace Backend
             #endregion
 
             #region Spawn Scene Object
+            public static void RequestSpawnSceneObject(NetworkEntity entity, int index) => RequestSpawnSceneObject(entity.Scene, index);
+            public static void RequestSpawnSceneObject(Scene scene, int index) => RequestSpawnSceneObject(scene.buildIndex, index);
             public static void RequestSpawnSceneObject(int scene, int index)
             {
                 if(IsMaster == false)
@@ -779,7 +781,7 @@ namespace Backend
                     return;
                 }
 
-                if (scene.FindObject(command.Index, out var entity) == false)
+                if (scene.Find(command.Index, out var entity) == false)
                 {
                     Debug.LogError($"Couldn't Find NetworkBehaviour {command.Index} In Scene {command.Scene}");
                     return;

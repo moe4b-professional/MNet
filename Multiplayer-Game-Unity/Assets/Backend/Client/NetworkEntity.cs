@@ -42,7 +42,7 @@ namespace Backend
 
         protected virtual void Awake()
         {
-            NetworkScene.Get(Scene)?.Register(this);
+            NetworkScene.Register(this);
         }
 
         public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes)
@@ -94,7 +94,7 @@ namespace Backend
 
         protected virtual void OnDestroy()
         {
-            NetworkScene.Get(Scene)?.Remove(this);
+            if(Scene.isLoaded) NetworkScene.Unregister(this);
         }
     }
 }
