@@ -136,8 +136,6 @@ namespace Backend
 
             Register<SpawnSceneObjectRequest>(33);
             Register<SpawnSceneObjectCommand>(34);
-
-            Register<NetworkSceneObjectInfo>(35);
         }
 
         static NetworkPayload()
