@@ -14,29 +14,31 @@ namespace Backend
 
             public static class Requests
             {
-                public static string Path = "/REST";
+                public static string Path = "/";
 
                 public static class Lobby
                 {
-                    public static string Path = Requests.Path + "/Lobby";
+                    public static string Path = Requests.Path + "Lobby/";
 
                     public static string Info { get; private set; } = ToAbsolute(Path, nameof(Info));
                 }
 
                 public static class Room
                 {
-                    public static string Path = Requests.Path + "/Room";
+                    public static string Path = Requests.Path + "Room/";
 
                     public static string Create { get; private set; } = ToAbsolute(Path, nameof(Create));
                 }
 
-                public static string ToAbsolute(string path, string name) => path + "/" + name;
+                public static string ToAbsolute(string path, string name) => path + "" + name;
             }
         }
 
         public static class WebSocketAPI
         {
             public const int Port = 9090;
+
+            public const string Path = "WS/";
         }
     }
 }
