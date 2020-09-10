@@ -12,7 +12,7 @@ using System.Threading;
 
 using Backend;
 
-namespace StressTest
+namespace StressClient
 {
     static class Program
     {

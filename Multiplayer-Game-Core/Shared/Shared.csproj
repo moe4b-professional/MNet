@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="set /p Destination=&lt;&quot;$(ProjectDir)DLL Copy Destination.txt&quot;&#xD;&#xA;xcopy /y /d &quot;$(TargetPath)&quot; &quot;$(SolutionDir)%25Destination%25&quot;" />
+  </Target>
+
+</Project>

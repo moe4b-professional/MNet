@@ -166,7 +166,7 @@ namespace Backend
 
             var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket.Sessions.SendToAsync(binary, websocketID, null);
+            WebSocket.Sessions.SendTo(binary, websocketID);
 
             return message;
         }
@@ -179,7 +179,7 @@ namespace Backend
 
             //Log.Info($"{typeof(T)} Binary Size: {binary.Length}");
 
-            WebSocket.Sessions.BroadcastAsync(binary, null);
+            WebSocket.Sessions.Broadcast(binary);
 
             return message;
         }

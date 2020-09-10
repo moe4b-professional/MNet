@@ -1,1 +1,1 @@
-..\Multiplayer-Game-VS\Multiplayer-Game-VS.sln
+..\Multiplayer-Game-Core\Multiplayer-Game-Core.sln

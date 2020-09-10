@@ -49,7 +49,7 @@ namespace Backend
 
             uint extra = DefaultResizeLength;
 
-            while (capacity > Size + extra)
+            while (capacity > Remaining + extra)
                 extra += DefaultResizeLength;
 
             Resize(extra);
