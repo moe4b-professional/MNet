@@ -40,7 +40,7 @@ namespace Backend
 
             Server = new WebSocketServer(address, port);
 
-            Server.KeepClean = true;
+            Server.KeepClean = false;
 
             Server.Log.Level = LogLevel.Info;
             Server.Log.Output = (data, s) => { Log.Info(data.Message); };

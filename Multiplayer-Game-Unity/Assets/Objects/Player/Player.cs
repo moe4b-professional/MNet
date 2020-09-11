@@ -54,14 +54,31 @@ namespace Game
         {
             if (IsMine)
             {
-                var input = new Vector2()
+                var direction = new Vector2()
                 {
                     x = Input.GetAxisRaw("Horizontal"),
                     y = Input.GetAxisRaw("Vertical"),
                 };
 
-                if (input.magnitude > 0.1f) RequestRPC(RequestMove, NetworkAPI.Room.Master, input);
+                if (direction.magnitude > 0.1f) RequestRPC(RequestMove, NetworkAPI.Room.Master, direction);
+
+                if(Input.GetKeyDown(KeyCode.Mouse0))
+                {
+                    timestamp = Time.time;
+
+                    RequestRPC(Click, Owner, transform.position, transform.rotation);
+                }
             }
+        }
+
+        float timestamp;
+
+        [NetworkRPC]
+        void Click(Vector3 position, Quaternion rotation, RpcInfo info)
+        {
+            var elapsed = Time.time - timestamp;
+
+            Debug.Log($"Click: {elapsed * 1000}ms");
         }
 
         [NetworkRPC(RpcAuthority.Owner)]
