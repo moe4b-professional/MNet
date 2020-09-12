@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using System.Reflection;
 
 namespace Backend
 {
@@ -26,9 +27,10 @@ namespace Backend
     {
         public const int ExecutionOrder = -200;
 
-        public NetworkClient Owner { get; protected set; }
-
         public NetworkEntityID ID { get; protected set; }
+
+        NetworkClient _owner;
+        public NetworkClient Owner => IsSceneObject ? NetworkAPI.Room.Master : _owner;
 
         public bool IsMine => Owner?.ID == NetworkAPI.Client.ID;
 
@@ -38,6 +40,8 @@ namespace Backend
 
         public bool IsReady { get; protected set; } = false;
 
+        public bool IsSceneObject { get; protected set; }
+
         public Scene Scene => gameObject.scene;
 
         protected virtual void Awake()
@@ -45,11 +49,13 @@ namespace Backend
             NetworkScene.Register(this);
         }
 
-        public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes)
+        public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, bool sceneObject)
         {
             IsReady = true;
 
-            this.Owner = owner;
+            IsSceneObject = sceneObject;
+
+            this._owner = owner;
             this.ID = id;
             this.Attributes = attributes;
 
@@ -79,13 +85,46 @@ namespace Backend
             }
         }
 
+        #region RPC
         public void InvokeRpc(RpcCommand command)
         {
-            if (Behaviours.TryGetValue(command.Behaviour, out var target))
-                target.InvokeRPC(command);
-            else
+            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
+            {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
+                return;
+            }
+
+            target.InvokeRPC(command);
         }
+
+        public IDCollection<RpcCallbackBind> RpcCallbacks { get; protected set; }
+
+        public RpcCallbackBind RegisterRpcCallback(MethodInfo method, object target)
+        {
+            var code = RpcCallbacks.Reserve();
+
+            var callback = new RpcCallbackBind(code, method, target);
+
+            RpcCallbacks.Assign(callback, code);
+
+            return callback;
+        }
+
+        public void InvokeRpcCallback(RpcCallback payload)
+        {
+            if(RpcCallbacks.TryGetValue(payload.Callback, out var callback) == false)
+            {
+                Debug.LogError($"Couldn't Find RPC Callback with Code {payload.Callback}");
+                return;
+            }
+
+            var argument = payload.Read(callback.Type);
+
+            callback.Invoke(argument);
+
+            RpcCallbacks.Remove(callback);
+        }
+        #endregion
 
         protected virtual void OnSpawn()
         {
@@ -95,6 +134,11 @@ namespace Backend
         protected virtual void OnDestroy()
         {
             if(Scene.isLoaded) NetworkScene.Unregister(this);
+        }
+
+        public NetworkEntity()
+        {
+            RpcCallbacks = new IDCollection<RpcCallbackBind>();
         }
     }
 }

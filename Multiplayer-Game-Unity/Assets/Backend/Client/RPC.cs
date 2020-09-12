@@ -1,8 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Collections;
+using System.Collections.Generic;
+
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using UnityEngine.AI;
+
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditorInternal;
+#endif
+
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 using System.Reflection;
 
@@ -25,20 +38,28 @@ namespace Backend
         public ParameterInfo[] ParametersInfo { get; protected set; }
         public bool HasInfoParameter { get; protected set; }
 
-        public BroadcastRpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
+        public bool HasReturn => MethodInfo.ReturnType != null;
+
+        public RpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
-            var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, ID, bufferMode, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, bufferMode, arguments);
 
             return request;
         }
-        public TargetRpcRequest CreateRequest(NetworkClientID client, params object[] arguments)
+        public RpcRequest CreateRequest(NetworkClientID target, params object[] arguments)
         {
-            var request = TargetRpcRequest.Write(client, Entity.ID, Behaviour.ID, ID, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, target, arguments);
+
+            return request;
+        }
+        public RpcRequest CreateRequest(NetworkClientID target, ushort callback, params object[] arguments)
+        {
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, target, callback, arguments);
 
             return request;
         }
 
-        public void Invoke(RpcCommand command)
+        public object Invoke(RpcCommand command)
         {
             var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
 
@@ -51,11 +72,11 @@ namespace Backend
                 arguments[arguments.Length - 1] = info;
             }
 
-            Invoke(arguments);
+            return Invoke(arguments);
         }
-        public void Invoke(params object[] arguments)
+        public object Invoke(params object[] arguments)
         {
-            MethodInfo.Invoke(Behaviour, arguments);
+            return MethodInfo.Invoke(Behaviour, arguments);
         }
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method)
@@ -111,7 +132,7 @@ namespace Backend
         }
     }
 
-    public class RpcCollection
+    public class RpcBindCollection
     {
         public Dictionary<string, RpcBind> Dictionary { get; protected set; }
 
@@ -122,7 +143,7 @@ namespace Backend
             return Dictionary.TryGetValue(name, out bind);
         }
 
-        public RpcCollection(NetworkBehaviour behaviour)
+        public RpcBindCollection(NetworkBehaviour behaviour)
         {
             Dictionary = new Dictionary<string, RpcBind>();
 
@@ -144,6 +165,29 @@ namespace Backend
         }
     }
 
+    public class RpcCallbackBind
+    {
+        public ushort ID { get; protected set; }
+
+        public object Target { get; protected set; }
+
+        public MethodInfo Method { get; protected set; }
+        public ParameterInfo[] Parameters { get; protected set; }
+
+        public Type Type => Parameters[0].ParameterType;
+
+        public void Invoke(params object[] arguments) => Method.Invoke(Target, arguments);
+
+        public RpcCallbackBind(ushort id, MethodInfo method, object target)
+        {
+            this.ID = id;
+            this.Target = target;
+            this.Method = method;
+
+            Parameters = method.GetParameters();
+        }
+    }
+
     public delegate void RpcMethod(RpcInfo info);
     public delegate void RpcMethod<T1>(T1 arg1, RpcInfo info);
     public delegate void RpcMethod<T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
@@ -151,4 +195,12 @@ namespace Backend
     public delegate void RpcMethod<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
     public delegate void RpcMethod<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
     public delegate void RpcMethod<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+
+    public delegate TResult RpcCallbackMethod<TResult>(RpcInfo info);
+    public delegate TResult RpcCallbackMethod<TResult, T1>(T1 arg1, RpcInfo info);
+    public delegate TResult RpcCallbackMethod<TResult, T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
+    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
+    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
+    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
+    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
 }

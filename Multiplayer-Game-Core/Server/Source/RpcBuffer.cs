@@ -13,10 +13,16 @@ namespace Backend
         public delegate void BufferDelegate(NetworkMessage message);
         public delegate void UnBufferDelegate(NetworkMessageCollection collection);
 
-        public static string RequestToID(BroadcastRpcRequest request) => $"{request.Behaviour}{request.Method}";
+        public static string RequestToID(RpcRequest request) => $"{request.Behaviour}{request.Method}";
 
-        public void Set(NetworkMessage message, BroadcastRpcRequest request, BufferDelegate buffer, UnBufferDelegate unbuffer)
+        public void Set(NetworkMessage message, RpcRequest request, BufferDelegate buffer, UnBufferDelegate unbuffer)
         {
+            if(request.Type != RpcType.Broadcast)
+            {
+                Log.Error($"RPC of Type {request.Type} isn't Supported for Buffering");
+                return;
+            }
+
             if (request.BufferMode == RpcBufferMode.None) return;
 
             var id = RequestToID(request);

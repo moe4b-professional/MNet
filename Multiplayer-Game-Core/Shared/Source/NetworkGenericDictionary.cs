@@ -22,7 +22,7 @@ namespace Backend
             get
             {
                 if (TryGetValue(key, out var value) == false)
-                    return new KeyNotFoundException($"No Key: '{key}' registerd in {nameof(AttributesCollection)}");
+                    return new KeyNotFoundException($"No Key: '{key}' registerd in {GetType().Name}");
 
                 return value;
             }

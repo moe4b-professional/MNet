@@ -128,14 +128,12 @@ namespace Backend
 
             Register<RpcBufferMode>(29);
 
-            Register<BroadcastRpcRequest>(30);
-
-            Register<TargetRpcRequest>(31);
-
             Register<ChangeMasterCommand>(32);
 
             Register<SpawnSceneObjectRequest>(33);
             Register<SpawnSceneObjectCommand>(34);
+
+            Register<RpcCallback>(35);
         }
 
         static NetworkPayload()

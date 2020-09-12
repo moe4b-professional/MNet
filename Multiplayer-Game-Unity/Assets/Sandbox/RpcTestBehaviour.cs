@@ -27,7 +27,13 @@ namespace Game
         {
             base.OnSpawn();
 
-            Debug.Log("Spawned " + name);
+            RequestRPC(Rpc, Owner, Callback, "Hello");
+            RequestRPC(Rpc, Owner, Callback, "World");
+            RequestRPC(Rpc, Owner, Callback, "Welcome");
+            RequestRPC(Rpc, Owner, Callback, "To");
+            RequestRPC(Rpc, Owner, Callback, "RPC");
+
+            return;
 
             RequestRPC(nameof(Rpc0), RpcBufferMode.None);
             RequestRPC(nameof(Rpc1), RpcBufferMode.None, 1);
@@ -36,6 +42,17 @@ namespace Game
             RequestRPC(nameof(Rpc4), RpcBufferMode.None, 1, 2, 3, 4);
             RequestRPC(nameof(Rpc5), RpcBufferMode.None, 1, 2, 3, 4, 5);
             RequestRPC(nameof(Rpc6), RpcBufferMode.None, 1, 2, 3, 4, 5, 6);
+        }
+
+        [NetworkRPC]
+        string Rpc(string text, RpcInfo info)
+        {
+            return text;
+        }
+
+        void Callback(string value)
+        {
+            Debug.Log("Rpc Callback: " + value);
         }
 
         [NetworkRPC]

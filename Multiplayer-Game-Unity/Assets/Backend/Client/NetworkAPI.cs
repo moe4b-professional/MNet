@@ -675,13 +675,19 @@ namespace Backend
                     {
                         var command = message.Read<RpcCommand>();
 
-                        InvokeRpc(command);
+                        InvokeRPC(command);
                     }
                     else if (message.Is<SpawnEntityCommand>())
                     {
                         var command = message.Read<SpawnEntityCommand>();
 
                         SpawnEntity(command);
+                    }
+                    else if(message.Is<RpcCallback>())
+                    {
+                        var callback = message.Read<RpcCallback>();
+
+                        CallbackRPC(callback);
                     }
                     else if(message.Is<SpawnSceneObjectCommand>())
                     {
@@ -727,12 +733,26 @@ namespace Backend
                 Debug.Log($"Client {client.ID} Connected to Room");
             }
 
-            static void InvokeRpc(RpcCommand command)
+            static void InvokeRPC(RpcCommand command)
             {
-                if (Entities.TryGetValue(command.Entity, out var target))
-                    target.InvokeRpc(command);
-                else
+                if (Entities.TryGetValue(command.Entity, out var target) == false)
+                {
                     Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+                    return;
+                }
+
+                target.InvokeRpc(command);
+            }
+
+            static void CallbackRPC(RpcCallback callback)
+            {
+                if (Entities.TryGetValue(callback.Entity, out var target) == false)
+                {
+                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {callback.Entity}");
+                    return;
+                }
+
+                target.InvokeRpcCallback(callback);
             }
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes);
@@ -763,7 +783,7 @@ namespace Backend
                 else
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Client Owner");
 
-                entity.Configure(owner, command.ID, command.Attributes);
+                entity.Configure(owner, command.ID, command.Attributes, false);
                 Entities.Add(entity.ID, entity);
 
                 OnSpawnEntity?.Invoke(entity, owner, command.Resource, entity.Attributes);
@@ -787,7 +807,7 @@ namespace Backend
                     return;
                 }
 
-                entity.Configure(null, command.ID, null);
+                entity.Configure(null, command.ID, null, true);
                 Entities.Add(entity.ID, entity);
 
                 OnSpawnSceneObject?.Invoke(entity, command.Scene, command.Index);

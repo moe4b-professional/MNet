@@ -230,17 +230,23 @@ namespace Backend
 
                     SpawnEntity(client, request);
                 }
+                else if (message.Is<SpawnSceneObjectRequest>())
+                {
+                    var request = message.Read<SpawnSceneObjectRequest>();
+
+                    SpawnSceneObject(client, request);
+                }
+                else if(message.Is<RpcCallback>())
+                {
+                    var callback = message.Read<RpcCallback>();
+
+                    CallbackRPC(client, callback);
+                }
                 else if (message.Is<ReadyClientRequest>())
                 {
                     var request = message.Read<ReadyClientRequest>();
 
                     ReadyClient(client);
-                }
-                else if(message.Is<SpawnSceneObjectRequest>())
-                {
-                    var request = message.Read<SpawnSceneObjectRequest>();
-
-                    SpawnSceneObject(client, request);
                 }
             }
             else
@@ -311,22 +317,37 @@ namespace Backend
         }
         void InvokeRPC(NetworkClient sender, NetworkEntity entity, RpcRequest request)
         {
-            var command = new RpcCommand(sender.ID, request.Entity, request.Behaviour, request.Method, request.Raw);
+            var command = RpcCommand.Write(sender.ID, request);
 
-            if(request is BroadcastRpcRequest broadcast)
+            if (request.Type == RpcType.Broadcast)
             {
                 var message = Broadcast(command);
 
-                entity.RPCBuffer.Set(message, broadcast, BufferMessage, UnbufferMessages);
+                entity.RPCBuffer.Set(message, request, BufferMessage, UnbufferMessages);
             }
 
-            if(request is TargetRpcRequest target)
+            if (request.Type == RpcType.Target || request.Type == RpcType.Callback)
             {
-                if (Clients.TryGetValue(target.Client.Value, out var client))
+                if (Clients.TryGetValue(request.Target.Value, out var client))
                     SendTo(client, command);
                 else
-                    Log.Warning($"No NetworkClient With ID {target.Client} Found to Send RPC {target.Method} To");
+                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
             }
+        }
+
+        void CallbackRPC(NetworkClient sender, RpcCallback callback)
+        {
+            if(Entities.TryGetValue(callback.Entity.Value, out var entity) == false)
+            {
+                Log.Warning($"No Entity {callback.Entity} Found to Invoke RPC Callback On");
+                return;
+            }
+
+            var owner = entity.Owner;
+
+            if (owner == null) owner = Master; //TOOD fix random assign
+
+            SendTo(owner, callback);
         }
 
         void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource, request.Attributes);
