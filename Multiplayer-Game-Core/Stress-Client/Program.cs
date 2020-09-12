@@ -67,13 +67,13 @@ namespace StressClient
             {
                 var attributes = new AttributesCollection();
 
-                attributes.Set("PX", 0);
-                attributes.Set("PY", 0);
-                attributes.Set("PZ", 0);
+                attributes.Set(0, 0);
+                attributes.Set(1, 0);
+                attributes.Set(2, 0);
 
-                attributes.Set("RX", 0);
-                attributes.Set("RY", 0);
-                attributes.Set("RZ", 0);
+                attributes.Set(3, 0);
+                attributes.Set(4, 0);
+                attributes.Set(5, 0);
 
                 var request = new SpawnEntityRequest("Player", attributes);
 

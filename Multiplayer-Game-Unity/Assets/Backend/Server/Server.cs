@@ -27,11 +27,12 @@ namespace Backend
         [MenuItem("Utility/Start Server")]
         public static void Start()
         {
-            var folder = "Multiplayer-Game-VS";
+            var folder = "Multiplayer-Game-Core";
             var name = "Server";
             var release = "Debug";
+            var variant = "netcoreapp3.1";
 
-            var path = $"../{folder}/{name}/bin/{release}/{name}.exe";
+            var path = $"../{folder}/{name}/bin/{release}/{variant}/{name}.exe";
 
             var file = new FileInfo(path);
 

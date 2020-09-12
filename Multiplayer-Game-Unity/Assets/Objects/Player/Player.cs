@@ -23,7 +23,7 @@ namespace Game
 {
 	public class Player : NetworkBehaviour
 	{
-        new public Renderer renderer;
+        public MeshRenderer mesh;
 
         public float speed;
 
@@ -33,12 +33,22 @@ namespace Game
 
             if (Attributes != null)
             {
-                if (Attributes.TryGetValue("Position", out Vector3 position))
-                    transform.position = position;
+                Read(Entity.Attributes, out var position, out var rotation);
 
-                if (Attributes.TryGetValue("Rotation", out Quaternion rotation))
-                    transform.rotation = rotation;
+                transform.position = position;
+                transform.rotation = rotation;
             }
+        }
+
+        public static void Write(ref AttributesCollection attributes, Vector3 position, Quaternion rotation)
+        {
+            attributes.Set(0, position);
+            attributes.Set(1, rotation);
+        }
+        public static void Read(AttributesCollection attributes, out Vector3 position, out Quaternion rotation)
+        {
+            attributes.TryGetValue(0, out position);
+            attributes.TryGetValue(1, out rotation);
         }
 
         protected override void Start()
@@ -47,7 +57,7 @@ namespace Game
 
             var block = new MaterialPropertyBlock();
             block.SetColor("_Color", IsMine ? Color.green : Color.red);
-            renderer.SetPropertyBlock(block);
+            mesh.SetPropertyBlock(block);
         }
 
         void Update()
@@ -61,24 +71,7 @@ namespace Game
                 };
 
                 if (direction.magnitude > 0.1f) RequestRPC(RequestMove, NetworkAPI.Room.Master, direction);
-
-                if(Input.GetKeyDown(KeyCode.Mouse0))
-                {
-                    timestamp = Time.time;
-
-                    RequestRPC(Click, Owner, transform.position, transform.rotation);
-                }
             }
-        }
-
-        float timestamp;
-
-        [NetworkRPC]
-        void Click(Vector3 position, Quaternion rotation, RpcInfo info)
-        {
-            var elapsed = Time.time - timestamp;
-
-            Debug.Log($"Click: {elapsed * 1000}ms");
         }
 
         [NetworkRPC(RpcAuthority.Owner)]

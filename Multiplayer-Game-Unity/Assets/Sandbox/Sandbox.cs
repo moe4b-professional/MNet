@@ -50,10 +50,9 @@ namespace Game
             var attributes = new AttributesCollection();
 
             var position = new Vector3(Random.Range(-3f, 3f), 0f, Random.Range(-3f, 3f));
-            attributes.Set("Position", position);
-
             var rotation = Quaternion.LookRotation(position.normalized);
-            attributes.Set("Rotation", rotation);
+
+            Player.Write(ref attributes, position, rotation);
 
             NetworkAPI.Client.RequestSpawnEntity("Player", attributes);
         }
@@ -64,7 +63,7 @@ namespace Game
             {
                 var attributes = new AttributesCollection();
 
-                attributes.Set("Scene", "Level");
+                attributes.Set(0, "Level");
 
                 NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
             }
