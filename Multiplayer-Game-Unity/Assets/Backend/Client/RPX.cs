@@ -21,6 +21,7 @@ using System.Reflection;
 
 namespace Backend
 {
+    #region Call
     public class RpcBind
     {
         public NetworkEntity Entity => Behaviour.Entity;
@@ -137,7 +138,9 @@ namespace Backend
     public delegate void RpcMethod<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
     public delegate void RpcMethod<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
     public delegate void RpcMethod<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+    #endregion
 
+    #region Return
     public class RprBind
     {
         public ushort ID { get; protected set; }
@@ -147,7 +150,7 @@ namespace Backend
         public MethodInfo Method { get; protected set; }
         public ParameterInfo[] Parameters { get; protected set; }
 
-        public Type Type => Parameters[1].ParameterType;
+        public Type ReturnType { get; protected set; }
 
         public object[] ParseArguments(RprCommand command)
         {
@@ -156,9 +159,9 @@ namespace Backend
             arguments[0] = command.Success;
 
             if (command.Success)
-                arguments[1] = command.Read(Type);
+                arguments[1] = command.Read(ReturnType);
             else
-                arguments[1] = GetDefault(Type);
+                arguments[1] = GetDefault(ReturnType);
 
             return arguments;
         }
@@ -172,6 +175,8 @@ namespace Backend
             this.Method = method;
 
             Parameters = method.GetParameters();
+
+            this.ReturnType = Parameters[1].ParameterType;
         }
 
         public static object GetDefault(Type type)
@@ -191,4 +196,5 @@ namespace Backend
     public delegate TResult RpcReturnMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
     public delegate TResult RpcReturnMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
     public delegate TResult RpcReturnMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+    #endregion
 }

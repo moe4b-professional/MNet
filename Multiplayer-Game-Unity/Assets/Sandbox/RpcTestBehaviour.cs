@@ -43,10 +43,6 @@ namespace Game
         [NetworkRPC]
         string Rpc(string text, RpcInfo info)
         {
-            Debug.Log(info.Sender);
-            Debug.Log(info.Sender.IsMaster);
-            Debug.Log(info.Sender.ID);
-
             if (info.Sender.IsMaster == false)
             {
                 NetworkAPI.Client.Disconnect();

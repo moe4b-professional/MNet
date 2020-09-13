@@ -129,7 +129,7 @@ namespace Backend
             }
             catch (Exception e)
             {
-                var text = $"Error trying to read RPR Argument of {name}'s {command.Callback} callback as {bind.Type}, Invalid Data Sent Most Likely \n" +
+                var text = $"Error trying to read RPR Argument of {name}'s {command.Callback} callback as {bind.ReturnType}, Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
                     $"{e.ToString()}";
 
