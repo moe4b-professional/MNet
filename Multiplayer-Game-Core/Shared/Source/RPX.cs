@@ -8,9 +8,16 @@ using System.Threading.Tasks;
 
 namespace Backend
 {
+    #region Call
     public enum RpcType : byte
     {
         Broadcast, Target, Callback
+    }
+
+    [Serializable]
+    public enum RpcBufferMode
+    {
+        None, Last, All
     }
 
     [Serializable]
@@ -234,9 +241,11 @@ namespace Backend
             return command;
         }
     }
+    #endregion
 
+    #region Return
     [Serializable]
-    public class RpcCallbackPayload : INetworkSerializable
+    public class RprRequest : INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
@@ -247,10 +256,8 @@ namespace Backend
         ushort callback;
         public ushort Callback => callback;
 
-        bool success;
-        public bool Success => success;
-
         byte[] raw;
+        public byte[] Raw => raw;
 
         public object Read(Type type)
         {
@@ -265,40 +272,25 @@ namespace Backend
             context.Select(ref target);
 
             context.Select(ref callback);
-            context.Select(ref success);
 
             context.Select(ref raw);
         }
 
-        public RpcCallbackPayload()
+        public RprRequest()
         {
 
         }
 
-        public static RpcCallbackPayload Write(NetworkEntityID entity, NetworkClientID target, ushort callback, object result)
+        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort callback, object result)
         {
             var raw = NetworkSerializer.Serialize(result);
 
-            var payload = new RpcCallbackPayload()
+            var payload = new RprRequest()
             {
                 entity = entity,
                 target = target,
                 callback = callback,
-                success = true,
                 raw = raw,
-            };
-
-            return payload;
-        }
-
-        public static RpcCallbackPayload Write(NetworkEntityID entity, NetworkClientID target, ushort callback, bool success)
-        {
-            var payload = new RpcCallbackPayload()
-            {
-                entity = entity,
-                target = target,
-                callback = callback,
-                success = success,
             };
 
             return payload;
@@ -306,8 +298,65 @@ namespace Backend
     }
 
     [Serializable]
-    public enum RpcBufferMode
+    public class RprCommand : INetworkSerializable
     {
-        None, Last, All
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
+
+        ushort callback;
+        public ushort Callback => callback;
+
+        bool success;
+        public bool Success => success;
+
+        byte[] raw;
+        public byte[] Raw => raw;
+
+        public object Read(Type type)
+        {
+            var result = NetworkSerializer.Deserialize(raw, type);
+
+            return result;
+        }
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref entity);
+
+            context.Select(ref callback);
+            context.Select(ref success);
+
+            context.Select(ref raw);
+        }
+
+        public RprCommand()
+        {
+
+        }
+
+        public static RprCommand Write(NetworkEntityID entity, ushort callback, byte[] raw)
+        {
+            var payload = new RprCommand()
+            {
+                entity = entity,
+                callback = callback,
+                success = true,
+                raw = raw,
+            };
+
+            return payload;
+        }
+        public static RprCommand Write(NetworkEntityID entity, ushort callback, bool success)
+        {
+            var command = new RprCommand()
+            {
+                entity = entity,
+                callback = callback,
+                success = success,
+            };
+
+            return command;
+        }
     }
+    #endregion
 }

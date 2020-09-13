@@ -130,7 +130,15 @@ namespace Backend
         }
     }
 
-    public class RpcCallback
+    public delegate void RpcMethod(RpcInfo info);
+    public delegate void RpcMethod<T1>(T1 arg1, RpcInfo info);
+    public delegate void RpcMethod<T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
+    public delegate void RpcMethod<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
+    public delegate void RpcMethod<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
+    public delegate void RpcMethod<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
+    public delegate void RpcMethod<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+
+    public class RprBind
     {
         public ushort ID { get; protected set; }
 
@@ -141,14 +149,14 @@ namespace Backend
 
         public Type Type => Parameters[1].ParameterType;
 
-        public object[] ParseArguments(RpcCallbackPayload payload)
+        public object[] ParseArguments(RprCommand command)
         {
             var arguments = new object[2];
 
-            arguments[0] = payload.Success;
+            arguments[0] = command.Success;
 
-            if (payload.Success)
-                arguments[1] = payload.Read(Type);
+            if (command.Success)
+                arguments[1] = command.Read(Type);
             else
                 arguments[1] = GetDefault(Type);
 
@@ -157,7 +165,7 @@ namespace Backend
 
         public void Invoke(params object[] arguments) => Method.Invoke(Target, arguments);
 
-        public RpcCallback(ushort id, MethodInfo method, object target)
+        public RprBind(ushort id, MethodInfo method, object target)
         {
             this.ID = id;
             this.Target = target;
@@ -174,21 +182,13 @@ namespace Backend
         }
     }
 
-    public delegate void RpcMethod(RpcInfo info);
-    public delegate void RpcMethod<T1>(T1 arg1, RpcInfo info);
-    public delegate void RpcMethod<T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+    public delegate void RprMethod<T>(bool success, T result);
 
-    public delegate TResult RpcCallbackMethod<TResult>(RpcInfo info);
-    public delegate TResult RpcCallbackMethod<TResult, T1>(T1 arg1, RpcInfo info);
-    public delegate TResult RpcCallbackMethod<TResult, T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
-    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
-    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
-    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
-    public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
-
-    public delegate void RpcCallback<T>(bool success, T result);
+    public delegate TResult RpcReturnMethod<TResult>(RpcInfo info);
+    public delegate TResult RpcReturnMethod<TResult, T1>(T1 arg1, RpcInfo info);
+    public delegate TResult RpcReturnMethod<TResult, T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
+    public delegate TResult RpcReturnMethod<TResult, T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
+    public delegate TResult RpcReturnMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
+    public delegate TResult RpcReturnMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
+    public delegate TResult RpcReturnMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
 }

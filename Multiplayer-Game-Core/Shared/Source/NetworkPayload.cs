@@ -130,7 +130,8 @@ namespace Backend
 
             Register<ChangeMasterCommand>(32);
 
-            Register<RpcCallbackPayload>(35);
+            Register<RprRequest>(35);
+            Register<RprCommand>(36);
         }
 
         static NetworkPayload()

@@ -21,7 +21,7 @@ namespace Backend
         public NetworkMessage SpawnMessage { get; set; }
 
         public RpcBuffer RpcBuffer { get; protected set; }
-        public RpcCallbackBuffer RpcCallbackBuffer { get; protected set; }
+        public RprBuffer RprCache { get; protected set; }
 
         public NetworkEntity(NetworkClient owner, NetworkEntityID id, NetworkEntityType type)
         {
@@ -32,7 +32,7 @@ namespace Backend
             this.Type = type;
 
             RpcBuffer = new RpcBuffer();
-            RpcCallbackBuffer = new RpcCallbackBuffer();
+            RprCache = new RprBuffer();
         }
     }
 }

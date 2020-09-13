@@ -87,8 +87,8 @@ namespace Backend
             }
         }
 
-        #region RPC
-        public void InvokeRpc(RpcCommand command)
+        #region RPX
+        public void InvokeRPC(RpcCommand command)
         {
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
@@ -99,37 +99,37 @@ namespace Backend
             target.InvokeRPC(command);
         }
 
-        public IDCollection<RpcCallback> RpcCallbacks { get; protected set; }
+        public IDCollection<RprBind> RPRs { get; protected set; }
 
-        public RpcCallback RegisterRpcCallback(MethodInfo method, object target)
+        public RprBind RegisterRPR(MethodInfo method, object target)
         {
-            var code = RpcCallbacks.Reserve();
+            var code = RPRs.Reserve();
 
-            var callback = new RpcCallback(code, method, target);
+            var callback = new RprBind(code, method, target);
 
-            RpcCallbacks.Assign(callback, code);
+            RPRs.Assign(callback, code);
 
             return callback;
         }
 
-        public void InvokeRpcCallback(RpcCallbackPayload payload)
+        public void InvokeRPR(RprCommand command)
         {
-            if (payload == null) throw new ArgumentNullException(nameof(payload), "RPC Callback Payload is Null");
+            if (command == null) throw new ArgumentNullException(nameof(command), "RPC Callback Payload is Null");
 
-            if (RpcCallbacks.TryGetValue(payload.Callback, out var callback) == false)
+            if (RPRs.TryGetValue(command.Callback, out var bind) == false)
             {
-                Debug.LogError($"Couldn't Find RPC Callback with Code {payload.Callback} to Invoke On Entity {name}");
+                Debug.LogError($"Couldn't Find RPR with Code {command.Callback} to Invoke On Entity {name}");
                 return;
             }
 
             object[] arguments;
             try
             {
-                arguments = callback.ParseArguments(payload);
+                arguments = bind.ParseArguments(command);
             }
             catch (Exception e)
             {
-                var text = $"Error trying to read RPC Callback Argument of {name}'s {payload.Callback} callback as {callback.Type}, Invalid Data Sent Most Likely \n" +
+                var text = $"Error trying to read RPR Argument of {name}'s {command.Callback} callback as {bind.Type}, Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
                     $"{e.ToString()}";
 
@@ -139,7 +139,7 @@ namespace Backend
 
             try
             {
-                callback.Invoke(arguments);
+                bind.Invoke(arguments);
             }
             catch(TargetInvocationException)
             {
@@ -147,13 +147,18 @@ namespace Backend
             }
             catch (ArgumentException)
             {
-                var text = $"Error Trying to Invoke RPC Callback '{ callback.Method.Name}' on '{ callback.Target}', " +
+                var text = $"Error Trying to Invoke RPR '{ bind.Method.Name}' on '{ bind.Target}', " +
                     $"Please Ensure Callback Method is Implemented Correctly to Consume Recieved Argument: {arguments.GetType()}";
 
                 Debug.LogError(text, this);
             }
 
-            RpcCallbacks.Remove(callback);
+            UnregisterRPR(bind);
+        }
+
+        public void UnregisterRPR(RprBind bind)
+        {
+            RPRs.Remove(bind);
         }
         #endregion
 
@@ -169,7 +174,7 @@ namespace Backend
 
         public NetworkEntity()
         {
-            RpcCallbacks = new IDCollection<RpcCallback>();
+            RPRs = new IDCollection<RprBind>();
         }
     }
 }

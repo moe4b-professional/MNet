@@ -50,7 +50,7 @@ namespace Backend
 
             this.ID = id;
 
-            ConfigureRPCs();
+            ReadRPCs();
 
             enabled = true;
 
@@ -59,12 +59,10 @@ namespace Backend
 
         protected virtual void OnSpawn() { }
 
-        #region RPC
+        #region RPX
         public Dictionary<string, RpcBind> RPCs { get; protected set; }
 
-        public bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
-
-        void ConfigureRPCs()
+        void ReadRPCs()
         {
             RPCs = new Dictionary<string, RpcBind>();
 
@@ -86,6 +84,8 @@ namespace Backend
                 RPCs.Add(bind.ID, bind);
             }
         }
+
+        public bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
         protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
         protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
@@ -114,7 +114,7 @@ namespace Backend
             RequestRPC(payload);
         }
 
-        protected void RequestRPC<TResult>(string method, NetworkClient target, RpcCallback<TResult> result, params object[] arguments)
+        protected void RequestRPC<TResult>(string method, NetworkClient target, RprMethod<TResult> result, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -122,9 +122,9 @@ namespace Backend
                 return;
             }
 
-            var callback = Entity.RegisterRpcCallback(result.Method, result.Target);
+            var rpr = Entity.RegisterRPR(result.Method, result.Target);
 
-            var payload = bind.CreateRequest(target.ID, callback.ID, arguments);
+            var payload = bind.CreateRequest(target.ID, rpr.ID, arguments);
 
             RequestRPC(payload);
         }
@@ -192,19 +192,19 @@ namespace Backend
         public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => RequestRPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
 
-        public void RequestRPC<TResult>(RpcCallbackMethod<TResult> method, NetworkClient target, RpcCallback<TResult> callback)
+        public void RequestRPC<TResult>(RpcReturnMethod<TResult> method, NetworkClient target, RprMethod<TResult> callback)
             => RequestRPC(method.Method.Name, target, callback);
-        public void RequestRPC<TResult, T1>(RpcCallbackMethod<TResult, T1> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1)
+        public void RequestRPC<TResult, T1>(RpcReturnMethod<TResult, T1> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1)
             => RequestRPC(method.Method.Name, target, callback, arg1);
-        public void RequestRPC<TResult, T1, T2>(RpcCallbackMethod<TResult, T1, T2> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2)
+        public void RequestRPC<TResult, T1, T2>(RpcReturnMethod<TResult, T1, T2> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2);
-        public void RequestRPC<TResult, T1, T2, T3>(RpcCallbackMethod<TResult, T1, T2, T3> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
+        public void RequestRPC<TResult, T1, T2, T3>(RpcReturnMethod<TResult, T1, T2, T3> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3);
-        public void RequestRPC<TResult, T1, T2, T3, T4>(RpcCallbackMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        public void RequestRPC<TResult, T1, T2, T3, T4>(RpcReturnMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4);
-        public void RequestRPC<TResult, T1, T2, T3, T4, T5>(RpcCallbackMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        public void RequestRPC<TResult, T1, T2, T3, T4, T5>(RpcReturnMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcCallbackMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        public void RequestRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcReturnMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
@@ -256,14 +256,7 @@ namespace Backend
                 return;
             }
 
-            if (command.Type == RpcType.Callback) CallbackRPC(command, result, info.Sender);
-        }
-
-        void CallbackRPC(RpcCommand command, object result, NetworkClient target)
-        {
-            var payload = RpcCallbackPayload.Write(command.Entity, target.ID, command.Callback, result);
-
-            NetworkAPI.Client.Send(payload);
+            if (command.Type == RpcType.Callback) SendRPR(command, result, info.Sender);
         }
 
         public bool ValidateRpcAuthority(RpcCommand command, RpcBind bind)
@@ -275,6 +268,13 @@ namespace Backend
             if (bind.Authority == RpcAuthority.Master) return command.Sender == NetworkAPI.Room.Master?.ID;
 
             return true;
+        }
+
+        void SendRPR(RpcCommand rpc, object result, NetworkClient target)
+        {
+            var payload = RprRequest.Write(rpc.Entity, target.ID, rpc.Callback, result);
+
+            NetworkAPI.Client.Send(payload);
         }
         #endregion
     }

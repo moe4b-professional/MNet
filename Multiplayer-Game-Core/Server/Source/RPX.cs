@@ -64,29 +64,29 @@ namespace Backend
         }
     }
 
-    class RpcCallback
+    class RprBuffer
     {
-        public RpcRequest Request { get; protected set; }
-        public ushort ID => Request.Callback;
+        public Dictionary<ushort, Data> Dictionary { get; protected set; }
 
-        public NetworkClient Sender { get; protected set; }
+        public IReadOnlyCollection<Data> Collection => Dictionary.Values;
 
-        public RpcCallback(RpcRequest request, NetworkClient sender)
+        public class Data
         {
-            this.Request = request;
-            this.Sender = sender;
+            public RpcRequest Request { get; protected set; }
+            public ushort ID => Request.Callback;
+
+            public NetworkClient Sender { get; protected set; }
+
+            public Data(RpcRequest request, NetworkClient sender)
+            {
+                this.Request = request;
+                this.Sender = sender;
+            }
         }
-    }
-
-    class RpcCallbackBuffer
-    {
-        public Dictionary<ushort, RpcCallback> Dictionary { get; protected set; }
-
-        public IReadOnlyCollection<RpcCallback> Collection => Dictionary.Values;
 
         public void Register(RpcRequest request, NetworkClient sender)
         {
-            var callback = new RpcCallback(request, sender);
+            var callback = new Data(request, sender);
 
             Dictionary.Add(request.Callback, callback);
         }
@@ -98,9 +98,9 @@ namespace Backend
 
         public void Clear() => Dictionary.Clear();
 
-        public RpcCallbackBuffer()
+        public RprBuffer()
         {
-            Dictionary = new Dictionary<ushort, RpcCallback>();
+            Dictionary = new Dictionary<ushort, Data>();
         }
     }
 }

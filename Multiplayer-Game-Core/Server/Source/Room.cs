@@ -235,11 +235,11 @@ namespace Backend
 
                     SpawnEntity(client, request);
                 }
-                else if(message.Is<RpcCallbackPayload>())
+                else if(message.Is<RprRequest>())
                 {
-                    var callback = message.Read<RpcCallbackPayload>();
+                    var callback = message.Read<RprRequest>();
 
-                    CallbackRPC(client, callback);
+                    InvokeRPR(client, callback);
                 }
                 else if (message.Is<ReadyClientRequest>())
                 {
@@ -331,7 +331,7 @@ namespace Backend
                 {
                     SendTo(client, command);
 
-                    if (request.Type == RpcType.Callback) entity.RpcCallbackBuffer.Register(request, sender);
+                    if (request.Type == RpcType.Callback) entity.RprCache.Register(request, sender);
                 }
                 else
                 {
@@ -340,17 +340,17 @@ namespace Backend
             }
         }
 
-        void CallbackRPC(NetworkClient sender, RpcCallbackPayload payload)
+        void InvokeRPR(NetworkClient sender, RprRequest request)
         {
-            if (Entities.TryGetValue(payload.Entity.Value, out var entity) == false)
+            if (Entities.TryGetValue(request.Entity.Value, out var entity) == false)
             {
-                Log.Warning($"No Entity {payload.Entity} Found to Invoke RPC Callback On");
+                Log.Warning($"No Entity {request.Entity} Found to Invoke RPC Callback On");
                 return;
             }
             
-            if (Clients.TryGetValue(payload.Target.Value, out var target) == false)
+            if (Clients.TryGetValue(request.Target.Value, out var target) == false)
             {
-                Log.Warning($"No Client {payload.Target} Found to Invoke RPC Callback On");
+                Log.Warning($"No Client {request.Target} Found to Invoke RPC Callback On");
                 return;
             }
 
@@ -360,16 +360,18 @@ namespace Backend
                 return;
             }
 
-            entity.RpcCallbackBuffer.Unregister(payload.Callback);
+            entity.RprCache.Unregister(request.Callback);
 
-            SendTo(target, payload);
+            var command = RprCommand.Write(entity.ID, request.Callback, request.Raw);
+
+            SendTo(target, command);
         }
 
-        void ResolveCallbackRPC(NetworkEntity entity)
+        void ResolveRprCache(NetworkEntity entity)
         {
-            foreach (var callback in entity.RpcCallbackBuffer.Collection)
+            foreach (var callback in entity.RprCache.Collection)
             {
-                var command = RpcCallbackPayload.Write(entity.ID, callback.Sender.ID, callback.ID, false);
+                var command = RprCommand.Write(entity.ID, callback.ID, false);
 
                 SendTo(callback.Sender, command);
             }
@@ -431,7 +433,7 @@ namespace Backend
 
             entity.RpcBuffer.Clear(UnbufferMessages);
 
-            ResolveCallbackRPC(entity);
+            ResolveRprCache(entity);
 
             Entities.Remove(entity);
         }

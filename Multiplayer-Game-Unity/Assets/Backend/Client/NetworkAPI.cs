@@ -688,11 +688,11 @@ namespace Backend
 
                         SpawnEntity(command);
                     }
-                    else if (message.Is<RpcCallbackPayload>())
+                    else if (message.Is<RprCommand>())
                     {
-                        var payload = message.Read<RpcCallbackPayload>();
+                        var payload = message.Read<RprCommand>();
 
-                        CallbackRPC(payload);
+                        InvokeRPR(payload);
                     }
                     else if (message.Is<ClientConnectedPayload>())
                     {
@@ -740,10 +740,10 @@ namespace Backend
                     return;
                 }
 
-                target.InvokeRpc(command);
+                target.InvokeRPC(command);
             }
 
-            static void CallbackRPC(RpcCallbackPayload payload)
+            static void InvokeRPR(RprCommand payload)
             {
                 if (Entities.TryGetValue(payload.Entity, out var target) == false)
                 {
@@ -751,7 +751,7 @@ namespace Backend
                     return;
                 }
 
-                target.InvokeRpcCallback(payload);
+                target.InvokeRPR(payload);
             }
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity);
