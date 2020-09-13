@@ -67,7 +67,6 @@ namespace Backend
     class RpcCallback
     {
         public RpcRequest Request { get; protected set; }
-
         public ushort ID => Request.Callback;
 
         public NetworkClient Sender { get; protected set; }

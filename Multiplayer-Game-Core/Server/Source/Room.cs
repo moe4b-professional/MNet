@@ -27,7 +27,24 @@ namespace Backend
 
         public AttributesCollection Attributes { get; protected set; }
 
+        #region Read Info
         public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount, Attributes);
+
+        public NetworkClientInfo[] GetClientsInfo()
+        {
+            var list = new NetworkClientInfo[Clients.Count];
+
+            var index = 0;
+
+            foreach (var client in Clients.Collection)
+            {
+                list[index] = client.ReadInfo();
+
+                index += 1;
+            }
+
+            return list;
+        }
 
         public RoomInternalInfo ReadInternalInfo()
         {
@@ -35,6 +52,7 @@ namespace Backend
 
             return info;
         }
+        #endregion
 
         #region Web Socket
         public WebSocketServiceHost WebSocket { get; protected set; }
@@ -93,22 +111,6 @@ namespace Backend
         #endregion
 
         public IDCollection<NetworkClient> Clients { get; protected set; }
-
-        public NetworkClientInfo[] GetClientsInfo()
-        {
-            var list = new NetworkClientInfo[Clients.Count];
-
-            var index = 0;
-
-            foreach (var client in Clients.Collection)
-            {
-                list[index] = client.ReadInfo();
-
-                index += 1;
-            }
-
-            return list;
-        }
 
         public IDCollection<NetworkEntity> Entities { get; protected set; }
 
@@ -358,9 +360,9 @@ namespace Backend
                 return;
             }
 
-            SendTo(target, payload);
-
             entity.RpcCallbackBuffer.Unregister(payload.Callback);
+
+            SendTo(target, payload);
         }
 
         void ResolveCallbackRPC(NetworkEntity entity)
