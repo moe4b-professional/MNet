@@ -17,7 +17,7 @@ namespace Backend
 
         public void Set(NetworkMessage message, RpcRequest request, BufferDelegate buffer, UnBufferDelegate unbuffer)
         {
-            if(request.Type != RpcType.Broadcast)
+            if (request.Type != RpcType.Broadcast)
             {
                 Log.Error($"RPC of Type {request.Type} isn't Supported for Buffering");
                 return;
@@ -61,6 +61,47 @@ namespace Backend
         public RpcBuffer()
         {
             Dictionary = new Dictionary<string, NetworkMessageCollection>();
+        }
+    }
+
+    class RpcCallback
+    {
+        public RpcRequest Request { get; protected set; }
+
+        public ushort ID => Request.Callback;
+
+        public NetworkClient Sender { get; protected set; }
+
+        public RpcCallback(RpcRequest request, NetworkClient sender)
+        {
+            this.Request = request;
+            this.Sender = sender;
+        }
+    }
+
+    class RpcCallbackBuffer
+    {
+        public Dictionary<ushort, RpcCallback> Dictionary { get; protected set; }
+
+        public IReadOnlyCollection<RpcCallback> Collection => Dictionary.Values;
+
+        public void Register(RpcRequest request, NetworkClient sender)
+        {
+            var callback = new RpcCallback(request, sender);
+
+            Dictionary.Add(request.Callback, callback);
+        }
+
+        public bool Unregister(ushort callback)
+        {
+            return Dictionary.Remove(callback);
+        }
+
+        public void Clear() => Dictionary.Clear();
+
+        public RpcCallbackBuffer()
+        {
+            Dictionary = new Dictionary<ushort, RpcCallback>();
         }
     }
 }

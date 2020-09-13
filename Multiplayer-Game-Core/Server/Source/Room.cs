@@ -92,8 +92,6 @@ namespace Backend
         public const long DefaultTickInterval = 50;
         #endregion
 
-        public List<NetworkEntity> SceneObjects { get; protected set; }
-
         public IDCollection<NetworkClient> Clients { get; protected set; }
 
         public NetworkClientInfo[] GetClientsInfo()
@@ -113,6 +111,8 @@ namespace Backend
         }
 
         public IDCollection<NetworkEntity> Entities { get; protected set; }
+
+        public List<NetworkEntity> SceneObjects { get; protected set; }
 
         #region Master
         public NetworkClient Master { get; protected set; }
@@ -233,9 +233,9 @@ namespace Backend
 
                     SpawnEntity(client, request);
                 }
-                else if(message.Is<RpcCallback>())
+                else if(message.Is<RpcCallbackPayload>())
                 {
-                    var callback = message.Read<RpcCallback>();
+                    var callback = message.Read<RpcCallbackPayload>();
 
                     CallbackRPC(client, callback);
                 }
@@ -320,31 +320,57 @@ namespace Backend
             {
                 var message = Broadcast(command);
 
-                entity.RPCBuffer.Set(message, request, BufferMessage, UnbufferMessages);
+                entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
             }
 
             if (request.Type == RpcType.Target || request.Type == RpcType.Callback)
             {
                 if (Clients.TryGetValue(request.Target.Value, out var client))
+                {
                     SendTo(client, command);
+
+                    if (request.Type == RpcType.Callback) entity.RpcCallbackBuffer.Register(request, sender);
+                }
                 else
+                {
                     Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
+                }
             }
         }
 
-        void CallbackRPC(NetworkClient sender, RpcCallback callback)
+        void CallbackRPC(NetworkClient sender, RpcCallbackPayload payload)
         {
-            if(Entities.TryGetValue(callback.Entity.Value, out var entity) == false)
+            if (Entities.TryGetValue(payload.Entity.Value, out var entity) == false)
             {
-                Log.Warning($"No Entity {callback.Entity} Found to Invoke RPC Callback On");
+                Log.Warning($"No Entity {payload.Entity} Found to Invoke RPC Callback On");
+                return;
+            }
+            
+            if (Clients.TryGetValue(payload.Target.Value, out var target) == false)
+            {
+                Log.Warning($"No Client {payload.Target} Found to Invoke RPC Callback On");
                 return;
             }
 
-            var owner = entity.Owner;
+            if (sender != entity.Owner)
+            {
+                Log.Warning($"Client {sender.Name} Trying to Invoke RPC Callback on Entity {entity.ID} Without Having Ownership of that Entity");
+                return;
+            }
 
-            if (owner == null) owner = Master; //TOOD fix random assign
+            SendTo(target, payload);
 
-            SendTo(owner, callback);
+            entity.RpcCallbackBuffer.Unregister(payload.Callback);
+        }
+
+        void ResolveCallbackRPC(NetworkEntity entity)
+        {
+            foreach (var callback in entity.RpcCallbackBuffer.Collection)
+            {
+                var command = RpcCallbackPayload.Write(entity.ID, callback.Sender.ID, callback.ID, false);
+
+                SendTo(callback.Sender, command);
+            }
         }
 
         NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
@@ -386,13 +412,7 @@ namespace Backend
         void RemoveClient(NetworkClient client)
         {
             foreach (var entity in client.Entities)
-            {
-                UnbufferMessage(entity.SpawnMessage);
-
-                entity.RPCBuffer.Clear(UnbufferMessages);
-
-                Entities.Remove(entity);
-            }
+                RemoveEntity(entity);
 
             WebSocketClients.Remove(client.WebsocketID);
             Clients.Remove(client);
@@ -401,6 +421,17 @@ namespace Backend
 
             var payload = new ClientDisconnectPayload(client.ID);
             Broadcast(payload);
+        }
+
+        void RemoveEntity(NetworkEntity entity)
+        {
+            UnbufferMessage(entity.SpawnMessage);
+
+            entity.RpcBuffer.Clear(UnbufferMessages);
+
+            ResolveCallbackRPC(entity);
+
+            Entities.Remove(entity);
         }
 
         public void Stop()

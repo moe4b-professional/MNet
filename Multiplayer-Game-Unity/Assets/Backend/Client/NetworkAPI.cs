@@ -688,11 +688,11 @@ namespace Backend
 
                         SpawnEntity(command);
                     }
-                    else if (message.Is<RpcCallback>())
+                    else if (message.Is<RpcCallbackPayload>())
                     {
-                        var callback = message.Read<RpcCallback>();
+                        var payload = message.Read<RpcCallbackPayload>();
 
-                        CallbackRPC(callback);
+                        CallbackRPC(payload);
                     }
                     else if (message.Is<ClientConnectedPayload>())
                     {
@@ -743,15 +743,15 @@ namespace Backend
                 target.InvokeRpc(command);
             }
 
-            static void CallbackRPC(RpcCallback callback)
+            static void CallbackRPC(RpcCallbackPayload payload)
             {
-                if (Entities.TryGetValue(callback.Entity, out var target) == false)
+                if (Entities.TryGetValue(payload.Entity, out var target) == false)
                 {
-                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {callback.Entity}");
+                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {payload.Entity}");
                     return;
                 }
 
-                target.InvokeRpcCallback(callback);
+                target.InvokeRpcCallback(payload);
             }
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity);

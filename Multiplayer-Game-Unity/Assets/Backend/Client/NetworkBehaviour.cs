@@ -50,7 +50,7 @@ namespace Backend
 
             this.ID = id;
 
-            RPCs = new RpcBindCollection(this);
+            ConfigureRPCs();
 
             enabled = true;
 
@@ -60,12 +60,37 @@ namespace Backend
         protected virtual void OnSpawn() { }
 
         #region RPC
-        public RpcBindCollection RPCs { get; protected set; }
+        public Dictionary<string, RpcBind> RPCs { get; protected set; }
+
+        public bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
+
+        void ConfigureRPCs()
+        {
+            RPCs = new Dictionary<string, RpcBind>();
+
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+            var type = GetType();
+
+            foreach (var method in type.GetMethods(flags))
+            {
+                var attribute = method.GetCustomAttribute<NetworkRPCAttribute>();
+
+                if (attribute == null) continue;
+
+                var bind = new RpcBind(this, attribute, method);
+
+                if (RPCs.ContainsKey(bind.ID))
+                    throw new Exception($"Rpc Named {bind.ID} Already Registered On Behaviour {GetType()}, Please Assign Every RPC a Unique Name And Don't Overload the RPC Methods");
+
+                RPCs.Add(bind.ID, bind);
+            }
+        }
 
         protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
         protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
         {
-            if (RPCs.Find(method, out var bind) == false)
+            if (FindRPC(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
                 return;
@@ -78,7 +103,7 @@ namespace Backend
 
         protected void RequestRPC(string method, NetworkClient target, params object[] arguments)
         {
-            if (RPCs.Find(method, out var bind) == false)
+            if (FindRPC(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
                 return;
@@ -89,9 +114,9 @@ namespace Backend
             RequestRPC(payload);
         }
 
-        protected void RequestRPC<TResult>(string method, NetworkClient target, Action<TResult> result, params object[] arguments)
+        protected void RequestRPC<TResult>(string method, NetworkClient target, RpcCallback<TResult> result, params object[] arguments)
         {
-            if (RPCs.Find(method, out var bind) == false)
+            if (FindRPC(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
                 return;
@@ -167,16 +192,25 @@ namespace Backend
         public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => RequestRPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
 
-        public void RequestRPC<TResult>(RpcCallbackMethod<TResult> method, NetworkClient target, Action<TResult> callback)
+        public void RequestRPC<TResult>(RpcCallbackMethod<TResult> method, NetworkClient target, RpcCallback<TResult> callback)
             => RequestRPC(method.Method.Name, target, callback);
-
-        public void RequestRPC<TResult, T1>(RpcCallbackMethod<TResult, T1> method, NetworkClient target, Action<TResult> callback, T1 arg1)
+        public void RequestRPC<TResult, T1>(RpcCallbackMethod<TResult, T1> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1)
             => RequestRPC(method.Method.Name, target, callback, arg1);
+        public void RequestRPC<TResult, T1, T2>(RpcCallbackMethod<TResult, T1, T2> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2)
+            => RequestRPC(method.Method.Name, target, callback, arg1, arg2);
+        public void RequestRPC<TResult, T1, T2, T3>(RpcCallbackMethod<TResult, T1, T2, T3> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
+            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3);
+        public void RequestRPC<TResult, T1, T2, T3, T4>(RpcCallbackMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4);
+        public void RequestRPC<TResult, T1, T2, T3, T4, T5>(RpcCallbackMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5);
+        public void RequestRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcCallbackMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RpcCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
         public void InvokeRPC(RpcCommand command)
         {
-            if (RPCs.Find(command.Method, out var bind) == false)
+            if (FindRPC(command.Method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
                 return;
@@ -189,9 +223,10 @@ namespace Backend
             }
 
             object[] arguments;
+            RpcInfo info;
             try
             {
-                arguments = bind.ParseArguments(command);
+                arguments = bind.ParseArguments(command, out info);
             }
             catch (Exception e)
             {
@@ -221,12 +256,12 @@ namespace Backend
                 return;
             }
 
-            if (command.Type == RpcType.Callback) CallbackRPC(command, result);
+            if (command.Type == RpcType.Callback) CallbackRPC(command, result, info.Sender);
         }
 
-        void CallbackRPC(RpcCommand command, object result)
+        void CallbackRPC(RpcCommand command, object result, NetworkClient target)
         {
-            var payload = RpcCallback.Write(command.Entity, command.Callback, result);
+            var payload = RpcCallbackPayload.Write(command.Entity, target.ID, command.Callback, result);
 
             NetworkAPI.Client.Send(payload);
         }

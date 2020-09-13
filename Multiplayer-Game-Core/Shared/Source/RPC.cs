@@ -236,13 +236,19 @@ namespace Backend
     }
 
     [Serializable]
-    public class RpcCallback : INetworkSerializable
+    public class RpcCallbackPayload : INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
 
+        NetworkClientID target;
+        public NetworkClientID Target => target;
+
         ushort callback;
         public ushort Callback => callback;
+
+        bool success;
+        public bool Success => success;
 
         byte[] raw;
 
@@ -256,27 +262,46 @@ namespace Backend
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref entity);
+            context.Select(ref target);
+
             context.Select(ref callback);
+            context.Select(ref success);
+
             context.Select(ref raw);
         }
 
-        public RpcCallback()
+        public RpcCallbackPayload()
         {
 
         }
 
-        public static RpcCallback Write(NetworkEntityID entity, ushort callback, object result)
+        public static RpcCallbackPayload Write(NetworkEntityID entity, NetworkClientID target, ushort callback, object result)
         {
             var raw = NetworkSerializer.Serialize(result);
 
-            var value = new RpcCallback()
+            var payload = new RpcCallbackPayload()
             {
                 entity = entity,
+                target = target,
                 callback = callback,
+                success = true,
                 raw = raw,
             };
 
-            return value;
+            return payload;
+        }
+
+        public static RpcCallbackPayload Write(NetworkEntityID entity, NetworkClientID target, ushort callback, bool success)
+        {
+            var payload = new RpcCallbackPayload()
+            {
+                entity = entity,
+                target = target,
+                callback = callback,
+                success = success,
+            };
+
+            return payload;
         }
     }
 

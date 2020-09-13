@@ -59,18 +59,15 @@ namespace Backend
             return request;
         }
 
-        public object[] ParseArguments(RpcCommand command)
+        public object[] ParseArguments(RpcCommand command, out RpcInfo info)
         {
             var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
 
-            if (HasInfoParameter)
-            {
-                NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
+            NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
-                var info = new RpcInfo(sender);
+            info = new RpcInfo(sender);
 
-                arguments[arguments.Length - 1] = info;
-            }
+            if (HasInfoParameter) arguments[arguments.Length - 1] = info;
 
             return arguments;
         }
@@ -94,16 +91,6 @@ namespace Backend
         }
     }
 
-    public struct RpcInfo
-    {
-        public NetworkClient Sender { get; private set; }
-
-        public RpcInfo(NetworkClient sender)
-        {
-            this.Sender = sender;
-        }
-    }
-
     public enum RpcAuthority
     {
         /// <summary>
@@ -122,6 +109,16 @@ namespace Backend
         Master,
     }
 
+    public struct RpcInfo
+    {
+        public NetworkClient Sender { get; private set; }
+
+        public RpcInfo(NetworkClient sender)
+        {
+            this.Sender = sender;
+        }
+    }
+
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
@@ -133,40 +130,7 @@ namespace Backend
         }
     }
 
-    public class RpcBindCollection
-    {
-        public Dictionary<string, RpcBind> Dictionary { get; protected set; }
-
-        public BindingFlags BindingFlags => BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-
-        public bool Find(string name, out RpcBind bind)
-        {
-            return Dictionary.TryGetValue(name, out bind);
-        }
-
-        public RpcBindCollection(NetworkBehaviour behaviour)
-        {
-            Dictionary = new Dictionary<string, RpcBind>();
-
-            var type = behaviour.GetType();
-
-            foreach (var method in type.GetMethods(BindingFlags))
-            {
-                var attribute = method.GetCustomAttribute<NetworkRPCAttribute>();
-
-                if (attribute == null) continue;
-
-                var bind = new RpcBind(behaviour, attribute, method);
-
-                if (Dictionary.ContainsKey(bind.ID))
-                    throw new Exception($"Rpc Named {bind.ID} Already Registered On Behaviour {behaviour.GetType()}, Please Assign Every RPC a Unique Name And Don't Overload the RPC Methods");
-
-                Dictionary.Add(bind.ID, bind);
-            }
-        }
-    }
-
-    public class RpcCallbackBind
+    public class RpcCallback
     {
         public ushort ID { get; protected set; }
 
@@ -175,17 +139,38 @@ namespace Backend
         public MethodInfo Method { get; protected set; }
         public ParameterInfo[] Parameters { get; protected set; }
 
-        public Type Type => Parameters[0].ParameterType;
+        public Type Type => Parameters[1].ParameterType;
+
+        public object[] ParseArguments(RpcCallbackPayload payload)
+        {
+            var arguments = new object[2];
+
+            arguments[0] = payload.Success;
+
+            if (payload.Success)
+                arguments[1] = payload.Read(Type);
+            else
+                arguments[1] = GetDefault(Type);
+
+            return arguments;
+        }
 
         public void Invoke(params object[] arguments) => Method.Invoke(Target, arguments);
 
-        public RpcCallbackBind(ushort id, MethodInfo method, object target)
+        public RpcCallback(ushort id, MethodInfo method, object target)
         {
             this.ID = id;
             this.Target = target;
             this.Method = method;
 
             Parameters = method.GetParameters();
+        }
+
+        public static object GetDefault(Type type)
+        {
+            if (type.IsValueType) return Activator.CreateInstance(type);
+
+            return null;
         }
     }
 
@@ -204,4 +189,6 @@ namespace Backend
     public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
     public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
     public delegate TResult RpcCallbackMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+
+    public delegate void RpcCallback<T>(bool success, T result);
 }

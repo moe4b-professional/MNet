@@ -99,20 +99,20 @@ namespace Backend
             target.InvokeRPC(command);
         }
 
-        public IDCollection<RpcCallbackBind> RpcCallbacks { get; protected set; }
+        public IDCollection<RpcCallback> RpcCallbacks { get; protected set; }
 
-        public RpcCallbackBind RegisterRpcCallback(MethodInfo method, object target)
+        public RpcCallback RegisterRpcCallback(MethodInfo method, object target)
         {
             var code = RpcCallbacks.Reserve();
 
-            var callback = new RpcCallbackBind(code, method, target);
+            var callback = new RpcCallback(code, method, target);
 
             RpcCallbacks.Assign(callback, code);
 
             return callback;
         }
 
-        public void InvokeRpcCallback(RpcCallback payload)
+        public void InvokeRpcCallback(RpcCallbackPayload payload)
         {
             if (payload == null) throw new ArgumentNullException(nameof(payload), "RPC Callback Payload is Null");
 
@@ -122,10 +122,10 @@ namespace Backend
                 return;
             }
 
-            object argument;
+            object[] arguments;
             try
             {
-                argument = payload.Read(callback.Type);
+                arguments = callback.ParseArguments(payload);
             }
             catch (Exception e)
             {
@@ -139,7 +139,7 @@ namespace Backend
 
             try
             {
-                callback.Invoke(argument);
+                callback.Invoke(arguments);
             }
             catch(TargetInvocationException)
             {
@@ -148,7 +148,7 @@ namespace Backend
             catch (ArgumentException)
             {
                 var text = $"Error Trying to Invoke RPC Callback '{ callback.Method.Name}' on '{ callback.Target}', " +
-                    $"Please Ensure Callback Method is Implemented Correctly to Consume Recieved Argument: {argument.GetType()}";
+                    $"Please Ensure Callback Method is Implemented Correctly to Consume Recieved Argument: {arguments.GetType()}";
 
                 Debug.LogError(text, this);
             }
@@ -169,7 +169,7 @@ namespace Backend
 
         public NetworkEntity()
         {
-            RpcCallbacks = new IDCollection<RpcCallbackBind>();
+            RpcCallbacks = new IDCollection<RpcCallback>();
         }
     }
 }

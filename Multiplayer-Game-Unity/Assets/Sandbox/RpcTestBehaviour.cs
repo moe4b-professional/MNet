@@ -27,7 +27,7 @@ namespace Game
         {
             base.OnSpawn();
 
-            RequestRPC<string>("Rpc", Owner, Callback, "Hello World");
+            RequestRPC(Rpc, NetworkAPI.Room.Master, Callback, "Hello World");
 
             return;
 
@@ -43,12 +43,19 @@ namespace Game
         [NetworkRPC]
         string Rpc(string text, RpcInfo info)
         {
-            return text;
+            return Application.platform.ToString();
         }
 
-        void Callback(string value)
+        void Callback(bool success, string value)
         {
-            Debug.Log("Rpc Callback: " + value);
+            if(success)
+            {
+                Debug.Log("Rpc Callback: " + value);
+            }
+            else
+            {
+                Debug.LogError("RPC Callback Failed");
+            }
         }
 
         [NetworkRPC]
