@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Backend
 {
-    public enum RpcType
+    public enum RpcType : byte
     {
         Broadcast, Target, Callback
     }

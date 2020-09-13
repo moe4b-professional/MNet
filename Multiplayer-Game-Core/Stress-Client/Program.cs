@@ -75,7 +75,7 @@ namespace StressClient
                 attributes.Set(4, 0);
                 attributes.Set(5, 0);
 
-                var request = new SpawnEntityRequest("Player", attributes);
+                var request = SpawnEntityRequest.Write("Player", attributes);
 
                 var message = NetworkMessage.Write(request);
 

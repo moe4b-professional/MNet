@@ -27,11 +27,7 @@ namespace Game
         {
             base.OnSpawn();
 
-            RequestRPC(Rpc, Owner, Callback, "Hello");
-            RequestRPC(Rpc, Owner, Callback, "World");
-            RequestRPC(Rpc, Owner, Callback, "Welcome");
-            RequestRPC(Rpc, Owner, Callback, "To");
-            RequestRPC(Rpc, Owner, Callback, "RPC");
+            RequestRPC<string>("Rpc", Owner, Callback, "Hello World");
 
             return;
 

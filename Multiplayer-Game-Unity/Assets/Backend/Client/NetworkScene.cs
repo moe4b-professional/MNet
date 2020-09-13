@@ -84,7 +84,7 @@ namespace Backend
             {
                 if (list[i].IsReady) continue;
 
-                NetworkAPI.Client.RequestSpawnSceneObject(Scene, i);
+                NetworkAPI.Client.RequestSpawnEntity(Scene, i);
             }
         }
 

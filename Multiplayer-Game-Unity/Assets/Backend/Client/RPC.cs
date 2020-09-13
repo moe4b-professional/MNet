@@ -59,11 +59,11 @@ namespace Backend
             return request;
         }
 
-        public object Invoke(RpcCommand command)
+        public object[] ParseArguments(RpcCommand command)
         {
             var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
 
-            if(HasInfoParameter)
+            if (HasInfoParameter)
             {
                 NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
@@ -72,8 +72,9 @@ namespace Backend
                 arguments[arguments.Length - 1] = info;
             }
 
-            return Invoke(arguments);
+            return arguments;
         }
+
         public object Invoke(params object[] arguments)
         {
             return MethodInfo.Invoke(Behaviour, arguments);

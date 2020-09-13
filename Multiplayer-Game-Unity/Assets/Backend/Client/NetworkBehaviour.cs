@@ -29,7 +29,6 @@ namespace Backend
         public NetworkEntity Entity { get; protected set; }
         public bool IsMine => Entity == null ? false : Entity.IsMine;
         public bool IsReady => Entity == null ? false : Entity.IsReady;
-        public bool IsSceneObject => Entity == null ? false : Entity.IsSceneObject;
 
         public NetworkClient Owner => Entity?.Owner;
 
@@ -177,7 +176,7 @@ namespace Backend
 
         public void InvokeRPC(RpcCommand command)
         {
-            if(RPCs.Find(command.Method, out var bind) == false)
+            if (RPCs.Find(command.Method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
                 return;
@@ -189,7 +188,38 @@ namespace Backend
                 return;
             }
 
-            var result = bind.Invoke(command);
+            object[] arguments;
+            try
+            {
+                arguments = bind.ParseArguments(command);
+            }
+            catch (Exception e)
+            {
+                var text = $"Error trying to Parse RPC Arguments of Method '{command.Method}' on {this}, Invalid Data Sent Most Likely \n" +
+                    $"Exception: \n" +
+                    $"{e.ToString()}";
+
+                Debug.LogError(text, this);
+                return;
+            }
+
+            object result;
+            try
+            {
+                result = bind.Invoke(arguments);
+            }
+            catch (TargetInvocationException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                var text = $"Error Trying to Invoke RPC Method '{command.Method}' on '{this}', " +
+                    $"Please Ensure Method is Implemented And Invoked Correctly";
+
+                Debug.LogError(text, this);
+                return;
+            }
 
             if (command.Type == RpcType.Callback) CallbackRPC(command, result);
         }

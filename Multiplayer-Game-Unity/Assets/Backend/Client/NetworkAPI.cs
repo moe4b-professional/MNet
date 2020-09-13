@@ -505,33 +505,31 @@ namespace Backend
             public static void RequestSpawnEntity(string resource) => RequestSpawnEntity(resource, null);
             public static void RequestSpawnEntity(string resource, AttributesCollection attributes)
             {
-                var request = new SpawnEntityRequest(resource, attributes);
+                var request = SpawnEntityRequest.Write(resource, attributes);
 
                 Send(request);
             }
 
-            public delegate void SpawnEntityDelegate(NetworkEntity entity, string resource, AttributesCollection attributes);
-            public static event SpawnEntityDelegate OnSpawnEntity;
-            static void SpawnEntityCallback(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes)
+            public static void RequestSpawnEntity(NetworkEntity entity, int index) => RequestSpawnEntity(entity.Scene, index);
+            public static void RequestSpawnEntity(Scene scene, int index) => RequestSpawnEntity(scene.buildIndex, index);
+            public static void RequestSpawnEntity(int scene, int index)
             {
-                if (owner?.ID == Client.ID) OnSpawnEntity?.Invoke(entity, resource, attributes);
-            }
-            #endregion
-
-            #region Spawn Scene Object
-            public static void RequestSpawnSceneObject(NetworkEntity entity, int index) => RequestSpawnSceneObject(entity.Scene, index);
-            public static void RequestSpawnSceneObject(Scene scene, int index) => RequestSpawnSceneObject(scene.buildIndex, index);
-            public static void RequestSpawnSceneObject(int scene, int index)
-            {
-                if(IsMaster == false)
+                if (IsMaster == false)
                 {
                     Debug.LogError("Only the Master Client May Spawn Scene Objects, Ignoring Request");
                     return;
                 }
 
-                var request = new SpawnSceneObjectRequest(scene, index);
+                var request = SpawnEntityRequest.Write(scene, index);
 
                 Send(request);
+            }
+
+            public delegate void SpawnEntityDelegate(NetworkEntity entity);
+            public static event SpawnEntityDelegate OnSpawnEntity;
+            static void SpawnEntityCallback(NetworkEntity entity)
+            {
+                if (entity?.Owner.ID == Client.ID) OnSpawnEntity?.Invoke(entity);
             }
             #endregion
 
@@ -572,11 +570,16 @@ namespace Backend
                 Master = target;
                 Debug.Log($"Assigned {Master} as Master Client");
 
+                for (int i = 0; i < SceneObjects.Count; i++)
+                    SceneObjects[i].SetOwner(Master);
+
                 return true;
             }
 
             public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
             public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
+
+            public static List<NetworkEntity> SceneObjects { get; private set; }
 
             public static void Configure()
             {
@@ -604,6 +607,8 @@ namespace Backend
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
 
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
+
+                SceneObjects = new List<NetworkEntity>();
             }
 
             public delegate void ReadyDelegate(ReadyClientResponse response);
@@ -683,17 +688,11 @@ namespace Backend
 
                         SpawnEntity(command);
                     }
-                    else if(message.Is<RpcCallback>())
+                    else if (message.Is<RpcCallback>())
                     {
                         var callback = message.Read<RpcCallback>();
 
                         CallbackRPC(callback);
-                    }
-                    else if(message.Is<SpawnSceneObjectCommand>())
-                    {
-                        var command = message.Read<SpawnSceneObjectCommand>();
-
-                        SpawnSceneObject(command);
                     }
                     else if (message.Is<ClientConnectedPayload>())
                     {
@@ -707,10 +706,10 @@ namespace Backend
 
                         ClientDisconnected(payload);
                     }
-                    else if(message.Is<ChangeMasterCommand>())
+                    else if (message.Is<ChangeMasterCommand>())
                     {
                         var command = message.Read<ChangeMasterCommand>();
-                        
+
                         ChangeMaster(command);
                     }
                 }
@@ -755,62 +754,55 @@ namespace Backend
                 target.InvokeRpcCallback(callback);
             }
 
-            public delegate void SpawnEntityDelegate(NetworkEntity entity, NetworkClient owner, string resource, AttributesCollection attributes);
+            public delegate void SpawnEntityDelegate(NetworkEntity entity);
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
-                var prefab = Resources.Load<GameObject>(command.Resource);
-                if (prefab == null)
-                {
-                    Debug.LogError($"No Resource {command.Resource} Found to Spawn");
-                    return;
-                }
-
-                var instance = Object.Instantiate(prefab);
-
-                var entity = instance.GetComponent<NetworkEntity>();
-                if (entity == null)
-                {
-                    Debug.LogError($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
-                    Object.Destroy(instance);
-                    return;
-                }
-
+                var entity = CreateEntity(command);
+                
                 Debug.Log($"Spawned {command.Resource} with ID: {command.ID}, Owned By Client {command.Owner}");
 
                 if (Clients.TryGetValue(command.Owner, out var owner))
                     owner.Entities.Add(entity);
                 else
-                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Client Owner");
+                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
 
-                entity.Configure(owner, command.ID, command.Attributes, false);
+                entity.Configure(owner, command.ID, command.Attributes, command.Type);
                 Entities.Add(entity.ID, entity);
 
-                OnSpawnEntity?.Invoke(entity, owner, command.Resource, entity.Attributes);
+                if (command.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
+
+                OnSpawnEntity?.Invoke(entity);
             }
 
-            public delegate void SpawnSceneObjectDelegate(NetworkEntity entity, int scene, int index);
-            public static event SpawnSceneObjectDelegate OnSpawnSceneObject;
-            static void SpawnSceneObject(SpawnSceneObjectCommand command)
+            static NetworkEntity CreateEntity(SpawnEntityCommand command)
             {
-                var scene = NetworkScene.Get(command.Scene);
-
-                if(scene == null)
+                if (command.Type == NetworkEntityType.Dynamic)
                 {
-                    Debug.LogError($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Index}");
-                    return;
+                    var prefab = Resources.Load<GameObject>(command.Resource);
+                    if (prefab == null) throw new Exception($"No Resource {command.Resource} Found to Spawn");
+
+                    var instance = Object.Instantiate(prefab);
+
+                    var entity = instance.GetComponent<NetworkEntity>();
+                    if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
+
+                    return entity;
                 }
 
-                if (scene.Find(command.Index, out var entity) == false)
+                if (command.Type == NetworkEntityType.SceneObject)
                 {
-                    Debug.LogError($"Couldn't Find NetworkBehaviour {command.Index} In Scene {command.Scene}");
-                    return;
+                    var scene = NetworkScene.Get(command.Scene);
+
+                    if (scene == null) throw new Exception($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Index}");
+
+                    if (scene.Find(command.Index, out var entity) == false)
+                        throw new Exception($"Couldn't Find NetworkBehaviour {command.Index} In Scene {command.Scene}");
+
+                    return entity;
                 }
 
-                entity.Configure(null, command.ID, null, true);
-                Entities.Add(entity.ID, entity);
-
-                OnSpawnSceneObject?.Invoke(entity, command.Scene, command.Index);
+                throw new NotImplementedException();
             }
 
             public delegate void ChangeMasterDelegate(NetworkClient client);
@@ -850,6 +842,7 @@ namespace Backend
 
                 Entities.Clear();
                 Clients.Clear();
+                SceneObjects.Clear();
             }
 
             public static void Leave() => Client.Disconnect();

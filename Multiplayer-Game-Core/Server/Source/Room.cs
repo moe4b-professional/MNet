@@ -120,6 +120,9 @@ namespace Backend
         void SetMaster(NetworkClient target)
         {
             Master = target;
+
+            for (int i = 0; i < SceneObjects.Count; i++)
+                SceneObjects[i].SetOwner(Master);
         }
         
         void ChangeMaster(NetworkClient target)
@@ -229,12 +232,6 @@ namespace Backend
                     var request = message.Read<SpawnEntityRequest>();
 
                     SpawnEntity(client, request);
-                }
-                else if (message.Is<SpawnSceneObjectRequest>())
-                {
-                    var request = message.Read<SpawnSceneObjectRequest>();
-
-                    SpawnSceneObject(client, request);
                 }
                 else if(message.Is<RpcCallback>())
                 {
@@ -350,45 +347,25 @@ namespace Backend
             SendTo(owner, callback);
         }
 
-        void SpawnEntity(NetworkClient owner, SpawnEntityRequest request) => SpawnEntity(owner, request.Resource, request.Attributes);
-        void SpawnEntity(NetworkClient owner, string resource, AttributesCollection attributes)
+        NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
-            var code = Entities.Reserve();
-            var id = new NetworkEntityID(code);
-
-            var entity = new NetworkEntity(owner, id);
-
-            owner.Entities.Add(entity);
-            Entities.Assign(entity, code);
-
-            var command = new SpawnEntityCommand(owner.ID, entity.ID, resource, attributes);
-            var message = Broadcast(command);
-
-            entity.SpawnMessage = message;
-            BufferMessage(message);
-        }
-
-        NetworkEntity SpawnSceneObject(NetworkClient client, SpawnSceneObjectRequest request)
-        {
-            if(client != Master)
+            if(request.Type == NetworkEntityType.SceneObject && sender != Master)
             {
-                Log.Warning($"Non Master Client {client.ID} Trying to Spawn Scene Object");
+                Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Scene Object");
                 return null;
             }
 
-            return SpawnSceneObject(request.Scene, request.Index);
-        }
-        NetworkEntity SpawnSceneObject(int scene, int index)
-        {
             var code = Entities.Reserve();
             var id = new NetworkEntityID(code);
 
-            var entity = new NetworkEntity(null, id);
+            var entity = new NetworkEntity(sender, id, request.Type);
 
-            SceneObjects.Add(entity);
+            sender.Entities.Add(entity);
             Entities.Assign(entity, code);
 
-            var command = new SpawnSceneObjectCommand(scene, index, id);
+            if (request.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
+
+            var command = SpawnEntityCommand.Write(sender.ID, entity.ID, request);
 
             var message = Broadcast(command);
 

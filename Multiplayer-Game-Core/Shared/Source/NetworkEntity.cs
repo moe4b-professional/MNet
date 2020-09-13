@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace Backend
 {
+    public enum NetworkEntityType : byte
+    {
+        Dynamic, SceneObject
+    }
+
     [Serializable]
     public struct NetworkEntityID : INetworkSerializable
     {

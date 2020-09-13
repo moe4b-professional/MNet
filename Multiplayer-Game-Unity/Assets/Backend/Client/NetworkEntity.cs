@@ -29,8 +29,11 @@ namespace Backend
 
         public NetworkEntityID ID { get; protected set; }
 
-        NetworkClient _owner;
-        public NetworkClient Owner => IsSceneObject ? NetworkAPI.Room.Master : _owner;
+        public NetworkClient Owner { get; protected set; }
+        public void SetOwner(NetworkClient client)
+        {
+            Owner = client;
+        }
 
         public bool IsMine => Owner?.ID == NetworkAPI.Client.ID;
 
@@ -40,7 +43,7 @@ namespace Backend
 
         public bool IsReady { get; protected set; } = false;
 
-        public bool IsSceneObject { get; protected set; }
+        public NetworkEntityType Type { get; protected set; }
 
         public Scene Scene => gameObject.scene;
 
@@ -49,15 +52,14 @@ namespace Backend
             NetworkScene.Register(this);
         }
 
-        public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, bool sceneObject)
+        public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type)
         {
             IsReady = true;
 
-            IsSceneObject = sceneObject;
-
-            this._owner = owner;
+            SetOwner(owner);
             this.ID = id;
             this.Attributes = attributes;
+            this.Type = type;
 
             RegisterBehaviours();
 
@@ -112,15 +114,44 @@ namespace Backend
 
         public void InvokeRpcCallback(RpcCallback payload)
         {
-            if(RpcCallbacks.TryGetValue(payload.Callback, out var callback) == false)
+            if (payload == null) throw new ArgumentNullException(nameof(payload), "RPC Callback Payload is Null");
+
+            if (RpcCallbacks.TryGetValue(payload.Callback, out var callback) == false)
             {
-                Debug.LogError($"Couldn't Find RPC Callback with Code {payload.Callback}");
+                Debug.LogError($"Couldn't Find RPC Callback with Code {payload.Callback} to Invoke On Entity {name}");
                 return;
             }
 
-            var argument = payload.Read(callback.Type);
+            object argument;
+            try
+            {
+                argument = payload.Read(callback.Type);
+            }
+            catch (Exception e)
+            {
+                var text = $"Error trying to read RPC Callback Argument of {name}'s {payload.Callback} callback as {callback.Type}, Invalid Data Sent Most Likely \n" +
+                    $"Exception: \n" +
+                    $"{e.ToString()}";
 
-            callback.Invoke(argument);
+                Debug.LogError(text, this);
+                return;
+            }
+
+            try
+            {
+                callback.Invoke(argument);
+            }
+            catch(TargetInvocationException)
+            {
+                throw;
+            }
+            catch (ArgumentException)
+            {
+                var text = $"Error Trying to Invoke RPC Callback '{ callback.Method.Name}' on '{ callback.Target}', " +
+                    $"Please Ensure Callback Method is Implemented Correctly to Consume Recieved Argument: {argument.GetType()}";
+
+                Debug.LogError(text, this);
+            }
 
             RpcCallbacks.Remove(callback);
         }

@@ -130,9 +130,6 @@ namespace Backend
 
             Register<ChangeMasterCommand>(32);
 
-            Register<SpawnSceneObjectRequest>(33);
-            Register<SpawnSceneObjectCommand>(34);
-
             Register<RpcCallback>(35);
         }
 
@@ -263,24 +260,64 @@ namespace Backend
     [Serializable]
     public sealed class SpawnEntityRequest : INetworkSerializable
     {
+        NetworkEntityType type;
+        public NetworkEntityType Type => type;
+
         string resource;
         public string Resource { get { return resource; } }
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
+        int scene;
+        public int Scene => scene;
+
+        int index;
+        public int Index => index;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
-            context.Select(ref resource);
-            context.Select(ref attributes);
+            context.Select(ref type);
+
+            switch (type)
+            {
+                case NetworkEntityType.Dynamic:
+                    context.Select(ref resource);
+                    context.Select(ref attributes);
+                    break;
+
+                case NetworkEntityType.SceneObject:
+                    context.Select(ref scene);
+                    context.Select(ref index);
+                    break;
+            }
         }
 
         public SpawnEntityRequest() { }
-        public SpawnEntityRequest(string resource) : this(resource, new AttributesCollection()) { }
-        public SpawnEntityRequest(string resource, AttributesCollection attributes)
+
+        public static SpawnEntityRequest Write(string resource) => Write(resource, null);
+        public static SpawnEntityRequest Write(string resource, AttributesCollection attributes)
         {
-            this.resource = resource;
-            this.attributes = attributes;
+            var request = new SpawnEntityRequest()
+            {
+                type = NetworkEntityType.Dynamic,
+                resource = resource,
+                attributes = attributes,
+            };
+
+            return request;
+        }
+
+        public static SpawnEntityRequest Write(int scene, int index)
+        {
+            var request = new SpawnEntityRequest()
+            {
+                type = NetworkEntityType.SceneObject,
+                scene = scene,
+                index = index,
+            };
+
+            return request;
         }
     }
 
@@ -293,78 +330,58 @@ namespace Backend
         NetworkEntityID id;
         public NetworkEntityID ID { get { return id; } }
 
+        NetworkEntityType type;
+        public NetworkEntityType Type => type;
+
         string resource;
         public string Resource { get { return resource; } }
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
+        int scene;
+        public int Scene => scene;
+
+        int index;
+        public int Index => index;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref owner);
             context.Select(ref id);
-            context.Select(ref resource);
-            context.Select(ref attributes);
+
+            context.Select(ref type);
+
+            switch (type)
+            {
+                case NetworkEntityType.Dynamic:
+                    context.Select(ref resource);
+                    context.Select(ref attributes);
+                    break;
+
+                case NetworkEntityType.SceneObject:
+                    context.Select(ref scene);
+                    context.Select(ref index);
+                    break;
+            }
         }
 
         public SpawnEntityCommand() { }
-        public SpawnEntityCommand(NetworkClientID owner, NetworkEntityID id, string resource, AttributesCollection attributes)
+
+        public static SpawnEntityCommand Write(NetworkClientID owner, NetworkEntityID id, SpawnEntityRequest request)
         {
-            this.owner = owner;
-            this.id = id;
-            this.resource = resource;
-            this.attributes = attributes;
-        }
-    }
-    #endregion
+            var command = new SpawnEntityCommand()
+            {
+                owner = owner,
+                id = id,
+                type = request.Type,
+                resource = request.Resource,
+                attributes = request.Attributes,
+                scene = request.Scene,
+                index = request.Index,
+            };
 
-    #region Spawn Scene Object
-    public sealed class SpawnSceneObjectRequest : INetworkSerializable
-    {
-        int scene;
-        public int Scene => scene;
-
-        int index;
-        public int Index => index;
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref scene);
-            context.Select(ref index);
-        }
-
-        public SpawnSceneObjectRequest() { }
-        public SpawnSceneObjectRequest(int scene, int index)
-        {
-            this.scene = scene;
-            this.index = index;
-        }
-    }
-
-    public sealed class SpawnSceneObjectCommand : INetworkSerializable
-    {
-        int scene;
-        public int Scene => scene;
-
-        int index;
-        public int Index => index;
-
-        NetworkEntityID id;
-        public NetworkEntityID ID => id;
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref scene);
-            context.Select(ref index);
-            context.Select(ref id);
-        }
-
-        public SpawnSceneObjectCommand() { }
-        public SpawnSceneObjectCommand(int scene, int index, NetworkEntityID id)
-        {
-            this.scene = scene;
-            this.index = index;
-            this.id = id;
+            return command;
         }
     }
     #endregion
