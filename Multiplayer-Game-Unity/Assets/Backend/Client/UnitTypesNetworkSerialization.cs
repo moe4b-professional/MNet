@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace Backend
 {
-	public class CustomNetworkSerialization
+	public class UnitTypesNetworkSerialization
 	{
         public static class IDs
         {
