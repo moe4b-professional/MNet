@@ -62,15 +62,13 @@ namespace Game
                 NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V))
-            {
-                NetworkAPI.RestAPI.Lobby.Info();
-            }
+            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.RestAPI.Lobby.Info();
 
-            if (Input.GetKeyDown(KeyCode.L))
-            {
-                NetworkAPI.Client.Disconnect();
-            }
+            if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
+
+            if (Input.GetKeyDown(KeyCode.E)) SpawnPlayer();
+
+            if (Input.GetKeyDown(KeyCode.Q)) DestroyEntity();
         }
 
         void LobbyInfoCallback(LobbyInfo lobby, RestError error)
@@ -117,9 +115,20 @@ namespace Game
             NetworkAPI.Client.RequestSpawnEntity("Player", attributes);
         }
 
-        void DestoryEntity()
+        void DestroyEntity()
         {
-
+            if (NetworkAPI.Client.Entities.Count > 0)
+            {
+                DestoryEntity(NetworkAPI.Client.Entities.Last());
+            }
+            else
+            {
+                Debug.LogWarning("No More Entities to Destroy");
+            }
+        }
+        void DestoryEntity(NetworkEntity entity)
+        {
+            NetworkAPI.Client.RequestDestoryEntity(entity);
         }
     }
 }

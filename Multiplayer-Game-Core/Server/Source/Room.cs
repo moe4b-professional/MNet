@@ -427,19 +427,6 @@ namespace Backend
 
             DestroyEntity(entity);
         }
-        void DestroyEntity(NetworkEntity entity)
-        {
-            UnbufferMessage(entity.SpawnMessage);
-
-            entity.RpcBuffer.Clear(UnbufferMessages);
-            ResolveRprCache(entity);
-
-            Entities.Remove(entity);
-
-            var command = new DestroyEntityCommand(entity.ID);
-
-            Broadcast(command);
-        }
         #endregion
 
         void ClientDisconnected(string websocketID)
@@ -449,10 +436,27 @@ namespace Backend
             if (WebSocketClients.TryGetValue(websocketID, out var client)) RemoveClient(client);
         }
 
+        void DestroyEntity(NetworkEntity entity)
+        {
+            var owner = entity.Owner;
+
+            UnbufferMessage(entity.SpawnMessage);
+
+            entity.RpcBuffer.Clear(UnbufferMessages);
+            ResolveRprCache(entity);
+
+            Entities.Remove(entity);
+            owner.Entities.Remove(entity);
+
+            var command = new DestroyEntityCommand(entity.ID);
+
+            Broadcast(command);
+        }
+
         void RemoveClient(NetworkClient client)
         {
-            foreach (var entity in client.Entities)
-                DestroyEntity(entity);
+            for (int i = client.Entities.Count; i-- > 0;)
+                DestroyEntity(client.Entities[i]);
 
             WebSocketClients.Remove(client.WebsocketID);
             Clients.Remove(client);

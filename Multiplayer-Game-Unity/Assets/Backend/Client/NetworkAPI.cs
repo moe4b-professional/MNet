@@ -395,6 +395,8 @@ namespace Backend
 
             public static bool IsConnected => WebSocketAPI.IsConnected;
 
+            public static bool IsReady { get; private set; }
+
             public static bool IsMaster
             {
                 get
@@ -405,7 +407,7 @@ namespace Backend
                 }
             }
 
-            public static bool IsReady { get; private set; }
+            public static IReadOnlyList<NetworkEntity> Entities => Instance?.Entities;
 
             public static void Configure()
             {
@@ -414,6 +416,7 @@ namespace Backend
                 WebSocketAPI.OnDisconnect += DisconnectedCallback;
 
                 Room.OnSpawnEntity += SpawnEntityCallback;
+                Room.OnDestoryEntity += DestoryEntityCallback;
 
                 IsReady = false;
             }
@@ -529,7 +532,9 @@ namespace Backend
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntityCallback(NetworkEntity entity)
             {
-                if (entity?.Owner.ID == Client.ID) OnSpawnEntity?.Invoke(entity);
+                if (entity?.Owner != Instance) return;
+
+                OnSpawnEntity?.Invoke(entity);
             }
             #endregion
 
@@ -540,6 +545,15 @@ namespace Backend
                 var request = new DestroyEntityRequest(id);
 
                 Send(request);
+            }
+
+            public delegate void DestoryEntityDelegate(NetworkEntity entity);
+            public static event DestoryEntityDelegate OnDestoryEntity;
+            static void DestoryEntityCallback(NetworkEntity entity)
+            {
+                if (entity?.Owner != Instance) return;
+
+                OnDestoryEntity?.Invoke(entity);
             }
             #endregion
 
@@ -558,9 +572,9 @@ namespace Backend
 
             static void Clear()
             {
-                IsReady = false;
-
                 Instance = null;
+
+                IsReady = false;
             }
         }
 
@@ -814,6 +828,8 @@ namespace Backend
                 throw new NotImplementedException();
             }
 
+            public delegate void DestoryEntityDelegate(NetworkEntity entity);
+            public static event DestoryEntityDelegate OnDestoryEntity;
             static void DestoryEntity(DestroyEntityCommand command)
             {
                 if(Entities.TryGetValue(command.ID, out var entity) == false)
@@ -822,9 +838,14 @@ namespace Backend
                     return;
                 }
 
+                var owner = entity.Owner;
+
                 Entities.Remove(entity.ID);
+                owner?.Entities.Remove(entity);
 
                 Object.Destroy(entity.gameObject);
+
+                OnDestoryEntity?.Invoke(entity);
             }
 
             public delegate void ChangeMasterDelegate(NetworkClient client);
