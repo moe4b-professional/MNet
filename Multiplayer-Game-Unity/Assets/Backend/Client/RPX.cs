@@ -92,7 +92,7 @@ namespace Backend
         }
     }
 
-    public enum RpcAuthority
+    public enum RpcAuthority : byte
     {
         /// <summary>
         /// As the name implies, any client will be able to invoke this RPC

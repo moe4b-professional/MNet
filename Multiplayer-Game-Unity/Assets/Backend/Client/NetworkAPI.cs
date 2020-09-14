@@ -38,7 +38,7 @@ namespace Backend
             var loop = PlayerLoop.GetCurrentPlayerLoop();
 
             for (int i = 0; i < loop.subSystemList.Length; ++i)
-                if (loop.subSystemList[i].type == typeof(EarlyUpdate))
+                if (loop.subSystemList[i].type == typeof(Update))
                     loop.subSystemList[i].updateDelegate += Update;
 
             PlayerLoop.SetPlayerLoop(loop);

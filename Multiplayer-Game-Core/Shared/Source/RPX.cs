@@ -15,7 +15,7 @@ namespace Backend
     }
 
     [Serializable]
-    public enum RpcBufferMode
+    public enum RpcBufferMode : byte
     {
         None, Last, All
     }

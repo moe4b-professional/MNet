@@ -48,7 +48,6 @@ namespace Game
         void ClientReadyCallback(ReadyClientResponse response)
         {
             SpawnPlayer();
-            SpawnPlayer();
         }
 
         void Update()

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections;
 using System.Reflection;
+using System.ComponentModel;
 
 namespace Backend
 {
@@ -14,7 +15,7 @@ namespace Backend
     {
         public abstract bool CanResolve(Type type);
 
-        public abstract void Serialize(NetworkWriter writer, object type);
+        public abstract void Serialize(NetworkWriter writer, object instance);
 
         public abstract object Deserialize(NetworkReader reader, Type type);
 
@@ -527,18 +528,24 @@ namespace Backend
     {
         public override bool CanResolve(Type type) => type.IsEnum;
 
-        public override void Serialize(NetworkWriter writer, object type)
+        public override void Serialize(NetworkWriter writer, object instance)
         {
-            short backing = Convert.ToInt16(type);
+            var type = instance.GetType();
 
-            writer.Write(backing);
+            var backing = Enum.GetUnderlyingType(type);
+
+            var value = Convert.ChangeType(instance, backing);
+
+            writer.Write(value);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            reader.Read(out short backing);
+            var backing = Enum.GetUnderlyingType(type);
 
-            var result = Enum.ToObject(type, backing);
+            var value = reader.Read(backing);
+
+            var result = Enum.ToObject(type, value);
 
             return result;
         }
