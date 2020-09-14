@@ -533,6 +533,16 @@ namespace Backend
             }
             #endregion
 
+            #region Destory Entity
+            public static void RequestDestoryEntity(NetworkEntity entity) => RequestDestoryEntity(entity.ID);
+            public static void RequestDestoryEntity(NetworkEntityID id)
+            {
+                var request = new DestroyEntityRequest(id);
+
+                Send(request);
+            }
+            #endregion
+
             public static void Disconnect() => WebSocketAPI.Disconnect();
 
             public delegate void DisconnectDelegate(CloseStatusCode code, string reason);
@@ -658,13 +668,6 @@ namespace Backend
             public static event RemoveClientDelegate OnRemoveClient;
             static void RemoveClient(NetworkClient client)
             {
-                foreach (var entity in client.Entities)
-                {
-                    Entities.Remove(entity.ID);
-
-                    Object.Destroy(entity.gameObject);
-                }
-
                 Clients.Remove(client.ID);
 
                 OnRemoveClient?.Invoke(client);
@@ -687,6 +690,12 @@ namespace Backend
                         var command = message.Read<SpawnEntityCommand>();
 
                         SpawnEntity(command);
+                    }
+                    else if(message.Is<DestroyEntityCommand>())
+                    {
+                        var command = message.Read<DestroyEntityCommand>();
+
+                        DestoryEntity(command);
                     }
                     else if (message.Is<RprCommand>())
                     {
@@ -803,6 +812,19 @@ namespace Backend
                 }
 
                 throw new NotImplementedException();
+            }
+
+            static void DestoryEntity(DestroyEntityCommand command)
+            {
+                if(Entities.TryGetValue(command.ID, out var entity) == false)
+                {
+                    Debug.LogError($"Couldn't Destroy Entity {command.ID} Because It's Not Registered in Room");
+                    return;
+                }
+
+                Entities.Remove(entity.ID);
+
+                Object.Destroy(entity.gameObject);
             }
 
             public delegate void ChangeMasterDelegate(NetworkClient client);

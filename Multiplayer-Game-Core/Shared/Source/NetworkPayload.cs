@@ -391,16 +391,16 @@ namespace Backend
     [Serializable]
     public sealed class DestroyEntityRequest : INetworkSerializable
     {
-        NetworkBehaviourID id;
-        public NetworkBehaviourID ID => id;
+        NetworkEntityID id;
+        public NetworkEntityID ID => id;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-
+            context.Select(ref id);
         }
 
         public DestroyEntityRequest() { }
-        public DestroyEntityRequest(NetworkBehaviourID id)
+        public DestroyEntityRequest(NetworkEntityID id)
         {
             this.id = id;
         }

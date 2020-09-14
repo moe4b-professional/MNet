@@ -22,10 +22,10 @@ using System.Diagnostics;
 
 namespace Backend
 {
-    public static class Server
+    public static class Editor
     {
-        [MenuItem("Utility/Start Server")]
-        public static void Start()
+        [MenuItem("Utility/Launch Server")]
+        public static void LaunchServer()
         {
             var folder = "Multiplayer-Game-Core";
             var name = "Server";
@@ -33,6 +33,20 @@ namespace Backend
             var variant = "netcoreapp3.1";
 
             var path = $"../{folder}/{name}/bin/{release}/{variant}/{name}.exe";
+
+            var file = new FileInfo(path);
+
+            Process.Start(file.FullName);
+        }
+
+        [MenuItem("Utility/Launch Build")]
+        public static void LaunchBuild()
+        {
+            var folder = "Build";
+            var release = "Windows";
+            var name = "Multiplayer-Game-Unity";
+
+            var path = $"./{folder}/{release}/{name}.exe";
 
             var file = new FileInfo(path);
 

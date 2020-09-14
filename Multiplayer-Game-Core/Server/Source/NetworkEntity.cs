@@ -23,6 +23,8 @@ namespace Backend
         public RpcBuffer RpcBuffer { get; protected set; }
         public RprBuffer RprCache { get; protected set; }
 
+        public override string ToString() => ID.ToString();
+
         public NetworkEntity(NetworkClient owner, NetworkEntityID id, NetworkEntityType type)
         {
             SetOwner(owner);

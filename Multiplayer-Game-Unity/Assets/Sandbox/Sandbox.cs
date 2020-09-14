@@ -47,14 +47,8 @@ namespace Game
         
         void ClientReadyCallback(ReadyClientResponse response)
         {
-            var attributes = new AttributesCollection();
-
-            var position = new Vector3(Random.Range(-3f, 3f), 0f, Random.Range(-3f, 3f));
-            var rotation = Quaternion.LookRotation(position.normalized);
-
-            Player.Write(ref attributes, position, rotation);
-
-            NetworkAPI.Client.RequestSpawnEntity("Player", attributes);
+            SpawnPlayer();
+            SpawnPlayer();
         }
 
         void Update()
@@ -83,9 +77,9 @@ namespace Game
         {
             if(error == null)
             {
-                var room = lobby.Rooms.FirstOrDefault();
-
                 Debug.Log("Lobby Size: " + lobby.Size);
+
+                var room = lobby.Rooms.FirstOrDefault();
 
                 if (room == null) return;
 
@@ -109,6 +103,23 @@ namespace Game
             {
                 Debug.LogError(error);
             }
+        }
+
+        void SpawnPlayer()
+        {
+            var attributes = new AttributesCollection();
+
+            var position = new Vector3(Random.Range(-3f, 3f), 0f, Random.Range(-3f, 3f));
+            var rotation = Quaternion.LookRotation(position.normalized);
+
+            Player.Write(ref attributes, position, rotation);
+
+            NetworkAPI.Client.RequestSpawnEntity("Player", attributes);
+        }
+
+        void DestoryEntity()
+        {
+
         }
     }
 }

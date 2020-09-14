@@ -43,12 +43,6 @@ namespace Game
         [NetworkRPC]
         string Rpc(string text, RpcInfo info)
         {
-            if (info.Sender.IsMaster == false)
-            {
-                NetworkAPI.Client.Disconnect();
-                throw new Exception();
-            }
-
             return Application.platform.ToString();
         }
 

@@ -235,6 +235,12 @@ namespace Backend
 
                     SpawnEntity(client, request);
                 }
+                else if(message.Is<DestroyEntityRequest>())
+                {
+                    var request = message.Read<DestroyEntityRequest>();
+
+                    DestroyEntity(client, request);
+                }
                 else if(message.Is<RprRequest>())
                 {
                     var callback = message.Read<RprRequest>();
@@ -404,6 +410,36 @@ namespace Backend
 
             return entity;
         }
+
+        void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
+        {
+            if (Entities.TryGetValue(request.ID.Value, out var entity) == false)
+            {
+                Log.Warning($"Client {sender} Trying to Destory Non Registered Entity {request.ID}");
+                return;
+            }
+
+            if (sender != entity.Owner && sender != Master)
+            {
+                Log.Warning($"Client {sender} Trying to Destory Entity {entity} Without Having Authority on that Entity");
+                return;
+            }
+
+            DestroyEntity(entity);
+        }
+        void DestroyEntity(NetworkEntity entity)
+        {
+            UnbufferMessage(entity.SpawnMessage);
+
+            entity.RpcBuffer.Clear(UnbufferMessages);
+            ResolveRprCache(entity);
+
+            Entities.Remove(entity);
+
+            var command = new DestroyEntityCommand(entity.ID);
+
+            Broadcast(command);
+        }
         #endregion
 
         void ClientDisconnected(string websocketID)
@@ -416,7 +452,7 @@ namespace Backend
         void RemoveClient(NetworkClient client)
         {
             foreach (var entity in client.Entities)
-                RemoveEntity(entity);
+                DestroyEntity(entity);
 
             WebSocketClients.Remove(client.WebsocketID);
             Clients.Remove(client);
@@ -425,17 +461,6 @@ namespace Backend
 
             var payload = new ClientDisconnectPayload(client.ID);
             Broadcast(payload);
-        }
-
-        void RemoveEntity(NetworkEntity entity)
-        {
-            UnbufferMessage(entity.SpawnMessage);
-
-            entity.RpcBuffer.Clear(UnbufferMessages);
-
-            ResolveRprCache(entity);
-
-            Entities.Remove(entity);
         }
 
         public void Stop()

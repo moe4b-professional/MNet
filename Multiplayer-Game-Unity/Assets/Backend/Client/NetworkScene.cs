@@ -202,7 +202,7 @@ namespace Backend
 
 #if UNITY_EDITOR
         [CustomEditor(typeof(NetworkScene))]
-        class Inspector : Editor
+        class Inspector : UnityEditor.Editor
         {
             new NetworkScene target;
 
