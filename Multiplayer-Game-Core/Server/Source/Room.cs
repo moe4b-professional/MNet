@@ -62,13 +62,13 @@ namespace Backend
             public Room Room { get; protected set; }
             public void Set(Room reference) => Room = reference;
 
-            public ActionQueue ActionQueue => Room.InputQueue;
+            public ActionQueue InputQueue => Room.InputQueue;
 
             protected override void OnOpen()
             {
                 base.OnOpen();
 
-                ActionQueue.Enqueue(Invoke);
+                InputQueue.Enqueue(Invoke);
 
                 void Invoke() => Room.ClientConnected(this.ID);
             }
@@ -79,7 +79,7 @@ namespace Backend
 
                 var message = NetworkMessage.Read(args.RawData);
 
-                ActionQueue.Enqueue(Invoke);
+                InputQueue.Enqueue(Invoke);
 
                 void Invoke() => Room.ClientMessageCallback(this.ID, args.RawData, message);
             }
@@ -88,7 +88,7 @@ namespace Backend
             {
                 base.OnClose(args);
 
-                ActionQueue.Enqueue(Invoke);
+                InputQueue.Enqueue(Invoke);
 
                 void Invoke() => Room.ClientDisconnected(this.ID);
             }
@@ -105,7 +105,7 @@ namespace Backend
         #endregion
 
         #region Schedule
-        public Schedule Schedule { get; protected set; }
+        Schedule schedule;
 
         public const long DefaultTickInterval = 50;
         #endregion
@@ -197,7 +197,7 @@ namespace Backend
             GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
             WebSocket = GameServer.WebSocket.Services[Path];
 
-            Schedule.Start();
+            schedule.Start();
         }
 
         public event Action OnTick;
@@ -471,7 +471,7 @@ namespace Backend
         {
             Log.Info($"Stopping Room: {ID}");
 
-            Schedule.Stop();
+            schedule.Stop();
 
             GameServer.WebSocket.RemoveService(Path);
         }
@@ -494,7 +494,7 @@ namespace Backend
 
             InputQueue = new ActionQueue();
 
-            Schedule = new Schedule(DefaultTickInterval, Tick);
+            schedule = new Schedule(DefaultTickInterval, Tick);
         }
     }
 }

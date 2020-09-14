@@ -14,44 +14,44 @@ namespace Backend
         public float ElapsedTime { get; protected set; }
         public float DeltaTime { get; protected set; }
 
-        public readonly long interval;
+        public long Interval { get; protected set; }
 
         Thread thread;
+        Stopwatch stopwatch;
 
         bool run = true;
 
         public void Start()
         {
+            run = true;
+
             thread.Start();
         }
 
-        void Connect()
+        void Procedure()
         {
-            Tick();
+            stopwatch = new Stopwatch();
+
+            while (run) Tick();
         }
 
-        public delegate void TickDelegate();
-        TickDelegate tickCallback;
+        public delegate void Delegate();
+        Delegate callback;
         void Tick()
         {
-            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-            while (run)
-            {
-                stopwatch.Start();
+            callback?.Invoke();
 
-                tickCallback?.Invoke();
+            var elapsed = stopwatch.ElapsedMilliseconds;
 
-                var elapsed = stopwatch.ElapsedMilliseconds;
+            if (Interval > elapsed) Sleep(Interval - elapsed);
 
-                if (interval > elapsed) Sleep(interval - elapsed);
+            DeltaTime = stopwatch.ElapsedMilliseconds / 1000f;
 
-                DeltaTime = stopwatch.ElapsedMilliseconds / 1000f;
+            ElapsedTime += DeltaTime;
 
-                ElapsedTime += DeltaTime;
-
-                stopwatch.Reset();
-            }
+            stopwatch.Reset();
         }
 
         void Sleep(long duration) => Thread.Sleep((int)duration);
@@ -61,16 +61,16 @@ namespace Backend
             run = false;
         }
 
-        public Schedule(long interval, TickDelegate tickCallback)
+        public Schedule(long interval, Delegate callback)
         {
-            this.interval = interval;
+            this.Interval = interval;
 
             ElapsedTime = 0f;
             DeltaTime = interval / 1000;
 
-            this.tickCallback = tickCallback;
+            this.callback = callback;
 
-            thread = new Thread(Connect);
+            thread = new Thread(Procedure);
         }
     }
 }
