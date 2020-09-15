@@ -30,7 +30,7 @@ namespace Backend
 
         public NetworkRPCAttribute Attribute { get; protected set; }
 
-        public RpcAuthority Authority => Attribute.Authority;
+        public EntityAuthorityType Authority => Attribute.Authority;
 
         public MethodInfo MethodInfo { get; protected set; }
 
@@ -92,23 +92,7 @@ namespace Backend
         }
     }
 
-    public enum RpcAuthority : byte
-    {
-        /// <summary>
-        /// As the name implies, any client will be able to invoke this RPC
-        /// </summary>
-        Any,
-
-        /// <summary>
-        /// Only the owner of this entity may invoke this RPC
-        /// </summary>
-        Owner,
-
-        /// <summary>
-        /// Only the master client may invoke this RPC
-        /// </summary>
-        Master,
-    }
+    
 
     public struct RpcInfo
     {
@@ -123,9 +107,9 @@ namespace Backend
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
-        public RpcAuthority Authority { get; private set; }
+        public EntityAuthorityType Authority { get; private set; }
 
-        public NetworkRPCAttribute(RpcAuthority authority = RpcAuthority.Any)
+        public NetworkRPCAttribute(EntityAuthorityType authority = EntityAuthorityType.Any)
         {
             this.Authority = authority;
         }

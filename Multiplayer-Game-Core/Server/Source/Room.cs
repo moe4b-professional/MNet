@@ -10,6 +10,7 @@ using WebSocketSharp.Server;
 using System.Threading;
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Backend
 {
@@ -158,7 +159,7 @@ namespace Backend
 
         public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
 
-        public void UnbufferMessages(NetworkMessageCollection collection) => MessageBuffer.RemoveAll(x => collection.Contains(x));
+        public void UnbufferMessages(HashSet<NetworkMessage> collection) => MessageBuffer.RemoveAll(x => collection.Contains(x));
         #endregion
 
         public ActionQueue InputQueue { get; protected set; }
@@ -246,6 +247,12 @@ namespace Backend
                     var callback = message.Read<RprRequest>();
 
                     InvokeRPR(client, callback);
+                }
+                else if(message.Is<SyncVarRequest>())
+                {
+                    var request = message.Read<SyncVarRequest>();
+
+                    InvokeSyncVar(client, request);
                 }
                 else if (message.Is<ReadyClientRequest>())
                 {
@@ -372,7 +379,6 @@ namespace Backend
 
             SendTo(target, command);
         }
-
         void ResolveRprCache(NetworkEntity entity)
         {
             foreach (var callback in entity.RprCache.Collection)
@@ -381,6 +387,21 @@ namespace Backend
 
                 SendTo(callback.Sender, command);
             }
+        }
+
+        void InvokeSyncVar(NetworkClient sender, SyncVarRequest request)
+        {
+            if(Entities.TryGetValue(request.Entity.Value, out var entity) == false)
+            {
+                Log.Warning($"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}");
+                return;
+            }
+
+            var command = SyncVarCommand.Write(sender.ID, request);
+
+            var message = Broadcast(command);
+
+            entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }
 
         NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
@@ -444,6 +465,7 @@ namespace Backend
 
             entity.RpcBuffer.Clear(UnbufferMessages);
             ResolveRprCache(entity);
+            entity.SyncVarBuffer.Clear(UnbufferMessages);
 
             Entities.Remove(entity);
             owner.Entities.Remove(entity);
@@ -456,7 +478,11 @@ namespace Backend
         void RemoveClient(NetworkClient client)
         {
             for (int i = client.Entities.Count; i-- > 0;)
+            {
+                if (client.Entities[i].Type == NetworkEntityType.SceneObject) continue;
+
                 DestroyEntity(client.Entities[i]);
+            }
 
             WebSocketClients.Remove(client.WebsocketID);
             Clients.Remove(client);

@@ -132,6 +132,9 @@ namespace Backend
 
             Register<RprRequest>(35);
             Register<RprCommand>(36);
+
+            Register<SyncVarRequest>(37);
+            Register<SyncVarCommand>(38);
         }
 
         static NetworkPayload()

@@ -18,6 +18,8 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using System.Reflection;
+using Game;
+using System.Threading;
 
 namespace Backend
 {
@@ -50,7 +52,8 @@ namespace Backend
 
             this.ID = id;
 
-            ReadRPCs();
+            ParseRPCs();
+            ParseSyncVars();
 
             enabled = true;
 
@@ -59,10 +62,10 @@ namespace Backend
 
         protected virtual void OnSpawn() { }
 
-        #region RPX
-        public Dictionary<string, RpcBind> RPCs { get; protected set; }
+        #region RPC
+        protected Dictionary<string, RpcBind> RPCs { get; private set; }
 
-        void ReadRPCs()
+        void ParseRPCs()
         {
             RPCs = new Dictionary<string, RpcBind>();
 
@@ -85,7 +88,7 @@ namespace Backend
             }
         }
 
-        public bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
+        bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
         protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
         protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
@@ -219,7 +222,7 @@ namespace Backend
                 return;
             }
 
-            if (ValidateRpcAuthority(command, bind) == false)
+            if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
                 Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.ID} Sent From Client {command.Sender}");
 
@@ -240,7 +243,7 @@ namespace Backend
                     $"Exception: \n" +
                     $"{e.ToString()}";
 
-                Debug.LogError(text, this);
+                Debug.LogWarning(text, this);
 
                 if (command.Type == RpcType.Return) SendRPR(command, RprResult.InvalidArguments);
 
@@ -262,7 +265,7 @@ namespace Backend
                 var text = $"Error Trying to Invoke RPC Method '{command.Method}' on '{this}', " +
                     $"Please Ensure Method is Implemented And Invoked Correctly";
 
-                Debug.LogError(text, this);
+                Debug.LogWarning(text, this);
 
                 if (command.Type == RpcType.Return) SendRPR(command, RprResult.RuntimeException);
 
@@ -271,24 +274,16 @@ namespace Backend
 
             if (command.Type == RpcType.Return) SendRPR(command, result);
         }
+        #endregion
 
-        public bool ValidateRpcAuthority(RpcCommand command, RpcBind bind)
-        {
-            if (bind.Authority == RpcAuthority.Any) return true;
-
-            if (bind.Authority == RpcAuthority.Owner) return command.Sender == Owner.ID;
-
-            if (bind.Authority == RpcAuthority.Master) return command.Sender == NetworkAPI.Room.Master?.ID;
-
-            return true;
-        }
-
+        #region RPR
         void SendRPR(RpcCommand rpc, RprResult result)
         {
             var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, result);
 
             NetworkAPI.Client.Send(payload);
         }
+
         void SendRPR(RpcCommand rpc, object value)
         {
             var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, value);
@@ -296,5 +291,132 @@ namespace Backend
             NetworkAPI.Client.Send(payload);
         }
         #endregion
+
+        #region SyncVar
+        protected Dictionary<string, SyncVarBind> SyncVars { get; private set; }
+
+        void ParseSyncVars()
+        {
+            SyncVars = new Dictionary<string, SyncVarBind>();
+
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+            var type = GetType();
+
+            foreach (var field in type.GetFields(flags))
+            {
+                var attribute = field.GetCustomAttribute<SyncVarAttribute>();
+
+                if (attribute == null) continue;
+
+                var bind = new SyncVarBind(this, attribute, field);
+
+                if (SyncVars.ContainsKey(bind.ID))
+                    throw new Exception($"SyncVar Named {bind.ID} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
+
+                SyncVars.Add(bind.ID, bind);
+            }
+
+            foreach (var property in type.GetProperties(flags))
+            {
+                var attribute = property.GetCustomAttribute<SyncVarAttribute>();
+
+                if (attribute == null) continue;
+
+                var bind = new SyncVarBind(this, attribute, property);
+
+                if (SyncVars.ContainsKey(bind.ID))
+                    throw new Exception($"SyncVar Named {bind.ID} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
+
+                SyncVars.Add(bind.ID, bind);
+            }
+        }
+
+        bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
+
+        protected void RequestSyncVar(string variable, object value)
+        {
+            if (FindSyncVar(variable, out var bind) == false)
+            {
+                Debug.LogError($"No SyncVar Found With Name {variable}");
+                return;
+            }
+
+            var request = bind.CreateRequest(value);
+
+            SendSyncVar(request);
+
+            NetworkAPI.Client.Send(request);
+        }
+
+        void SendSyncVar(SyncVarRequest request)
+        {
+            if (IsReady == false)
+            {
+                Debug.LogError($"Trying to Invoke SyncVar {request.Variable} on {name} Before It's Ready, Please Wait Untill IsReady or After OnSpawn Method");
+                return;
+            }
+
+            if (NetworkAPI.Client.IsConnected == false)
+            {
+                Debug.LogWarning($"Cannot Send SyncVar {request.Variable} When Client Isn't Connected");
+                return;
+            }
+        }
+
+        internal void InvokeSyncVar(SyncVarCommand command)
+        {
+            if(SyncVars.TryGetValue(command.Variable, out var bind) == false)
+            {
+                Debug.LogWarning($"No SyncVar {command.Variable} Found to Invoke");
+                return;
+            }
+
+            if (ValidateAuthority(command.Sender, bind.Authority) == false)
+            {
+                Debug.LogWarning($"Invalid Authority To Invoke SyncVar {bind.ID} Sent From Client {command.Sender}");
+                return;
+            }
+
+            object value;
+            try
+            {
+                value = bind.ParseValue(command);
+            }
+            catch (Exception ex)
+            {
+                var text = $"Error trying to Parse Value for SyncVar '{command.Variable}' on {this}, Invalid Data Sent Most Likely \n" +
+                    $"Exception: \n" +
+                    $"{ex.ToString()}";
+
+                Debug.LogWarning(text, this);
+                return;
+            }
+
+            try
+            {
+                bind.Set(value);
+            }
+            catch (Exception)
+            {
+                var text = $"Error Trying to Set SyncVar '{command.Variable}' on '{this} With Value '{value}', " +
+                    $"Please Ensure SyncVar is Implemented Correctly";
+
+                Debug.LogWarning(text, this);
+                return;
+            }
+        }
+        #endregion
+
+        public bool ValidateAuthority(NetworkClientID sender, EntityAuthorityType authority)
+        {
+            if (authority == EntityAuthorityType.Any) return true;
+
+            if (authority == EntityAuthorityType.Owner) return sender == Owner?.ID;
+
+            if (authority == EntityAuthorityType.Master) return sender == NetworkAPI.Room.Master?.ID;
+
+            return false;
+        }
     }
 }

@@ -87,18 +87,7 @@ namespace Backend
             }
         }
 
-        #region RPX
-        public void InvokeRPC(RpcCommand command)
-        {
-            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
-            {
-                Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
-                return;
-            }
-
-            target.InvokeRPC(command);
-        }
-
+        #region RPR
         public IDCollection<RprBind> RPRs { get; protected set; }
 
         public RprBind RegisterRPR(MethodInfo method, object target)
@@ -161,6 +150,28 @@ namespace Backend
             RPRs.Remove(bind);
         }
         #endregion
+
+        public void InvokeRPC(RpcCommand command)
+        {
+            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
+            {
+                Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
+                return;
+            }
+
+            target.InvokeRPC(command);
+        }
+
+        public void InvokeSyncVar(SyncVarCommand command)
+        {
+            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
+            {
+                Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
+                return;
+            }
+
+            target.InvokeSyncVar(command);
+        }
 
         protected virtual void OnSpawn()
         {

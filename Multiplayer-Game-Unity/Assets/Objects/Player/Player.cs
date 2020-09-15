@@ -74,7 +74,7 @@ namespace Game
             }
         }
 
-        [NetworkRPC(RpcAuthority.Owner)]
+        [NetworkRPC(EntityAuthorityType.Owner)]
         void RequestMove(Vector2 input, RpcInfo info)
         {
             input = Vector2.ClampMagnitude(input, 1f);
@@ -89,7 +89,7 @@ namespace Game
             RequestRPC(SetCoordinates, RpcBufferMode.Last, position, rotation);
         }
 
-        [NetworkRPC(RpcAuthority.Master)]
+        [NetworkRPC(EntityAuthorityType.Master)]
         void SetCoordinates(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             transform.position = position;

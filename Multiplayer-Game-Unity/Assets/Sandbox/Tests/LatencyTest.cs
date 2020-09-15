@@ -21,7 +21,7 @@ using Backend;
 
 namespace Game
 {
-	public class RpcLatencyTest : NetworkBehaviour
+	public class LatencyTest : NetworkBehaviour
 	{
         void Update()
         {

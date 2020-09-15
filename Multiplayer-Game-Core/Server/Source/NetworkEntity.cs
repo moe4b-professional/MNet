@@ -21,7 +21,8 @@ namespace Backend
         public NetworkMessage SpawnMessage { get; set; }
 
         public RpcBuffer RpcBuffer { get; protected set; }
-        public RprBuffer RprCache { get; protected set; }
+        public RprCache RprCache { get; protected set; }
+        public SyncVarBuffer SyncVarBuffer { get; protected set; }
 
         public override string ToString() => ID.ToString();
 
@@ -34,7 +35,8 @@ namespace Backend
             this.Type = type;
 
             RpcBuffer = new RpcBuffer();
-            RprCache = new RprBuffer();
+            RprCache = new RprCache();
+            SyncVarBuffer = new SyncVarBuffer();
         }
     }
 }

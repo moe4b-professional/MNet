@@ -31,7 +31,7 @@ namespace Backend
 	public static class NetworkAPI
 	{
         public static string Address { get; private set; }
-
+        
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
         {
@@ -717,6 +717,12 @@ namespace Backend
 
                         InvokeRPR(payload);
                     }
+                    else if(message.Is<SyncVarCommand>())
+                    {
+                        var command = message.Read<SyncVarCommand>();
+
+                        InvokeSyncVar(command);
+                    }
                     else if (message.Is<ClientConnectedPayload>())
                     {
                         var payload = message.Read<ClientConnectedPayload>();
@@ -777,13 +783,24 @@ namespace Backend
                 target.InvokeRPR(payload);
             }
 
+            static void InvokeSyncVar(SyncVarCommand command)
+            {
+                if (Entities.TryGetValue(command.Entity, out var target) == false)
+                {
+                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+                    return;
+                }
+
+                target.InvokeSyncVar(command);
+            }
+
             public delegate void SpawnEntityDelegate(NetworkEntity entity);
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
                 var entity = CreateEntity(command);
                 
-                Debug.Log($"Spawned {command.Resource} with ID: {command.ID}, Owned By Client {command.Owner}");
+                Debug.Log($"Spawned {entity.name} with ID: {command.ID}, Owned By Client {command.Owner}");
 
                 if (Clients.TryGetValue(command.Owner, out var owner))
                     owner.Entities.Add(entity);
@@ -806,6 +823,8 @@ namespace Backend
                     if (prefab == null) throw new Exception($"No Resource {command.Resource} Found to Spawn");
 
                     var instance = Object.Instantiate(prefab);
+
+                    instance.name = $"{command.Resource} {command.ID}";
 
                     var entity = instance.GetComponent<NetworkEntity>();
                     if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");

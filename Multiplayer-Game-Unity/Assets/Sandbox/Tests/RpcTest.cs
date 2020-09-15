@@ -21,41 +21,19 @@ using Backend;
 
 namespace Game
 {
-    public class RpcTestBehaviour : NetworkBehaviour
+    public class RpcTest : NetworkBehaviour
     {
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
-            RequestRPC(Rpc, NetworkAPI.Room.Master, Callback, "Hello");
-
-            return;
-
-            RequestRPC(nameof(Rpc0), RpcBufferMode.None);
-            RequestRPC(nameof(Rpc1), RpcBufferMode.None, 1);
-            RequestRPC(nameof(Rpc2), RpcBufferMode.None, 1, 2);
-            RequestRPC(nameof(Rpc3), RpcBufferMode.None, 1, 2, 3);
-            RequestRPC(nameof(Rpc4), RpcBufferMode.None, 1, 2, 3, 4);
-            RequestRPC(nameof(Rpc5), RpcBufferMode.None, 1, 2, 3, 4, 5);
-            RequestRPC(nameof(Rpc6), RpcBufferMode.None, 1, 2, 3, 4, 5, 6);
-        }
-
-        [NetworkRPC(RpcAuthority.Any)]
-        string Rpc(string text, RpcInfo info)
-        {
-            return Application.platform.ToString();
-        }
-
-        void Callback(RprResult result, string value)
-        {
-            if (result == RprResult.Success)
-            {
-                Debug.Log("RPR: " + value);
-            }
-            else
-            {
-                Debug.LogError("RPR Failed: " + result);
-            }
+            RequestRPC(Rpc0);
+            RequestRPC(Rpc1, 1);
+            RequestRPC(Rpc2, 1, 2);
+            RequestRPC(Rpc3, 1, 2, 3);
+            RequestRPC(Rpc4, 1, 2, 3, 4);
+            RequestRPC(Rpc5, 1, 2, 3, 4, 5);
+            RequestRPC(Rpc6, 1, 2, 3, 4, 5, 6);
         }
 
         [NetworkRPC]
