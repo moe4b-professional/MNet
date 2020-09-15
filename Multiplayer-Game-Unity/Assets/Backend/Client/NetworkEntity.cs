@@ -87,6 +87,11 @@ namespace Backend
             }
         }
 
+        protected virtual void OnSpawn()
+        {
+
+        }
+
         #region RPR
         public IDCollection<RprBind> RPRs { get; protected set; }
 
@@ -171,11 +176,6 @@ namespace Backend
             }
 
             target.InvokeSyncVar(command);
-        }
-
-        protected virtual void OnSpawn()
-        {
-
         }
 
         protected virtual void OnDestroy()

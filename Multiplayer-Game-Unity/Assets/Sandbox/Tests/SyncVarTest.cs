@@ -42,7 +42,7 @@ namespace Game
 
             if (Entity.IsMine == false) return;
 
-            RequestSyncVar(nameof(Field), Application.platform.ToString());
+            UpdateSyncVar(nameof(Field), Application.platform.ToString());
         }
     }
 }

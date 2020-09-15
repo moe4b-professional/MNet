@@ -22,7 +22,7 @@ namespace Backend
 	public class NetworkClient
 	{
         public NetworkClientID ID { get; protected set; }
-        public bool IsMaster => ID == NetworkAPI.Room.Master.ID;
+        public bool IsMaster => this == NetworkAPI.Room.Master;
 
         public NetworkClientProfile Profile { get; protected set; }
         public string Name => Profile.Name;

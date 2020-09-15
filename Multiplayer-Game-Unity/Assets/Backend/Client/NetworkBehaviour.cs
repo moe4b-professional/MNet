@@ -29,6 +29,7 @@ namespace Backend
         public NetworkBehaviourID ID { get; protected set; }
 
         public NetworkEntity Entity { get; protected set; }
+
         public bool IsMine => Entity == null ? false : Entity.IsMine;
         public bool IsReady => Entity == null ? false : Entity.IsReady;
 
@@ -39,11 +40,6 @@ namespace Backend
         protected virtual void Awake()
         {
             if (IsReady == false) enabled = false;
-        }
-
-        protected virtual void Start()
-        {
-
         }
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
@@ -61,6 +57,11 @@ namespace Backend
         }
 
         protected virtual void OnSpawn() { }
+
+        protected virtual void Start()
+        {
+
+        }
 
         #region RPC
         protected Dictionary<string, RpcBind> RPCs { get; private set; }
@@ -334,7 +335,7 @@ namespace Backend
 
         bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
-        protected void RequestSyncVar(string variable, object value)
+        protected void UpdateSyncVar(string variable, object value)
         {
             if (FindSyncVar(variable, out var bind) == false)
             {

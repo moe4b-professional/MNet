@@ -25,20 +25,18 @@ namespace Game
 	public class SyncVarBind
 	{
         public NetworkBehaviour Behaviour { get; protected set; }
-
         public NetworkEntity Entity => Behaviour.Entity;
 
         public SyncVarAttribute Attribute { get; protected set; }
-
         public EntityAuthorityType Authority => Attribute.Authority;
-
-        public string ID { get; protected set; }
 
         public FieldInfo FieldInfo { get; protected set; }
         public bool IsField => FieldInfo != null;
 
         public PropertyInfo PropertyInfo { get; protected set; }
         public bool IsProperty => PropertyInfo != null;
+
+        public string ID { get; protected set; }
 
         public Type Type
         {
@@ -97,13 +95,11 @@ namespace Game
             if (IsField) ID = FieldInfo.Name;
             if (IsProperty) ID = PropertyInfo.Name;
         }
-
         public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field)
             : this(behaviour, attribute, field, null)
         {
 
         }
-
         public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property)
             : this(behaviour, attribute, null, property)
         {

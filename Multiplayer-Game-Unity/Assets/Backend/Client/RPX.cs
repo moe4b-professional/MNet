@@ -24,12 +24,10 @@ namespace Backend
     #region Call
     public class RpcBind
     {
+        public NetworkBehaviour Behaviour { get; protected set; }
         public NetworkEntity Entity => Behaviour.Entity;
 
-        public NetworkBehaviour Behaviour { get; protected set; }
-
         public NetworkRPCAttribute Attribute { get; protected set; }
-
         public EntityAuthorityType Authority => Attribute.Authority;
 
         public MethodInfo MethodInfo { get; protected set; }
@@ -37,9 +35,9 @@ namespace Backend
         public string ID { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
-        public bool HasInfoParameter { get; protected set; }
 
-        public bool HasReturn => MethodInfo.ReturnType != null;
+        public bool HasInfoParameter { get; protected set; }
+        public bool HasReturn { get; protected set; }
 
         public RpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
@@ -88,11 +86,11 @@ namespace Backend
             ID = MethodInfo.Name;
 
             ParametersInfo = method.GetParameters();
+
             HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
+            HasReturn = MethodInfo.ReturnType != null;
         }
     }
-
-    
 
     public struct RpcInfo
     {
