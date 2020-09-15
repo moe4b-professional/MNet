@@ -156,9 +156,9 @@ namespace Backend
         {
             var arguments = new object[2];
 
-            arguments[0] = command.Success;
+            arguments[0] = command.Result;
 
-            if (command.Success)
+            if (command.Result == RprResult.Success)
                 arguments[1] = command.Read(ReturnType);
             else
                 arguments[1] = GetDefault(ReturnType);
@@ -187,7 +187,7 @@ namespace Backend
         }
     }
 
-    public delegate void RprMethod<T>(bool success, T result);
+    public delegate void RprMethod<T>(RprResult result, T value);
 
     public delegate TResult RpcReturnMethod<TResult>(RpcInfo info);
     public delegate TResult RpcReturnMethod<TResult, T1>(T1 arg1, RpcInfo info);

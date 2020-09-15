@@ -27,7 +27,7 @@ namespace Game
         {
             base.OnSpawn();
 
-            RequestRPC(Rpc, NetworkAPI.Room.Master, Callback, "Hello World");
+            RequestRPC(Rpc, NetworkAPI.Room.Master, Callback, "Hello");
 
             return;
 
@@ -40,21 +40,28 @@ namespace Game
             RequestRPC(nameof(Rpc6), RpcBufferMode.None, 1, 2, 3, 4, 5, 6);
         }
 
-        [NetworkRPC]
+        [NetworkRPC(RpcAuthority.Any)]
         string Rpc(string text, RpcInfo info)
         {
+            if (info.Sender.IsMaster == false)
+            {
+                NetworkAPI.Client.Disconnect();
+                Application.Quit();
+                throw new Exception();
+            }
+
             return Application.platform.ToString();
         }
 
-        void Callback(bool success, string value)
+        void Callback(RprResult result, string value)
         {
-            if(success)
+            if (result == RprResult.Success)
             {
-                Debug.Log("Rpc Callback: " + value);
+                Debug.Log("RPR: " + value);
             }
             else
             {
-                Debug.LogError("RPC Callback Failed");
+                Debug.LogError("RPR Failed: " + result);
             }
         }
 

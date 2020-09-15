@@ -11,7 +11,7 @@ namespace Backend
     #region Call
     public enum RpcType : byte
     {
-        Broadcast, Target, Callback
+        Broadcast, Target, Return
     }
 
     [Serializable]
@@ -83,7 +83,7 @@ namespace Backend
                     context.Select(ref target);
                     break;
 
-                case RpcType.Callback:
+                case RpcType.Return:
                     context.Select(ref target);
                     context.Select(ref callback);
                     break;
@@ -149,7 +149,7 @@ namespace Backend
                 behaviour = behaviour,
                 method = method,
                 raw = raw,
-                type = RpcType.Callback,
+                type = RpcType.Return,
                 target = target,
                 callback = callback,
             };
@@ -217,7 +217,7 @@ namespace Backend
                 case RpcType.Target:
                     break;
 
-                case RpcType.Callback:
+                case RpcType.Return:
                     context.Select(ref callback);
                     break;
             }
@@ -244,6 +244,11 @@ namespace Backend
     #endregion
 
     #region Return
+    public enum RprResult : byte
+    {
+        Success, Disconnected, MethodNotFound, InvalidAuthority, InvalidArguments, RuntimeException
+    }
+
     [Serializable]
     public class RprRequest : INetworkSerializable
     {
@@ -256,15 +261,11 @@ namespace Backend
         ushort callback;
         public ushort Callback => callback;
 
+        RprResult result;
+        public RprResult Result => result;
+
         byte[] raw;
         public byte[] Raw => raw;
-
-        public object Read(Type type)
-        {
-            var result = NetworkSerializer.Deserialize(raw, type);
-
-            return result;
-        }
 
         public void Select(INetworkSerializableResolver.Context context)
         {
@@ -273,7 +274,9 @@ namespace Backend
 
             context.Select(ref callback);
 
-            context.Select(ref raw);
+            context.Select(ref result);
+
+            if (result == RprResult.Success) context.Select(ref raw);
         }
 
         public RprRequest()
@@ -281,15 +284,28 @@ namespace Backend
 
         }
 
-        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort callback, object result)
+        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort callback, RprResult result)
         {
-            var raw = NetworkSerializer.Serialize(result);
+            var payload = new RprRequest()
+            {
+                entity = entity,
+                target = target,
+                callback = callback,
+                result = result,
+            };
+
+            return payload;
+        }
+        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort callback, object value)
+        {
+            var raw = NetworkSerializer.Serialize(value);
 
             var payload = new RprRequest()
             {
                 entity = entity,
                 target = target,
                 callback = callback,
+                result = RprResult.Success,
                 raw = raw,
             };
 
@@ -306,8 +322,8 @@ namespace Backend
         ushort callback;
         public ushort Callback => callback;
 
-        bool success;
-        public bool Success => success;
+        RprResult result;
+        public RprResult Result => result;
 
         byte[] raw;
         public byte[] Raw => raw;
@@ -324,9 +340,9 @@ namespace Backend
             context.Select(ref entity);
 
             context.Select(ref callback);
-            context.Select(ref success);
+            context.Select(ref result);
 
-            context.Select(ref raw);
+            if(result == RprResult.Success) context.Select(ref raw);
         }
 
         public RprCommand()
@@ -334,25 +350,26 @@ namespace Backend
 
         }
 
-        public static RprCommand Write(NetworkEntityID entity, ushort callback, byte[] raw)
+        public static RprCommand Write(NetworkEntityID entity, RprRequest request) => Write(entity, request.Callback, request.Result, request.Raw);
+        public static RprCommand Write(NetworkEntityID entity, ushort callback, RprResult result, byte[] raw)
         {
             var payload = new RprCommand()
             {
                 entity = entity,
                 callback = callback,
-                success = true,
+                result = result,
                 raw = raw,
             };
 
             return payload;
         }
-        public static RprCommand Write(NetworkEntityID entity, ushort callback, bool success)
+        public static RprCommand Write(NetworkEntityID entity, ushort callback, RprResult result)
         {
             var command = new RprCommand()
             {
                 entity = entity,
                 callback = callback,
-                success = success,
+                result = result,
             };
 
             return command;

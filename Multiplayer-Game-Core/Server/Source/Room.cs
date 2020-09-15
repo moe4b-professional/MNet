@@ -331,13 +331,13 @@ namespace Backend
                 entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
             }
 
-            if (request.Type == RpcType.Target || request.Type == RpcType.Callback)
+            if (request.Type == RpcType.Target || request.Type == RpcType.Return)
             {
                 if (Clients.TryGetValue(request.Target.Value, out var client))
                 {
                     SendTo(client, command);
 
-                    if (request.Type == RpcType.Callback) entity.RprCache.Register(request, sender);
+                    if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender);
                 }
                 else
                 {
@@ -368,7 +368,7 @@ namespace Backend
 
             entity.RprCache.Unregister(request.Callback);
 
-            var command = RprCommand.Write(entity.ID, request.Callback, request.Raw);
+            var command = RprCommand.Write(entity.ID, request);
 
             SendTo(target, command);
         }
@@ -377,7 +377,7 @@ namespace Backend
         {
             foreach (var callback in entity.RprCache.Collection)
             {
-                var command = RprCommand.Write(entity.ID, callback.ID, false);
+                var command = RprCommand.Write(entity.ID, callback.ID, RprResult.Disconnected);
 
                 SendTo(callback.Sender, command);
             }

@@ -118,7 +118,7 @@ namespace Backend
         {
             if (FindRPC(method, out var bind) == false)
             {
-                Debug.LogWarning($"No RPC Found With Name {method}");
+                Debug.LogError($"No RPC Found With Name {method}");
                 return;
             }
 
@@ -213,12 +213,18 @@ namespace Backend
             if (FindRPC(command.Method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
+
+                if (command.Type == RpcType.Return) SendRPR(command, RprResult.MethodNotFound);
+
                 return;
             }
 
             if (ValidateRpcAuthority(command, bind) == false)
             {
                 Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.ID} Sent From Client {command.Sender}");
+
+                if (command.Type == RpcType.Return) SendRPR(command, RprResult.InvalidAuthority);
+
                 return;
             }
 
@@ -235,6 +241,9 @@ namespace Backend
                     $"{e.ToString()}";
 
                 Debug.LogError(text, this);
+
+                if (command.Type == RpcType.Return) SendRPR(command, RprResult.InvalidArguments);
+
                 return;
             }
 
@@ -245,6 +254,7 @@ namespace Backend
             }
             catch (TargetInvocationException)
             {
+                if (command.Type == RpcType.Return) SendRPR(command, RprResult.RuntimeException);
                 throw;
             }
             catch (Exception)
@@ -253,10 +263,13 @@ namespace Backend
                     $"Please Ensure Method is Implemented And Invoked Correctly";
 
                 Debug.LogError(text, this);
+
+                if (command.Type == RpcType.Return) SendRPR(command, RprResult.RuntimeException);
+
                 return;
             }
 
-            if (command.Type == RpcType.Callback) SendRPR(command, result, info.Sender);
+            if (command.Type == RpcType.Return) SendRPR(command, result);
         }
 
         public bool ValidateRpcAuthority(RpcCommand command, RpcBind bind)
@@ -270,9 +283,15 @@ namespace Backend
             return true;
         }
 
-        void SendRPR(RpcCommand rpc, object result, NetworkClient target)
+        void SendRPR(RpcCommand rpc, RprResult result)
         {
-            var payload = RprRequest.Write(rpc.Entity, target.ID, rpc.Callback, result);
+            var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, result);
+
+            NetworkAPI.Client.Send(payload);
+        }
+        void SendRPR(RpcCommand rpc, object value)
+        {
+            var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, value);
 
             NetworkAPI.Client.Send(payload);
         }
