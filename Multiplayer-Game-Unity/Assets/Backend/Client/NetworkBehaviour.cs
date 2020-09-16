@@ -216,7 +216,7 @@ namespace Backend
             {
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
 
-                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.MethodNotFound);
+                ResolveRPC(command, RprResult.MethodNotFound);
 
                 return;
             }
@@ -225,7 +225,7 @@ namespace Backend
             {
                 Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.Name} Sent From Client {command.Sender}");
 
-                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.InvalidAuthority);
+                ResolveRPC(command, RprResult.InvalidAuthority);
 
                 return;
             }
@@ -244,7 +244,7 @@ namespace Backend
 
                 Debug.LogWarning(text, this);
 
-                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.InvalidArguments);
+                ResolveRPC(command, RprResult.InvalidArguments);
 
                 return;
             }
@@ -256,7 +256,7 @@ namespace Backend
             }
             catch (TargetInvocationException)
             {
-                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.RuntimeException);
+                ResolveRPC(command, RprResult.RuntimeException);
                 throw;
             }
             catch (Exception)
@@ -266,13 +266,15 @@ namespace Backend
 
                 Debug.LogWarning(text, this);
 
-                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.RuntimeException);
+                ResolveRPC(command, RprResult.RuntimeException);
 
                 return;
             }
 
             if (command.Type == RpcType.Return) SendRPR(command, result);
         }
+
+        void ResolveRPC(RpcCommand command, RprResult result) => NetworkAPI.Room.ResolveRPC(command, result);
         #endregion
 
         #region RPR
