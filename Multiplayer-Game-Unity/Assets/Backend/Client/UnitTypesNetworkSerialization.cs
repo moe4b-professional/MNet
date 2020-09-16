@@ -28,6 +28,8 @@ namespace Backend
             public const ushort Vector3 = Start + 1;
             public const ushort Quaternion = Vector3 + 1;
             public const ushort Vector2 = Quaternion + 1;
+            public const ushort NetworkEntity = Vector2 + 1;
+            public const ushort NetworkBehaviour = NetworkEntity + 1;
         }
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
@@ -93,6 +95,93 @@ namespace Backend
             reader.Read(out float w);
 
             return new Quaternion(x, y, z, w);
+        }
+    }
+
+    public class NetworkEntityNetworkSerializationResolver : NetworkSerializationImplicitResolver
+    {
+        public static Type Class { get; protected set; } = typeof(NetworkEntity);
+
+        public override bool CanResolve(Type type) => Class.IsAssignableFrom(type);
+
+        public override void Serialize(NetworkWriter writer, object instance)
+        {
+            var entity = instance as NetworkEntity;
+
+            Serialize(writer, entity);
+        }
+        public static bool Serialize(NetworkWriter writer, NetworkEntity entity)
+        {
+            writer.Write(entity.IsReady);
+
+            if (entity.IsReady)
+            {
+                writer.Write(entity.ID);
+                return true;
+            }
+            else
+            {
+                Debug.LogError("Trying to Serialize Unready Network Entity Across The Network, Recievers Will Deserialize as Null");
+                return false;
+            }
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            Deserialize(reader, out var entity);
+
+            return entity;
+        }
+        public static bool Deserialize(NetworkReader reader, out NetworkEntity entity)
+        {
+            reader.Read(out bool isReady);
+
+            if (isReady == false)
+            {
+                entity = null;
+                return false;
+            }
+
+            reader.Read(out NetworkEntityID id);
+
+            if (NetworkAPI.Room.Entities.TryGetValue(id, out entity) == false)
+            {
+                Debug.LogWarning($"Network Entity {id} Couldn't be Found when Deserializing, Returning null");
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    public class NetworkBehaviourNetworkSerializationResolver : NetworkSerializationImplicitResolver
+    {
+        public static Type Class { get; protected set; } = typeof(NetworkBehaviour);
+
+        public override bool CanResolve(Type type) => Class.IsAssignableFrom(type);
+
+        public override void Serialize(NetworkWriter writer, object instance)
+        {
+            var behaviour = instance as NetworkBehaviour;
+
+            if (NetworkEntityNetworkSerializationResolver.Serialize(writer, behaviour.Entity) == false) return;
+
+            writer.Write(behaviour.ID);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            if (NetworkEntityNetworkSerializationResolver.Deserialize(reader, out var entity) == false) return null;
+
+            reader.Read(out NetworkBehaviourID behaviourID);
+
+            if(entity.TryGetBehaviour(behaviourID, out var behaviour) == false)
+            {
+                Debug.LogWarning($"Network Behaviour {behaviourID} Couldn't be Found on Entity '{entity}' when Deserializing, Returning null");
+                return null;
+            }
+
+            return behaviour;
         }
     }
 }

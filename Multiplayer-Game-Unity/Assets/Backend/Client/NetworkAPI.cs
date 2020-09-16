@@ -807,7 +807,7 @@ namespace Backend
                 else
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
 
-                entity.Configure(owner, command.ID, command.Attributes, command.Type);
+                entity.Spawn(owner, command.ID, command.Attributes, command.Type);
                 Entities.Add(entity.ID, entity);
 
                 if (command.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);

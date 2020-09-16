@@ -23,7 +23,6 @@ using System.Threading;
 
 namespace Backend
 {
-    [RequireComponent(typeof(NetworkEntity))]
     public partial class NetworkBehaviour : MonoBehaviour
 	{
         public NetworkBehaviourID ID { get; protected set; }
@@ -39,23 +38,24 @@ namespace Backend
 
         protected virtual void Awake()
         {
-            if (IsReady == false) enabled = false;
+            ParseRPCs();
+            ParseSyncVars();
         }
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
-            Entity = entity;
-
+            this.Entity = entity;
             this.ID = id;
 
-            ParseRPCs();
-            ParseSyncVars();
+            entity.OnSpawn += SpawnCallback;
+        }
 
+        void SpawnCallback()
+        {
             enabled = true;
 
             OnSpawn();
         }
-
         protected virtual void OnSpawn() { }
 
         protected virtual void Start()
@@ -68,8 +68,6 @@ namespace Backend
 
         void ParseRPCs()
         {
-            RPCs = new Dictionary<string, RpcBind>();
-
             var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
             var type = GetType();
@@ -298,8 +296,6 @@ namespace Backend
 
         void ParseSyncVars()
         {
-            SyncVars = new Dictionary<string, SyncVarBind>();
-
             var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
             var type = GetType();
@@ -418,6 +414,13 @@ namespace Backend
             if (authority == EntityAuthorityType.Master) return sender == NetworkAPI.Room.Master?.ID;
 
             return false;
+        }
+
+        public NetworkBehaviour()
+        {
+            RPCs = new Dictionary<string, RpcBind>();
+
+            SyncVars = new Dictionary<string, SyncVarBind>();
         }
     }
 }

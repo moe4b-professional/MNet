@@ -41,6 +41,8 @@ namespace Backend
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
+        public bool TryGetBehaviour(NetworkBehaviourID id, out NetworkBehaviour behaviour) => Behaviours.TryGetValue(id, out behaviour);
+
         public bool IsReady { get; protected set; } = false;
 
         public NetworkEntityType Type { get; protected set; }
@@ -50,24 +52,7 @@ namespace Backend
         protected virtual void Awake()
         {
             NetworkScene.Register(this);
-        }
 
-        public void Configure(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type)
-        {
-            IsReady = true;
-
-            SetOwner(owner);
-            this.ID = id;
-            this.Attributes = attributes;
-            this.Type = type;
-
-            RegisterBehaviours();
-
-            OnSpawn();
-        }
-
-        void RegisterBehaviours()
-        {
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
             var targets = GetComponentsInChildren<NetworkBehaviour>();
@@ -75,21 +60,29 @@ namespace Backend
             if (targets.Length > byte.MaxValue)
                 throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
 
-            var count = (byte)targets.Length;
-
-            for (byte i = 0; i < count; i++)
+            for (byte i = 0; i < targets.Length; i++)
             {
                 var id = new NetworkBehaviourID(i);
 
+                targets[i].enabled = false;
                 targets[i].Configure(this, id);
 
                 Behaviours.Add(id, targets[i]);
             }
         }
 
-        protected virtual void OnSpawn()
+        public event Action OnSpawn;
+        public void Spawn(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type)
         {
+            SetOwner(owner);
 
+            this.ID = id;
+            this.Attributes = attributes;
+            this.Type = type;
+
+            IsReady = true;
+
+            OnSpawn?.Invoke();
         }
 
         #region RPR
