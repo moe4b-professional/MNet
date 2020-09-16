@@ -29,7 +29,7 @@ namespace Game
 
 			if (IsMine == false) return;
 
-			RequestRPC(Rpc, Entity, this);
+			RequestRPC("Rpc", Entity, this);
 		}
 
         [NetworkRPC]

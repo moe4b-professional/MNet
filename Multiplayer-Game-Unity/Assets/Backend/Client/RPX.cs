@@ -32,7 +32,7 @@ namespace Backend
 
         public MethodInfo MethodInfo { get; protected set; }
 
-        public string ID { get; protected set; }
+        public string Name { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
 
@@ -41,19 +41,19 @@ namespace Backend
 
         public RpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, bufferMode, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, bufferMode, arguments);
 
             return request;
         }
         public RpcRequest CreateRequest(NetworkClientID target, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, target, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, target, arguments);
 
             return request;
         }
         public RpcRequest CreateRequest(NetworkClientID target, ushort callback, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, ID, target, callback, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, target, callback, arguments);
 
             return request;
         }
@@ -83,7 +83,7 @@ namespace Backend
             Attribute = attribute;
 
             MethodInfo = method;
-            ID = MethodInfo.Name;
+            Name = MethodInfo.Name;
 
             ParametersInfo = method.GetParameters();
 

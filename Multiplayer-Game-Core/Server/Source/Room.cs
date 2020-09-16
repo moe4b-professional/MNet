@@ -320,39 +320,60 @@ namespace Backend
             SendTo(client, response);
         }
 
+        #region RPC
         void InvokeRPC(NetworkClient sender, RpcRequest request)
         {
-            if (Entities.TryGetValue(request.Entity.Value, out var entity))
-                InvokeRPC(sender, entity, request);
-            else
+            if (Entities.TryGetValue(request.Entity.Value, out var entity) == false)
+            {
                 Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+
+                if (request.Type == RpcType.Return) ResolveRpr(sender, request, RprResult.InvalidClient);
+
+                return;
+            }
+
+            switch (request.Type)
+            {
+                case RpcType.Broadcast:
+                    InvokeBroadcastRPC(sender, request, entity);
+                    break;
+
+                case RpcType.Target:
+                case RpcType.Return:
+                    InvokeTargetedRPC(sender, request, entity);
+                    break;
+            }
         }
-        void InvokeRPC(NetworkClient sender, NetworkEntity entity, RpcRequest request)
+
+        void InvokeBroadcastRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity)
         {
             var command = RpcCommand.Write(sender.ID, request);
 
-            if (request.Type == RpcType.Broadcast)
-            {
-                var message = Broadcast(command);
+            var message = Broadcast(command);
 
-                entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
-            }
-
-            if (request.Type == RpcType.Target || request.Type == RpcType.Return)
-            {
-                if (Clients.TryGetValue(request.Target.Value, out var client))
-                {
-                    SendTo(client, command);
-
-                    if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender);
-                }
-                else
-                {
-                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
-                }
-            }
+            entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
         }
 
+        void InvokeTargetedRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity)
+        {
+            var command = RpcCommand.Write(sender.ID, request);
+
+            if (Clients.TryGetValue(request.Target.Value, out var client) == false)
+            {
+                Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
+
+                if (request.Type == RpcType.Return) ResolveRpr(sender, request, RprResult.InvalidClient);
+
+                return;
+            }
+
+            SendTo(client, command);
+
+            if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender);
+        }
+        #endregion
+
+        #region RPR
         void InvokeRPR(NetworkClient sender, RprRequest request)
         {
             if (Entities.TryGetValue(request.Entity.Value, out var entity) == false)
@@ -379,16 +400,23 @@ namespace Backend
 
             SendTo(target, command);
         }
-        void ResolveRprCache(NetworkEntity entity)
-        {
-            foreach (var callback in entity.RprCache.Collection)
-            {
-                var command = RprCommand.Write(entity.ID, callback.ID, RprResult.Disconnected);
 
-                SendTo(callback.Sender, command);
-            }
+        void ResolveRpr(NetworkClient target, RpcRequest request, RprResult result) => ResolveRpr(target, request.Entity, request.Callback, result);
+        void ResolveRpr(NetworkClient target, NetworkEntityID entity, ushort callback, RprResult result)
+        {
+            var command = RprCommand.Write(entity, callback, result);
+
+            SendTo(target, command);
         }
 
+        void ResolveRprCache(NetworkEntity entity, RprResult result)
+        {
+            foreach (var callback in entity.RprCache.Collection)
+                ResolveRpr(callback.Sender, callback.Request, result);
+        }
+        #endregion
+
+        #region SyncVar
         void InvokeSyncVar(NetworkClient sender, SyncVarRequest request)
         {
             if(Entities.TryGetValue(request.Entity.Value, out var entity) == false)
@@ -403,6 +431,7 @@ namespace Backend
 
             entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }
+        #endregion
 
         NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
@@ -464,7 +493,7 @@ namespace Backend
             UnbufferMessage(entity.SpawnMessage);
 
             entity.RpcBuffer.Clear(UnbufferMessages);
-            ResolveRprCache(entity);
+            ResolveRprCache(entity, RprResult.Disconnected);
             entity.SyncVarBuffer.Clear(UnbufferMessages);
 
             Entities.Remove(entity);

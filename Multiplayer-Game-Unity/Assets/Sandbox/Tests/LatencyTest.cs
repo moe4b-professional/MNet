@@ -23,20 +23,22 @@ namespace Game
 {
 	public class LatencyTest : NetworkBehaviour
 	{
+        string payload = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
         void Update()
         {
             if (IsMine && Input.GetKey(KeyCode.Mouse0) && timestamp == null)
             {
                 timestamp = Time.time;
 
-                RequestRPC(Click, Owner, transform.position, transform.rotation);
+                RequestRPC(Click, Owner, payload);
             }
         }
 
         float? timestamp;
 
         [NetworkRPC]
-        void Click(Vector3 position, Quaternion rotation, RpcInfo info)
+        void Click(string payload, RpcInfo info)
         {
             var elapsed = Time.time - timestamp;
 

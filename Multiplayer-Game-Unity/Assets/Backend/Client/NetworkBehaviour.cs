@@ -80,10 +80,10 @@ namespace Backend
 
                 var bind = new RpcBind(this, attribute, method);
 
-                if (RPCs.ContainsKey(bind.ID))
-                    throw new Exception($"Rpc Named {bind.ID} Already Registered On Behaviour {GetType()}, Please Assign Every RPC a Unique Name And Don't Overload the RPC Methods");
+                if (RPCs.ContainsKey(bind.Name))
+                    throw new Exception($"Rpc Named {bind.Name} Already Registered On Behaviour {GetType()}, Please Assign Every RPC a Unique Name And Don't Overload the RPC Methods");
 
-                RPCs.Add(bind.ID, bind);
+                RPCs.Add(bind.Name, bind);
             }
         }
 
@@ -223,7 +223,7 @@ namespace Backend
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
-                Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.ID} Sent From Client {command.Sender}");
+                Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.Name} Sent From Client {command.Sender}");
 
                 if (command.Type == RpcType.Return) SendRPR(command, RprResult.InvalidAuthority);
 
@@ -308,10 +308,10 @@ namespace Backend
 
                 var bind = new SyncVarBind(this, attribute, field);
 
-                if (SyncVars.ContainsKey(bind.ID))
-                    throw new Exception($"SyncVar Named {bind.ID} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
+                if (SyncVars.ContainsKey(bind.Name))
+                    throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
 
-                SyncVars.Add(bind.ID, bind);
+                SyncVars.Add(bind.Name, bind);
             }
 
             foreach (var property in type.GetProperties(flags))
@@ -322,10 +322,10 @@ namespace Backend
 
                 var bind = new SyncVarBind(this, attribute, property);
 
-                if (SyncVars.ContainsKey(bind.ID))
-                    throw new Exception($"SyncVar Named {bind.ID} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
+                if (SyncVars.ContainsKey(bind.Name))
+                    throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
 
-                SyncVars.Add(bind.ID, bind);
+                SyncVars.Add(bind.Name, bind);
             }
         }
 
@@ -371,7 +371,7 @@ namespace Backend
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
-                Debug.LogWarning($"Invalid Authority To Invoke SyncVar {bind.ID} Sent From Client {command.Sender}");
+                Debug.LogWarning($"Invalid Authority To Invoke SyncVar {bind.Name} Sent From Client {command.Sender}");
                 return;
             }
 

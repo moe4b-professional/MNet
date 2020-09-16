@@ -36,7 +36,7 @@ namespace Game
         public PropertyInfo PropertyInfo { get; protected set; }
         public bool IsProperty => PropertyInfo != null;
 
-        public string ID { get; protected set; }
+        public string Name { get; protected set; }
 
         public Type Type
         {
@@ -59,7 +59,7 @@ namespace Game
 
         public SyncVarRequest CreateRequest(object value)
         {
-            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, ID, value);
+            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, Name, value);
 
             return request;
         }
@@ -92,8 +92,8 @@ namespace Game
             this.FieldInfo = field;
             this.PropertyInfo = property;
 
-            if (IsField) ID = FieldInfo.Name;
-            if (IsProperty) ID = PropertyInfo.Name;
+            if (IsField) Name = FieldInfo.Name;
+            if (IsProperty) Name = PropertyInfo.Name;
         }
         public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field)
             : this(behaviour, attribute, field, null)
@@ -105,7 +105,7 @@ namespace Game
         {
             if (property.SetMethod == null || property.GetMethod == null)
             {
-                var text = $"{behaviour.GetType().Name}'s '{ID}' Property Cannot be Used as a SyncVar, " +
+                var text = $"{behaviour.GetType().Name}'s '{Name}' Property Cannot be Used as a SyncVar, " +
                     $"Please Ensure The Property Has Both a Setter & Getter";
 
                 throw new Exception(text);

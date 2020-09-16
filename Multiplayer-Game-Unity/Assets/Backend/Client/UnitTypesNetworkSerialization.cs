@@ -181,6 +181,8 @@ namespace Backend
                 return null;
             }
 
+            var value = Convert.ChangeType(behaviour, type);
+
             return behaviour;
         }
     }
