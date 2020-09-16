@@ -246,7 +246,15 @@ namespace Backend
     #region Return
     public enum RprResult : byte
     {
-        Success, Disconnected, MethodNotFound, InvalidAuthority, InvalidArguments, RuntimeException, InvalidEntity, InvalidClient
+        Success,
+        Disconnected,
+        MethodNotFound,
+        InvalidAuthority,
+        InvalidArguments,
+        RuntimeException,
+        InvalidClient,
+        InvalidEntity,
+        InvalidBehaviour,
     }
 
     [Serializable]

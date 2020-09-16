@@ -216,7 +216,7 @@ namespace Backend
             {
                 Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
 
-                if (command.Type == RpcType.Return) SendRPR(command, RprResult.MethodNotFound);
+                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.MethodNotFound);
 
                 return;
             }
@@ -225,7 +225,7 @@ namespace Backend
             {
                 Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.Name} Sent From Client {command.Sender}");
 
-                if (command.Type == RpcType.Return) SendRPR(command, RprResult.InvalidAuthority);
+                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.InvalidAuthority);
 
                 return;
             }
@@ -244,7 +244,7 @@ namespace Backend
 
                 Debug.LogWarning(text, this);
 
-                if (command.Type == RpcType.Return) SendRPR(command, RprResult.InvalidArguments);
+                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.InvalidArguments);
 
                 return;
             }
@@ -256,7 +256,7 @@ namespace Backend
             }
             catch (TargetInvocationException)
             {
-                if (command.Type == RpcType.Return) SendRPR(command, RprResult.RuntimeException);
+                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.RuntimeException);
                 throw;
             }
             catch (Exception)
@@ -266,7 +266,7 @@ namespace Backend
 
                 Debug.LogWarning(text, this);
 
-                if (command.Type == RpcType.Return) SendRPR(command, RprResult.RuntimeException);
+                if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.RuntimeException);
 
                 return;
             }
@@ -276,19 +276,14 @@ namespace Backend
         #endregion
 
         #region RPR
-        void SendRPR(RpcCommand rpc, RprResult result)
-        {
-            var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, result);
-
-            NetworkAPI.Client.Send(payload);
-        }
-
         void SendRPR(RpcCommand rpc, object value)
         {
             var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, value);
 
             NetworkAPI.Client.Send(payload);
         }
+
+        void ResolveRPR(RpcCommand command, RprResult result) => NetworkAPI.Room.ResolveRPR(command, result);
         #endregion
 
         #region SyncVar

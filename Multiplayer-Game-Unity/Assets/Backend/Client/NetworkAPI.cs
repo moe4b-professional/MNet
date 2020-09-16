@@ -766,10 +766,26 @@ namespace Backend
                 if (Entities.TryGetValue(command.Entity, out var target) == false)
                 {
                     Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+
+                    if (command.Type == RpcType.Return) ResolveRPR(command, RprResult.InvalidEntity);
+
                     return;
                 }
 
                 target.InvokeRPC(command);
+            }
+
+            public static void ResolveRPR(RpcCommand command, RprResult result)
+            {
+                if(command.Type != RpcType.Return)
+                {
+                    Debug.LogWarning($"Trying to Resolve RPR for Non Return Type RPC Command {command.Method}, Ignoring");
+                    return;
+                }
+
+                var request = RprRequest.Write(command.Entity, command.Sender, command.Callback, result);
+
+                Client.Send(request);
             }
 
             static void InvokeRPR(RprCommand payload)

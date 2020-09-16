@@ -154,6 +154,9 @@ namespace Backend
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
+
+                if (command.Type == RpcType.Return) NetworkAPI.Room.ResolveRPR(command, RprResult.InvalidBehaviour);
+
                 return;
             }
 
