@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,7 +12,7 @@ namespace Backend
 {
     class Lobby
     {
-        public IDCollection<Room> Rooms { get; protected set; }
+        public AutoKeyDictionary<RoomID, Room> Rooms { get; protected set; }
 
         public RoomBasicInfo[] ReadRoomsInfo()
         {
@@ -19,7 +20,7 @@ namespace Backend
 
             var index = 0;
 
-            foreach (var room in Rooms.Collection)
+            foreach (var room in Rooms.Values)
             {
                 var info = room.ReadBasicInfo();
 
@@ -46,11 +47,11 @@ namespace Backend
         }
         public Room CreateRoom(string name, ushort capacity, AttributesCollection attributes)
         {
-            var code = Rooms.Reserve();
+            var id = Rooms.Reserve();
 
-            var room = new Room(code, name, capacity, attributes);
+            var room = new Room(id, name, capacity, attributes);
 
-            Rooms.Assign(room, code);
+            Rooms.Assign(id, room);
 
             room.Start();
 
@@ -105,7 +106,7 @@ namespace Backend
 
         public Lobby()
         {
-            Rooms = new IDCollection<Room>();
+            Rooms = new AutoKeyDictionary<RoomID, Room>(RoomID.Increment);
         }
     }
 }

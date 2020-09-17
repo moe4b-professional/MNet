@@ -8,97 +8,149 @@ using System.Collections.Concurrent;
 
 namespace Backend
 {
-    public class IDCollection<TType>
-        where TType : class
+    public class Glossary<TKey, TValue>
     {
-        Dictionary<ushort, TType> types;
+        public Dictionary<TValue, TKey> Keys { get; protected set; }
+        public Dictionary<TKey, TValue> Values { get; protected set; }
 
-        Dictionary<TType, ushort> codes;
+        public TValue this[TKey key] => Values[key];
+        public TKey this[TValue value] => Keys[value];
 
-        ConcurrentQueue<ushort> vacant;
-        
-        ushort index;
-
-        object sync = new object();
-
-        public IReadOnlyCollection<TType> Collection => types.Values;
-
-        public int Count => Collection.Count;
-
-        public TType this[ushort code] => types[code];
-        public ushort this[TType type] => codes[type];
-
-        public ushort Add(TType type)
+        public virtual void Set(TKey key, TValue value)
         {
-            lock (sync)
+            Values[key] = value;
+            Keys[value] = key;
+        }
+
+        public virtual bool TryGetKey(TValue value, out TKey key) => Keys.TryGetValue(value, out key);
+        public virtual bool TryGetValue(TKey key, out TValue value) => Values.TryGetValue(key, out value);
+
+        public virtual bool Contains(TKey key) => Values.ContainsKey(key);
+        public virtual bool Contains(TValue value) => Keys.ContainsKey(value);
+
+        public virtual void Remove(TKey key)
+        {
+            if (Values.TryGetValue(key, out var value) == false)
+            {
+                Values.Remove(key);
+                return;
+            }
+
+            Keys.Remove(value);
+        }
+        public virtual void Remove(TValue value)
+        {
+            if (Keys.TryGetValue(value, out var key) == false)
+            {
+                Keys.Remove(value);
+                return;
+            }
+
+            Values.Remove(key);
+        }
+
+        public Glossary()
+        {
+            Values = new Dictionary<TKey, TValue>();
+
+            Keys = new Dictionary<TValue, TKey>();
+        }
+    }
+
+    public class AutoKeyCollection<TKey>
+    {
+        protected HashSet<TKey> hash;
+
+        protected ConcurrentQueue<TKey> vacant;
+
+        protected TKey index;
+
+        public void Increment() => index = Incrementor(index);
+
+        public delegate TKey IncrementDelegate(TKey value);
+        public IncrementDelegate Incrementor { get; protected set; }
+
+        object SyncLock = new object();
+
+        public TKey Reserve()
+        {
+            lock (SyncLock)
             {
                 if (vacant.TryDequeue(out var code) == false)
                 {
                     code = index;
 
-                    index += 1;
-                }
-
-                types[code] = type;
-                codes[type] = code;
-
-                return code;
-            }
-        }
-
-        public void Assign(TType type, ushort code)
-        {
-            lock (sync)
-            {
-                types[code] = type;
-                codes[type] = code;
-            }
-        }
-
-        public ushort Reserve()
-        {
-            lock (sync)
-            {
-                if (vacant.TryDequeue(out var code) == false)
-                {
-                    code = index;
-
-                    index += 1;
+                    Increment();
                 }
 
                 return code;
             }
         }
 
-        public bool Remove(TType type)
+        public bool Free(TKey key)
         {
-            lock(sync)
+            lock (SyncLock)
             {
-                if (codes.TryGetValue(type, out var code) == false) return false;
+                if (hash.Contains(key) == false) return false;
 
-                types.Remove(code);
-                codes.Remove(type);
-
-                vacant.Enqueue(code);
+                vacant.Enqueue(key);
 
                 return true;
             }
         }
 
-        public bool TryGetValue(ushort code, out TType type) => types.TryGetValue(code, out type);
+        public bool Contains(TKey key) => hash.Contains(key);
 
-        public bool Contains(TType type) => codes.ContainsKey(type);
-        public bool Contains(ushort code) => types.ContainsKey(code);
-
-        public IDCollection()
+        public AutoKeyCollection(IncrementDelegate incrementor)
         {
-            types = new Dictionary<ushort, TType>();
+            hash = new HashSet<TKey>();
+            vacant = new ConcurrentQueue<TKey>();
 
-            codes = new Dictionary<TType, ushort>();
+            index = default;
+            this.Incrementor = incrementor;
+        }
+    }
 
-            vacant = new ConcurrentQueue<ushort>();
+    public class AutoKeyDictionary<TKey, TValue>
+    {
+        public Dictionary<TKey, TValue> Dictionary { get; protected set; }
 
-            index = 0;
+        public IReadOnlyCollection<TValue> Values => Dictionary.Values;
+
+        public AutoKeyCollection<TKey> Keys { get; protected set; }
+
+        public int Count => Dictionary.Count;
+
+        public TValue this[TKey key] => Dictionary[key];
+
+        public virtual TKey Reserve()
+        {
+            var code = Keys.Reserve();
+
+            return code;
+        }
+
+        public virtual void Assign(TKey key, TValue value)
+        {
+            Dictionary[key] = value;
+        }
+
+        public virtual bool TryGetValue(TKey key, out TValue value) => Dictionary.TryGetValue(key, out value);
+
+        public virtual bool Contains(TKey key) => Dictionary.ContainsKey(key);
+
+        public virtual void Remove(TKey key)
+        {
+            Dictionary.Remove(key);
+
+            Keys.Free(key);
+        }
+
+        public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor)
+        {
+            Dictionary = new Dictionary<TKey, TValue>();
+
+            Keys = new AutoKeyCollection<TKey>(incrementor);
         }
     }
 }

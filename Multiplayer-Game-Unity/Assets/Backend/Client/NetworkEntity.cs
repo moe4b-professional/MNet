@@ -86,7 +86,7 @@ namespace Backend
         }
 
         #region RPR
-        public IDCollection<RprBind> RPRs { get; protected set; }
+        public AutoKeyDictionary<ushort, RprBind> RPRs { get; protected set; }
 
         public RprBind RegisterRPR(MethodInfo method, object target)
         {
@@ -94,7 +94,7 @@ namespace Backend
 
             var callback = new RprBind(code, method, target);
 
-            RPRs.Assign(callback, code);
+            RPRs.Assign(code, callback);
 
             return callback;
         }
@@ -145,7 +145,7 @@ namespace Backend
 
         public void UnregisterRPR(RprBind bind)
         {
-            RPRs.Remove(bind);
+            RPRs.Remove(bind.ID);
         }
         #endregion
 
@@ -181,7 +181,7 @@ namespace Backend
 
         public NetworkEntity()
         {
-            RPRs = new IDCollection<RprBind>();
+            RPRs = new AutoKeyDictionary<ushort, RprBind>(RprBind.Increment);
         }
     }
 }

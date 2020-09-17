@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,8 +9,8 @@ namespace Backend
 {
     public class RoomBasicInfo : INetworkSerializable
     {
-        ushort id;
-        public ushort ID { get { return id; } }
+        RoomID id;
+        public RoomID ID { get { return id; } }
 
         string name;
         public string Name { get { return name; } }
@@ -33,7 +34,7 @@ namespace Backend
         }
 
         public RoomBasicInfo() { }
-        public RoomBasicInfo(ushort id, string name, int maxPlayers, int playersCount, AttributesCollection attributes)
+        public RoomBasicInfo(RoomID id, string name, int maxPlayers, int playersCount, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
@@ -59,5 +60,42 @@ namespace Backend
         }
 
         public RoomInternalInfo() { }
+    }
+
+    public struct RoomID : INetworkSerializable
+    {
+        uint value;
+        public uint Value { get { return value; } }
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref value);
+        }
+
+        public RoomID(uint value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == typeof(RoomID))
+            {
+                var target = (RoomID)obj;
+
+                return target.value == this.value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(RoomID a, RoomID b) => a.Equals(b);
+        public static bool operator !=(RoomID a, RoomID b) => !a.Equals(b);
+
+        public static RoomID Increment(RoomID id) => new RoomID(id.value + 1);
     }
 }

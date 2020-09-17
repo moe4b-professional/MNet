@@ -16,9 +16,7 @@ namespace Backend
 {
     class Room
     {
-        public ushort ID { get; protected set; }
-
-        public string Path => "/" + ID;
+        public RoomID ID { get; protected set; }
 
         public string Name { get; protected set; }
 
@@ -37,7 +35,7 @@ namespace Backend
 
             var index = 0;
 
-            foreach (var client in Clients.Collection)
+            foreach (var client in Clients.Values)
             {
                 list[index] = client.ReadInfo();
 
@@ -55,55 +53,7 @@ namespace Backend
         }
         #endregion
 
-        #region Web Socket
-        public WebSocketServiceHost WebSocket { get; protected set; }
-
-        public class WebSocketService : WebSocketBehavior
-        {
-            public Room Room { get; protected set; }
-            public void Set(Room reference) => Room = reference;
-
-            public ActionQueue InputQueue => Room.InputQueue;
-
-            protected override void OnOpen()
-            {
-                base.OnOpen();
-
-                InputQueue.Enqueue(Invoke);
-
-                void Invoke() => Room.ClientConnected(this.ID);
-            }
-
-            protected override void OnMessage(MessageEventArgs args)
-            {
-                base.OnMessage(args);
-
-                var message = NetworkMessage.Read(args.RawData);
-
-                InputQueue.Enqueue(Invoke);
-
-                void Invoke() => Room.ClientMessageCallback(this.ID, args.RawData, message);
-            }
-
-            protected override void OnClose(CloseEventArgs args)
-            {
-                base.OnClose(args);
-
-                InputQueue.Enqueue(Invoke);
-
-                void Invoke() => Room.ClientDisconnected(this.ID);
-            }
-
-            public WebSocketService()
-            {
-
-            }
-        }
-
-        public void InitializeService(WebSocketService service) => service.Set(this);
-
-        public Dictionary<string, NetworkClient> WebSocketClients { get; protected set; }
-        #endregion
+        public NetworkTransportContext TransportContext { get; protected set; }
 
         #region Schedule
         Schedule schedule;
@@ -111,9 +61,11 @@ namespace Backend
         public const long DefaultTickInterval = 50;
         #endregion
 
-        public IDCollection<NetworkClient> Clients { get; protected set; }
+        public HashSet<NetPeerID> Peers { get; protected set; }
 
-        public IDCollection<NetworkEntity> Entities { get; protected set; }
+        public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
+
+        public AutoKeyDictionary<NetworkEntityID, NetworkEntity> Entities { get; protected set; }
 
         public List<NetworkEntity> SceneObjects { get; protected set; }
 
@@ -141,7 +93,7 @@ namespace Backend
         {
             if (Clients.Count > 0)
             {
-                var target = Clients.Collection.First();
+                var target = Clients.Values.First();
 
                 ChangeMaster(target);
             }
@@ -162,17 +114,15 @@ namespace Backend
         public void UnbufferMessages(HashSet<NetworkMessage> collection) => MessageBuffer.RemoveAll(x => collection.Contains(x));
         #endregion
 
-        public ActionQueue InputQueue { get; protected set; }
-
         #region Communication
-        NetworkMessage SendTo<T>(NetworkClient client, T payload) => SendTo(client.WebsocketID, payload);
-        NetworkMessage SendTo<T>(string websocketID, T payload)
+        NetworkMessage SendTo<T>(NetworkClient target, T payload) => SendTo(target.ID, payload);
+        NetworkMessage SendTo<T>(NetworkClientID target, T payload)
         {
             var message = NetworkMessage.Write(payload);
 
             var binary = NetworkSerializer.Serialize(message);
 
-            WebSocket.Sessions.SendTo(binary, websocketID);
+            TransportContext.Send(target, binary);
 
             return message;
         }
@@ -183,9 +133,8 @@ namespace Backend
 
             var binary = NetworkSerializer.Serialize(message);
 
-            //Log.Info($"{typeof(T)} Binary Size: {binary.Length}");
-
-            WebSocket.Sessions.Broadcast(binary);
+            foreach (var client in Clients.Keys)
+                TransportContext.Send(client, binary);
 
             return message;
         }
@@ -195,8 +144,13 @@ namespace Backend
         {
             Log.Info($"Starting Room {ID}");
 
-            GameServer.WebSocket.AddService<WebSocketService>(Path, InitializeService);
-            WebSocket = GameServer.WebSocket.Services[Path];
+            TransportContext = GameServer.Realtime.Register(ID.Value);
+
+            Log.Info(TransportContext);
+
+            TransportContext.OnConnect += ClientConnected;
+            TransportContext.OnRecievedMessage += MessageRecievedCallback;
+            TransportContext.OnDisconnect += ClientDisconnected;
 
             schedule.Start();
         }
@@ -206,23 +160,22 @@ namespace Backend
         {
             //Log.Info($"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}");
 
-            while (InputQueue.Dequeue(out var callback))
-                callback();
+            TransportContext.Poll();
 
             OnTick?.Invoke();
         }
 
-        void ClientConnected(string websocketID)
+        void ClientConnected(NetworkClientID id)
         {
-            Log.Info($"Room {this.ID}: Client {websocketID} Connected");
+            Log.Info($"Room {this.ID}: Client {id} Connected");
         }
 
         #region Client Messages
-        void ClientMessageCallback(string websocketID, byte[] raw, NetworkMessage message)
+        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, ArraySegment<byte> raw)
         {
-            //Log.Info($"{message.Type} Binary Size: {raw.Length}");
+            //Log.Info($"{message.Type} Binary Size: {raw.Count}");
 
-            if(WebSocketClients.TryGetValue(websocketID, out var client))
+            if (Clients.TryGetValue(id, out var client))
             {
                 if (message.Is<RpcRequest>())
                 {
@@ -236,19 +189,19 @@ namespace Backend
 
                     SpawnEntity(client, request);
                 }
-                else if(message.Is<DestroyEntityRequest>())
+                else if (message.Is<DestroyEntityRequest>())
                 {
                     var request = message.Read<DestroyEntityRequest>();
 
                     DestroyEntity(client, request);
                 }
-                else if(message.Is<RprRequest>())
+                else if (message.Is<RprRequest>())
                 {
                     var callback = message.Read<RprRequest>();
 
                     InvokeRPR(client, callback);
                 }
-                else if(message.Is<SyncVarRequest>())
+                else if (message.Is<SyncVarRequest>())
                 {
                     var request = message.Read<SyncVarRequest>();
 
@@ -267,39 +220,29 @@ namespace Backend
                 {
                     var request = message.Read<RegisterClientRequest>();
 
-                    RegisterClient(websocketID, request);
+                    RegisterClient(id, request);
                 }
             }
         }
 
-        void RegisterClient(string websocketID, RegisterClientRequest request) => RegisterClient(websocketID, request.Profile);
-        void RegisterClient(string websocketID, NetworkClientProfile profile)
+        void RegisterClient(NetworkClientID id, RegisterClientRequest request) => RegisterClient(id, request.Profile);
+        void RegisterClient(NetworkClientID id, NetworkClientProfile profile)
         {
-            if (WebSocketClients.ContainsKey(websocketID))
+            if (Clients.ContainsKey(id))
             {
-                Log.Warning($"Client {websocketID} Already Registered With Room {this.ID}, Ignoring Register Request");
+                Log.Warning($"Client {id} Already Registered With Room {this.ID}, Ignoring Register Request");
                 return;
             }
-
-            if(WebSocket.Sessions.TryGetSession(websocketID, out var session) == false) //TODO remember why I needed this?
-            {
-                Log.Warning($"No WebSocket Session Found for Client {websocketID}, Ignoring Register Request");
-                return;
-            }
-
-            var code = Clients.Reserve();
-            var id = new NetworkClientID(code);
 
             var info = new NetworkClientInfo(id, profile);
 
-            var client = new NetworkClient(info, session);
+            var client = new NetworkClient(info);
 
             if (Clients.Count == 0) SetMaster(client);
 
-            Clients.Assign(client, code);
-            WebSocketClients.Add(websocketID, client);
+            Clients.Add(id, client);
 
-            Log.Info($"Room {this.ID}: Client {websocketID} Registerd as Client {id}");
+            Log.Info($"Room {this.ID}: Client {id} Registerd");
 
             var room = ReadInternalInfo();
             var response = new RegisterClientResponse(id, room);
@@ -323,7 +266,7 @@ namespace Backend
         #region RPC
         void InvokeRPC(NetworkClient sender, RpcRequest request)
         {
-            if (Entities.TryGetValue(request.Entity.Value, out var entity) == false)
+            if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
                 Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
 
@@ -358,7 +301,7 @@ namespace Backend
         {
             var command = RpcCommand.Write(sender.ID, request);
 
-            if (Clients.TryGetValue(request.Target.Value, out var client) == false)
+            if (Clients.TryGetValue(request.Target, out var client) == false)
             {
                 Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
 
@@ -376,13 +319,13 @@ namespace Backend
         #region RPR
         void InvokeRPR(NetworkClient sender, RprRequest request)
         {
-            if (Entities.TryGetValue(request.Entity.Value, out var entity) == false)
+            if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
                 Log.Warning($"No Entity {request.Entity} Found to Invoke RPC Callback On");
                 return;
             }
             
-            if (Clients.TryGetValue(request.Target.Value, out var target) == false)
+            if (Clients.TryGetValue(request.Target, out var target) == false)
             {
                 Log.Warning($"No Client {request.Target} Found to Invoke RPC Callback On");
                 return;
@@ -419,7 +362,7 @@ namespace Backend
         #region SyncVar
         void InvokeSyncVar(NetworkClient sender, SyncVarRequest request)
         {
-            if(Entities.TryGetValue(request.Entity.Value, out var entity) == false)
+            if(Entities.TryGetValue(request.Entity, out var entity) == false)
             {
                 Log.Warning($"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}");
                 return;
@@ -441,13 +384,12 @@ namespace Backend
                 return null;
             }
 
-            var code = Entities.Reserve();
-            var id = new NetworkEntityID(code);
+            var id = Entities.Reserve();
 
             var entity = new NetworkEntity(sender, id, request.Type);
 
             sender.Entities.Add(entity);
-            Entities.Assign(entity, code);
+            Entities.Assign(id, entity);
 
             if (request.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
 
@@ -463,7 +405,7 @@ namespace Backend
 
         void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
         {
-            if (Entities.TryGetValue(request.ID.Value, out var entity) == false)
+            if (Entities.TryGetValue(request.ID, out var entity) == false)
             {
                 Log.Warning($"Client {sender} Trying to Destory Non Registered Entity {request.ID}");
                 return;
@@ -479,11 +421,11 @@ namespace Backend
         }
         #endregion
 
-        void ClientDisconnected(string websocketID)
+        void ClientDisconnected(NetworkClientID id)
         {
-            Log.Info($"Room {this.ID}: Client {websocketID} Disconnected");
+            Log.Info($"Room {this.ID}: Client {id} Disconnected");
 
-            if (WebSocketClients.TryGetValue(websocketID, out var client)) RemoveClient(client);
+            if (Clients.TryGetValue(id, out var client)) RemoveClient(client);
         }
 
         void DestroyEntity(NetworkEntity entity)
@@ -496,7 +438,7 @@ namespace Backend
             ResolveRprCache(entity, RprResult.Disconnected);
             entity.SyncVarBuffer.Clear(UnbufferMessages);
 
-            Entities.Remove(entity);
+            Entities.Remove(entity.ID);
             owner.Entities.Remove(entity);
 
             var command = new DestroyEntityCommand(entity.ID);
@@ -513,8 +455,7 @@ namespace Backend
                 DestroyEntity(client.Entities[i]);
             }
 
-            WebSocketClients.Remove(client.WebsocketID);
-            Clients.Remove(client);
+            Clients.Remove(client.ID);
 
             if (client == Master) ChangeMaster();
 
@@ -528,26 +469,24 @@ namespace Backend
 
             schedule.Stop();
 
-            GameServer.WebSocket.RemoveService(Path);
+            GameServer.Realtime.Unregister(ID.Value);
         }
 
-        public Room(ushort id, string name, ushort capacity, AttributesCollection attributes)
+        public Room(RoomID id, string name, ushort capacity, AttributesCollection attributes)
         {
             this.ID = id;
             this.Name = name;
             this.Capacity = capacity;
             this.Attributes = attributes;
 
-            WebSocketClients = new Dictionary<string, NetworkClient>();
-
             MessageBuffer = new NetworkMessageCollection();
 
-            Clients = new IDCollection<NetworkClient>();
-            Entities = new IDCollection<NetworkEntity>();
+            Peers = new HashSet<NetPeerID>();
+
+            Clients = new Dictionary<NetworkClientID, NetworkClient>();
+            Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
 
             SceneObjects = new List<NetworkEntity>();
-
-            InputQueue = new ActionQueue();
 
             schedule = new Schedule(DefaultTickInterval, Tick);
         }

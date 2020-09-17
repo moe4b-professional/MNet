@@ -563,7 +563,7 @@ namespace Backend
             public static event DisconnectDelegate OnDisconnect;
             static void DisconnectedCallback(CloseStatusCode code, string reason)
             {
-                Debug.Log("Client Disconnected");
+                Debug.Log($"Client Disconnected, Code: {code}, Reason: {reason}");
 
                 Clear();
 
@@ -615,7 +615,7 @@ namespace Backend
             }
 
             public static void Join(RoomBasicInfo info) => Join(info.ID);
-            public static void Join(ushort id) => WebSocketAPI.Connect("/" + id);
+            public static void Join(RoomID id) => WebSocketAPI.Connect("/" + id.Value);
 
             #region Self Callbacks
             static void SelfConnectCallback() => Setup();
@@ -827,10 +827,12 @@ namespace Backend
                 
                 Debug.Log($"Spawned {entity.name} with ID: {command.ID}, Owned By Client {command.Owner}");
 
-                if (Clients.TryGetValue(command.Owner, out var owner))
-                    owner.Entities.Add(entity);
-                else
+                var owner = FindEntityOwner(command);
+
+                if (owner == null)
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
+                else
+                    owner.Entities.Add(entity);
 
                 entity.Spawn(owner, command.ID, command.Attributes, command.Type);
                 Entities.Add(entity.ID, entity);
@@ -838,6 +840,21 @@ namespace Backend
                 if (command.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
 
                 OnSpawnEntity?.Invoke(entity);
+            }
+
+            static NetworkClient FindEntityOwner(SpawnEntityCommand command)
+            {
+                if(command.Type == NetworkEntityType.SceneObject) return Master;
+
+                if (command.Type == NetworkEntityType.Dynamic)
+                {
+                    if (Clients.TryGetValue(command.Owner, out var owner))
+                        return owner;
+                    else
+                        return null;
+                }
+
+                throw new NotImplementedException();
             }
 
             static NetworkEntity CreateEntity(SpawnEntityCommand command)

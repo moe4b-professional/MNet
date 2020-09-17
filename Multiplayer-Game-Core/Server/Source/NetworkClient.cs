@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using WebSocketSharp;
 using WebSocketSharp.Net;
@@ -20,10 +20,6 @@ namespace Backend
         public string Name => Profile.Name;
         public AttributesCollection Attributes => Profile.Attributes;
 
-        public IWebSocketSession Session { get; protected set; }
-        public string WebsocketID => Session.ID;
-        public bool IsConnected => Session.State == WebSocketState.Open;
-
         public List<NetworkEntity> Entities { get; protected set; }
 
         public bool IsReady { get; protected set; }
@@ -36,10 +32,9 @@ namespace Backend
 
         public override string ToString() => ID.ToString();
 
-        public NetworkClient(NetworkClientInfo info, IWebSocketSession session)
+        public NetworkClient(NetworkClientInfo info)
         {
             this.Info = info;
-            this.Session = session;
 
             Entities = new List<NetworkEntity>();
         }

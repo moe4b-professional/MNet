@@ -167,6 +167,13 @@ namespace Backend
 
             return null;
         }
+
+        public static ushort Increment(ushort id)
+        {
+            id += 1;
+
+            return id;
+        }
     }
 
     public delegate void RprMethod<T>(RprResult result, T value);

@@ -13,7 +13,7 @@ namespace Backend
     {
         public static RestAPI Rest { get; private set; }
 
-        public static WebSocketAPI WebSocket { get; private set; }
+        public static RealtimeAPI Realtime { get; private set; }
 
         public static Lobby Lobby { get; private set; }
 
@@ -24,8 +24,9 @@ namespace Backend
             Rest = new RestAPI(address, Constants.RestAPI.Port);
             Rest.Start();
 
-            WebSocket = new WebSocketAPI(address, Constants.WebSocketAPI.Port);
-            WebSocket.Start();
+            var transport = new WebSocketNetworkTransport(address, Constants.WebSocketAPI.Port);
+            Realtime = new RealtimeAPI(transport);
+            Realtime.Start();
 
             Lobby = new Lobby();
             Lobby.Configure();
