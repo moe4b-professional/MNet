@@ -55,14 +55,8 @@ namespace Backend
 
         public AutoKeyCollection<NetworkClientID> Clients { get; protected set; }
 
-        public NetworkClientID Reserve()
-        {
-            var id = Clients.Reserve();
-
-            return id;
-        }
-
-        public void Free(NetworkClientID id) => Clients.Free(id);
+        public NetworkClientID ReserveID() => Clients.Reserve();
+        public void FreeID(NetworkClientID id) => Clients.Free(id);
 
         #region Connect
         public delegate void ConnectDelegate(NetworkClientID client);
@@ -99,16 +93,18 @@ namespace Backend
         #region Disconnect
         public delegate void DisconnectDelegate(NetworkClientID client);
         public event DisconnectDelegate OnDisconnect;
-        void InvokeDisconnected(NetworkClientID client)
+        void InvokeDisconnect(NetworkClientID client)
         {
             OnDisconnect?.Invoke(client);
+
+            Remove(client);
         }
 
         protected virtual void QueueDisconnect(NetworkClientID client)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeDisconnected(client);
+            void Action() => InvokeDisconnect(client);
         }
         #endregion
 
@@ -119,6 +115,11 @@ namespace Backend
         }
 
         public abstract void Send(NetworkClientID target, byte[] raw);
+
+        public virtual void Remove(NetworkClientID client)
+        {
+            FreeID(client);
+        }
 
         public abstract void Close();
 

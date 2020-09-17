@@ -11,6 +11,8 @@ namespace Backend
 
         public virtual void Start()
         {
+            Log.Info($"Starting {Transport.GetType().Name}");
+
             Transport.Start();
         }
 

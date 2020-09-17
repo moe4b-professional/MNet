@@ -76,27 +76,39 @@ namespace Backend
         {
             lock (SyncLock)
             {
-                if (vacant.TryDequeue(out var code) == false)
+                if (vacant.TryDequeue(out var key) == false)
                 {
-                    code = index;
+                    key = index;
 
                     Increment();
                 }
 
-                return code;
+                Add(key);
+
+                return key;
             }
+        }
+
+        void Add(TKey key)
+        {
+            hash.Add(key);
         }
 
         public bool Free(TKey key)
         {
             lock (SyncLock)
             {
-                if (hash.Contains(key) == false) return false;
+                if (Contains(key) == false) return false;
 
+                Remove(key);
                 vacant.Enqueue(key);
-
                 return true;
             }
+        }
+
+        void Remove(TKey key)
+        {
+            hash.Remove(key);
         }
 
         public bool Contains(TKey key) => hash.Contains(key);

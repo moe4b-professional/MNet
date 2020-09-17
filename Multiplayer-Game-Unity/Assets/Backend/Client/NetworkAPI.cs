@@ -1,34 +1,22 @@
 ﻿using System;
-using System.IO;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using UnityEngine.AI;
 
 #if UNITY_EDITOR
-using UnityEditor;
-using UnityEditorInternal;
 #endif
 
 using Object = UnityEngine.Object;
-using Random = UnityEngine.Random;
 
-using UnityEngine.Networking;
-using UnityEngine.PlayerLoop;
 using UnityEngine.LowLevel;
-
-using WebSocketSharp;
-using WebSocketSharp.Net;
-
-using System.Collections.Concurrent;
+using UnityEngine.PlayerLoop;
+using UnityEngine.Networking;
 
 namespace Backend
 {
-	public static class NetworkAPI
+    public static class NetworkAPI
 	{
         public static string Address { get; private set; }
         
@@ -50,6 +38,7 @@ namespace Backend
 
             Log.Output = LogOutput;
 
+            RealtimeAPI.Configure();
             Client.Configure();
             Room.Configure();
         }
@@ -261,39 +250,35 @@ namespace Backend
             }
         }
 
-        public static class WebSocketAPI
+        public static class RealtimeAPI
         {
-            public static string Address => NetworkAPI.Address + ":" + Constants.WebSocketAPI.Port;
+            public static NetworkTransport Transport { get; private set; }
 
-            public static WebSocket Socket { get; private set; }
-            public static bool IsConnected => Socket == null ? false : Socket.ReadyState == WebSocketState.Open;
-            public static bool IsDisconnected => Socket == null ? true : Socket.ReadyState == WebSocketState.Closed;
+            public static bool IsConnected => Transport == null ? false : Transport.IsConnected;
 
-            public static ConcurrentQueue<Action> ActionQueue { get; private set; }
-
-            public static void Connect(string path)
+            public static void Configure()
             {
-                if (IsDisconnected == false)
+                Transport = new WebSocketNetworkTransport(Address, Constants.WebSocketAPI.Port);
+
+                Transport.OnConnect += ConnectCallback;
+                Transport.OnRecievedMessage += MessageCallback;
+                Transport.OnDisconnect += DisconnectCallback;
+            }
+
+            public static void Connect(uint context)
+            {
+                if (IsConnected)
                 {
                     Debug.LogError("Client Must Be Disconnected Before Reconnecting");
                     return;
                 }
 
-                var url = "ws://" + Address + path;
+                //Socket.OnError += ErrorCallback; //TODO Implement Transport Error Handling
 
-                ActionQueue = new ConcurrentQueue<Action>();
-
-                Socket = new WebSocket(url);
-
-                Socket.OnOpen += ConnectCallback;
-                Socket.OnMessage += MessageCallback;
-                Socket.OnClose += DisconnectCallback;
-                Socket.OnError += ErrorCallback;
-
-                Socket.ConnectAsync();
+                Transport.Connect(context);
             }
 
-            public static void Send(byte[] binary)
+            public static void Send(byte[] raw)
             {
                 if (IsConnected == false)
                 {
@@ -309,76 +294,58 @@ namespace Backend
                     return;
                 }
 
-                Socket.SendAsync(binary, null);
+                Transport.Send(raw);
             }
 
             static void Update()
             {
-                while (ActionQueue.TryDequeue(out var callback))
-                    callback();
+                if(Transport != null) Transport.Poll();
             }
 
             #region Callbacks
             public delegate void ConnectDelegate();
             public static event ConnectDelegate OnConnect;
-            static void ConnectCallback(object sender, EventArgs args)
+            static void ConnectCallback()
             {
-                ActionQueue.Enqueue(Invoke);
-
-                void Invoke() => OnConnect?.Invoke();
+                OnConnect?.Invoke();
             }
 
             public delegate void MessageDelegate(NetworkMessage message);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(object sender, MessageEventArgs args)
+            static void MessageCallback(NetworkMessage message)
             {
-                var message = NetworkMessage.Read(args.RawData);
-
-                ActionQueue.Enqueue(Invoke);
-
-                void Invoke() => OnMessage?.Invoke(message);
+                OnMessage?.Invoke(message);
             }
 
-            public delegate void CloseDelegate(CloseStatusCode code, string reason);
+            public delegate void CloseDelegate();
             public static event CloseDelegate OnDisconnect;
-            static void DisconnectCallback(object sender, CloseEventArgs args)
+            static void DisconnectCallback()
             {
-                var code = (CloseStatusCode)args.Code;
-                var reason = args.Reason;
-
-                ActionQueue = new ConcurrentQueue<Action>();
-                ActionQueue.Enqueue(Invoke);
-
-                void Invoke() => OnDisconnect?.Invoke(code, reason);
+                OnDisconnect?.Invoke();
             }
 
-            public delegate void ErrorDelegate(Exception exception, string message);
+            public delegate void ErrorDelegate();
             public static event ErrorDelegate OnError;
-            static void ErrorCallback(object sender, WebSocketSharp.ErrorEventArgs args)
+            static void ErrorCallback()
             {
-                ActionQueue.Enqueue(Invoke);
-
-                void Invoke() => OnError?.Invoke(args.Exception, args.Message);
+                OnError?.Invoke();
             }
             #endregion
 
-            public static void Disconnect() => Disconnect(CloseStatusCode.Normal);
-            public static void Disconnect(CloseStatusCode code)
+            public static void Disconnect()
             {
                 if (IsConnected == false) return;
 
-                Socket.CloseAsync(code);
+                Transport.Close();
             }
 
             static void ApplicationQuitCallback()
             {
-                if (IsConnected) Disconnect(CloseStatusCode.Normal);
+                if (IsConnected) Disconnect();
             }
 
-            static WebSocketAPI()
+            static RealtimeAPI()
             {
-                ActionQueue = new ConcurrentQueue<Action>();
-
                 NetworkAPI.OnUpdate += Update;
 
                 Application.quitting += ApplicationQuitCallback;
@@ -393,7 +360,7 @@ namespace Backend
 
             public static NetworkClientID ID => Instance.ID;
 
-            public static bool IsConnected => WebSocketAPI.IsConnected;
+            public static bool IsConnected => RealtimeAPI.IsConnected;
 
             public static bool IsReady { get; private set; }
 
@@ -411,23 +378,16 @@ namespace Backend
 
             public static void Configure()
             {
-                WebSocketAPI.OnConnect += ConnectCallback;
-                WebSocketAPI.OnMessage += MessageCallback;
-                WebSocketAPI.OnDisconnect += DisconnectedCallback;
-
-                Room.OnSpawnEntity += SpawnEntityCallback;
-                Room.OnDestoryEntity += DestoryEntityCallback;
-
-                IsReady = false;
+                
             }
 
             public static NetworkMessage Send<T>(T payload)
             {
                 var message = NetworkMessage.Write(payload);
 
-                var binary = NetworkSerializer.Serialize(message);
+                var raw = NetworkSerializer.Serialize(message);
 
-                WebSocketAPI.Send(binary);
+                RealtimeAPI.Send(raw);
 
                 return message;
             }
@@ -557,22 +517,34 @@ namespace Backend
             }
             #endregion
 
-            public static void Disconnect() => WebSocketAPI.Disconnect();
+            public static void Disconnect() => RealtimeAPI.Disconnect();
 
-            public delegate void DisconnectDelegate(CloseStatusCode code, string reason);
+            public delegate void DisconnectDelegate();
             public static event DisconnectDelegate OnDisconnect;
-            static void DisconnectedCallback(CloseStatusCode code, string reason)
+            static void DisconnectedCallback()
             {
-                Debug.Log($"Client Disconnected, Code: {code}, Reason: {reason}");
+                Debug.Log($"Client Disconnected");
 
                 Clear();
 
-                OnDisconnect?.Invoke(code, reason);
+                OnDisconnect?.Invoke();
             }
 
             static void Clear()
             {
                 Instance = null;
+
+                IsReady = false;
+            }
+
+            static Client()
+            {
+                RealtimeAPI.OnConnect += ConnectCallback;
+                RealtimeAPI.OnMessage += MessageCallback;
+                RealtimeAPI.OnDisconnect += DisconnectedCallback;
+
+                Room.OnSpawnEntity += SpawnEntityCallback;
+                Room.OnDestoryEntity += DestoryEntityCallback;
 
                 IsReady = false;
             }
@@ -607,22 +579,18 @@ namespace Backend
 
             public static void Configure()
             {
-                Client.OnConnect += SelfConnectCallback;
-                Client.OnReady += SelfReadyCallback;
-                Client.OnDisconnect += SelfDisconnectCallback;
-
-                Client.OnMessage += MessageCallback;
+                
             }
 
             public static void Join(RoomBasicInfo info) => Join(info.ID);
-            public static void Join(RoomID id) => WebSocketAPI.Connect("/" + id.Value);
+            public static void Join(RoomID id) => RealtimeAPI.Connect(id.Value);
 
             #region Self Callbacks
             static void SelfConnectCallback() => Setup();
 
             static void SelfReadyCallback(ReadyClientResponse response) => Ready(response);
 
-            static void SelfDisconnectCallback(CloseStatusCode code, string reason) => Clear();
+            static void SelfDisconnectCallback() => Clear();
             #endregion
 
             #region Internal
@@ -825,7 +793,7 @@ namespace Backend
             {
                 var entity = CreateEntity(command);
                 
-                Debug.Log($"Spawned {entity.name} with ID: {command.ID}, Owned By Client {command.Owner}");
+                Debug.Log($"Spawned '{entity.name}' with ID: {command.ID}, Owned By Client {command.Owner}");
 
                 var owner = FindEntityOwner(command);
 
@@ -899,12 +867,14 @@ namespace Backend
                     return;
                 }
 
+                Debug.Log("Destroying " + entity.name);
+
                 var owner = entity.Owner;
 
                 Entities.Remove(entity.ID);
                 owner?.Entities.Remove(entity);
 
-                Object.Destroy(entity.gameObject);
+                entity.Despawn();
 
                 OnDestoryEntity?.Invoke(entity);
             }
@@ -939,7 +909,7 @@ namespace Backend
                 {
                     if (entity == null) continue;
 
-                    Object.Destroy(entity.gameObject);
+                    entity.Despawn();
                 }
 
                 Master = null;
@@ -950,6 +920,15 @@ namespace Backend
             }
 
             public static void Leave() => Client.Disconnect();
+
+            static Room()
+            {
+                Client.OnConnect += SelfConnectCallback;
+                Client.OnReady += SelfReadyCallback;
+                Client.OnDisconnect += SelfDisconnectCallback;
+
+                Client.OnMessage += MessageCallback;
+            }
         }
     }
 }

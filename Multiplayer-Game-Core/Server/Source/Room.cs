@@ -146,8 +146,6 @@ namespace Backend
 
             TransportContext = GameServer.Realtime.Register(ID.Value);
 
-            Log.Info(TransportContext);
-
             TransportContext.OnConnect += ClientConnected;
             TransportContext.OnRecievedMessage += MessageRecievedCallback;
             TransportContext.OnDisconnect += ClientDisconnected;

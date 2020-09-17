@@ -51,7 +51,7 @@ namespace Backend
 
         protected virtual void Awake()
         {
-            NetworkScene.Register(this);
+            if(Application.isPlaying == false) NetworkScene.Register(this);
 
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
@@ -174,9 +174,23 @@ namespace Backend
             target.InvokeSyncVar(command);
         }
 
+        public virtual void Despawn()
+        {
+            IsReady = false;
+
+            if (Type == NetworkEntityType.Dynamic)
+            {
+                Destroy(gameObject);
+            }
+            else if (Type == NetworkEntityType.SceneObject)
+            {
+
+            }
+        }
+
         protected virtual void OnDestroy()
         {
-            if(Scene.isLoaded) NetworkScene.Unregister(this);
+            if(Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
         }
 
         public NetworkEntity()

@@ -42,9 +42,9 @@ namespace Backend
 
         public WebSocketServiceHost Host { get; protected set; }
 
-        public Glossary<NetworkClientID, Client> WebSocketClients { get; protected set; }
+        public Dictionary<NetworkClientID, WebSocketClient> WebSocketClients { get; protected set; }
 
-        public class Client : WebSocketBehavior
+        public class WebSocketClient : WebSocketBehavior
         {
             public WebSocketNetworkTransportContext TransportContext { get; protected set; }
 
@@ -70,7 +70,7 @@ namespace Backend
 
                 Session = Sessions[ID];
 
-                ClientID = TransportContext.Reserve();
+                ClientID = TransportContext.ReserveID();
 
                 TransportContext.OpenCallbacks(this);
             }
@@ -90,31 +90,29 @@ namespace Backend
             }
         }
 
-        void InitClient(Client service) => service.Set(this);
+        void InitClient(WebSocketClient service) => service.Set(this);
 
         #region Internal Callbacks
-        void OpenCallbacks(Client client)
+        void OpenCallbacks(WebSocketClient client)
         {
-            WebSocketClients.Set(client.ClientID, client);
+            WebSocketClients.Add(client.ClientID, client);
 
             QueueConnect(client.ClientID);
         }
 
-        void ReceivedMessageCallback(Client client, byte[] raw)
+        void ReceivedMessageCallback(WebSocketClient client, byte[] raw)
         {
             var message = NetworkMessage.Read(raw);
 
             QueueRecievedMessage(client.ClientID, message, raw);
         }
 
-        void CloseCallback(Client client, ushort code, string reason)
+        void CloseCallback(WebSocketClient client, ushort code, string reason)
         {
             QueueDisconnect(client.ClientID);
-
-            WebSocketClients.Remove(client.ClientID);
         }
         #endregion
-
+        
         public override void Send(NetworkClientID target, byte[] raw)
         {
             if (WebSocketClients.TryGetValue(target, out var client) == false)
@@ -133,17 +131,24 @@ namespace Backend
             Server.RemoveWebSocketService(Path);
         }
 
+        public override void Remove(NetworkClientID client)
+        {
+            base.Remove(client);
+
+            WebSocketClients.Remove(client);
+        }
+
         public WebSocketNetworkTransportContext(WebSocketNetworkTransport transport, uint id) : base(id)
         {
             this.Transport = transport;
 
             Path = $"/{ID}";
 
-            Server.AddWebSocketService<Client>(Path, InitClient);
+            Server.AddWebSocketService<WebSocketClient>(Path, InitClient);
 
             Host = Server.WebSocketServices[Path];
 
-            WebSocketClients = new Glossary<NetworkClientID, Client>();
+            WebSocketClients = new Dictionary<NetworkClientID, WebSocketClient>();
         }
     }
 }

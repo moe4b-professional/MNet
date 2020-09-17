@@ -30,7 +30,7 @@ namespace Game
         {
             if(NetworkAPI.Client.IsMaster)
             {
-                if(Time.frameCount % 5 == 0)
+                if(Time.frameCount % 1 == 0)
                 {
                     var distance = Vector3.Distance(transform.position, position);
 

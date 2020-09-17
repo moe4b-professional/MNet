@@ -19,7 +19,7 @@ namespace Backend
         static void Add(object target, Level level)
         {
             if (Output == null)
-                Console.WriteLine(target);
+                Console.WriteLine($"{level}: {target}");
             else
                 Output(target, level);
         }
