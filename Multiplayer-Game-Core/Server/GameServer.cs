@@ -23,9 +23,8 @@ namespace Backend
 
             Rest = new RestAPI(address, Constants.RestAPI.Port);
             Rest.Start();
-
-            var transport = new WebSocketNetworkTransport(address, Constants.WebSocketAPI.Port);
-            Realtime = new RealtimeAPI(transport);
+            
+            Realtime = new RealtimeAPI(address);
             Realtime.Start();
 
             Lobby = new Lobby();

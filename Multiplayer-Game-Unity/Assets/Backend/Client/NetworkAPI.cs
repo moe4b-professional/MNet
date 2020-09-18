@@ -13,6 +13,7 @@ using Object = UnityEngine.Object;
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Networking;
+using Game;
 
 namespace Backend
 {
@@ -258,7 +259,7 @@ namespace Backend
 
             public static void Configure()
             {
-                Transport = new WebSocketNetworkTransport(Address, Constants.WebSocketAPI.Port);
+                Transport = new WebSocketTransport(Address, Constants.RealtimeAPI.Port);
 
                 Transport.OnConnect += ConnectCallback;
                 Transport.OnRecievedMessage += MessageCallback;

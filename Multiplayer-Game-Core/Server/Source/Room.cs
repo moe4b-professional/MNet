@@ -53,7 +53,7 @@ namespace Backend
         }
         #endregion
 
-        public NetworkTransportContext TransportContext { get; protected set; }
+        public INetworkTransportContext TransportContext { get; protected set; }
 
         #region Schedule
         Schedule schedule;
@@ -147,7 +147,7 @@ namespace Backend
             TransportContext = GameServer.Realtime.Register(ID.Value);
 
             TransportContext.OnConnect += ClientConnected;
-            TransportContext.OnRecievedMessage += MessageRecievedCallback;
+            TransportContext.OnMessage += MessageRecievedCallback;
             TransportContext.OnDisconnect += ClientDisconnected;
 
             schedule.Start();

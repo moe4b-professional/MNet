@@ -151,11 +151,13 @@ namespace Backend
 
         public virtual bool Contains(TKey key) => Dictionary.ContainsKey(key);
 
-        public virtual void Remove(TKey key)
+        public virtual bool Remove(TKey key)
         {
-            Dictionary.Remove(key);
+            var removed = Dictionary.Remove(key);
 
             Keys.Free(key);
+
+            return removed;
         }
 
         public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor)

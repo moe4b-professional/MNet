@@ -2,12 +2,13 @@
 using System.Text;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 
 namespace Backend
 {
     class RealtimeAPI
     {
-        public NetworkTransport Transport { get; protected set; }
+        public INetworkTransport Transport { get; protected set; }
 
         public virtual void Start()
         {
@@ -16,13 +17,13 @@ namespace Backend
             Transport.Start();
         }
 
-        public virtual NetworkTransportContext Register(uint code) => Transport.Register(code);
+        public virtual INetworkTransportContext Register(uint code) => Transport.Register(code);
 
         public virtual void Unregister(uint code) => Transport.Unregister(code);
 
-        public RealtimeAPI(NetworkTransport transport)
+        public RealtimeAPI(IPAddress address)
         {
-            this.Transport = transport;
+            Transport = new WebSocketTransport(address, Constants.RealtimeAPI.Port);
         }
     }
 }

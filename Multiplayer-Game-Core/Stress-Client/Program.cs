@@ -26,7 +26,7 @@ namespace StressClient
 
         static void Main(string[] args)
         {
-            var port = Constants.WebSocketAPI.Port;
+            var port = Constants.RealtimeAPI.Port;
 
             var room = 0;
 

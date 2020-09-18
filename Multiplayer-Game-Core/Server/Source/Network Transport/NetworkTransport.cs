@@ -6,15 +6,43 @@ using System.Collections.Concurrent;
 
 namespace Backend
 {
-    abstract class NetworkTransport
+    public interface INetworkTransport
     {
-        public Dictionary<uint, NetworkTransportContext> Contexts { get; protected set; }
+        void Start();
 
-        public NetworkTransportContext this[uint code] => Contexts[code];
+        INetworkTransportContext Register(uint id);
+        void Unregister(uint id);
+    }
+
+    public interface INetworkTransportContext
+    {
+        void Poll();
+
+        public event NetworkTransportConnectDelegate OnConnect;
+        public event NetworkTransportMessageDelegate OnMessage;
+        public event NetworkTransportDisconnectDelegate OnDisconnect;
+
+        void Send(NetworkClientID id, byte[] raw);
+
+        void Disconnect(NetworkClientID clientID);
+    }
+
+    public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
+    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw);
+    public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
+
+    abstract class NetworkTransport<TSelf, TContext, TClient, TSession, TIID> : INetworkTransport
+        where TSelf : NetworkTransport<TSelf, TContext, TClient, TSession, TIID>
+        where TContext : NetworkTransportContext<TSelf, TClient, TSession, TIID>
+        where TClient : NetworkTransportClient<TSession, TIID>
+    {
+        public Dictionary<uint, TContext> Contexts { get; protected set; }
+
+        public TContext this[uint code] => Contexts[code];
 
         public abstract void Start();
 
-        public virtual NetworkTransportContext Register(uint id)
+        public virtual TContext Register(uint id)
         {
             var context = Create(id);
 
@@ -22,8 +50,9 @@ namespace Backend
 
             return context;
         }
-        protected abstract NetworkTransportContext Create(uint id);
+        protected abstract TContext Create(uint id);
 
+        INetworkTransportContext INetworkTransport.Register(uint id) => Register(id);
         public virtual void Unregister(uint id)
         {
             if (Contexts.TryGetValue(id, out var context) == false)
@@ -34,39 +63,39 @@ namespace Backend
 
             Unregister(context);
         }
-        protected virtual void Unregister(NetworkTransportContext context)
+        protected virtual void Unregister(TContext context)
         {
             context.Close();
 
             Contexts.Remove(context.ID);
         }
 
+
         public NetworkTransport()
         {
-            Contexts = new Dictionary<uint, NetworkTransportContext>();
+            Contexts = new Dictionary<uint, TContext>();
         }
     }
 
-    abstract class NetworkTransportContext
+    abstract class NetworkTransportContext<TTransport, TClient, TSession, TIID> : INetworkTransportContext
+        where TClient : NetworkTransportClient<TSession, TIID>
     {
+        public TTransport Transport { get; protected set; }
+
         public uint ID { get; protected set; }
 
         public ConcurrentQueue<Action> InputQueue { get; protected set; }
 
-        public AutoKeyCollection<NetworkClientID> Clients { get; protected set; }
-
-        public NetworkClientID ReserveID() => Clients.Reserve();
-        public void FreeID(NetworkClientID id) => Clients.Free(id);
+        public AutoKeyDictionary<NetworkClientID, TClient> Clients { get; protected set; }
 
         #region Connect
-        public delegate void ConnectDelegate(NetworkClientID client);
-        public event ConnectDelegate OnConnect;
-        void InvokeConnect(NetworkClientID client)
+        public event NetworkTransportConnectDelegate OnConnect;
+        void InvokeConnect(TClient client)
         {
-            OnConnect?.Invoke(client);
+            OnConnect?.Invoke(client.ClientID);
         }
 
-        protected virtual void QueueConnect(NetworkClientID client)
+        protected virtual void QueueConnect(TClient client)
         {
             InputQueue.Enqueue(Action);
 
@@ -75,32 +104,30 @@ namespace Backend
         #endregion
 
         #region Message
-        public delegate void MessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw);
-        public event MessageDelegate OnRecievedMessage;
-        void InvokeRecievedMessage(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw)
+        public event NetworkTransportMessageDelegate OnMessage;
+        void InvokeMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw)
         {
-            OnRecievedMessage?.Invoke(client, message, raw);
+            OnMessage?.Invoke(client.ClientID, message, raw);
         }
 
-        protected virtual void QueueRecievedMessage(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw)
+        protected virtual void QueueMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeRecievedMessage(client, message, raw);
+            void Action() => InvokeMessage(client, message, raw);
         }
         #endregion
 
         #region Disconnect
-        public delegate void DisconnectDelegate(NetworkClientID client);
-        public event DisconnectDelegate OnDisconnect;
-        void InvokeDisconnect(NetworkClientID client)
+        public event NetworkTransportDisconnectDelegate OnDisconnect;
+        void InvokeDisconnect(TClient client)
         {
-            OnDisconnect?.Invoke(client);
+            OnDisconnect?.Invoke(client.ClientID);
 
-            Remove(client);
+            RemoveClient(client);
         }
 
-        protected virtual void QueueDisconnect(NetworkClientID client)
+        protected virtual void QueueDisconnect(TClient client)
         {
             InputQueue.Enqueue(Action);
 
@@ -114,22 +141,89 @@ namespace Backend
                 action();
         }
 
-        public abstract void Send(NetworkClientID target, byte[] raw);
-
-        public virtual void Remove(NetworkClientID client)
+        public virtual TClient RegisterClient(TSession session)
         {
-            FreeID(client);
+            var id = Clients.Reserve();
+
+            var client = CreateClient(id, session);
+
+            Clients.Assign(id, client);
+
+            QueueConnect(client);
+
+            return client;
         }
+        protected abstract TClient CreateClient(NetworkClientID clientID, TSession session);
+
+        public virtual void RegisterMessage(TClient sender, byte[] raw)
+        {
+            var message = NetworkMessage.Read(raw);
+
+            QueueMessage(sender, message, raw);
+        }
+
+        public virtual void UnregisterClient(TClient client)
+        {
+            QueueDisconnect(client);
+        }
+
+        protected virtual void RemoveClient(TClient client)
+        {
+            Clients.Remove(client.ClientID);
+
+            DestoryClient(client);
+        }
+        protected virtual void DestoryClient(TClient client) { }
+
+        public virtual void Send(NetworkClientID target, byte[] raw)
+        {
+            if (Clients.TryGetValue(target, out var client) == false)
+            {
+                Log.Warning($"No Transport Client Registered With ID: {target}");
+                return;
+            }
+
+            Send(client, raw);
+        }
+        public abstract void Send(TClient client, byte[] raw);
+
+        public virtual void Disconnect(NetworkClientID clientID)
+        {
+            if (Clients.TryGetValue(clientID, out var client) == false)
+            {
+                Log.Warning($"No Transport Client Registered With ID: {clientID}");
+                return;
+            }
+
+            Disconnect(client);
+        }
+        public abstract void Disconnect(TClient client);
 
         public abstract void Close();
 
-        public NetworkTransportContext(uint id)
+        public NetworkTransportContext(TTransport transport, uint id)
         {
+            this.Transport = transport;
             this.ID = id;
 
-            Clients = new AutoKeyCollection<NetworkClientID>(NetworkClientID.Increment);
+            Clients = new AutoKeyDictionary<NetworkClientID, TClient>(NetworkClientID.Increment);
 
             InputQueue = new ConcurrentQueue<Action>();
+        }
+    }
+
+    abstract class NetworkTransportClient<TSession, TIID>
+    {
+        public NetworkClientID ClientID { get; protected set; }
+
+        public TSession Session { get; protected set; }
+
+        public abstract TIID InternalID { get; }
+
+        public NetworkTransportClient(NetworkClientID clientID, TSession session)
+        {
+            this.ClientID = ClientID;
+            this.Session = session;
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Backend
             }
         }
 
-        public static class WebSocketAPI
+        public static class RealtimeAPI
         {
             public const int Port = 9090;
 

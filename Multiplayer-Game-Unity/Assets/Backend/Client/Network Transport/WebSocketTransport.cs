@@ -22,7 +22,7 @@ using System.Net;
 
 namespace Backend
 {
-    public class WebSocketNetworkTransport : NetworkTransport
+    public class WebSocketTransport : NetworkTransport
     {
         public WebSocket Socket { get; protected set; }
 
@@ -79,7 +79,7 @@ namespace Backend
             Socket.CloseAsync();
         }
 
-        public WebSocketNetworkTransport(string address, int port) : base()
+        public WebSocketTransport(string address, int port) : base()
         {
             this.Address = address;
             this.Port = port;
