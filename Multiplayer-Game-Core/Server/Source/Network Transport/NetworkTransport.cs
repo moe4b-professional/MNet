@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Linq;
 
 namespace Backend
 {
@@ -22,7 +23,10 @@ namespace Backend
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
 
-        void Send(NetworkClientID id, byte[] raw);
+        void Send(NetworkClientID target, byte[] raw);
+
+        void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw);
+        void Broadcast(byte[] raw);
 
         void Disconnect(NetworkClientID clientID);
     }
@@ -69,7 +73,6 @@ namespace Backend
 
             Contexts.Remove(context.ID);
         }
-
 
         public NetworkTransport()
         {
@@ -187,6 +190,35 @@ namespace Backend
         }
         public abstract void Send(TClient client, byte[] raw);
 
+        public virtual void Broadcast(byte[] raw) => Broadcast(Clients.Values, raw);
+        public virtual void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw)
+        {
+            var collection = new TClient[targets.Count];
+
+            var index = 0;
+
+            foreach (var target in targets)
+            {
+                if (Clients.TryGetValue(target, out var client) == false)
+                    Log.Warning($"No Transport Client Registered With ID: {target}");
+
+                collection[index] = client;
+
+                index += 1;
+            }
+
+            Broadcast(collection, raw);
+        }
+        public virtual void Broadcast(IReadOnlyCollection<TClient> targets, byte[] raw)
+        {
+            foreach (var target in targets)
+            {
+                if (target == null) continue;
+
+                Send(target, raw);
+            }
+        }
+
         public virtual void Disconnect(NetworkClientID clientID)
         {
             if (Clients.TryGetValue(clientID, out var client) == false)
@@ -199,7 +231,10 @@ namespace Backend
         }
         public abstract void Disconnect(TClient client);
 
-        public abstract void Close();
+        public virtual void Close()
+        {
+
+        }
 
         public NetworkTransportContext(TTransport transport, uint id)
         {
@@ -222,7 +257,7 @@ namespace Backend
 
         public NetworkTransportClient(NetworkClientID clientID, TSession session)
         {
-            this.ClientID = ClientID;
+            this.ClientID = clientID;
             this.Session = session;
         }
     }

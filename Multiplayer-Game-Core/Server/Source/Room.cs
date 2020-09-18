@@ -61,8 +61,6 @@ namespace Backend
         public const long DefaultTickInterval = 50;
         #endregion
 
-        public HashSet<NetPeerID> Peers { get; protected set; }
-
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
         public AutoKeyDictionary<NetworkEntityID, NetworkEntity> Entities { get; protected set; }
@@ -120,9 +118,9 @@ namespace Backend
         {
             var message = NetworkMessage.Write(payload);
 
-            var binary = NetworkSerializer.Serialize(message);
+            var raw = NetworkSerializer.Serialize(message);
 
-            TransportContext.Send(target, binary);
+            TransportContext.Send(target, raw);
 
             return message;
         }
@@ -131,10 +129,9 @@ namespace Backend
         {
             var message = NetworkMessage.Write(payload);
 
-            var binary = NetworkSerializer.Serialize(message);
+            var raw = NetworkSerializer.Serialize(message);
 
-            foreach (var client in Clients.Keys)
-                TransportContext.Send(client, binary);
+            TransportContext.Broadcast(raw);
 
             return message;
         }
@@ -478,8 +475,6 @@ namespace Backend
             this.Attributes = attributes;
 
             MessageBuffer = new NetworkMessageCollection();
-
-            Peers = new HashSet<NetPeerID>();
 
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);

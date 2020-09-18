@@ -45,7 +45,6 @@ namespace Backend
         {
             this.value = value;
         }
-        NetworkClientID(int value) : this((ushort)value) { }
 
         public override bool Equals(object obj)
         {
@@ -66,7 +65,14 @@ namespace Backend
         public static bool operator ==(NetworkClientID a, NetworkClientID b) => a.Equals(b);
         public static bool operator !=(NetworkClientID a, NetworkClientID b) => !a.Equals(b);
 
-        public static NetworkClientID Increment(NetworkClientID id) => new NetworkClientID(id.value + 1);
+        public static NetworkClientID Increment(NetworkClientID id)
+        {
+            var value = id.value;
+
+            value += 1;
+
+            return new NetworkClientID(value);
+        }
     }
 
     [Serializable]

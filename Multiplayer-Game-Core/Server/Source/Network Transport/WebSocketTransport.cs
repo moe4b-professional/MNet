@@ -90,6 +90,11 @@ namespace Backend
             Sessions.SendTo(raw, client.InternalID);
         }
 
+        public override void Broadcast(byte[] raw)
+        {
+            Sessions.Broadcast(raw);
+        }
+
         public override void Disconnect(WebSocketTransportClient client)
         {
             Sessions.CloseSession(client.InternalID);
@@ -97,6 +102,8 @@ namespace Backend
 
         public override void Close()
         {
+            base.Close();
+
             Server.RemoveWebSocketService(Path);
         }
 

@@ -206,11 +206,6 @@ namespace Backend
 
     class RufflesTransportContext : NetworkTransportContext<RufflesTransport, RufflesTransportClient, Connection, ulong>
     {
-        public override void Send(RufflesTransportClient client, byte[] raw)
-        {
-            client.Session.Send(raw, 0, false, 0);
-        }
-
         protected override RufflesTransportClient CreateClient(NetworkClientID clientID, Connection session)
         {
             var client = new RufflesTransportClient(clientID, session, this);
@@ -218,14 +213,14 @@ namespace Backend
             return client;
         }
 
+        public override void Send(RufflesTransportClient client, byte[] raw)
+        {
+            client.Session.Send(raw, 1, false, 0);
+        }
+
         public override void Disconnect(RufflesTransportClient client)
         {
             client.Session.Disconnect(true);
-        }
-
-        public override void Close()
-        {
-            //TODO
         }
 
         public RufflesTransportContext(RufflesTransport transport, uint id) : base(transport, id)
