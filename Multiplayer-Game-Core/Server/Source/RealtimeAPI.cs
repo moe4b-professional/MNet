@@ -10,6 +10,8 @@ namespace Backend
     {
         public INetworkTransport Transport { get; protected set; }
 
+        public const int Port = Constants.RealtimeAPI.Port;
+
         public virtual void Start()
         {
             Log.Info($"Starting {Transport.GetType().Name}");
@@ -23,7 +25,9 @@ namespace Backend
 
         public RealtimeAPI(IPAddress address)
         {
-            Transport = new WebSocketTransport(address, Constants.RealtimeAPI.Port);
+            //Transport = new WebSocketTransport(address, Port);
+            //Transport = new RufflesTransport(Port);
+            Transport = new LiteNetLibTransport(Port);
         }
     }
 }

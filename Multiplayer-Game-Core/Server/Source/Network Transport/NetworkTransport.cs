@@ -4,6 +4,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
 
 namespace Backend
 {
@@ -35,10 +36,10 @@ namespace Backend
     public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
 
-    abstract class NetworkTransport<TSelf, TContext, TClient, TSession, TIID> : INetworkTransport
-        where TSelf : NetworkTransport<TSelf, TContext, TClient, TSession, TIID>
-        where TContext : NetworkTransportContext<TSelf, TClient, TSession, TIID>
-        where TClient : NetworkTransportClient<TSession, TIID>
+    abstract class NetworkTransport<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransport
+        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection, TIID>
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
+        where TClient : NetworkTransportClient<TContext, TConnection, TIID>
     {
         public Dictionary<uint, TContext> Contexts { get; protected set; }
 
@@ -80,8 +81,9 @@ namespace Backend
         }
     }
 
-    abstract class NetworkTransportContext<TTransport, TClient, TSession, TIID> : INetworkTransportContext
-        where TClient : NetworkTransportClient<TSession, TIID>
+    abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransportContext
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
+        where TClient : NetworkTransportClient<TContext, TConnection, TIID>
     {
         public TTransport Transport { get; protected set; }
 
@@ -144,11 +146,11 @@ namespace Backend
                 action();
         }
 
-        public virtual TClient RegisterClient(TSession session)
+        public virtual TClient RegisterClient(TConnection connection)
         {
             var id = Clients.Reserve();
 
-            var client = CreateClient(id, session);
+            var client = CreateClient(id, connection);
 
             Clients.Assign(id, client);
 
@@ -156,7 +158,7 @@ namespace Backend
 
             return client;
         }
-        protected abstract TClient CreateClient(NetworkClientID clientID, TSession session);
+        protected abstract TClient CreateClient(NetworkClientID clientID, TConnection connection);
 
         public virtual void RegisterMessage(TClient sender, byte[] raw)
         {
@@ -247,18 +249,137 @@ namespace Backend
         }
     }
 
-    abstract class NetworkTransportClient<TSession, TIID>
+    abstract class NetworkTransportClient<TContext, TConnection, TIID>
     {
+        public TContext Context { get; protected set; }
+
         public NetworkClientID ClientID { get; protected set; }
 
-        public TSession Session { get; protected set; }
+        public TConnection Connection { get; protected set; }
 
         public abstract TIID InternalID { get; }
 
-        public NetworkTransportClient(NetworkClientID clientID, TSession session)
+        public NetworkTransportClient(TContext context, NetworkClientID clientID, TConnection session)
         {
+            this.Context = context;
             this.ClientID = clientID;
-            this.Session = session;
+            this.Connection = session;
+        }
+    }
+
+    abstract class AutoDistributedNetworkTransport<TTransport, TContext, TClient, TConnection, TIID> : NetworkTransport<TTransport, TContext, TClient, TConnection, TIID>
+        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection, TIID>
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
+        where TClient : NetworkTransportClient<TContext, TConnection, TIID>
+    {
+        public Dictionary<TIID, TClient> Clients { get; protected set; }
+
+        public HashSet<TIID> UnregisteredClients { get; protected set; }
+
+        public readonly byte[] RegisterClientPayload = new byte[] { 200 };
+
+        Thread thread;
+        protected virtual void Run()
+        {
+            while (true) Tick();
+        }
+
+        protected abstract void Tick();
+
+        protected abstract TIID GetIID(TConnection connection);
+
+        protected virtual void MarkUnregisteredConnection(TConnection connection)
+        {
+            var iid = GetIID(connection);
+
+            UnregisteredClients.Add(iid);
+        }
+
+        protected virtual void ProcessMessage(TConnection connection, byte[] raw)
+        {
+            var iid = GetIID(connection);
+
+            if (UnregisteredClients.Contains(iid))
+                RegisterConnection(connection, raw);
+            else
+                RouteMessage(connection, raw);
+        }
+        protected virtual void RegisterConnection(TConnection connection, byte[] data)
+        {
+            var iid = GetIID(connection);
+
+            uint contextID;
+
+            try
+            {
+                contextID = BitConverter.ToUInt32(data);
+            }
+            catch (Exception)
+            {
+                Disconnect(connection);
+                return;
+            }
+
+            if (Contexts.TryGetValue(contextID, out var context) == false)
+            {
+
+                Log.Warning($"Connection {iid} Trying to Register to Non-Registered Context {contextID}");
+                Disconnect(connection);
+            }
+
+            var client = context.RegisterClient(connection);
+
+            UnregisteredClients.Remove(iid);
+            Clients.Add(client.InternalID, client);
+
+            Send(connection, RegisterClientPayload);
+        }
+        protected virtual void RouteMessage(TConnection connection, byte[] raw)
+        {
+            var iid = GetIID(connection);
+
+            if (Clients.TryGetValue(iid, out var client) == false)
+            {
+                Log.Info($"Connection {iid} Not Marked Unregistered but Also Not Registered");
+                return;
+            }
+
+            var context = client.Context;
+
+            context.RegisterMessage(client, raw);
+        }
+
+        protected virtual void RemoveConnection(TConnection connection)
+        {
+            var iid = GetIID(connection);
+
+            if (UnregisteredClients.Remove(iid)) return;
+
+            if (Clients.TryGetValue(iid, out var client) == false)
+            {
+                Log.Warning($"Client {iid} Disconnected Without Being Registered Or Marked as Unregistered");
+                return;
+            }
+
+            var context = client.Context;
+
+            context.UnregisterClient(client);
+
+            Clients.Remove(client.InternalID);
+        }
+
+        protected abstract void Send(TConnection connection, byte[] raw);
+
+        protected abstract void Disconnect(TConnection connection);
+
+        public AutoDistributedNetworkTransport() : base()
+        {
+            Clients = new Dictionary<TIID, TClient>();
+
+            UnregisteredClients = new HashSet<TIID>();
+
+            thread = new Thread(Run);
+            thread.Start();
         }
     }
 }

@@ -33,7 +33,7 @@ namespace Backend
         }
     }
 
-    class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportClient, IWebSocketSession, string>
+    class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, IWebSocketSession, string>
     {
         public WebSocketServer Server => Transport.Server;
 
@@ -78,7 +78,7 @@ namespace Backend
 
         protected override WebSocketTransportClient CreateClient(NetworkClientID clientID, IWebSocketSession session)
         {
-            var client = new WebSocketTransportClient(clientID, session);
+            var client = new WebSocketTransportClient(this, clientID, session);
 
             return client;
         }
@@ -119,13 +119,13 @@ namespace Backend
         }
     }
 
-    class WebSocketTransportClient : NetworkTransportClient<IWebSocketSession, string>
+    class WebSocketTransportClient : NetworkTransportClient<WebSocketTransportContext, IWebSocketSession, string>
     {
-        public override string InternalID => Session.ID;
+        public override string InternalID => Connection.ID;
 
-        public bool IsOpen => Session.State == WebSocketState.Open;
+        public bool IsOpen => Connection.State == WebSocketState.Open;
 
-        public WebSocketTransportClient(NetworkClientID clientID, IWebSocketSession session) : base(clientID, session)
+        public WebSocketTransportClient(WebSocketTransportContext context, NetworkClientID clientID, IWebSocketSession session) : base(context, clientID, session)
         {
 
         }

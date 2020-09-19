@@ -17,6 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using System.Threading;
 using System.Collections.Concurrent;
 
 namespace Backend
@@ -90,6 +91,83 @@ namespace Backend
         public NetworkTransport()
         {
             InputQueue = new ConcurrentQueue<Action>();
+        }
+    }
+
+    public abstract class AutoDistributedNetworkTransport : NetworkTransport
+    {
+        public bool IsRegistered { get; protected set; }
+
+        public uint Context { get; protected set; }
+
+        public override void Connect(uint context)
+        {
+            this.Context = context;
+
+            IsRegistered = false;
+        }
+
+        Thread thread;
+        void Run()
+        {
+            isRunning = true;
+
+            while (isRunning) Tick();
+        }
+        bool isRunning;
+
+        protected abstract void Tick();
+
+        protected virtual void Stop()
+        {
+            isRunning = false;
+        }
+
+        protected virtual void RequestRegister()
+        {
+            var raw = BitConverter.GetBytes(Context);
+
+            Send(raw);
+        }
+        protected virtual void RegisterCallback(byte[] raw)
+        {
+            var code = raw[0];
+
+            IsRegistered = code == 200;
+
+            if (IsRegistered)
+                QueueConnect();
+            else
+                QueueDisconnect();
+        }
+
+        protected virtual void ProcessMessage(byte[] raw)
+        {
+            if (IsRegistered)
+            {
+                var message = NetworkMessage.Read(raw);
+
+                QueueRecievedMessage(message);
+            }
+            else
+            {
+                RegisterCallback(raw);
+            }
+        }
+
+        void ApplicationQuitCallback()
+        {
+            Application.quitting -= ApplicationQuitCallback;
+
+            Stop();
+        }
+
+        public AutoDistributedNetworkTransport() : base()
+        {
+            thread = new Thread(Run);
+            thread.Start();
+
+            Application.quitting += ApplicationQuitCallback;
         }
     }
 }
