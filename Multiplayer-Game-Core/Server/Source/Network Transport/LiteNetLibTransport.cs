@@ -1,27 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using LiteNetLib;
 
 namespace Backend
 {
-    class LiteNetLibTransport : AutoDistributedNetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
+    class LiteNetLibTransport : AutoDistributedNetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
     {
         public NetManager Server { get; protected set; }
-
-        public EventBasedNetListener Listener { get; protected set; }
 
         public int Port { get; protected set; }
 
         public override void Start()
         {
-            Listener.PeerConnectedEvent += x => Log.Info(x.EndPoint);
-
             Server.Start(Port);
         }
 
         protected override int GetIID(NetPeer connection) => connection.Id;
+
+        protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
 
         protected override void Tick()
         {
@@ -33,11 +33,13 @@ namespace Backend
         }
 
         #region Callbacks
-        void ConnectionRequestCallback(ConnectionRequest request) => request.Accept();
+        public void OnPeerConnected(NetPeer peer) => MarkUnregisteredConnection(peer);
 
-        void PeerConnectCallback(NetPeer peer) => MarkUnregisteredConnection(peer);
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => RemoveConnection(peer);
 
-        void RecieveCallback(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
+
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
             var raw = new byte[reader.AvailableBytes];
             Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
@@ -45,10 +47,12 @@ namespace Backend
             ProcessMessage(peer, raw);
         }
 
-        void PeerDisconnectCallback(NetPeer peer, DisconnectInfo disconnectInfo) => RemoveConnection(peer);
-        #endregion
+        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
 
-        protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
+        public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
+
+        public void OnConnectionRequest(ConnectionRequest request) => request.Accept();
+        #endregion
 
         protected override void Send(NetPeer connection, byte[] raw) => connection.Send(raw, DeliveryMethod.ReliableOrdered);
 
@@ -58,14 +62,7 @@ namespace Backend
         {
             this.Port = port;
 
-            Listener = new EventBasedNetListener();
-
-            Listener.ConnectionRequestEvent += ConnectionRequestCallback;
-            Listener.PeerConnectedEvent += PeerConnectCallback;
-            Listener.NetworkReceiveEvent += RecieveCallback;
-            Listener.PeerDisconnectedEvent += PeerDisconnectCallback;
-
-            Server = new NetManager(Listener);
+            Server = new NetManager(this);
         }
     }
 

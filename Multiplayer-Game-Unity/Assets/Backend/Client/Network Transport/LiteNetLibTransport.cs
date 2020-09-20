@@ -19,16 +19,16 @@ using Random = UnityEngine.Random;
 
 using LiteNetLib;
 using System.Threading;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Backend
 {
-    public class LiteNetLibTransport : AutoDistributedNetworkTransport
+    public class LiteNetLibTransport : AutoDistributedNetworkTransport, INetEventListener
     {
         public NetManager Client { get; protected set; }
 
         public NetPeer Peer { get; protected set; }
-
-        public EventBasedNetListener Listener { get; protected set; }
 
         public string Address { get; protected set; }
         public int Port { get; protected set; }
@@ -65,17 +65,25 @@ namespace Backend
         }
 
         #region Callbacks
-        void PeerConnectionCallback(NetPeer peer) => RequestRegister();
+        public void OnPeerConnected(NetPeer peer) => RequestRegister();
 
-        void PeerDisconnectCallback(NetPeer peer, DisconnectInfo disconnectInfo) => QueueDisconnect();
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => QueueDisconnect();
 
-        void RecieveCallback(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
+
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
             var raw = new byte[reader.AvailableBytes];
             Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
 
             ProcessMessage(raw);
         }
+
+        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
+
+        public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
+
+        public void OnConnectionRequest(ConnectionRequest request) { }
         #endregion
 
         public override void Send(byte[] raw)
@@ -95,13 +103,7 @@ namespace Backend
             this.Address = address;
             this.Port = port;
 
-            Listener = new EventBasedNetListener();
-
-            Listener.PeerConnectedEvent += PeerConnectionCallback;
-            Listener.PeerDisconnectedEvent += PeerDisconnectCallback;
-            Listener.NetworkReceiveEvent += RecieveCallback;
-
-            Client = new NetManager(Listener);
+            Client = new NetManager(this);
         }
     }
 }

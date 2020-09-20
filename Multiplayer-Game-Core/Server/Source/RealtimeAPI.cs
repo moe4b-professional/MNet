@@ -25,9 +25,9 @@ namespace Backend
 
         public RealtimeAPI(IPAddress address)
         {
-            //Transport = new WebSocketTransport(address, Port);
+            Transport = new WebSocketTransport(address, Port);
             //Transport = new RufflesTransport(Port);
-            Transport = new LiteNetLibTransport(Port);
+            //Transport = new LiteNetLibTransport(Port);
         }
     }
 }
