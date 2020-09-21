@@ -85,10 +85,19 @@ namespace Backend
                 OnReady?.Invoke(response);
             }
 
+            public static bool IsApplyingMessageBuffer { get; private set; }
+
+            public static event Action OnAppliedMessageBuffer;
             static void ApplyMessageBuffer(IList<NetworkMessage> list)
             {
+                IsApplyingMessageBuffer = true;
+
                 for (int i = 0; i < list.Count; i++)
                     MessageCallback(list[i]);
+
+                IsApplyingMessageBuffer = false;
+
+                OnAppliedMessageBuffer?.Invoke();
             }
 
             static void AddClients(IList<NetworkClientInfo> list)
@@ -266,7 +275,7 @@ namespace Backend
 
                 Debug.Log($"Spawned '{entity.name}' with ID: {command.ID}, Owned By Client {command.Owner}");
 
-                var owner = FindEntityOwner(command);
+                var owner = FindOwner(command);
 
                 if (owner == null)
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
@@ -279,21 +288,6 @@ namespace Backend
                 if (command.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
 
                 OnSpawnEntity?.Invoke(entity);
-            }
-
-            static NetworkClient FindEntityOwner(SpawnEntityCommand command)
-            {
-                if (command.Type == NetworkEntityType.SceneObject) return Master;
-
-                if (command.Type == NetworkEntityType.Dynamic)
-                {
-                    if (Clients.TryGetValue(command.Owner, out var owner))
-                        return owner;
-                    else
-                        return null;
-                }
-
-                throw new NotImplementedException();
             }
 
             static NetworkEntity CreateEntity(SpawnEntityCommand command)
@@ -323,6 +317,21 @@ namespace Backend
                         throw new Exception($"Couldn't Find NetworkBehaviour {command.Index} In Scene {command.Scene}");
 
                     return entity;
+                }
+
+                throw new NotImplementedException();
+            }
+
+            static NetworkClient FindOwner(SpawnEntityCommand command)
+            {
+                if (command.Type == NetworkEntityType.SceneObject) return Master;
+
+                if (command.Type == NetworkEntityType.Dynamic)
+                {
+                    if (Clients.TryGetValue(command.Owner, out var owner))
+                        return owner;
+                    else
+                        return null;
                 }
 
                 throw new NotImplementedException();
@@ -384,6 +393,8 @@ namespace Backend
                 }
 
                 Master = null;
+
+                IsApplyingMessageBuffer = false;
 
                 Entities.Clear();
                 Clients.Clear();

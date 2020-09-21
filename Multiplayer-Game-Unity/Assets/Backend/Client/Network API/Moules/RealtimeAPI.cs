@@ -32,7 +32,6 @@ namespace Backend
             public static void Configure()
             {
                 Transport = new WebSocketTransport(Address, Port);
-                //Transport = new RufflesTransport(Address, (ushort)Port);
                 //Transport = new LiteNetLibTransport(Address, Port);
 
                 Transport.OnConnect += ConnectCallback;

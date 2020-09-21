@@ -23,35 +23,48 @@ namespace Game
 {
     public class SimpleNetworkTransform : NetworkBehaviour
     {
-        Vector3 position;
-        Quaternion rotation;
+        Vector3 lastPosition;
+        Quaternion lastRotation;
 
         void Update()
         {
-            if(NetworkAPI.Client.IsMaster)
+            if (NetworkAPI.Client.IsMaster) Process();
+        }
+
+        void Process()
+        {
+            if (Time.frameCount % 4 != 0) return;
+
+            if (DetectChange())
             {
-                if(Time.frameCount % 1 == 0)
-                {
-                    var distance = Vector3.Distance(transform.position, position);
+                lastPosition = transform.position;
+                lastRotation = transform.rotation;
 
-                    var angles = Quaternion.Angle(transform.rotation, rotation);
-
-                    if (distance > 0.05f || angles > 0.05f)
-                    {
-                        rotation = transform.rotation;
-
-                        position = transform.position;
-
-                        RequestRPC(Sync, RpcBufferMode.Last, position, rotation);
-                    }
-                }
+                RequestRPC(Sync, RpcBufferMode.Last, lastPosition, lastRotation);
             }
         }
 
-        [NetworkRPC]
+        bool DetectChange()
+        {
+            var distance = Vector3.Distance(transform.position, lastPosition);
+            if (distance > 0.05f) return true;
+
+            var angles = Quaternion.Angle(transform.rotation, lastRotation);
+            if (angles > 0.05f) return true;
+
+            return false;
+        }
+
+        [NetworkRPC(RemoteAutority.Master)]
         void Sync(Vector3 position, Quaternion rotation, RpcInfo info)
         {
-            if (NetworkAPI.Client.IsMaster) return;
+            if (NetworkAPI.Client.IsMaster)
+            {
+                if (info.IsBufferered == false) return;
+
+                lastPosition = position;
+                lastRotation = rotation;
+            }
 
             transform.position = position;
             transform.rotation = rotation;

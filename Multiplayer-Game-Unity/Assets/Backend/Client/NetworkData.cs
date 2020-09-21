@@ -38,7 +38,7 @@ namespace Backend
         public override string ToString() => $"REST Error: {Message}";
     }
 
-    public enum EntityAuthorityType : byte
+    public enum RemoteAutority : byte
     {
         /// <summary>
         /// As the name implies, any client will be able to invoke this RPC

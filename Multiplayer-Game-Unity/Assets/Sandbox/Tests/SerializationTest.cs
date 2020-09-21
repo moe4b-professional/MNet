@@ -23,10 +23,8 @@ namespace Game
 {
 	public class SerializationTest : NetworkBehaviour
 	{
-        protected override void Start()
+        void Start()
         {
-            base.Start();
-
 			if (IsMine == false) return;
 
 			RequestRPC("Rpc", Entity, this);

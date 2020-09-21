@@ -445,6 +445,8 @@ namespace Backend
         {
             for (int i = client.Entities.Count; i-- > 0;)
             {
+                Log.Info(client.Entities[i].Type);
+
                 if (client.Entities[i].Type == NetworkEntityType.SceneObject) continue;
 
                 DestroyEntity(client.Entities[i]);

@@ -40,7 +40,6 @@ namespace Backend
         public AttributesCollection Attributes { get; protected set; }
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
-
         public bool TryGetBehaviour(NetworkBehaviourID id, out NetworkBehaviour behaviour) => Behaviours.TryGetValue(id, out behaviour);
 
         public bool IsReady { get; protected set; } = false;
@@ -51,23 +50,27 @@ namespace Backend
 
         protected virtual void Awake()
         {
-            if(Application.isPlaying == false) NetworkScene.Register(this);
-
-            Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
-
-            var targets = GetComponentsInChildren<NetworkBehaviour>();
-
-            if (targets.Length > byte.MaxValue)
-                throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
-
-            for (byte i = 0; i < targets.Length; i++)
+            if (Application.isPlaying)
             {
-                var id = new NetworkBehaviourID(i);
+                Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
-                targets[i].enabled = false;
-                targets[i].Configure(this, id);
+                var targets = GetComponentsInChildren<NetworkBehaviour>();
 
-                Behaviours.Add(id, targets[i]);
+                if (targets.Length > byte.MaxValue)
+                    throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
+
+                for (byte i = 0; i < targets.Length; i++)
+                {
+                    var id = new NetworkBehaviourID(i);
+
+                    targets[i].Configure(this, id);
+
+                    Behaviours.Add(id, targets[i]);
+                }
+            }
+            else
+            {
+                NetworkScene.Register(this);
             }
         }
 
@@ -174,6 +177,7 @@ namespace Backend
             target.InvokeSyncVar(command);
         }
 
+        public event Action OnDespawn;
         public virtual void Despawn()
         {
             IsReady = false;
@@ -186,6 +190,8 @@ namespace Backend
             {
 
             }
+
+            OnDespawn?.Invoke();
         }
 
         protected virtual void OnDestroy()

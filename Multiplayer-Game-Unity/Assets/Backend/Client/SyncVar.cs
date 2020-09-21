@@ -28,7 +28,7 @@ namespace Game
         public NetworkEntity Entity => Behaviour.Entity;
 
         public SyncVarAttribute Attribute { get; protected set; }
-        public EntityAuthorityType Authority => Attribute.Authority;
+        public RemoteAutority Authority => Attribute.Authority;
 
         public FieldInfo FieldInfo { get; protected set; }
         public bool IsField => FieldInfo != null;
@@ -50,18 +50,18 @@ namespace Game
             }
         }
 
-        public object ParseValue(SyncVarCommand command)
-        {
-            var value = command.Read(Type);
-
-            return value;
-        }
-
         public SyncVarRequest CreateRequest(object value)
         {
             var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, Name, value);
 
             return request;
+        }
+
+        public object ParseValue(SyncVarCommand command)
+        {
+            var value = command.Read(Type);
+
+            return value;
         }
 
         public void Set(object value)
@@ -116,10 +116,10 @@ namespace Game
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class SyncVarAttribute : Attribute
     {
-        public EntityAuthorityType Authority { get; private set; }
+        public RemoteAutority Authority { get; private set; }
 
-        public SyncVarAttribute() : this(EntityAuthorityType.Any) { }
-        public SyncVarAttribute(EntityAuthorityType authotity)
+        public SyncVarAttribute() : this(RemoteAutority.Any) { }
+        public SyncVarAttribute(RemoteAutority authotity)
         {
             this.Authority = authotity;
         }

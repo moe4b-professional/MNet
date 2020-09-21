@@ -51,10 +51,8 @@ namespace Game
             attributes.TryGetValue(1, out rotation);
         }
 
-        protected override void Start()
+        void Start()
         {
-            base.Start();
-
             var block = new MaterialPropertyBlock();
             block.SetColor("_Color", IsMine ? Color.green : Color.red);
             mesh.SetPropertyBlock(block);
@@ -74,7 +72,7 @@ namespace Game
             }
         }
 
-        [NetworkRPC(EntityAuthorityType.Owner)]
+        [NetworkRPC(RemoteAutority.Owner)]
         void RequestMove(Vector2 input, RpcInfo info)
         {
             input = Vector2.ClampMagnitude(input, 1f);
@@ -89,7 +87,7 @@ namespace Game
             RequestRPC(SetCoordinates, RpcBufferMode.Last, position, rotation);
         }
 
-        [NetworkRPC(EntityAuthorityType.Master)]
+        [NetworkRPC(RemoteAutority.Master)]
         void SetCoordinates(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             transform.position = position;

@@ -24,7 +24,7 @@ namespace Game
 	public class SyncVarTest : NetworkBehaviour
 	{
         public string field;
-        [SyncVar(EntityAuthorityType.Owner)]
+        [SyncVar(RemoteAutority.Owner)]
         public string Field
         {
             get => field;
@@ -40,9 +40,7 @@ namespace Game
         {
             base.OnSpawn();
 
-            if (Entity.IsMine == false) return;
-
-            UpdateSyncVar(nameof(Field), Application.platform.ToString());
+            if (Entity.IsMine) SetSyncVar(nameof(Field), Field, Application.platform.ToString());
         }
     }
 }

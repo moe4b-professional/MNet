@@ -30,7 +30,7 @@ namespace Game
             RequestRPC(RPC, NetworkAPI.Room.Master, Callback, "Hello");
         }
 
-        [NetworkRPC(EntityAuthorityType.Any)]
+        [NetworkRPC(RemoteAutority.Any)]
         string RPC(string text, RpcInfo info)
         {
             return Application.platform.ToString();

@@ -36,18 +36,22 @@ namespace Backend
 
         public AttributesCollection Attributes => Entity?.Attributes;
 
-        protected virtual void Awake()
-        {
-            ParseRPCs();
-            ParseSyncVars();
-        }
+        public virtual bool DisableOnUnready => true;
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
             this.Entity = entity;
             this.ID = id;
 
+            ParseRPCs();
+            ParseSyncVars();
+
+            if (DisableOnUnready) enabled = false;
+
             entity.OnSpawn += SpawnCallback;
+            entity.OnDespawn += DespawnCallback;
+
+            NetworkAPI.Room.OnAppliedMessageBuffer += AppliedMessageBufferCallback;
         }
 
         void SpawnCallback()
@@ -58,10 +62,21 @@ namespace Backend
         }
         protected virtual void OnSpawn() { }
 
-        protected virtual void Start()
+        void AppliedMessageBufferCallback()
         {
+            NetworkAPI.Room.OnAppliedMessageBuffer -= AppliedMessageBufferCallback;
 
+            OnAppliedMessageBuffer();
         }
+        protected virtual void OnAppliedMessageBuffer() { }
+
+        void DespawnCallback()
+        {
+            if (DisableOnUnready) enabled = false;
+
+            OnDespawn();
+        }
+        protected virtual void OnDespawn() { }
 
         #region RPC
         protected Dictionary<string, RpcBind> RPCs { get; private set; }
@@ -100,7 +115,7 @@ namespace Backend
 
             var payload = bind.CreateRequest(bufferMode, arguments);
 
-            RequestRPC(payload);
+            SendRPC(payload);
         }
 
         protected void RequestRPC(string method, NetworkClient target, params object[] arguments)
@@ -113,10 +128,10 @@ namespace Backend
 
             var payload = bind.CreateRequest(target.ID, arguments);
 
-            RequestRPC(payload);
+            SendRPC(payload);
         }
 
-        protected void RequestRPC<TResult>(string method, NetworkClient target, RprMethod<TResult> result, params object[] arguments)
+        protected void RequestRPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -128,10 +143,10 @@ namespace Backend
 
             var payload = bind.CreateRequest(target.ID, rpr.ID, arguments);
 
-            RequestRPC(payload);
+            SendRPC(payload);
         }
 
-        protected virtual void RequestRPC(RpcRequest request)
+        protected virtual void SendRPC(RpcRequest request)
         {
             if (IsReady == false)
             {
@@ -194,19 +209,19 @@ namespace Backend
         public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => RequestRPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
 
-        public void RequestRPC<TResult>(RpcReturnMethod<TResult> method, NetworkClient target, RprMethod<TResult> callback)
+        public void RequestRPC<TResult>(RprMethod<TResult> method, NetworkClient target, RprCallback<TResult> callback)
             => RequestRPC(method.Method.Name, target, callback);
-        public void RequestRPC<TResult, T1>(RpcReturnMethod<TResult, T1> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1)
+        public void RequestRPC<TResult, T1>(RprMethod<TResult, T1> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1)
             => RequestRPC(method.Method.Name, target, callback, arg1);
-        public void RequestRPC<TResult, T1, T2>(RpcReturnMethod<TResult, T1, T2> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2)
+        public void RequestRPC<TResult, T1, T2>(RprMethod<TResult, T1, T2> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2);
-        public void RequestRPC<TResult, T1, T2, T3>(RpcReturnMethod<TResult, T1, T2, T3> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
+        public void RequestRPC<TResult, T1, T2, T3>(RprMethod<TResult, T1, T2, T3> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3);
-        public void RequestRPC<TResult, T1, T2, T3, T4>(RpcReturnMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        public void RequestRPC<TResult, T1, T2, T3, T4>(RprMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4);
-        public void RequestRPC<TResult, T1, T2, T3, T4, T5>(RpcReturnMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        public void RequestRPC<TResult, T1, T2, T3, T4, T5>(RprMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcReturnMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprMethod<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        public void RequestRPC<TResult, T1, T2, T3, T4, T5, T6>(RprMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
@@ -328,7 +343,8 @@ namespace Backend
 
         bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
-        protected void UpdateSyncVar(string variable, object value)
+        protected void SetSyncVar<T>(string name, T field, T value) => SetSyncVar(name, value);
+        protected void SetSyncVar(string variable, object value)
         {
             if (FindSyncVar(variable, out var bind) == false)
             {
@@ -402,13 +418,13 @@ namespace Backend
         }
         #endregion
 
-        public bool ValidateAuthority(NetworkClientID sender, EntityAuthorityType authority)
+        public bool ValidateAuthority(NetworkClientID sender, RemoteAutority authority)
         {
-            if (authority == EntityAuthorityType.Any) return true;
+            if (authority == RemoteAutority.Any) return true;
 
-            if (authority == EntityAuthorityType.Owner) return sender == Owner?.ID;
+            if (authority == RemoteAutority.Owner) return sender == Owner?.ID;
 
-            if (authority == EntityAuthorityType.Master) return sender == NetworkAPI.Room.Master?.ID;
+            if (authority == RemoteAutority.Master) return sender == NetworkAPI.Room.Master?.ID;
 
             return false;
         }
