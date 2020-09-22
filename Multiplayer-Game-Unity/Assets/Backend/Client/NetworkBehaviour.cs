@@ -32,9 +32,9 @@ namespace Backend
         public bool IsMine => Entity == null ? false : Entity.IsMine;
         public bool IsReady => Entity == null ? false : Entity.IsReady;
 
-        public NetworkClient Owner => Entity?.Owner;
+        public NetworkClient Owner => Entity == null ? null : Entity.Owner;
 
-        public AttributesCollection Attributes => Entity?.Attributes;
+        public AttributesCollection Attributes => Entity == null ? null : Entity.Attributes;
 
         public virtual bool DisableOnUnready => true;
 
@@ -246,16 +246,15 @@ namespace Backend
             }
 
             object[] arguments;
-            RpcInfo info;
             try
             {
-                arguments = bind.ParseArguments(command, out info);
+                arguments = bind.ParseArguments(command);
             }
             catch (Exception e)
             {
                 var text = $"Error trying to Parse RPC Arguments of Method '{command.Method}' on {this}, Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
-                    $"{e.ToString()}";
+                    $"{e}";
 
                 Debug.LogWarning(text, this);
 
@@ -299,8 +298,6 @@ namespace Backend
 
             NetworkAPI.Client.Send(payload);
         }
-
-        void ResolveRPR(RpcCommand command, RprResult result) => NetworkAPI.Room.ResolveRPR(command, result);
         #endregion
 
         #region SyncVar
@@ -343,7 +340,10 @@ namespace Backend
 
         bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
+        #pragma warning disable IDE0060 // Remove unused parameter
         protected void SetSyncVar<T>(string name, T field, T value) => SetSyncVar(name, value);
+        #pragma warning restore IDE0060 // Remove unused parameter
+
         protected void SetSyncVar(string variable, object value)
         {
             if (FindSyncVar(variable, out var bind) == false)
@@ -397,7 +397,7 @@ namespace Backend
             {
                 var text = $"Error trying to Parse Value for SyncVar '{command.Variable}' on {this}, Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
-                    $"{ex.ToString()}";
+                    $"{ex}";
 
                 Debug.LogWarning(text, this);
                 return;

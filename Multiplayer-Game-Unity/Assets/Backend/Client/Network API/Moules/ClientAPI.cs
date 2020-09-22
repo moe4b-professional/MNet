@@ -161,7 +161,7 @@ namespace Backend
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntityCallback(NetworkEntity entity)
             {
-                if (entity?.Owner != Instance) return;
+                if (entity.Owner != Instance) return;
 
                 OnSpawnEntity?.Invoke(entity);
             }
@@ -180,7 +180,7 @@ namespace Backend
             public static event DestoryEntityDelegate OnDestoryEntity;
             static void DestoryEntityCallback(NetworkEntity entity)
             {
-                if (entity?.Owner != Instance) return;
+                if (entity.Owner != Instance) return;
 
                 OnDestoryEntity?.Invoke(entity);
             }

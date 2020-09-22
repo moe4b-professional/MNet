@@ -58,13 +58,13 @@ namespace Backend
             return request;
         }
 
-        public object[] ParseArguments(RpcCommand command, out RpcInfo info)
+        public object[] ParseArguments(RpcCommand command)
         {
             var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
 
             NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
-            info = new RpcInfo(sender);
+            var info = new RpcInfo(sender);
 
             if (HasInfoParameter) arguments[arguments.Length - 1] = info;
 
