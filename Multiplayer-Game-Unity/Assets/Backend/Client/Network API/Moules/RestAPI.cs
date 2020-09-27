@@ -201,4 +201,21 @@ namespace Backend
             }
         }
     }
+
+    public class RestError
+    {
+        public long Code { get; protected set; }
+
+        public string Message { get; protected set; }
+
+        public RestError(long code, string message)
+        {
+            this.Code = code;
+            this.Message = message;
+        }
+
+        public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
+
+        public override string ToString() => $"REST Error: {Message}";
+    }
 }
