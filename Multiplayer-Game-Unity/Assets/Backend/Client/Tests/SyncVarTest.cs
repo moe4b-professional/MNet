@@ -24,7 +24,7 @@ namespace Game
 	public class SyncVarTest : NetworkBehaviour
 	{
         public string field;
-        [SyncVar(RemoteAutority.Owner)]
+        [SyncVar(RemoteAutority.Owner | RemoteAutority.Master)]
         public string Field
         {
             get => field;

@@ -225,7 +225,7 @@ namespace Backend
             => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
-        public void InvokeRPC(RpcCommand command)
+        protected internal virtual void InvokeRPC(RpcCommand command)
         {
             if (FindRPC(command.Method, out var bind) == false)
             {
@@ -374,7 +374,7 @@ namespace Backend
             }
         }
 
-        internal void InvokeSyncVar(SyncVarCommand command)
+        protected internal virtual void InvokeSyncVar(SyncVarCommand command)
         {
             if(SyncVars.TryGetValue(command.Variable, out var bind) == false)
             {
@@ -420,11 +420,19 @@ namespace Backend
 
         public bool ValidateAuthority(NetworkClientID sender, RemoteAutority authority)
         {
-            if (authority == RemoteAutority.Any) return true;
+            if (authority.HasFlag(RemoteAutority.Any)) return true;
 
-            if (authority == RemoteAutority.Owner) return sender == Owner?.ID;
+            if (authority.HasFlag(RemoteAutority.Owner))
+            {
+                if (sender == Owner?.ID)
+                    return true;
+            }
 
-            if (authority == RemoteAutority.Master) return sender == NetworkAPI.Room.Master?.ID;
+            if (authority.HasFlag(RemoteAutority.Master))
+            {
+                if (sender == NetworkAPI.Room.Master?.ID)
+                    return true;
+            }
 
             return false;
         }

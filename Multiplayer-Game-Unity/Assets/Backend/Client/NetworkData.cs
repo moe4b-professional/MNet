@@ -38,21 +38,22 @@ namespace Backend
         public override string ToString() => $"REST Error: {Message}";
     }
 
+    [Flags]
     public enum RemoteAutority : byte
     {
         /// <summary>
-        /// As the name implies, any client will be able to invoke this RPC
+        /// As the name implies, any client will be able to the remote action
         /// </summary>
-        Any,
+        Any = 1 << 0,
 
         /// <summary>
-        /// Only the owner of this entity may invoke this RPC
+        /// Only the owner of this entity may invoke this this remote action
         /// </summary>
-        Owner,
+        Owner = 1 << 1,
 
         /// <summary>
-        /// Only the master client may invoke this RPC
+        /// Only the master client may invoke this remote action
         /// </summary>
-        Master,
+        Master = 1 << 2,
     }
 }

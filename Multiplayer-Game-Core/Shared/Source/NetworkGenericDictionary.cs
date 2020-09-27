@@ -93,8 +93,6 @@ namespace Backend
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref payload);
-
-            if (context.IsReading) objects = new Dictionary<TKey, object>();
         }
 
         public NetworkGenericDictionary()

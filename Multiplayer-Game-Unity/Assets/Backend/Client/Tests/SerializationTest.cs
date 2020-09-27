@@ -30,18 +30,6 @@ namespace Game
 			if (IsMine == false) return;
 
 			RequestRPC(Rpc, Entity, this, Color.red);
-
-			attribute = new AttributesCollection();
-
-			attribute.Set(0, Color.red);
-			attribute.Set(1, Vector2Int.one);
-			attribute.Set(2, Vector3.up);
-			attribute.Set(3, this);
-			attribute.Set(4, Entity);
-
-            foreach (var key in attribute.Keys) Debug.Log(attribute[key]);
-
-			Debug.Log(attribute.TryGetValue<SerializationTest>(3, out var value));
 		}
 
         [NetworkRPC]
