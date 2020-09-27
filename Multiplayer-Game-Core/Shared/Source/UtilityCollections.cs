@@ -16,6 +16,12 @@ namespace Backend
         public TValue this[TKey key] => Values[key];
         public TKey this[TValue value] => Keys[value];
 
+        public virtual void Add(TKey key, TValue value)
+        {
+            Values.Add(key, value);
+            Keys.Add(value, key);
+        }
+
         public virtual void Set(TKey key, TValue value)
         {
             Values[key] = value;

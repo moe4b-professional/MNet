@@ -15,10 +15,12 @@ namespace Backend
     {
         public const ushort MinCode = 400;
 
-        public static Dictionary<ushort, Type> Types { get; private set; }
+        public static Dictionary<ushort, Type> Codes { get; private set; }
+        public static Dictionary<Type, ushort> Types { get; private set; }
 
-        public static Dictionary<Type, ushort> Codes { get; private set; }
+        public static List<Type> Implicits { get; private set; }
 
+        #region Get Type
         public static Type GetType(ushort code)
         {
             if (TryGetType(code, out var type))
@@ -26,29 +28,74 @@ namespace Backend
             else
                 throw new Exception($"No NetworkPayload Registerd With Code {code}");
         }
-        public static bool TryGetType(ushort code, out Type type)
-        {
-            return Types.TryGetValue(code, out type);
-        }
 
-        public static ushort GetCode<T>() => GetCode(typeof(T));
-        public static ushort GetCode(object instance) => GetCode(instance.GetType());
+        public static bool TryGetType(ushort code, out Type type) => Codes.TryGetValue(code, out type);
+        #endregion
+
+        #region Get Code
+        public static ushort GetCode<T>()
+        {
+            var type = typeof(T);
+
+            return GetCode(type);
+        }
+        public static ushort GetCode(object instance)
+        {
+            if (instance == null) throw new ArgumentNullException();
+
+            var type = instance.GetType();
+
+            return GetCode(type);
+        }
         public static ushort GetCode(Type type)
         {
-            if (Codes.TryGetValue(type, out var code))
+            if (TryGetCode(type, out var code))
                 return code;
             else
                 throw new Exception($"Type {type} Not Registered as NetworkPayload");
         }
 
+        public static bool TryGetCode(Type type, out ushort code)
+        {
+            if (Types.TryGetValue(type, out code)) return true;
+
+            if (TryGetCodeFromImplicit(type, out code))
+            {
+                Types.Add(type, code);
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool TryGetCodeFromImplicit(Type type, out ushort code)
+        {
+            for (int i = 0; i < Implicits.Count; i++)
+                if (Implicits[i].IsAssignableFrom(type))
+                    return TryGetCode(Implicits[i], out code);
+
+            code = 0;
+            return false;
+        }
+        #endregion
+
         #region Register
-        public static void Register<T>(ushort code) => Register(code, typeof(T));
-        public static void Register(ushort code, Type type)
+        public static void Register<T>(ushort code) => Register<T>(code, false);
+        public static void Register<T>(ushort code, bool useForChildern)
+        {
+            var type = typeof(T);
+
+            Register(code, type, useForChildern);
+        }
+
+        public static void Register(ushort code, Type type, bool useForChildern)
         {
             Validate(code, type);
 
-            Types.Add(code, type);
-            Codes.Add(type, code);
+            Codes.Add(code, type);
+            Types.Add(type, code);
+
+            if (useForChildern) Implicits.Add(type);
         }
         #endregion
 
@@ -66,12 +113,12 @@ namespace Backend
         }
         static void ValidateTypeDuplicate(ushort code, Type type)
         {
-            if (Types.TryGetValue(code, out var duplicate))
+            if (TryGetType(code, out var duplicate))
                 throw new Exception($"NetworkPayload Type Duplicate Found, {type} & {duplicate} both registered with code {code}");
         }
         static void ValidateCodeDuplicate(ushort code, Type type)
         {
-            if (Codes.TryGetValue(type, out var duplicate))
+            if (TryGetCode(type, out var duplicate))
                 throw new Exception($"NetworkPayload Type Duplicate Found, Code {code} & {duplicate} Both Registered to {type}");
         }
         #endregion
@@ -139,9 +186,10 @@ namespace Backend
 
         static NetworkPayload()
         {
-            Types = new Dictionary<ushort, Type>();
+            Codes = new Dictionary<ushort, Type>();
+            Types = new Dictionary<Type, ushort>();
 
-            Codes = new Dictionary<Type, ushort>();
+            Implicits = new List<Type>();
 
             RegisterInternal();
         }

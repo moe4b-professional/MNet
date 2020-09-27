@@ -23,18 +23,33 @@ namespace Game
 {
 	public class SerializationTest : NetworkBehaviour
 	{
+		AttributesCollection attribute;
+
         void Start()
         {
 			if (IsMine == false) return;
 
-			RequestRPC("Rpc", Entity, this);
+			RequestRPC(Rpc, Entity, this, Color.red);
+
+			attribute = new AttributesCollection();
+
+			attribute.Set(0, Color.red);
+			attribute.Set(1, Vector2Int.one);
+			attribute.Set(2, Vector3.up);
+			attribute.Set(3, this);
+			attribute.Set(4, Entity);
+
+            foreach (var key in attribute.Keys) Debug.Log(attribute[key]);
+
+			Debug.Log(attribute.TryGetValue<SerializationTest>(3, out var value));
 		}
 
         [NetworkRPC]
-		void Rpc(NetworkEntity entity, SerializationTest behaviour, RpcInfo info)
+		void Rpc(NetworkEntity entity, SerializationTest behaviour, Color color, RpcInfo info)
         {
 			Debug.Log($"Entity: {entity}");
 			Debug.Log($"Behaviour: {behaviour}");
+			Debug.Log($"Color: {color}");
 		}
 	}
 }

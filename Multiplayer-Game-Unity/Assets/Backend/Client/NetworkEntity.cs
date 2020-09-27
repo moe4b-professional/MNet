@@ -203,5 +203,26 @@ namespace Backend
         {
             RPRs = new AutoKeyDictionary<ushort, RprBind>(RprBind.Increment);
         }
+
+        //Static Utility
+        public static NetworkEntity Find(NetworkEntityID id)
+        {
+            TryFind(id, out var entity);
+
+            return entity;
+        }
+
+        public static bool TryFind(NetworkEntityID id, out NetworkEntity entity)
+        {
+            if (NetworkAPI.Client.IsConnected == false)
+            {
+                entity = null;
+                return false;
+            }
+
+            if (NetworkAPI.Room.Entities.TryGetValue(id, out entity)) return true;
+
+            return false;
+        }
     }
 }

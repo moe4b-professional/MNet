@@ -30,15 +30,15 @@ namespace Backend
 
         public void Set<T>(TKey key, T value)
         {
+            var code = NetworkPayload.GetCode<T>();
+
             using (var writer = new NetworkWriter(DefaultValueBufferSize))
             {
-                var code = NetworkPayload.GetCode<T>();
-
                 writer.Write(code);
                 writer.Write(value);
 
-                var binary = writer.ToArray();
-                payload[key] = binary;
+                var raw = writer.ToArray();
+                payload[key] = raw;
             }
 
             objects[key] = value;

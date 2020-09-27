@@ -30,16 +30,63 @@ namespace Backend
             public const ushort Vector2 = Quaternion + 1;
             public const ushort NetworkEntity = Vector2 + 1;
             public const ushort NetworkBehaviour = NetworkEntity + 1;
+            public const ushort Vector4 = NetworkBehaviour + 1;
+            public const ushort Vector2Int = Vector4 + 1;
+            public const ushort Vector3Int = Vector2Int + 1;
+            public const ushort Color = Vector3Int + 1;
         }
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
-            NetworkPayload.Register<Vector3>(IDs.Vector3);
             NetworkPayload.Register<Quaternion>(IDs.Quaternion);
+
             NetworkPayload.Register<Vector2>(IDs.Vector2);
+            NetworkPayload.Register<Vector2Int>(IDs.Vector2Int);
+            NetworkPayload.Register<Vector3>(IDs.Vector3);
+            NetworkPayload.Register<Vector3Int>(IDs.Vector3Int);
+            NetworkPayload.Register<Vector4>(IDs.Vector4);
+
+            NetworkPayload.Register<Color>(IDs.Color);
+
+            NetworkPayload.Register<NetworkEntity>(IDs.NetworkEntity, true);
+            NetworkPayload.Register<NetworkBehaviour>(IDs.NetworkBehaviour, true);
         }
 	}
+
+    #region Vector
+    public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
+    {
+        public override void Serialize(NetworkWriter writer, Vector2 value)
+        {
+            writer.Write(value.x);
+            writer.Write(value.y);
+        }
+
+        public override Vector2 Deserialize(NetworkReader reader)
+        {
+            reader.Read(out float x);
+            reader.Read(out float y);
+
+            return new Vector2(x, y);
+        }
+    }
+    public class Vector2IntSerializationResolver : NetworkSerializationExplicitResolver<Vector2Int>
+    {
+        public override void Serialize(NetworkWriter writer, Vector2Int value)
+        {
+            writer.Write(value.x);
+            writer.Write(value.y);
+        }
+
+        public override Vector2Int Deserialize(NetworkReader reader)
+        {
+            reader.Read(out int x);
+            reader.Read(out int y);
+
+            return new Vector2Int(x, y);
+        }
+    }
 
     public class Vector3SerializationResolver : NetworkSerializationExplicitResolver<Vector3>
     {
@@ -59,21 +106,65 @@ namespace Backend
             return new Vector3(x, y, z);
         }
     }
-
-    public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
+    public class Vector3IntSerializationResolver : NetworkSerializationExplicitResolver<Vector3Int>
     {
-        public override void Serialize(NetworkWriter writer, Vector2 value)
+        public override void Serialize(NetworkWriter writer, Vector3Int value)
         {
             writer.Write(value.x);
             writer.Write(value.y);
+            writer.Write(value.z);
         }
 
-        public override Vector2 Deserialize(NetworkReader reader)
+        public override Vector3Int Deserialize(NetworkReader reader)
+        {
+            reader.Read(out int x);
+            reader.Read(out int y);
+            reader.Read(out int z);
+
+            return new Vector3Int(x, y, z);
+        }
+    }
+
+    public class Vector4SerializationResolver : NetworkSerializationExplicitResolver<Vector4>
+    {
+        public override void Serialize(NetworkWriter writer, Vector4 value)
+        {
+            writer.Write(value.x);
+            writer.Write(value.y);
+            writer.Write(value.z);
+            writer.Write(value.w);
+        }
+
+        public override Vector4 Deserialize(NetworkReader reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
+            reader.Read(out float z);
+            reader.Read(out float w);
 
-            return new Vector2(x, y);
+            return new Vector4(x, y, z, w);
+        }
+    }
+    #endregion
+
+    public class ColorSerializationResolver : NetworkSerializationExplicitResolver<Color>
+    {
+        public override void Serialize(NetworkWriter writer, Color value)
+        {
+            writer.Write(value.r);
+            writer.Write(value.g);
+            writer.Write(value.b);
+            writer.Write(value.a);
+        }
+
+        public override Color Deserialize(NetworkReader reader)
+        {
+            reader.Read(out float r);
+            reader.Read(out float g);
+            reader.Read(out float b);
+            reader.Read(out float a);
+
+            return new Color(r, g, b, a);
         }
     }
 

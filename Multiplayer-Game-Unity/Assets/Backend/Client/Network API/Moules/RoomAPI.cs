@@ -212,16 +212,24 @@ namespace Backend
             #region RPC
             static void InvokeRPC(RpcCommand command)
             {
-                if (Entities.TryGetValue(command.Entity, out var target) == false)
+                try
                 {
-                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+                    if (Entities.TryGetValue(command.Entity, out var target) == false)
+                    {
+                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
 
-                    ResolveRPC(command, RprResult.InvalidEntity);
+                        ResolveRPC(command, RprResult.InvalidEntity);
 
-                    return;
+                        return;
+                    }
+
+                    target.InvokeRPC(command);
                 }
-
-                target.InvokeRPC(command);
+                catch (Exception)
+                {
+                    ResolveRPC(command, RprResult.RuntimeException);
+                    throw;
+                }
             }
 
             public static void ResolveRPC(RpcCommand command, RprResult result)
