@@ -12,15 +12,20 @@ namespace Backend
         {
             public static Dictionary<Type, bool> Dictionary { get; private set; }
 
+            static object SyncLock = new object();
+
             public static bool Check(Type type)
             {
-                if (Dictionary.TryGetValue(type, out var result)) return result;
+                lock (SyncLock)
+                {
+                    if (Dictionary.TryGetValue(type, out var result)) return result;
 
-                result = type.IsValueType == false;
+                    result = type.IsValueType == false;
 
-                Dictionary.Add(type, result);
+                    Dictionary.Add(type, result);
 
-                return result;
+                    return result;
+                }
             }
 
             static Nullable()

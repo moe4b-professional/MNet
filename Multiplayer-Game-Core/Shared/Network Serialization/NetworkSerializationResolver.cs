@@ -8,6 +8,7 @@ using System.IO;
 using System.Collections;
 using System.Reflection;
 using System.ComponentModel;
+using System.Net;
 
 namespace Backend
 {
@@ -27,32 +28,36 @@ namespace Backend
 
         public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
 
+        static object SyncLock = new object();
+
         public static NetworkSerializationResolver Retrive(Type type)
         {
-            if (Dictionary.TryGetValue(type, out var value))
-                return value;
-
-            for (int i = 0; i < Explicit.Count; i++)
+            lock (SyncLock)
             {
-                if (Explicit[i].CanResolve(type))
+                if (Dictionary.TryGetValue(type, out var value)) return value;
+
+                for (int i = 0; i < Explicit.Count; i++)
                 {
-                    Dictionary.Add(type, Explicit[i]);
+                    if (Explicit[i].CanResolve(type))
+                    {
+                        Dictionary.Add(type, Explicit[i]);
 
-                    return Explicit[i];
+                        return Explicit[i];
+                    }
                 }
-            }
 
-            for (int i = 0; i < Implicit.Count; i++)
-            {
-                if (Implicit[i].CanResolve(type))
+                for (int i = 0; i < Implicit.Count; i++)
                 {
-                    Dictionary.Add(type, Implicit[i]);
+                    if (Implicit[i].CanResolve(type))
+                    {
+                        Dictionary.Add(type, Implicit[i]);
 
-                    return Implicit[i];
+                        return Implicit[i];
+                    }
                 }
-            }
 
-            return null;
+                return null;
+            }
         }
 
         static NetworkSerializationResolver()
@@ -286,13 +291,9 @@ namespace Backend
 
         public override Guid Deserialize(NetworkReader reader)
         {
-            var binary = new byte[Size];
-
-            Buffer.BlockCopy(reader.Data, reader.Position, binary, 0, Size);
+            var binary = reader.BlockCopy(Size);
 
             var value = new Guid(binary);
-
-            reader.Position += Size;
 
             return value;
         }
@@ -317,6 +318,30 @@ namespace Backend
                 return new DateTime();
         }
     }
+
+    public class IPAddressNetworkSerializationResolver : NetworkSerializationExplicitResolver<IPAddress>
+    {
+        public override void Serialize(NetworkWriter writer, IPAddress value)
+        {
+            var bytes = value.GetAddressBytes();
+
+            byte length = (byte)bytes.Length;
+
+            writer.Write(length);
+            writer.Insert(bytes);
+        }
+
+        public override IPAddress Deserialize(NetworkReader reader)
+        {
+            reader.Read(out byte length);
+
+            var bytes = reader.BlockCopy(length);
+
+            var value = new IPAddress(bytes);
+
+            return value;
+        }
+    }
     #endregion
 
     public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
@@ -332,11 +357,7 @@ namespace Backend
         {
             reader.Read(out int length);
 
-            var value = new byte[length];
-
-            Buffer.BlockCopy(reader.Data, reader.Position, value, 0, length);
-
-            reader.Position += length;
+            var value = reader.BlockCopy(length);
 
             return value;
         }

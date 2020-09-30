@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stress-Test", "Stress-Clien
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "..\Multiplayer-Game-Unity\Assembly-CSharp.csproj", "{88779CB0-ED79-3274-C2A3-23B036161304}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameServer", "GameServer\GameServer.csproj", "{C06A8B62-0279-4523-8AB8-BB1E48143808}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MasterServer", "MasterServer\MasterServer.csproj", "{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +36,14 @@ Global
 		{88779CB0-ED79-3274-C2A3-23B036161304}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{88779CB0-ED79-3274-C2A3-23B036161304}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88779CB0-ED79-3274-C2A3-23B036161304}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

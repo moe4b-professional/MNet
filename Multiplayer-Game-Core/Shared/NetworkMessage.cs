@@ -75,17 +75,6 @@ namespace Backend
             }
         }
 
-        public void WriteTo(HttpListenerResponse response)
-        {
-            response.StatusCode = (int)HttpStatusCode.OK;
-
-            var data = NetworkSerializer.Serialize(this);
-
-            response.WriteContent(data);
-
-            response.Close();
-        }
-
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref code);
@@ -97,17 +86,6 @@ namespace Backend
         public static NetworkMessage Read(byte[] data)
         {
             return NetworkSerializer.Deserialize<NetworkMessage>(data);
-        }
-        public static NetworkMessage Read(HttpListenerRequest request)
-        {
-            using (var stream = new MemoryStream())
-            {
-                request.InputStream.CopyTo(stream);
-
-                var binary = stream.ToArray();
-
-                return Read(binary);
-            }
         }
 
         public static NetworkMessage Write<T>(T payload)

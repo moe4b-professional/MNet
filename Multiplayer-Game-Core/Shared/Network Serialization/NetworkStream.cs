@@ -178,18 +178,25 @@ namespace Backend
 
     public class NetworkReader : NetworkStream
     {
+        public virtual byte[] BlockCopy(int length)
+        {
+            var destination = new byte[length];
+
+            Buffer.BlockCopy(data, Position, destination, 0, length);
+
+            Position += length;
+
+            return destination;
+        }
+
         public void Read<T>(out T value) => value = Read<T>();
         public T Read<T>()
         {
             var type = typeof(T);
 
-            T value;
+            if (ReadExplicit(out T value, type)) return value;
 
-            if (ReadExplicit(out value, type))
-            {
-
-            }
-            else if (ReadImplicit(out var instance, type))
+            if (ReadImplicit(out var instance, type))
             {
                 try
                 {
@@ -203,13 +210,11 @@ namespace Backend
                 {
                     throw;
                 }
-            }
-            else
-            {
-                throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+
+                return value;
             }
 
-            return value;
+            throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
         }
         bool ReadExplicit<T>(out T value, Type type)
         {
@@ -217,7 +222,7 @@ namespace Backend
 
             if (resolver == null)
             {
-                value = default(T);
+                value = default;
                 return false;
             }
 
@@ -227,7 +232,7 @@ namespace Backend
 
                 if (isNull)
                 {
-                    value = default(T);
+                    value = default;
                     return true;
                 }
             }

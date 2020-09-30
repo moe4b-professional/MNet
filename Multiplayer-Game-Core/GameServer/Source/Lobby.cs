@@ -32,11 +32,39 @@ namespace Backend
             return results;
         }
 
+        public RestAPI Rest => GameServer.Rest;
+
         public void Configure()
         {
-            GameServer.Rest.Router.Register(RESTRoute);
+            Rest.Router.Register(Constants.GameServer.Rest.Requests.Lobby.Path, GetInfo);
+            Rest.Router.Register(Constants.GameServer.Rest.Requests.Room.Create, CreateRoom);
         }
 
+        public void GetInfo(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            var rooms = ReadRoomsInfo();
+
+            var info = new LobbyInfo(rooms);
+
+            RestAPI.WriteTo(response, info);
+        }
+
+        public void CreateRoom(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            CreateRoomRequest payload;
+            try
+            {
+                payload = RestAPI.Read<CreateRoomRequest>(request);
+            }
+            catch (Exception)
+            {
+                RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomRequest)}");
+                return;
+            }
+
+            var info = CreateRoom(payload);
+            RestAPI.WriteTo(response, info);
+        }
         public RoomBasicInfo CreateRoom(CreateRoomRequest request)
         {
             var room = CreateRoom(request.Name, request.Capacity, request.Attributes);
@@ -56,52 +84,6 @@ namespace Backend
             room.Start();
 
             return room;
-        }
-
-        public bool RESTRoute(HttpListenerRequest request, HttpListenerResponse response)
-        {
-            if (request.RawUrl == Constants.RestAPI.Requests.Lobby.Info)
-            {
-                var rooms = ReadRoomsInfo();
-
-                var info = new LobbyInfo(rooms);
-
-                var message = NetworkMessage.Write(info);
-
-                message.WriteTo(response);
-
-                return true;
-            }
-
-            if(request.RawUrl == Constants.RestAPI.Requests.Room.Create)
-            {
-                CreateRoomRequest payload;
-
-                try
-                {
-                    var message = NetworkMessage.Read(request);
-
-                    payload = message.Read<CreateRoomRequest>();
-                }
-                catch (Exception)
-                {
-                    RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomRequest)}");
-
-                    return true;
-                }
-
-                {
-                    var info = CreateRoom(payload);
-
-                    var message = NetworkMessage.Write(info);
-
-                    message.WriteTo(response);
-
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         public Lobby()

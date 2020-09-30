@@ -23,7 +23,7 @@ namespace Backend
 	{
         public static class RealtimeAPI
         {
-            public const int Port = Constants.RealtimeAPI.Port;
+            public const int Port = Constants.GameServer.Realtime.Port;
 
             public static NetworkTransport Transport { get; private set; }
 
