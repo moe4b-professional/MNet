@@ -26,7 +26,7 @@ namespace Backend
 	{
         public abstract bool IsConnected { get; }
 
-        public abstract void Connect(uint context);
+        public abstract void Connect(GameServerID server, RoomID room);
 
         public ConcurrentQueue<Action> InputQueue { get; protected set; }
 
@@ -98,11 +98,11 @@ namespace Backend
     {
         public bool IsRegistered { get; protected set; }
 
-        public uint Context { get; protected set; }
+        public RoomID Room { get; protected set; }
 
-        public override void Connect(uint context)
+        public override void Connect(GameServerID server, RoomID room)
         {
-            this.Context = context;
+            this.Room = room;
 
             IsRegistered = false;
         }
@@ -125,7 +125,7 @@ namespace Backend
 
         protected virtual void RequestRegister()
         {
-            var raw = BitConverter.GetBytes(Context);
+            var raw = BitConverter.GetBytes(Room.Value);
 
             Send(raw);
         }

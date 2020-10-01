@@ -21,202 +21,194 @@ using UnityEngine.Networking;
 
 namespace Backend
 {
-	public static partial class NetworkAPI
-	{
-        public static class RestAPI
+    public abstract class RestAPI
+    {
+        public ushort Port { get; protected set; }
+        public static RestScheme Scheme { get; protected set; }
+
+        public List<Element> List { get; private set; }
+        public Queue<Element> Queue { get; private set; }
+        public class Element
         {
-            public static string Address => NetworkAPI.Address + ":" + Constants.GameServer.Rest.Port;
+            public UnityWebRequest Request { get; protected set; }
 
-            public static List<Element> List { get; private set; }
-            public static Queue<Element> Queue { get; private set; }
-            public class Element
+            public CallbackDelegate Callback { get; protected set; }
+
+            public Element(UnityWebRequest request, CallbackDelegate callback)
             {
-                public UnityWebRequest Request { get; protected set; }
+                this.Request = request;
 
-                public CallbackDelegate Callback { get; protected set; }
-
-                public Element(UnityWebRequest request, CallbackDelegate callback)
-                {
-                    this.Request = request;
-
-                    this.Callback = callback;
-                }
+                this.Callback = callback;
             }
+        }
 
-            static bool IsDone(Element element) => element.Request.isDone;
+        static bool IsDone(Element element) => element.Request.isDone;
 
-            public static Element Register(UnityWebRequest request, CallbackDelegate callback, bool inqueue)
+        public Element Register(UnityWebRequest request, CallbackDelegate callback, bool inqueue)
+        {
+            var element = new Element(request, callback);
+
+            if (inqueue)
+                Queue.Enqueue(element);
+            else
+                List.Add(element);
+
+            request.SendWebRequest();
+
+            return element;
+        }
+
+        void Update()
+        {
+            for (int i = 0; i < List.Count; i++)
+                if (IsDone(List[i]))
+                    Process(List[i]);
+
+            List.RemoveAll(IsDone);
+
+            while (true)
             {
-                var element = new Element(request, callback);
+                if (Queue.Count == 0) break;
 
-                if (inqueue)
-                    Queue.Enqueue(element);
+                var element = Queue.Peek();
+
+                if (IsDone(element))
+                    Process(element);
                 else
-                    List.Add(element);
+                    break;
 
-                request.SendWebRequest();
-
-                return element;
+                Queue.Dequeue();
             }
+        }
 
-            static void Update()
+        void Process(Element element)
+        {
+            var request = element.Request;
+
+            if (request.isDone == false)
             {
-                for (int i = 0; i < List.Count; i++)
-                    if (IsDone(List[i]))
-                        Process(List[i]);
-
-                List.RemoveAll(IsDone);
-
-                while (true)
-                {
-                    if (Queue.Count == 0) break;
-
-                    var element = Queue.Peek();
-
-                    if (IsDone(element))
-                        Process(element);
-                    else
-                        break;
-
-                    Queue.Dequeue();
-                }
+                Debug.LogWarning($"{request.url} Rest request still isn't done, cannot process in this state, ignoring");
+                return;
             }
 
-            static void Process(Element element)
+            var callback = element.Callback;
+
+            callback(request);
+        }
+
+        protected void Send(string ip, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue)
+        {
+            var url = $"{Scheme}://{ip}:{Port}{path}";
+
+            var request = new UnityWebRequest(url, method, downloader, uploader);
+
+            Register(request, callback, enqueue);
+        }
+
+        public delegate void CallbackDelegate(UnityWebRequest request);
+
+        public RestAPI(ushort port)
+        {
+            this.Port = port;
+
+            List = new List<Element>();
+            Queue = new Queue<Element>();
+
+            NetworkAPI.OnUpdate += Update;
+        }
+
+        public static void Parse<T>(UnityWebRequest request, out T payload, out RestError error)
+            where T : new()
+        {
+            if (request.isHttpError || request.isNetworkError)
             {
-                var request = element.Request;
-
-                if (request.isDone == false)
-                {
-                    Debug.LogWarning($"{request.url} Rest request still isn't done, cannot process in this state, ignoring");
-                    return;
-                }
-
-                var callback = element.Callback;
-
-                callback(request);
+                payload = default;
+                error = new RestError(request);
+                return;
             }
 
-            public static void GET(string address, string path, CallbackDelegate callback, bool enqueue)
+            try
             {
-                var downloader = new DownloadHandlerBuffer();
+                var raw = request.downloadHandler.data;
 
-                Send(address, path, "GET", null, downloader, callback, enqueue);
+                payload = NetworkSerializer.Deserialize<T>(raw);
+                error = null;
+
+                return;
             }
-            public static void PUT(string address, string path, NetworkMessage message, CallbackDelegate callback, bool enqueue)
+            catch (Exception)
             {
-                var data = NetworkSerializer.Serialize(message);
-
-                var uploader = new UploadHandlerRaw(data);
-                var downloader = new DownloadHandlerBuffer();
-
-                Send(address, path, "PUT", uploader, downloader, callback, enqueue);
+                payload = default;
+                error = new RestError(0, $"Error Parsing {typeof(T).Name} From Server Response");
             }
-            public static void POST(string address, string path, NetworkMessage message, CallbackDelegate callback, bool enqueue)
-            {
-                var data = NetworkSerializer.Serialize(message);
+        }
+    }
 
-                var uploader = new UploadHandlerRaw(data);
-                var downloader = new DownloadHandlerBuffer();
+    public class GenericRestAPI : RestAPI
+    {
+        public void GET(string ip, string path, CallbackDelegate callback, bool enqueue)
+        {
+            var downloader = new DownloadHandlerBuffer();
 
-                Send(address, path, "POST", uploader, downloader, callback, enqueue);
-            }
-            public static void Send(string address, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue)
-            {
-                var url = "http://" + address + path;
+            Send(ip, path, "GET", null, downloader, callback, enqueue);
+        }
+        public void PUT<T>(string ip, string path, T payload, CallbackDelegate callback, bool enqueue)
+        {
+            var data = NetworkSerializer.Serialize(payload);
 
-                var request = new UnityWebRequest(url, method, downloader, uploader);
+            var uploader = new UploadHandlerRaw(data);
+            var downloader = new DownloadHandlerBuffer();
 
-                Register(request, callback, enqueue);
-            }
+            Send(ip, path, "PUT", uploader, downloader, callback, enqueue);
+        }
+        public void POST<T>(string ip, string path, T payload, CallbackDelegate callback, bool enqueue)
+        {
+            var data = NetworkSerializer.Serialize(payload);
 
-            public static void Parse<T>(UnityWebRequest request, out T payload, out RestError error)
-                where T : new()
-            {
-                if (request.isHttpError || request.isNetworkError)
-                {
-                    payload = default;
-                    error = new RestError(request);
-                    return;
-                }
+            var uploader = new UploadHandlerRaw(data);
+            var downloader = new DownloadHandlerBuffer();
 
-                try
-                {
-                    var raw = request.downloadHandler.data;
+            Send(ip, path, "POST", uploader, downloader, callback, enqueue);
+        }
 
-                    payload = NetworkSerializer.Deserialize<T>(raw);
-                    error = null;
+        public GenericRestAPI(ushort port) : base(port)
+        {
 
-                    return;
-                }
-                catch (Exception)
-                {
-                    payload = default;
-                    error = new RestError(0, $"Error Parsing {typeof(T).Name} From Server Response");
-                }
-            }
+        }
+    }
 
-            public delegate void CallbackDelegate(UnityWebRequest request);
+    public class DirectedRestAPI : RestAPI
+    {
+        public string IP { get; protected set; }
 
-            public static class Lobby
-            {
-                #region List
-                public static void Info()
-                {
-                    GET(Address, Constants.GameServer.Rest.Requests.Lobby.Info, InfoCallback, false);
-                }
+        public void GET(string path, CallbackDelegate callback, bool enqueue)
+        {
+            var downloader = new DownloadHandlerBuffer();
 
-                public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
-                public static event InfoDelegate OnInfo;
-                static void InfoCallback(UnityWebRequest request)
-                {
-                    Parse(request, out LobbyInfo info, out var error);
+            Send(IP, path, "GET", null, downloader, callback, enqueue);
+        }
+        public void PUT<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
+        {
+            var data = NetworkSerializer.Serialize(payload);
 
-                    OnInfo(info, error);
-                }
-                #endregion
-            }
+            var uploader = new UploadHandlerRaw(data);
+            var downloader = new DownloadHandlerBuffer();
 
-            public static class Room
-            {
-                #region Create
-                public static void Create(string name, ushort capacity)
-                {
-                    var request = new CreateRoomRequest(name, capacity);
+            Send(IP, path, "PUT", uploader, downloader, callback, enqueue);
+        }
+        public void POST<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
+        {
+            var data = NetworkSerializer.Serialize(payload);
 
-                    Create(request);
-                }
-                public static void Create(string name, ushort capacity, AttributesCollection attributes)
-                {
-                    var request = new CreateRoomRequest(name, capacity, attributes);
+            var uploader = new UploadHandlerRaw(data);
+            var downloader = new DownloadHandlerBuffer();
 
-                    Create(request);
-                }
-                public static void Create(CreateRoomRequest request)
-                {
-                    var message = NetworkMessage.Write(request);
+            Send(IP, path, "POST", uploader, downloader, callback, enqueue);
+        }
 
-                    POST(Address, Constants.GameServer.Rest.Requests.Room.Create, message, CreateCallback, false);
-                }
-
-                public delegate void CreatedDelegate(RoomBasicInfo room, RestError error);
-                public static event CreatedDelegate OnCreated;
-                static void CreateCallback(UnityWebRequest request)
-                {
-                    Parse(request, out RoomBasicInfo info, out var error);
-
-                    OnCreated(info, error);
-                }
-                #endregion
-            }
-
-            static RestAPI()
-            {
-                List = new List<Element>();
-                Queue = new Queue<Element>();
-
-                NetworkAPI.OnUpdate += Update;
-            }
+        public DirectedRestAPI(string ip, ushort port) : base(port)
+        {
+            this.IP = ip;
         }
     }
 

@@ -14,8 +14,8 @@ namespace Backend
     {
         public static IPAddress Address { get; private set; }
         public static ushort Port => Constants.MasterServer.Rest.Port;
-        public static string Scheme { get; private set; } = "HTTP://";
-        public static string URL => $"{Scheme}{Address}:{Port}";
+        public static RestScheme Scheme { get; private set; } = RestScheme.HTTP;
+        public static string URL => $"{Scheme}://{Address}:{Port}";
 
         public static void Configure(IPAddress address)
         {
@@ -33,7 +33,7 @@ namespace Backend
 
             var result = RestAPI.Read<RegisterGameServerResult>(response);
 
-            Log.Info($"Register Server Success: {result.Success}");
+            Log.Info($"Register Server: {result.Success}");
 
             return result;
         }
@@ -47,7 +47,7 @@ namespace Backend
 
             var result = RestAPI.Read<RemoveGameSeverResult>(response);
 
-            Log.Info($"Remove Server Success: {result.Success}");
+            Log.Info($"Remove Server: {result.Success}");
 
             return result;
         }

@@ -19,8 +19,9 @@ using Random = UnityEngine.Random;
 
 namespace Backend
 {
-	public static partial class NetworkAPI
-	{
+    public static partial class NetworkAPI
+    {
+
         public static class Client
         {
             public static NetworkClientProfile Profile { get; set; }

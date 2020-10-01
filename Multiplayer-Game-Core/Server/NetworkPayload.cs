@@ -4,23 +4,6 @@ using System.Text;
 
 namespace Backend
 {
-    public class MasterServerInfoPayload : INetworkSerializable
-    {
-        GameServerInfo[] servers;
-        public GameServerInfo[] Servers => servers;
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref servers);
-        }
-
-        public MasterServerInfoPayload() { }
-        public MasterServerInfoPayload(GameServerInfo[] servers)
-        {
-            this.servers = servers;
-        }
-    }
-
     #region Register
     public class RegisterGameServerRequest : INetworkSerializable
     {

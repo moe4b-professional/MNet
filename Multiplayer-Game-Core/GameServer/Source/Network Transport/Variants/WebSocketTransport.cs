@@ -25,9 +25,9 @@ namespace Backend
             return context;
         }
 
-        public WebSocketTransport(IPAddress address, int port) : base()
+        public WebSocketTransport(int port) : base()
         {
-            Server = new WebSocketServer(address, port);
+            Server = new WebSocketServer(IPAddress.Any, port);
 
             Server.KeepClean = false;
         }

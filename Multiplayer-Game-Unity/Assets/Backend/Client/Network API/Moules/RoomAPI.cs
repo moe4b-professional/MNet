@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using UnityEngine.Networking;
 
 namespace Backend
 {
@@ -53,8 +54,28 @@ namespace Backend
 
             }
 
-            public static void Join(RoomBasicInfo info) => Join(info.ID);
-            public static void Join(RoomID id) => RealtimeAPI.Connect(id.Value);
+            public static void Join(GameServerID server, RoomBasicInfo room) => Join(server, room.ID);
+            public static void Join(GameServerID server, RoomID room) => RealtimeAPI.Connect(server, room);
+
+            #region Create
+            public delegate void CreatedDelegate(RoomBasicInfo room, RestError error);
+            public static event CreatedDelegate OnCreated;
+
+            public static void Create(GameServerID server, string name, byte capacity) => Create(server, name, capacity, null);
+            public static void Create(GameServerID server, string name, byte capacity, AttributesCollection attributes)
+            {
+                var payload = new CreateRoomRequest(name, capacity, attributes);
+
+                GameServer.Rest.POST(server.Value.ToString(), Constants.GameServer.Rest.Requests.Room.Create, payload, Callback, false);
+
+                void Callback(UnityWebRequest request)
+                {
+                    RestAPI.Parse(request, out RoomBasicInfo info, out var error);
+
+                    OnCreated(info, error);
+                }
+            }
+            #endregion
 
             #region Self Callbacks
             static void SelfConnectCallback() => Setup();

@@ -20,7 +20,7 @@ namespace Backend
 
         public string Name { get; protected set; }
 
-        public ushort Capacity { get; protected set; }
+        public byte Capacity { get; protected set; }
 
         public int PlayersCount => Clients.Count;
 
@@ -467,7 +467,7 @@ namespace Backend
             GameServer.Realtime.Unregister(ID.Value);
         }
 
-        public Room(RoomID id, string name, ushort capacity, AttributesCollection attributes)
+        public Room(RoomID id, string name, byte capacity, AttributesCollection attributes)
         {
             this.ID = id;
             this.Name = name;

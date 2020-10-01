@@ -16,11 +16,6 @@ namespace Backend
             context.Select(ref value);
         }
 
-        public GameServerID(IPAddress value)
-        {
-            this.value = value;
-        }
-
         public override bool Equals(object obj)
         {
             if (obj.GetType() == typeof(GameServerID))
@@ -37,6 +32,18 @@ namespace Backend
 
         public override string ToString() => value.ToString();
 
+        public GameServerID(IPAddress value)
+        {
+            this.value = value;
+        }
+
+        public static GameServerID Parse(string address)
+        {
+            var ip = IPAddress.Parse(address);
+
+            return new GameServerID(ip);
+        }
+
         public static bool operator ==(GameServerID a, GameServerID b) => a.Equals(b);
         public static bool operator !=(GameServerID a, GameServerID b) => !a.Equals(b);
     }
@@ -44,7 +51,7 @@ namespace Backend
     [Serializable]
     public enum GameServerRegion : byte
     {
-        US, EU
+        USA, Europe
     }
 
     [Serializable]

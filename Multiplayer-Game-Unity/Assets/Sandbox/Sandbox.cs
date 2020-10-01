@@ -29,19 +29,23 @@ namespace Game
 	{
         public string address = "127.0.0.1";
 
+        GameServerID serverID;
+
         void Start()
         {
             NetworkAPI.Configure(address);
 
-            NetworkAPI.RestAPI.Room.OnCreated += RoomCreatedCallback;
-            NetworkAPI.RestAPI.Lobby.OnInfo += LobbyInfoCallback;
+            serverID = GameServerID.Parse(address);
+
+            NetworkAPI.Room.OnCreated += RoomCreatedCallback;
+            NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
 
             NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
             NetworkAPI.Client.OnReady += ClientReadyCallback;
 
             if(Application.isMobilePlatform)
             {
-                NetworkAPI.RestAPI.Lobby.Info();
+                NetworkAPI.Lobby.Info(serverID);
             }
         }
         
@@ -58,10 +62,10 @@ namespace Game
 
                 attributes.Set(0, "Level");
 
-                NetworkAPI.RestAPI.Room.Create("Moe4B's Game Room", 4, attributes);
+                NetworkAPI.Room.Create(serverID, "Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.RestAPI.Lobby.Info();
+            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.Info(serverID);
 
             if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
 
@@ -80,7 +84,7 @@ namespace Game
 
                 if (room == null) return;
 
-                NetworkAPI.Room.Join(room);
+                NetworkAPI.Room.Join(lobby.Server.ID, room);
             }
             else
             {
@@ -94,7 +98,7 @@ namespace Game
             {
                 Debug.Log("Created Room " + room.ID);
 
-                NetworkAPI.Room.Join(room);
+                NetworkAPI.Room.Join(serverID, room);
             }
             else
             {

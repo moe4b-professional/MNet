@@ -1,14 +1,5 @@
 ﻿using System;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-
-using System.IO;
 using System.Net;
-using System.Threading;
-using System.Net.Sockets;
-using System.Diagnostics;
 
 namespace Backend
 {
@@ -21,6 +12,8 @@ namespace Backend
             private set => ID = new GameServerID(value);
         }
 
+        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
+
         public static Config Config { get; private set; }
 
         public static GameServerRegion Region { get; private set; }
@@ -32,19 +25,21 @@ namespace Backend
 
         static void Main(string[] args)
         {
+            Console.Title = "Game Sever";
+
             Config = Config.Read();
             ApiKey.Read();
 
             Address = Config.PublicAddress;
-            Region = GameServerRegion.EU;
+            Region = GameServerRegion.Europe;
 
             MasterServer.Configure(Config.MasterAddress);
             MasterServer.Register(ID, Region, ApiKey.Token);
 
-            Rest = new RestAPI(IPAddress.Any, Constants.GameServer.Rest.Port);
+            Rest = new RestAPI(Constants.GameServer.Rest.Port);
             Rest.Start();
 
-            Realtime = new RealtimeAPI(IPAddress.Any);
+            Realtime = new RealtimeAPI(Config.NetworkTransport);
             Realtime.Start();
 
             Lobby = new Lobby();

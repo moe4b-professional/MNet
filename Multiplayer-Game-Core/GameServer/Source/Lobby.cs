@@ -36,7 +36,7 @@ namespace Backend
 
         public void Configure()
         {
-            Rest.Router.Register(Constants.GameServer.Rest.Requests.Lobby.Path, GetInfo);
+            Rest.Router.Register(Constants.GameServer.Rest.Requests.Lobby.Info, GetInfo);
             Rest.Router.Register(Constants.GameServer.Rest.Requests.Room.Create, CreateRoom);
         }
 
@@ -44,7 +44,7 @@ namespace Backend
         {
             var rooms = ReadRoomsInfo();
 
-            var info = new LobbyInfo(rooms);
+            var info = new LobbyInfo(GameServer.GetInfo(), rooms);
 
             RestAPI.WriteTo(response, info);
         }
@@ -73,8 +73,10 @@ namespace Backend
 
             return info;
         }
-        public Room CreateRoom(string name, ushort capacity, AttributesCollection attributes)
+        public Room CreateRoom(string name, byte capacity, AttributesCollection attributes)
         {
+            Log.Info($"Creating Room '{name}'");
+
             var id = Rooms.Reserve();
 
             var room = new Room(id, name, capacity, attributes);

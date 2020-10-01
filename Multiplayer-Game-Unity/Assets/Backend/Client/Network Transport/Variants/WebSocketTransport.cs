@@ -26,7 +26,6 @@ namespace Backend
     {
         public WebSocket Socket { get; protected set; }
 
-        public string Address { get; protected set; }
         public int Port { get; protected set; }
 
         public override bool IsConnected
@@ -39,9 +38,9 @@ namespace Backend
             }
         }
 
-        public override void Connect(uint context)
+        public override void Connect(GameServerID server, RoomID room)
         {
-            var url = $"ws://{Address}:{Port}/{context}";
+            var url = $"ws://{server}:{Port}/{room}";
 
             Socket = new WebSocket(url);
 
@@ -79,9 +78,8 @@ namespace Backend
             Socket.CloseAsync();
         }
 
-        public WebSocketTransport(string address, int port) : base()
+        public WebSocketTransport(int port) : base()
         {
-            this.Address = address;
             this.Port = port;
         }
 	}

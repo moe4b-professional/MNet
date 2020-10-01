@@ -16,11 +16,12 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using System.Net;
 
 namespace Backend
 {
-	public static partial class NetworkAPI
-	{
+    public static partial class NetworkAPI
+    {
         public static class RealtimeAPI
         {
             public const int Port = Constants.GameServer.Realtime.Port;
@@ -31,15 +32,15 @@ namespace Backend
 
             public static void Configure()
             {
-                Transport = new WebSocketTransport(Address, Port);
-                //Transport = new LiteNetLibTransport(Address, Port);
+                Transport = new WebSocketTransport(Port);
+                //Transport = new LiteNetLibTransport(Port);
 
                 Transport.OnConnect += ConnectCallback;
                 Transport.OnRecievedMessage += MessageCallback;
                 Transport.OnDisconnect += DisconnectCallback;
             }
 
-            public static void Connect(uint context)
+            public static void Connect(GameServerID serverID, RoomID roomID)
             {
                 if (IsConnected)
                 {
@@ -49,7 +50,7 @@ namespace Backend
 
                 //Socket.OnError += ErrorCallback; //TODO Implement Transport Error Handling
 
-                Transport.Connect(context);
+                Transport.Connect(serverID, roomID);
             }
 
             public static void Send(byte[] raw)

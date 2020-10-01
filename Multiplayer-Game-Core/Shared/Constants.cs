@@ -40,18 +40,18 @@ namespace Backend
 
                 public static class Requests
                 {
-                    public static string Path { get; private set; } = "/";
+                    static readonly string Path = "/";
 
                     public static class Lobby
                     {
-                        public static string Path { get; private set; } = Requests.Path + $"{nameof(Lobby)}/";
+                        static readonly string Path = Requests.Path + $"{nameof(Lobby)}/";
 
                         public static string Info { get; private set; } = Path + nameof(Info);
                     }
 
                     public static class Room
                     {
-                        public static string Path { get; private set; } = Requests.Path + $"{nameof(Room)}/";
+                        static readonly string Path = Requests.Path + $"{nameof(Room)}/";
 
                         public static string Create { get; private set; } = Path + nameof(Create);
                     }

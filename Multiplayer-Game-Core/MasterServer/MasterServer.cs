@@ -17,9 +17,11 @@ namespace Backend
 
         static void Main(string[] args)
         {
+            Console.Title = "Master Sever";
+
             ApiKey.Read();
 
-            Rest = new RestAPI(IPAddress.Any, Constants.MasterServer.Rest.Port);
+            Rest = new RestAPI(Constants.MasterServer.Rest.Port);
             Rest.Start();
 
             Rest.Router.Register(Constants.MasterServer.Rest.Requests.Info, GetInfo);

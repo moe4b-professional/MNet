@@ -41,11 +41,11 @@ namespace Backend
                 WriteTo(response, SharpHttpCode.NotFound, "Error 404");
         }
 
-        public RestAPI(IPAddress address, int port)
+        public RestAPI(int port)
         {
-            Log.Info($"Configuring {nameof(RestAPI)} on {address}:{port}");
+            Log.Info($"Configuring {nameof(RestAPI)} on Port:{port}");
 
-            Server = new HttpServer(address, port);
+            Server = new HttpServer(IPAddress.Any, port);
 
             Server.OnGet += RequestCallback;
             Server.OnPost += RequestCallback;

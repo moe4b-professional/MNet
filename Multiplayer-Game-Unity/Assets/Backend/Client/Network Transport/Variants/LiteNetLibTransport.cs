@@ -30,7 +30,6 @@ namespace Backend
 
         public NetPeer Peer { get; protected set; }
 
-        public string Address { get; protected set; }
         public int Port { get; protected set; }
 
         public override bool IsConnected
@@ -45,13 +44,13 @@ namespace Backend
             }
         }
 
-        public override void Connect(uint context)
+        public override void Connect(GameServerID serverID, RoomID roomID)
         {
-            base.Connect(context);
+            base.Connect(serverID, roomID);
 
             Client.Start();
 
-            Peer = Client.Connect(Address, Port, "");
+            Peer = Client.Connect(serverID.ToString(), Port, "");
         }
 
         protected override void Tick()
@@ -98,9 +97,8 @@ namespace Backend
             Peer.Disconnect();
         }
 
-        public LiteNetLibTransport(string address, int port)
+        public LiteNetLibTransport(int port)
         {
-            this.Address = address;
             this.Port = port;
 
             Client = new NetManager(this);

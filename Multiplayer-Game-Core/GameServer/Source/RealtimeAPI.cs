@@ -23,10 +23,18 @@ namespace Backend
 
         public virtual void Unregister(uint code) => Transport.Unregister(code);
 
-        public RealtimeAPI(IPAddress address)
+        public RealtimeAPI(NetworkTransportType type)
         {
-            Transport = new WebSocketTransport(address, Port);
-            //Transport = new LiteNetLibTransport(Port);
+            switch (type)
+            {
+                case NetworkTransportType.WebSocketSharp:
+                    Transport = new WebSocketTransport(Port);
+                    break;
+
+                case NetworkTransportType.LiteNetLib:
+                    Transport = new LiteNetLibTransport(Port);
+                    break;
+            }
         }
     }
 }

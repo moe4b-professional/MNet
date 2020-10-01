@@ -199,10 +199,10 @@ namespace Backend
     public sealed class CreateRoomRequest : INetworkSerializable
     {
         string name;
-        public string Name { get { return name; } }
+        public string Name => name;
 
-        ushort capacity;
-        public ushort Capacity { get { return capacity; } }
+        byte capacity;
+        public byte Capacity => capacity;
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
@@ -215,8 +215,8 @@ namespace Backend
         }
 
         public CreateRoomRequest() { }
-        public CreateRoomRequest(string name, ushort capacity) : this(name, capacity, null) { }
-        public CreateRoomRequest(string name, ushort capacity, AttributesCollection attributes)
+        public CreateRoomRequest(string name, byte capacity) : this(name, capacity, null) { }
+        public CreateRoomRequest(string name, byte capacity, AttributesCollection attributes)
         {
             this.name = name;
             this.capacity = capacity;
@@ -532,6 +532,23 @@ namespace Backend
         public ChangeMasterCommand(NetworkClientID id)
         {
             this.id = id;
+        }
+    }
+
+    public class MasterServerInfoPayload : INetworkSerializable
+    {
+        GameServerInfo[] servers;
+        public GameServerInfo[] Servers => servers;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref servers);
+        }
+
+        public MasterServerInfoPayload() { }
+        public MasterServerInfoPayload(GameServerInfo[] servers)
+        {
+            this.servers = servers;
         }
     }
 }

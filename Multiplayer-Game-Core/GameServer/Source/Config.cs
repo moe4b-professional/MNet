@@ -16,12 +16,15 @@ namespace Backend
 
         [JsonProperty]
         public IPAddress MasterAddress { get; protected set; }
+        
+        [JsonProperty]
+        public NetworkTransportType NetworkTransport { get; protected set; }
 
         public override void WriteDefaults()
         {
             PublicAddress = IPAddress.Any;
-
             MasterAddress = IPAddress.Any;
+            NetworkTransport = NetworkTransportType.WebSocketSharp;
         }
 
         public Config() { }

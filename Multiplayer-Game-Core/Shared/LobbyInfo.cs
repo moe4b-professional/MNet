@@ -8,6 +8,9 @@ namespace Backend
 {
     public class LobbyInfo : INetworkSerializable
     {
+        GameServerInfo server;
+        public GameServerInfo Server => server;
+
         RoomBasicInfo[] rooms;
         public RoomBasicInfo[] Rooms { get { return rooms; } }
 
@@ -17,12 +20,14 @@ namespace Backend
 
         public void Select(INetworkSerializableResolver.Context context)
         {
+            context.Select(ref server);
             context.Select(ref rooms);
         }
 
         public LobbyInfo() { }
-        public LobbyInfo(RoomBasicInfo[] rooms)
+        public LobbyInfo(GameServerInfo server, RoomBasicInfo[] rooms)
         {
+            this.server = server;
             this.rooms = rooms;
         }
     }
