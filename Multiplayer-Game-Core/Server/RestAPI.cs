@@ -37,8 +37,7 @@ namespace Backend
 
             Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
-            if (Router.Process(request, response) == false)
-                WriteTo(response, SharpHttpCode.NotFound, "Error 404");
+            if (Router.Process(request, response) == false) WriteTo(response, SharpHttpCode.NotFound, "Error 404");
         }
 
         public RestAPI(int port)

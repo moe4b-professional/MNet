@@ -14,23 +14,7 @@ namespace Backend
     {
         public AutoKeyDictionary<RoomID, Room> Rooms { get; protected set; }
 
-        public RoomBasicInfo[] ReadRoomsInfo()
-        {
-            var results = new RoomBasicInfo[Rooms.Count];
-
-            var index = 0;
-
-            foreach (var room in Rooms.Values)
-            {
-                var info = room.ReadBasicInfo();
-
-                results[index] = info;
-
-                index += 1;
-            }
-
-            return results;
-        }
+        public RoomBasicInfo[] ReadRoomsInfo() => Rooms.Dictionary.ToArray(Room.ReadBasicInfo);
 
         public RestAPI Rest => GameServer.Rest;
 

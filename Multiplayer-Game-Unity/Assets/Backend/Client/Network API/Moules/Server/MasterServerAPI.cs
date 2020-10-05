@@ -34,9 +34,8 @@ namespace Backend
                 Rest = new DirectedRestAPI(Address, Constants.MasterServer.Rest.Port);
             }
 
-            public delegate void InfoDelegate(MasterServerInfoPayload info);
+            public delegate void InfoDelegate(MasterServerInfoPayload info, RestError error);
             public static event InfoDelegate OnInfo;
-
             public static void Info()
             {
                 Rest.GET(Constants.MasterServer.Rest.Requests.Info, Callback, false);
@@ -45,7 +44,7 @@ namespace Backend
                 {
                     RestAPI.Parse(request, out MasterServerInfoPayload info, out var error);
 
-                    OnInfo?.Invoke(info);
+                    OnInfo?.Invoke(info, error);
                 }
             }
         }

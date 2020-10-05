@@ -51,7 +51,7 @@ namespace Backend
     #endregion
 
     #region Remove
-    public class RemoveGameSeverRequest : INetworkSerializable
+    public class RemoveGameServerRequest : INetworkSerializable
     {
         GameServerID id;
         public GameServerID ID => id;
@@ -65,15 +65,15 @@ namespace Backend
             context.Select(ref key);
         }
 
-        public RemoveGameSeverRequest() { }
-        public RemoveGameSeverRequest(GameServerID id, string key)
+        public RemoveGameServerRequest() { }
+        public RemoveGameServerRequest(GameServerID id, string key)
         {
             this.id = id;
             this.key = key;
         }
     }
 
-    public class RemoveGameSeverResult : INetworkSerializable
+    public class RemoveGameServerResult : INetworkSerializable
     {
         bool success;
         public bool Success => success;
@@ -83,8 +83,8 @@ namespace Backend
             context.Select(ref success);
         }
 
-        public RemoveGameSeverResult() { }
-        public RemoveGameSeverResult(bool success)
+        public RemoveGameServerResult() { }
+        public RemoveGameServerResult(bool success)
         {
             this.success = success;
         }

@@ -37,18 +37,36 @@ namespace Game
 
             serverID = GameServerID.Parse(address);
 
-            NetworkAPI.Room.OnCreated += RoomCreatedCallback;
+            NetworkAPI.MasterServer.OnInfo += MasterServerInfoCallback;
+
             NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
+            NetworkAPI.Room.OnCreated += RoomCreatedCallback;
 
             NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
             NetworkAPI.Client.OnReady += ClientReadyCallback;
 
-            if(Application.isMobilePlatform)
+            NetworkAPI.MasterServer.Info();
+
+            if (Application.isMobilePlatform)
             {
                 NetworkAPI.Lobby.Info(serverID);
             }
         }
-        
+
+        void MasterServerInfoCallback(MasterServerInfoPayload info, RestError error)
+        {
+            if(error == null)
+            {
+                Debug.Log($"Game Servers Count: {info.Servers.Length}");
+
+                foreach (var server in info.Servers) Debug.Log($"Game Server: {server}");
+            }
+            else
+            {
+                Debug.LogError(error);
+            }
+        }
+
         void ClientReadyCallback(ReadyClientResponse response)
         {
             SpawnPlayer();

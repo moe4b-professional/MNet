@@ -28,22 +28,9 @@ namespace Backend
 
         #region Read Info
         public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount, Attributes);
+        public static RoomBasicInfo ReadBasicInfo(Room room) => room.ReadBasicInfo();
 
-        public NetworkClientInfo[] GetClientsInfo()
-        {
-            var list = new NetworkClientInfo[Clients.Count];
-
-            var index = 0;
-
-            foreach (var client in Clients.Values)
-            {
-                list[index] = client.ReadInfo();
-
-                index += 1;
-            }
-
-            return list;
-        }
+        public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
 
         public RoomInternalInfo ReadInternalInfo()
         {

@@ -29,7 +29,17 @@ namespace Backend
             var request = new RegisterGameServerRequest(id, region, key);
             var content = RestAPI.WriteContent(request);
 
-            var response = Client.PutAsync(URL + Constants.MasterServer.Rest.Requests.Server.Register, content).Result;
+            HttpResponseMessage response;
+
+            try
+            {
+                response = Client.PutAsync(URL + Constants.MasterServer.Rest.Requests.Server.Register, content).Result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{ex.Message}");
+                return null;
+            }
 
             var result = RestAPI.Read<RegisterGameServerResult>(response);
 
@@ -38,14 +48,24 @@ namespace Backend
             return result;
         }
 
-        public static RemoveGameSeverResult Remove(GameServerID id, string key)
+        public static RemoveGameServerResult Remove(GameServerID id, string key)
         {
-            var request = new RemoveGameSeverRequest(id, key);
+            var request = new RemoveGameServerRequest(id, key);
             var content = RestAPI.WriteContent(request);
 
-            var response = Client.PostAsync(URL + Constants.MasterServer.Rest.Requests.Server.Remove, content).Result;
+            HttpResponseMessage response;
 
-            var result = RestAPI.Read<RemoveGameSeverResult>(response);
+            try
+            {
+                response = Client.PostAsync(URL + Constants.MasterServer.Rest.Requests.Server.Remove, content).Result;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{ex.Message}");
+                return null;
+            }
+
+            var result = RestAPI.Read<RemoveGameServerResult>(response);
 
             Log.Info($"Remove Server: {result.Success}");
 

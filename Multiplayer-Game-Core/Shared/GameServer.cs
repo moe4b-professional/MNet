@@ -6,6 +6,12 @@ using System.Text;
 namespace Backend
 {
     [Serializable]
+    public enum GameServerRegion : byte
+    {
+        USA, Europe
+    }
+
+    [Serializable]
     public struct GameServerID : INetworkSerializable
     {
         IPAddress value;
@@ -22,7 +28,7 @@ namespace Backend
             {
                 var target = (GameServerID)obj;
 
-                return target.value == this.value;
+                return Equals(this.value, target.value);
             }
 
             return false;
@@ -46,12 +52,8 @@ namespace Backend
 
         public static bool operator ==(GameServerID a, GameServerID b) => a.Equals(b);
         public static bool operator !=(GameServerID a, GameServerID b) => !a.Equals(b);
-    }
 
-    [Serializable]
-    public enum GameServerRegion : byte
-    {
-        USA, Europe
+        public static bool Equals(IPAddress a, IPAddress b) => a.Equals(b);
     }
 
     [Serializable]
@@ -68,6 +70,8 @@ namespace Backend
             context.Select(ref id);
             context.Select(ref region);
         }
+
+        public override string ToString() => $"{id} | {region}";
 
         public GameServerInfo(GameServerID id, GameServerRegion region)
         {

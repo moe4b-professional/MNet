@@ -24,17 +24,12 @@ namespace Backend
 {
     public static class Editor
     {
-        static void StartProcess(FileInfo file)
+        [MenuItem("Launch/Servers")]
+        public static void LaunchServers()
         {
-            var directory = file.Directory;
-
-            var process = new ProcessStartInfo(file.FullName);
-            process.WorkingDirectory = directory.FullName;
-
-            Process.Start(process);
+            LaunchMasterServer();
+            LaunchGameServer();
         }
-
-        [MenuItem("Utility/Launch Game Server")]
         public static void LaunchGameServer()
         {
             var folder = "Multiplayer-Game-Core";
@@ -48,8 +43,6 @@ namespace Backend
 
             StartProcess(file);
         }
-
-        [MenuItem("Utility/Launch Master Server")]
         public static void LaunchMasterServer()
         {
             var folder = "Multiplayer-Game-Core";
@@ -64,7 +57,7 @@ namespace Backend
             StartProcess(file);
         }
 
-        [MenuItem("Utility/Launch Build")]
+        [MenuItem("Launch/Build")]
         public static void LaunchBuild()
         {
             var folder = "Build";
@@ -76,6 +69,16 @@ namespace Backend
             var file = new FileInfo(path);
 
             StartProcess(file);
+        }
+
+        static void StartProcess(FileInfo file)
+        {
+            var directory = file.Directory;
+
+            var process = new ProcessStartInfo(file.FullName);
+            process.WorkingDirectory = directory.FullName;
+
+            Process.Start(process);
         }
     }
 }

@@ -6,6 +6,7 @@ using SharpHttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
 using SharpHttpCode = WebSocketSharp.Net.HttpStatusCode;
 using System.Threading;
+using System.Linq;
 
 namespace Backend
 {
@@ -33,18 +34,9 @@ namespace Backend
 
         static void GetInfo(SharpHttpRequest request, SharpHttpResponse response)
         {
-            var servers = new GameServerInfo[Servers.Count];
+            var array = Servers.ToArray(GameServer.GetInfo);
 
-            int index = 0;
-
-            foreach (var server in Servers.Values)
-            {
-                servers[index] = server.GetInfo();
-
-                index += 1;
-            }
-
-            var payload = new MasterServerInfoPayload(servers);
+            var payload = new MasterServerInfoPayload(array);
 
             RestAPI.WriteTo(response, payload);
         }
@@ -74,14 +66,8 @@ namespace Backend
                 Log.Info($"Server {id} Trying to Register With Invalid API Key");
                 return new RegisterGameServerResult(false);
             }
-
-            if (Servers.ContainsKey(id))
-            {
-                Log.Info($"Server {id} Already Registered");
-                return new RegisterGameServerResult(false);
-            }
-
-            var server = RegisterServer(id, region);
+            
+            RegisterServer(id, region);
             return new RegisterGameServerResult(true);
         }
 
@@ -89,7 +75,7 @@ namespace Backend
         {
             var server = new GameServer(id, region);
 
-            Servers.Add(id, server);
+            Servers[id] = server;
 
             return server;
         }
@@ -98,10 +84,10 @@ namespace Backend
         #region Remove Server
         static void RemoveServer(SharpHttpRequest request, SharpHttpResponse response)
         {
-            RemoveGameSeverRequest payload;
+            RemoveGameServerRequest payload;
             try
             {
-                payload = RestAPI.Read<RemoveGameSeverRequest>(request);
+                payload = RestAPI.Read<RemoveGameServerRequest>(request);
             }
             catch (Exception)
             {
@@ -111,7 +97,7 @@ namespace Backend
 
             RemoveServer(payload.ID);
 
-            var result = new RemoveGameSeverResult(true);
+            var result = new RemoveGameServerResult(true);
             RestAPI.WriteTo(response, result);
         }
 
@@ -131,6 +117,7 @@ namespace Backend
         public GameServerRegion Region { get; protected set; }
 
         public GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
+        public static GameServerInfo GetInfo(GameServer server) => server.GetInfo();
 
         public GameServer(GameServerID id, GameServerRegion region)
         {

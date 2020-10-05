@@ -29,6 +29,7 @@ namespace Backend
         }
 
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
+        public static NetworkClientInfo ReadInfo(NetworkClient client) => client.ReadInfo();
 
         public override string ToString() => ID.ToString();
 
