@@ -26,8 +26,6 @@ namespace Backend
     {
         public WebSocket Socket { get; protected set; }
 
-        public int Port { get; protected set; }
-
         public override bool IsConnected
         {
             get
@@ -78,9 +76,9 @@ namespace Backend
             Socket.CloseAsync();
         }
 
-        public WebSocketTransport(int port) : base()
+        public WebSocketTransport() : base()
         {
-            this.Port = port;
+
         }
 	}
 }

@@ -27,15 +27,11 @@ namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{
-        public string address = "127.0.0.1";
-
-        GameServerID serverID;
+        public GameServerID ServerID => NetworkAPI.MasterServer.Servers[0].ID;
 
         void Start()
         {
-            NetworkAPI.Configure(address);
-
-            serverID = GameServerID.Parse(address);
+            NetworkAPI.Configure();
 
             NetworkAPI.MasterServer.OnInfo += MasterServerInfoCallback;
 
@@ -49,7 +45,7 @@ namespace Game
 
             if (Application.isMobilePlatform)
             {
-                NetworkAPI.Lobby.Info(serverID);
+                NetworkAPI.Lobby.Info(ServerID);
             }
         }
 
@@ -80,10 +76,10 @@ namespace Game
 
                 attributes.Set(0, "Level");
 
-                NetworkAPI.Room.Create(serverID, "Moe4B's Game Room", 4, attributes);
+                NetworkAPI.Room.Create(ServerID, "Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.Info(serverID);
+            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.Info(ServerID);
 
             if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
 
@@ -116,7 +112,7 @@ namespace Game
             {
                 Debug.Log("Created Room " + room.ID);
 
-                NetworkAPI.Room.Join(serverID, room);
+                NetworkAPI.Room.Join(ServerID, room);
             }
             else
             {

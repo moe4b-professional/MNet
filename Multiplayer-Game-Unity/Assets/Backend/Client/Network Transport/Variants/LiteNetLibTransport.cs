@@ -30,8 +30,6 @@ namespace Backend
 
         public NetPeer Peer { get; protected set; }
 
-        public int Port { get; protected set; }
-
         public override bool IsConnected
         {
             get
@@ -97,10 +95,8 @@ namespace Backend
             Peer.Disconnect();
         }
 
-        public LiteNetLibTransport(int port)
+        public LiteNetLibTransport()
         {
-            this.Port = port;
-
             Client = new NetManager(this);
         }
     }

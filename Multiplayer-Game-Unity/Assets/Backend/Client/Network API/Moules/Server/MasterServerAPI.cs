@@ -29,6 +29,8 @@ namespace Backend
 
             public static DirectedRestAPI Rest { get; private set; }
 
+            public static GameServerInfo[] Servers { get; private set; }
+
             public static void Configure()
             {
                 Rest = new DirectedRestAPI(Address, Constants.MasterServer.Rest.Port);
@@ -43,6 +45,8 @@ namespace Backend
                 void Callback(UnityWebRequest request)
                 {
                     RestAPI.Parse(request, out MasterServerInfoPayload info, out var error);
+
+                    Servers = error == null ? info.Servers : null;
 
                     OnInfo?.Invoke(info, error);
                 }

@@ -24,20 +24,31 @@ namespace Backend
     {
         public static class RealtimeAPI
         {
-            public const int Port = Constants.GameServer.Realtime.Port;
-
             public static NetworkTransport Transport { get; private set; }
 
             public static bool IsConnected => Transport == null ? false : Transport.IsConnected;
 
             public static void Configure()
             {
-                Transport = new WebSocketTransport(Port);
-                //Transport = new LiteNetLibTransport(Port);
+                Transport = CreateTransport(Config.Transport);
 
                 Transport.OnConnect += ConnectCallback;
                 Transport.OnRecievedMessage += MessageCallback;
                 Transport.OnDisconnect += DisconnectCallback;
+            }
+
+            static NetworkTransport CreateTransport(NetworkTransportType type)
+            {
+                switch (type)
+                {
+                    case NetworkTransportType.WebSocketSharp:
+                        return new WebSocketTransport();
+
+                    case NetworkTransportType.LiteNetLib:
+                        return new LiteNetLibTransport();
+                }
+
+                throw new NotImplementedException();
             }
 
             public static void Connect(GameServerID serverID, RoomID roomID)

@@ -18,12 +18,19 @@ using Game;
 namespace Backend
 {
     public static partial class NetworkAPI
-	{
-        public static string Address { get; private set; }
+    {
+        public static NetworkAPIConfig Config { get; private set; }
+
+        public static string Address => Config.Address;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
         {
+            Config = Resources.Load<NetworkAPIConfig>("Network API Config");
+
+            if (Config == null)
+                throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
+
             var loop = PlayerLoop.GetCurrentPlayerLoop();
 
             for (int i = 0; i < loop.subSystemList.Length; ++i)
@@ -33,10 +40,8 @@ namespace Backend
             PlayerLoop.SetPlayerLoop(loop);
         }
 
-        public static void Configure(string address)
+        public static void Configure()
         {
-            NetworkAPI.Address = address;
-
             Log.Output = LogOutput;
 
             MasterServer.Configure();
