@@ -23,7 +23,7 @@ namespace Backend
 
         public static string Address => Config.Address;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
             Config = Resources.Load<NetworkAPIConfig>("Network API Config");
@@ -38,9 +38,11 @@ namespace Backend
                     loop.subSystemList[i].updateDelegate += Update;
 
             PlayerLoop.SetPlayerLoop(loop);
+
+            Configure();
         }
 
-        public static void Configure()
+        static void Configure()
         {
             Log.Output = LogOutput;
 

@@ -31,12 +31,10 @@ namespace Game
 
         void Start()
         {
-            NetworkAPI.Configure();
-
             NetworkAPI.MasterServer.OnInfo += MasterServerInfoCallback;
 
             NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
-            NetworkAPI.Room.OnCreated += RoomCreatedCallback;
+            NetworkAPI.Room.OnCreate += RoomCreateCallback;
 
             NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
             NetworkAPI.Client.OnReady += ClientReadyCallback;
@@ -45,7 +43,7 @@ namespace Game
 
             if (Application.isMobilePlatform)
             {
-                NetworkAPI.Lobby.Info(ServerID);
+                NetworkAPI.Lobby.GetInfo(ServerID);
             }
         }
 
@@ -79,7 +77,7 @@ namespace Game
                 NetworkAPI.Room.Create(ServerID, "Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.Info(ServerID);
+            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.GetInfo(ServerID);
 
             if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
 
@@ -106,7 +104,7 @@ namespace Game
             }
         }
 
-        void RoomCreatedCallback(RoomBasicInfo room, RestError error)
+        void RoomCreateCallback(RoomBasicInfo room, RestError error)
         {
             if (error == null)
             {

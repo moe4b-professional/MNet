@@ -58,8 +58,8 @@ namespace Backend
             public static void Join(GameServerID server, RoomID room) => RealtimeAPI.Connect(server, room);
 
             #region Create
-            public delegate void CreatedDelegate(RoomBasicInfo room, RestError error);
-            public static event CreatedDelegate OnCreated;
+            public delegate void CreateDelegate(RoomBasicInfo room, RestError error);
+            public static event CreateDelegate OnCreate;
 
             public static void Create(GameServerID server, string name, byte capacity) => Create(server, name, capacity, null);
             public static void Create(GameServerID server, string name, byte capacity, AttributesCollection attributes)
@@ -72,7 +72,7 @@ namespace Backend
                 {
                     RestAPI.Parse(request, out RoomBasicInfo info, out var error);
 
-                    OnCreated(info, error);
+                    OnCreate(info, error);
                 }
             }
             #endregion
