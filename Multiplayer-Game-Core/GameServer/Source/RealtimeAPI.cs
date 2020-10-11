@@ -10,7 +10,7 @@ namespace Backend
     {
         public INetworkTransport Transport { get; protected set; }
 
-        public const int Port = Constants.GameServer.Realtime.Port;
+        public const int Port = Constants.Server.Game.Realtime.Port;
 
         public virtual void Start()
         {

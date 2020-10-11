@@ -46,8 +46,7 @@ namespace Backend
         {
             Log.Output = LogOutput;
 
-            MasterServer.Configure();
-            GameServer.Configure();
+            Server.Configure();
 
             Client.Configure();
             RealtimeAPI.Configure();

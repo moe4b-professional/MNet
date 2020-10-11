@@ -13,7 +13,7 @@ namespace Backend
     static class MasterServer
     {
         public static IPAddress Address { get; private set; }
-        public static ushort Port => Constants.MasterServer.Rest.Port;
+        public static ushort Port => Constants.Server.Master.Rest.Port;
         public static RestScheme Scheme { get; private set; } = RestScheme.HTTP;
         public static string URL => $"{Scheme}://{Address}:{Port}";
 
@@ -33,7 +33,7 @@ namespace Backend
 
             try
             {
-                response = Client.PutAsync(URL + Constants.MasterServer.Rest.Requests.Server.Register, content).Result;
+                response = Client.PutAsync(URL + Constants.Server.Master.Rest.Requests.Server.Register, content).Result;
             }
             catch (Exception ex)
             {
@@ -57,7 +57,7 @@ namespace Backend
 
             try
             {
-                response = Client.PostAsync(URL + Constants.MasterServer.Rest.Requests.Server.Remove, content).Result;
+                response = Client.PostAsync(URL + Constants.Server.Master.Rest.Requests.Server.Remove, content).Result;
             }
             catch (Exception ex)
             {

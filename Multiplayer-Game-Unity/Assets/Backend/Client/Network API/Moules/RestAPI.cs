@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using UnityEngine.Networking;
+using System.Net;
 
 namespace Backend
 {
@@ -180,6 +181,10 @@ namespace Backend
     public class DirectedRestAPI : RestAPI
     {
         public string IP { get; protected set; }
+        public void SetIP(string value)
+        {
+            this.IP = value;
+        }
 
         public void GET(string path, CallbackDelegate callback, bool enqueue)
         {
@@ -206,9 +211,13 @@ namespace Backend
             Send(IP, path, "POST", uploader, downloader, callback, enqueue);
         }
 
-        public DirectedRestAPI(string ip, ushort port) : base(port)
+        public DirectedRestAPI(ushort port) : base(port)
         {
-            this.IP = ip;
+
+        }
+        public DirectedRestAPI(string ip, ushort port) : this(port)
+        {
+            SetIP(ip);
         }
     }
 

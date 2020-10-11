@@ -17,19 +17,16 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using UnityEngine.Networking;
-
 namespace Backend
 {
 	public static partial class NetworkAPI
-	{
-        public static partial class GameServer
+    {
+        public static partial class Server
         {
-            public static GenericRestAPI Rest { get; private set; }
-
             public static void Configure()
             {
-                Rest = new GenericRestAPI(Constants.GameServer.Rest.Port);
+                Master.Configure();
+                Game.Configure();
             }
         }
     }

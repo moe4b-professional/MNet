@@ -29,11 +29,9 @@ namespace Backend
             #region Info
             public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
             public static event InfoDelegate OnInfo;
-            public static void GetInfo(GameServerID id)
+            public static void GetInfo()
             {
-                var address = id.ToString();
-
-                GameServer.Rest.GET(address, Constants.GameServer.Rest.Requests.Lobby.Info, Callback, false);
+                Server.Game.Rest.GET(Constants.Server.Game.Rest.Requests.Lobby.Info, Callback, false);
 
                 void Callback(UnityWebRequest request)
                 {

@@ -48,7 +48,7 @@ namespace Backend
 
             Client.Start();
 
-            Peer = Client.Connect(serverID.ToString(), Port, "");
+            Peer = Client.Connect(serverID.Address, Port, "");
         }
 
         protected override void Tick()

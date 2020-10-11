@@ -27,11 +27,9 @@ namespace Game
 {
 	public class Sandbox : MonoBehaviour
 	{
-        public GameServerID ServerID => NetworkAPI.MasterServer.Servers[0].ID;
-
         void Start()
         {
-            NetworkAPI.MasterServer.OnInfo += MasterServerInfoCallback;
+            NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
 
             NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
             NetworkAPI.Room.OnCreate += RoomCreateCallback;
@@ -39,31 +37,7 @@ namespace Game
             NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
             NetworkAPI.Client.OnReady += ClientReadyCallback;
 
-            NetworkAPI.MasterServer.Info();
-
-            if (Application.isMobilePlatform)
-            {
-                NetworkAPI.Lobby.GetInfo(ServerID);
-            }
-        }
-
-        void MasterServerInfoCallback(MasterServerInfoPayload info, RestError error)
-        {
-            if(error == null)
-            {
-                Debug.Log($"Game Servers Count: {info.Servers.Length}");
-
-                foreach (var server in info.Servers) Debug.Log($"Game Server: {server}");
-            }
-            else
-            {
-                Debug.LogError(error);
-            }
-        }
-
-        void ClientReadyCallback(ReadyClientResponse response)
-        {
-            SpawnPlayer();
+            NetworkAPI.Server.Master.Info();
         }
 
         void Update()
@@ -74,16 +48,36 @@ namespace Game
 
                 attributes.Set(0, "Level");
 
-                NetworkAPI.Room.Create(ServerID, "Moe4B's Game Room", 4, attributes);
+                NetworkAPI.Room.Create("Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.GetInfo(ServerID);
+            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.GetInfo();
 
             if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
 
             if (Input.GetKeyDown(KeyCode.E)) SpawnPlayer();
 
             if (Input.GetKeyDown(KeyCode.Q)) DestroyEntity();
+        }
+
+        void MasterServerInfoCallback(MasterServerInfoPayload info, RestError error)
+        {
+            if (error == null)
+            {
+                Debug.Log($"Game Servers Count: {info.Servers.Length}");
+
+                if(info.Size > 0)
+                {
+                    var server = info[0];
+
+                    NetworkAPI.Server.Game.Select(server);
+                    Debug.Log($"Selecting Game Server: {server}");
+                }
+            }
+            else
+            {
+                Debug.LogError(error);
+            }
         }
 
         void LobbyInfoCallback(LobbyInfo lobby, RestError error)
@@ -96,7 +90,7 @@ namespace Game
 
                 if (room == null) return;
 
-                NetworkAPI.Room.Join(lobby.Server.ID, room);
+                NetworkAPI.Room.Join(room);
             }
             else
             {
@@ -110,13 +104,15 @@ namespace Game
             {
                 Debug.Log("Created Room " + room.ID);
 
-                NetworkAPI.Room.Join(ServerID, room);
+                NetworkAPI.Room.Join(room);
             }
             else
             {
                 Debug.LogError(error);
             }
         }
+
+        void ClientReadyCallback(ReadyClientResponse response) => SpawnPlayer();
 
         void SpawnPlayer()
         {

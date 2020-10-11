@@ -26,7 +26,7 @@ namespace StressClient
 
         static void Main(string[] args)
         {
-            var port = Constants.GameServer.Realtime.Port;
+            var port = Constants.Server.Game.Realtime.Port;
 
             var room = 0;
 

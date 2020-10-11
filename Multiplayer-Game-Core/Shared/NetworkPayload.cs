@@ -540,6 +540,10 @@ namespace Backend
         GameServerInfo[] servers;
         public GameServerInfo[] Servers => servers;
 
+        public int Size => servers.Length;
+
+        public GameServerInfo this[int index] => servers[index];
+
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref servers);

@@ -26,7 +26,7 @@ namespace Backend
 	{
         public abstract bool IsConnected { get; }
 
-        public const int Port = Constants.GameServer.Realtime.Port;
+        public const int Port = Constants.Server.Game.Realtime.Port;
 
         public abstract void Connect(GameServerID server, RoomID room);
 

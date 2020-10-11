@@ -20,8 +20,8 @@ namespace Backend
 
         public void Configure()
         {
-            Rest.Router.Register(Constants.GameServer.Rest.Requests.Lobby.Info, GetInfo);
-            Rest.Router.Register(Constants.GameServer.Rest.Requests.Room.Create, CreateRoom);
+            Rest.Router.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
+            Rest.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, CreateRoom);
         }
 
         public void GetInfo(HttpListenerRequest request, HttpListenerResponse response)

@@ -54,19 +54,19 @@ namespace Backend
 
             }
 
-            public static void Join(GameServerID server, RoomBasicInfo room) => Join(server, room.ID);
-            public static void Join(GameServerID server, RoomID room) => RealtimeAPI.Connect(server, room);
+            public static void Join(RoomBasicInfo room) => Join(room.ID);
+            public static void Join(RoomID room) => RealtimeAPI.Connect(Server.Game.ID, room);
 
             #region Create
             public delegate void CreateDelegate(RoomBasicInfo room, RestError error);
             public static event CreateDelegate OnCreate;
 
-            public static void Create(GameServerID server, string name, byte capacity) => Create(server, name, capacity, null);
-            public static void Create(GameServerID server, string name, byte capacity, AttributesCollection attributes)
+            public static void Create(string name, byte capacity) => Create(name, capacity, null);
+            public static void Create(string name, byte capacity, AttributesCollection attributes)
             {
                 var payload = new CreateRoomRequest(name, capacity, attributes);
 
-                GameServer.Rest.POST(server.Value.ToString(), Constants.GameServer.Rest.Requests.Room.Create, payload, Callback, false);
+                Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback, false);
 
                 void Callback(UnityWebRequest request)
                 {

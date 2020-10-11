@@ -36,7 +36,7 @@ namespace Backend
             MasterServer.Configure(Config.MasterAddress);
             MasterServer.Register(ID, Region, ApiKey.Token);
 
-            Rest = new RestAPI(Constants.GameServer.Rest.Port);
+            Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
 
             Realtime = new RealtimeAPI(Config.NetworkTransport);

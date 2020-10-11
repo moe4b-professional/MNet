@@ -8,7 +8,7 @@ namespace Backend
     [Serializable]
     public enum GameServerRegion : byte
     {
-        USA, Europe
+        USA, Europe, Asia
     }
 
     [Serializable]
@@ -16,6 +16,8 @@ namespace Backend
     {
         IPAddress value;
         public IPAddress Value { get { return value; } }
+
+        public string Address => ToString();
 
         public void Select(INetworkSerializableResolver.Context context)
         {

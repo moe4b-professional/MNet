@@ -22,12 +22,12 @@ namespace Backend
 
             ApiKey.Read();
 
-            Rest = new RestAPI(Constants.MasterServer.Rest.Port);
+            Rest = new RestAPI(Constants.Server.Master.Rest.Port);
             Rest.Start();
 
-            Rest.Router.Register(Constants.MasterServer.Rest.Requests.Info, GetInfo);
-            Rest.Router.Register(Constants.MasterServer.Rest.Requests.Server.Register, RegisterServer);
-            Rest.Router.Register(Constants.MasterServer.Rest.Requests.Server.Remove, RemoveServer);
+            Rest.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
+            Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
+            Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
 
             while (true) Console.ReadLine();
         }
