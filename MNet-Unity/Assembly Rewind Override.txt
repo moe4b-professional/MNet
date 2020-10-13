@@ -1,0 +1,1 @@
+..\MNet-Core\MNet-Core.sln

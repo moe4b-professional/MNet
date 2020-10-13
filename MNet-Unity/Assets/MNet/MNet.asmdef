@@ -1,0 +1,15 @@
+{
+    "name": "MNet",
+    "references": [
+        "GUID:bec3474887684a1448244449366c612b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
