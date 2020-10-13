@@ -16,11 +16,10 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
-using Backend;
 
 using System.Reflection;
 
-namespace Game
+namespace Backend
 {
 	public class SyncVarBind
 	{

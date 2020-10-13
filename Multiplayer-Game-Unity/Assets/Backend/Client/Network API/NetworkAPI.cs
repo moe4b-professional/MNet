@@ -26,18 +26,12 @@ namespace Backend
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
-            Config = Resources.Load<NetworkAPIConfig>("Network API Config");
+            Config = NetworkAPIConfig.Load();
 
             if (Config == null)
                 throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
 
-            var loop = PlayerLoop.GetCurrentPlayerLoop();
-
-            for (int i = 0; i < loop.subSystemList.Length; ++i)
-                if (loop.subSystemList[i].type == typeof(Update))
-                    loop.subSystemList[i].updateDelegate += Update;
-
-            PlayerLoop.SetPlayerLoop(loop);
+            RegisterPlayerLoop<Update>(Update);
 
             Configure();
         }
@@ -81,6 +75,17 @@ namespace Backend
         public static void Update()
         {
             OnUpdate?.Invoke();
+        }
+
+        static void RegisterPlayerLoop<TType>(PlayerLoopSystem.UpdateFunction callback)
+        {
+            var loop = PlayerLoop.GetCurrentPlayerLoop();
+
+            for (int i = 0; i < loop.subSystemList.Length; ++i)
+                if (loop.subSystemList[i].type == typeof(TType))
+                    loop.subSystemList[i].updateDelegate += callback;
+
+            PlayerLoop.SetPlayerLoop(loop);
         }
     }
 }

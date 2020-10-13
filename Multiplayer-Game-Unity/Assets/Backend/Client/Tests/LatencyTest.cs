@@ -17,9 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Backend;
-
-namespace Game
+namespace Backend
 {
 	public class LatencyTest : NetworkBehaviour
 	{

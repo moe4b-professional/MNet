@@ -12,4 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5976159ead0d3724a836094e129f0bfa, type: 3}
   m_Name: Network API Config
   m_EditorClassIdentifier: 
+  address: 127.0.0.1
   transport: 0
+  version:
+    value: 0.1
+    infer: 1

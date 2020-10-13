@@ -71,7 +71,6 @@ namespace Game
                     var server = info[0];
 
                     NetworkAPI.Server.Game.Select(server);
-                    Debug.Log($"Selecting Game Server: {server}");
                 }
             }
             else
