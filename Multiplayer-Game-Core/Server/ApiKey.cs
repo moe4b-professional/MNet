@@ -11,7 +11,7 @@ namespace Backend
 
         public const string Name = "API Key.txt";
 
-        public const string Default = "XOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXO";
+        public const string Default = "T4}fmcRQ6vkt).=tH.G%VG<@%A&TC){d";
 
         public static void Read()
         {
