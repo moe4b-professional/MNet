@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>Backend</RootNamespace>
+    <RootNamespace>MNet</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

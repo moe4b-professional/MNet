@@ -27,8 +27,11 @@ namespace MNet
         {
             Console.Title = "Game Sever";
 
-            Config = Config.Read();
             ApiKey.Read();
+
+            Config = Config.Read();
+
+            Log.Info($"Server Version: {Config.Version}");
 
             Address = Config.PublicAddress;
             Region = GameServerRegion.Europe;

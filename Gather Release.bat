@@ -11,6 +11,7 @@ xcopy "MNet-Core\MasterServer\bin\Windows" "MNet-Release\MasterServer\Windows" /
 
 xcopy "Version.txt" "MNet-Release\" /I /Q /Y /F
 
+del MNet-Release.zip
 7z a MNet-Release.zip MNet-Release
 
 PAUSE

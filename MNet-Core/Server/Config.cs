@@ -13,7 +13,13 @@ namespace MNet
     {
         public const string FileName = "Config.json";
 
-        public abstract void WriteDefaults();
+        [JsonProperty]
+        public string Version { get; protected set; }
+
+        public virtual void WriteDefaults()
+        {
+            Version = "0.0.0";
+        }
 
         public Config()
         {

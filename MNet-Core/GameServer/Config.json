@@ -1,5 +1,6 @@
 {
   "PublicAddress": "127.0.0.1",
   "MasterAddress": "127.0.0.1",
-  "NetworkTransport": "WebSocketSharp"
+  "NetworkTransport": "WebSocketSharp",
+  "Version": "0.0.1"
 }

@@ -2,9 +2,10 @@
 using System.Net;
 using System.Collections.Generic;
 
+using SharpHttpCode = WebSocketSharp.Net.HttpStatusCode;
 using SharpHttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
-using SharpHttpCode = WebSocketSharp.Net.HttpStatusCode;
+
 using System.Threading;
 using System.Linq;
 
@@ -12,6 +13,8 @@ namespace MNet
 {
     static class MasterServer
     {
+        public static Config Config { get; private set; }
+
         public static RestAPI Rest { get; private set; }
 
         public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
@@ -21,6 +24,10 @@ namespace MNet
             Console.Title = "Master Sever";
 
             ApiKey.Read();
+
+            Config = Config.Read();
+
+            Log.Info($"Server Version: {Config.Version}");
 
             Rest = new RestAPI(Constants.Server.Master.Rest.Port);
             Rest.Start();
@@ -107,22 +114,6 @@ namespace MNet
         static MasterServer()
         {
             Servers = new Dictionary<GameServerID, GameServer>();
-        }
-    }
-
-    class GameServer
-    {
-        public GameServerID ID { get; protected set; }
-
-        public GameServerRegion Region { get; protected set; }
-
-        public GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
-        public static GameServerInfo GetInfo(GameServer server) => server.GetInfo();
-
-        public GameServer(GameServerID id, GameServerRegion region)
-        {
-            this.ID = id;
-            this.Region = region;
         }
     }
 }

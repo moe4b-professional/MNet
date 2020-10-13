@@ -22,6 +22,8 @@ namespace MNet
 
         public override void WriteDefaults()
         {
+            base.WriteDefaults();
+
             PublicAddress = IPAddress.Any;
             MasterAddress = IPAddress.Any;
             NetworkTransport = NetworkTransportType.WebSocketSharp;
