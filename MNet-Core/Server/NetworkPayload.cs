@@ -10,6 +10,9 @@ namespace MNet
         GameServerID id;
         public GameServerID ID => id;
 
+        string version;
+        public string Version => version;
+
         GameServerRegion region;
         public GameServerRegion Region => region;
 
@@ -19,14 +22,16 @@ namespace MNet
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
+            context.Select(ref version);
             context.Select(ref region);
             context.Select(ref key);
         }
 
         public RegisterGameServerRequest() { }
-        public RegisterGameServerRequest(GameServerID id, GameServerRegion region, string key)
+        public RegisterGameServerRequest(GameServerID id, string version, GameServerRegion region, string key)
         {
             this.id = id;
+            this.version = version;
             this.region = region;
             this.key = key;
         }

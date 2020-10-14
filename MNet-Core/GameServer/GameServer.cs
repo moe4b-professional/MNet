@@ -12,11 +12,13 @@ namespace MNet
             private set => ID = new GameServerID(value);
         }
 
-        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
-
         public static Config Config { get; private set; }
 
+        public static string Version => Config.Version;
+
         public static GameServerRegion Region { get; private set; }
+
+        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Version, Region);
 
         public static RestAPI Rest { get; private set; }
         public static RealtimeAPI Realtime { get; private set; }
@@ -37,7 +39,7 @@ namespace MNet
             Region = GameServerRegion.Europe;
 
             MasterServer.Configure(Config.MasterAddress);
-            MasterServer.Register(ID, Region, ApiKey.Token);
+            MasterServer.Register(ID, Version, Region, ApiKey.Token);
 
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();

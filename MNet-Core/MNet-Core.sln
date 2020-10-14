@@ -15,7 +15,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MasterServer", "MasterServe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "..\MNet-Unity\Assembly-CSharp.csproj", "{1856A5CF-3901-2E75-D979-E95CAF2BC13B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet", "..\MNet-Unity\MNet.csproj", "{DC617FD0-2532-57F7-39D0-53520C051187}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet-Unity", "..\MNet-Unity\MNet-Unity.csproj", "{DC617FD0-2532-57F7-39D0-53520C051187}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet-Unity-Editor", "..\MNet-Unity\MNet-Unity-Editor.csproj", "{84FD8B84-624B-583D-CDE1-D27CF6AF089B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +51,10 @@ Global
 		{DC617FD0-2532-57F7-39D0-53520C051187}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DC617FD0-2532-57F7-39D0-53520C051187}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC617FD0-2532-57F7-39D0-53520C051187}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84FD8B84-624B-583D-CDE1-D27CF6AF089B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84FD8B84-624B-583D-CDE1-D27CF6AF089B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84FD8B84-624B-583D-CDE1-D27CF6AF089B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84FD8B84-624B-583D-CDE1-D27CF6AF089B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

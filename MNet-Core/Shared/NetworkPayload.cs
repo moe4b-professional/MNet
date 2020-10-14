@@ -535,12 +535,30 @@ namespace MNet
         }
     }
 
-    public class MasterServerInfoPayload : INetworkSerializable
+    #region Master Server
+    public class MasterServerInfoRequest : INetworkSerializable
     {
-        GameServerInfo[] servers;
-        public GameServerInfo[] Servers => servers;
+        string version;
+        public string Version => version;
 
-        public int Size => servers.Length;
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref version);
+        }
+
+        public MasterServerInfoRequest() { }
+        public MasterServerInfoRequest(string version)
+        {
+            this.version = version;
+        }
+    }
+
+    public class MasterServerInfoResponse : INetworkSerializable
+    {
+        List<GameServerInfo> servers;
+        public List<GameServerInfo> Servers => servers;
+
+        public int Size => servers.Count;
 
         public GameServerInfo this[int index] => servers[index];
 
@@ -549,10 +567,11 @@ namespace MNet
             context.Select(ref servers);
         }
 
-        public MasterServerInfoPayload() { }
-        public MasterServerInfoPayload(GameServerInfo[] servers)
+        public MasterServerInfoResponse() { }
+        public MasterServerInfoResponse(List<GameServerInfo> servers)
         {
             this.servers = servers;
         }
     }
+    #endregion
 }

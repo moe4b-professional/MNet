@@ -16,17 +16,21 @@ namespace MNet
 
         [JsonProperty]
         public IPAddress MasterAddress { get; protected set; }
-        
+
         [JsonProperty]
         public NetworkTransportType NetworkTransport { get; protected set; }
 
-        public override void WriteDefaults()
+        [JsonProperty]
+        public string Version { get; protected set; }
+
+        protected override void WriteDefaults()
         {
             base.WriteDefaults();
 
             PublicAddress = IPAddress.Any;
             MasterAddress = IPAddress.Any;
             NetworkTransport = NetworkTransportType.WebSocketSharp;
+            Version = "0.0.0";
         }
 
         public Config() { }

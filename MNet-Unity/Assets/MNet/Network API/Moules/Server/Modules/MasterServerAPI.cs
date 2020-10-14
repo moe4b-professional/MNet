@@ -31,22 +31,25 @@ namespace MNet
 
                 public static DirectedRestAPI Rest { get; private set; }
 
-                public static GameServerInfo[] Servers { get; private set; }
+                public static List<GameServerInfo> Servers { get; private set; }
 
                 public static void Configure()
                 {
                     Rest = new DirectedRestAPI(Address, Constants.Server.Master.Rest.Port);
                 }
 
-                public delegate void InfoDelegate(MasterServerInfoPayload info, RestError error);
+                public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
-                public static void Info()
+                public static void Info() => Info(NetworkAPI.Version);
+                public static void Info(string version)
                 {
-                    Rest.GET(Constants.Server.Master.Rest.Requests.Info, Callback, false);
+                    var payload = new MasterServerInfoRequest(version);
+
+                    Rest.POST(Constants.Server.Master.Rest.Requests.Info, payload, Callback, false);
 
                     void Callback(UnityWebRequest request)
                     {
-                        RestAPI.Parse(request, out MasterServerInfoPayload info, out var error);
+                        RestAPI.Parse(request, out MasterServerInfoResponse info, out var error);
 
                         Servers = error == null ? info.Servers : null;
 

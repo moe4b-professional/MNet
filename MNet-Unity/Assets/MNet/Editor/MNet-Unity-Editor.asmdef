@@ -1,9 +1,11 @@
 {
-    "name": "MNet",
+    "name": "MNet-Unity-Editor",
     "references": [
-        "GUID:bec3474887684a1448244449366c612b"
+        "GUID:86a12a38a60d1c3459f1889d1ad849d6"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

@@ -22,6 +22,8 @@ namespace MNet
 
         public static string Address => Config.Address;
 
+        public static string Version => Config.Version;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {

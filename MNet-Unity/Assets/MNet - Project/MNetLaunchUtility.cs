@@ -20,7 +20,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    public static class MNetEditor
+    public static class MNetLaunchUtility
     {
         public static class Server
         {

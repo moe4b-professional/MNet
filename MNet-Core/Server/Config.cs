@@ -13,12 +13,9 @@ namespace MNet
     {
         public const string FileName = "Config.json";
 
-        [JsonProperty]
-        public string Version { get; protected set; }
-
-        public virtual void WriteDefaults()
+        protected virtual void WriteDefaults()
         {
-            Version = "0.0.0";
+            
         }
 
         public Config()
@@ -27,7 +24,7 @@ namespace MNet
         }
 
         //Static
-        public static JsonSerializerSettings SerializerSettings { get; protected set; }
+        private static JsonSerializerSettings SerializerSettings { get; set; }
 
         public static T Read()
         {
@@ -42,7 +39,7 @@ namespace MNet
             return instance;
         }
 
-        public static string LoadJson()
+        private static string LoadJson()
         {
             if (File.Exists(FileName) == false) return null;
 

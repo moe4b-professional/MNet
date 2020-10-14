@@ -60,15 +60,17 @@ namespace Game
             if (Input.GetKeyDown(KeyCode.Q)) DestroyEntity();
         }
 
-        void MasterServerInfoCallback(MasterServerInfoPayload info, RestError error)
+        void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
         {
             if (error == null)
             {
-                Debug.Log($"Game Servers Count: {info.Servers.Length}");
+                Debug.Log($"Game Servers Count: {info.Size}");
 
-                if(info.Size > 0)
+                if (info.Size > 0)
                 {
                     var server = info[0];
+
+                    Debug.Log($"Selecting Game Server: {server}");
 
                     NetworkAPI.Server.Game.Select(server);
                 }

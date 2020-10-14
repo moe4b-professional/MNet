@@ -56,8 +56,6 @@ namespace MNet
                     Selection = id;
 
                     Rest.SetIP(id.Address);
-
-                    Debug.Log($"Selecting Game Server: {id}");
                 }
             }
         }
