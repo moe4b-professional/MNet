@@ -29,15 +29,15 @@ namespace Game
 	{
         void Start()
         {
-            NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
+            MNetAPI.Server.Master.OnInfo += MasterServerInfoCallback;
 
-            NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
-            NetworkAPI.Room.OnCreate += RoomCreateCallback;
+            MNetAPI.Lobby.OnInfo += LobbyInfoCallback;
+            MNetAPI.Room.OnCreate += RoomCreateCallback;
 
-            NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
-            NetworkAPI.Client.OnReady += ClientReadyCallback;
+            MNetAPI.Client.Profile = new NetworkClientProfile("Moe4B");
+            MNetAPI.Client.OnReady += ClientReadyCallback;
 
-            NetworkAPI.Server.Master.Info();
+            MNetAPI.Server.Master.Info();
         }
 
         void Update()
@@ -48,12 +48,12 @@ namespace Game
 
                 attributes.Set(0, "Level");
 
-                NetworkAPI.Room.Create("Moe4B's Game Room", 4, attributes);
+                MNetAPI.Room.Create("Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.GetInfo();
+            if (Input.GetKeyDown(KeyCode.V)) MNetAPI.Lobby.GetInfo();
 
-            if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
+            if (Input.GetKeyDown(KeyCode.L)) MNetAPI.Client.Disconnect();
 
             if (Input.GetKeyDown(KeyCode.E)) SpawnPlayer();
 
@@ -72,7 +72,7 @@ namespace Game
 
                     Debug.Log($"Selecting Game Server: {server}");
 
-                    NetworkAPI.Server.Game.Select(server);
+                    MNetAPI.Server.Game.Select(server);
                 }
             }
             else
@@ -91,7 +91,7 @@ namespace Game
 
                 if (room == null) return;
 
-                NetworkAPI.Room.Join(room);
+                MNetAPI.Room.Join(room);
             }
             else
             {
@@ -105,7 +105,7 @@ namespace Game
             {
                 Debug.Log("Created Room " + room.ID);
 
-                NetworkAPI.Room.Join(room);
+                MNetAPI.Room.Join(room);
             }
             else
             {
@@ -124,14 +124,14 @@ namespace Game
 
             Player.Write(ref attributes, position, rotation);
 
-            NetworkAPI.Client.RequestSpawnEntity("Player", attributes);
+            MNetAPI.Client.RequestSpawnEntity("Player", attributes);
         }
 
         void DestroyEntity()
         {
-            if (NetworkAPI.Client.Entities.Count > 0)
+            if (MNetAPI.Client.Entities.Count > 0)
             {
-                DestoryEntity(NetworkAPI.Client.Entities.Last());
+                DestoryEntity(MNetAPI.Client.Entities.Last());
             }
             else
             {
@@ -140,7 +140,7 @@ namespace Game
         }
         void DestoryEntity(NetworkEntity entity)
         {
-            NetworkAPI.Client.RequestDestoryEntity(entity);
+            MNetAPI.Client.RequestDestoryEntity(entity);
         }
     }
 }

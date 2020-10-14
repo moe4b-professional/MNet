@@ -124,7 +124,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 0.0.1
+  bundleVersion: 0.1
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -667,11 +667,11 @@ PlayerSettings:
   platformArchitecture: {}
   scriptingBackend:
     Android: 1
-    Standalone: 1
+    Standalone: 0
   il2cppCompilerConfiguration:
     WebGL: 1
   managedStrippingLevel:
-    Standalone: 3
+    Standalone: 0
     WebGL: 1
   incrementalIl2cppBuild: {}
   allowUnsafeCode: 0

@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -20,15 +19,15 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    public static class MNetEditor
+	public static partial class MNetAPI
     {
-        [MenuItem(MNetAPI.Path + "Configuration", false, 0)]
-        static void Configuration()
+        public static partial class Server
         {
-            var asset = MNetAPIConfig.Load();
-
-            Selection.activeObject = asset;
+            public static void Configure()
+            {
+                Master.Configure();
+                Game.Configure();
+            }
         }
     }
 }
-#endif

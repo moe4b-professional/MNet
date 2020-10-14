@@ -68,7 +68,7 @@ namespace Game
                     y = Input.GetAxisRaw("Vertical"),
                 };
 
-                if (direction.magnitude > 0.1f) RequestRPC(RequestMove, NetworkAPI.Room.Master, direction);
+                if (direction.magnitude > 0.1f) RequestRPC(RequestMove, MNetAPI.Room.Master, direction);
             }
         }
 
