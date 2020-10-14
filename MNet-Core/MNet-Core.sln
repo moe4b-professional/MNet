@@ -13,11 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameServer", "GameServer\Ga
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MasterServer", "MasterServer\MasterServer.csproj", "{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "..\MNet-Unity\Assembly-CSharp.csproj", "{1856A5CF-3901-2E75-D979-E95CAF2BC13B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "~Assembly-CSharp", "..\MNet-Unity\~Assembly-CSharp.csproj", "{1856A5CF-3901-2E75-D979-E95CAF2BC13B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet-Unity", "..\MNet-Unity\MNet-Unity.csproj", "{DC617FD0-2532-57F7-39D0-53520C051187}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "~MNet-Unity", "..\MNet-Unity\~MNet-Unity.csproj", "{DC617FD0-2532-57F7-39D0-53520C051187}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet-Unity-Editor", "..\MNet-Unity\MNet-Unity-Editor.csproj", "{84FD8B84-624B-583D-CDE1-D27CF6AF089B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "~MNet-Unity-Editor", "..\MNet-Unity\~MNet-Unity-Editor.csproj", "{84FD8B84-624B-583D-CDE1-D27CF6AF089B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

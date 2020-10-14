@@ -32,7 +32,7 @@ namespace MNet
         public NetworkTransportType Transport => transport;
 
         [SerializeField]
-        protected NetworkVersionProperty version = new NetworkVersionProperty("0.1");
+        protected NetworkVersionProperty version = new NetworkVersionProperty("0.0.1");
         public string Version => version.Value;
 
         public static NetworkAPIConfig Load()

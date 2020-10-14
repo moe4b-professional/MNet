@@ -1,3 +1,5 @@
+@echo off
+
 rmdir /s /q "MNet-Release"
 mkdir "MNet-Release"
 
@@ -13,5 +15,7 @@ xcopy "Version.txt" "MNet-Release\" /I /Q /Y /F
 
 del MNet-Release.zip
 7z a MNet-Release.zip MNet-Release
+
+echo Gather Process Finished
 
 PAUSE

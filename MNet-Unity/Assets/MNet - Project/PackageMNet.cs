@@ -21,7 +21,7 @@ namespace Game
 {
 	public static class PackageMNet
 	{
-		[MenuItem("Tools/Package MNet")]
+		[MenuItem("MNet/Package")]
 		static void Package()
         {
 			var options = ExportPackageOptions.Interactive | ExportPackageOptions.Recurse;
