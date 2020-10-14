@@ -12,6 +12,7 @@ using System.Net;
 
 namespace MNet
 {
+    [Preserve]
     public abstract class NetworkSerializationResolver
     {
         public abstract bool CanResolve(Type type);
@@ -96,6 +97,7 @@ namespace MNet
     }
 
     #region Explicit
+    [Preserve]
     public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
     {
         public static NetworkSerializationExplicitResolver<T> Instance { get; private set; }
@@ -117,6 +119,7 @@ namespace MNet
     }
 
     #region Primitive
+    [Preserve]
     public sealed class ByteNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte>
     {
         public override void Serialize(NetworkWriter writer, byte value)
@@ -134,6 +137,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public sealed class BoolNetworkSerializationResolver : NetworkSerializationExplicitResolver<bool>
     {
         public override void Serialize(NetworkWriter writer, bool value)
@@ -149,6 +153,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public sealed class ShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<short>
     {
         public override void Serialize(NetworkWriter writer, short value)
@@ -167,6 +172,7 @@ namespace MNet
             return value;
         }
     }
+    [Preserve]
     public sealed class UShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<ushort>
     {
         public override void Serialize(NetworkWriter writer, ushort value)
@@ -186,6 +192,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public sealed class IntNetworkSerializationResolver : NetworkSerializationExplicitResolver<int>
     {
         public override void Serialize(NetworkWriter writer, int value)
@@ -204,6 +211,7 @@ namespace MNet
             return value;
         }
     }
+    [Preserve]
     public sealed class UIntNetworkSerializationResolver : NetworkSerializationExplicitResolver<uint>
     {
         public override void Serialize(NetworkWriter writer, uint value)
@@ -223,6 +231,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public sealed class FloatNetworkSerializationResolver : NetworkSerializationExplicitResolver<float>
     {
         public override void Serialize(NetworkWriter writer, float value)
@@ -242,6 +251,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public sealed class StringNetworkSerializationResolver : NetworkSerializationExplicitResolver<string>
     {
         public override void Serialize(NetworkWriter writer, string value)
@@ -278,6 +288,7 @@ namespace MNet
     #endregion
 
     #region POCO
+    [Preserve]
     public class GuidNetworkSerializationResolver : NetworkSerializationExplicitResolver<Guid>
     {
         public const byte Size = 16;
@@ -299,6 +310,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class DateTimeNetworkSerializationResolver : NetworkSerializationExplicitResolver<DateTime>
     {
         public override void Serialize(NetworkWriter writer, DateTime value)
@@ -319,6 +331,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class IPAddressNetworkSerializationResolver : NetworkSerializationExplicitResolver<IPAddress>
     {
         public override void Serialize(NetworkWriter writer, IPAddress value)
@@ -343,7 +356,7 @@ namespace MNet
         }
     }
     #endregion
-
+    [Preserve]
     public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
     {
         public override void Serialize(NetworkWriter writer, byte[] value)
@@ -365,11 +378,13 @@ namespace MNet
     #endregion
 
     #region Implicit
+    [Preserve]
     public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
     {
 
     }
 
+    [Preserve]
     public sealed class INetworkSerializableResolver : NetworkSerializationImplicitResolver
     {
         public Type Interface => typeof(INetworkSerializable);
@@ -425,6 +440,7 @@ namespace MNet
     }
 
     #region Collection
+    [Preserve]
     public sealed class ArrayNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type) => type.IsArray;
@@ -460,6 +476,7 @@ namespace MNet
         public ArrayNetworkSerializationResolver() { }
     }
 
+    [Preserve]
     public sealed class ListNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type)
@@ -500,6 +517,7 @@ namespace MNet
         public ListNetworkSerializationResolver() { }
     }
 
+    [Preserve]
     public sealed class DictionaryNetworkSerializationResolvery : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type)
@@ -545,6 +563,7 @@ namespace MNet
     }
     #endregion
 
+    [Preserve]
     public sealed class EnumNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type type) => type.IsEnum;

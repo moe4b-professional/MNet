@@ -24,7 +24,7 @@ namespace MNet
     {
         public const string Path = "MNet/";
 
-        [MenuItem(Path + "Configuration")]
+        [MenuItem(Path + "Configuration", false, 0)]
         static void Configuration()
         {
             var asset = NetworkAPIConfig.Load();

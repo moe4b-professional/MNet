@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
+    [Preserve]
+    [Serializable]
     public class NetworkGenericDictionary<TKey> : INetworkSerializable
     {
         Dictionary<TKey, byte[]> payload;

@@ -20,6 +20,7 @@ namespace MNet
         None, Last, All
     }
 
+    [Preserve]
     [Serializable]
     public class RpcRequest : INetworkSerializable
     {
@@ -158,6 +159,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class RpcCommand : INetworkSerializable
     {
@@ -257,6 +259,7 @@ namespace MNet
         InvalidBehaviour,
     }
 
+    [Preserve]
     [Serializable]
     public class RprRequest : INetworkSerializable
     {
@@ -321,6 +324,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public class RprCommand : INetworkSerializable
     {

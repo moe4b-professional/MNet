@@ -11,6 +11,7 @@ namespace MNet
         Dynamic, SceneObject
     }
 
+    [Preserve]
     [Serializable]
     public struct NetworkEntityID : INetworkSerializable
     {
@@ -50,6 +51,7 @@ namespace MNet
         public static NetworkEntityID Increment(NetworkEntityID id) => new NetworkEntityID(id.value + 1);
     }
 
+    [Preserve]
     [Serializable]
     public struct NetworkBehaviourID : INetworkSerializable
     {

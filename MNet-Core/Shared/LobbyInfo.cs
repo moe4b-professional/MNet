@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
+    [Preserve]
+    [Serializable]
     public class LobbyInfo : INetworkSerializable
     {
         GameServerInfo server;

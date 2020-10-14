@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -21,7 +22,7 @@ namespace Game
 {
 	public static class PackageMNet
 	{
-		[MenuItem("MNet/Package")]
+		[MenuItem("MNet/Package", false, 300)]
 		static void Package()
         {
 			var options = ExportPackageOptions.Interactive | ExportPackageOptions.Recurse;
@@ -30,3 +31,4 @@ namespace Game
 		}
 	}
 }
+#endif

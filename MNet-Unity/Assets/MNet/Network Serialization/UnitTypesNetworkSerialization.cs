@@ -19,7 +19,8 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-	public class UnitTypesNetworkSerialization
+    [Preserve]
+    public class UnitTypesNetworkSerialization
 	{
         public static class IDs
         {
@@ -55,6 +56,7 @@ namespace MNet
 	}
 
     #region Vector
+    [Preserve]
     public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
     {
         public override void Serialize(NetworkWriter writer, Vector2 value)
@@ -71,6 +73,7 @@ namespace MNet
             return new Vector2(x, y);
         }
     }
+    [Preserve]
     public class Vector2IntSerializationResolver : NetworkSerializationExplicitResolver<Vector2Int>
     {
         public override void Serialize(NetworkWriter writer, Vector2Int value)
@@ -88,6 +91,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class Vector3SerializationResolver : NetworkSerializationExplicitResolver<Vector3>
     {
         public override void Serialize(NetworkWriter writer, Vector3 value)
@@ -106,6 +110,7 @@ namespace MNet
             return new Vector3(x, y, z);
         }
     }
+    [Preserve]
     public class Vector3IntSerializationResolver : NetworkSerializationExplicitResolver<Vector3Int>
     {
         public override void Serialize(NetworkWriter writer, Vector3Int value)
@@ -125,6 +130,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class Vector4SerializationResolver : NetworkSerializationExplicitResolver<Vector4>
     {
         public override void Serialize(NetworkWriter writer, Vector4 value)
@@ -147,6 +153,7 @@ namespace MNet
     }
     #endregion
 
+    [Preserve]
     public class ColorSerializationResolver : NetworkSerializationExplicitResolver<Color>
     {
         public override void Serialize(NetworkWriter writer, Color value)
@@ -168,6 +175,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class QuaternionNetworkSerializationResolver : NetworkSerializationExplicitResolver<Quaternion>
     {
         public override void Serialize(NetworkWriter writer, Quaternion value)
@@ -189,6 +197,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class NetworkEntityNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public static Type Class { get; protected set; } = typeof(NetworkEntity);
@@ -245,6 +254,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public class NetworkBehaviourNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public static Type Class { get; protected set; } = typeof(NetworkBehaviour);

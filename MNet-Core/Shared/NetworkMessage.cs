@@ -11,6 +11,7 @@ using WebSocketSharp.Net;
 
 namespace MNet
 {
+    [Preserve]
     [Serializable]
     public sealed class NetworkMessage : INetworkSerializable
     {

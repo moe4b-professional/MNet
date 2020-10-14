@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
+    [Preserve]
     [Serializable]
     public class NetworkClientInfo : INetworkSerializable
     {
@@ -30,6 +31,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public struct NetworkClientID : INetworkSerializable
     {
@@ -75,6 +77,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public class NetworkClientProfile : INetworkSerializable
     {

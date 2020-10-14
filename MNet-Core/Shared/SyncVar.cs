@@ -4,6 +4,8 @@ using System.Text;
 
 namespace MNet
 {
+    [Preserve]
+    [Serializable]
     public abstract class SyncVarPayload : INetworkSerializable
     {
         protected NetworkEntityID entity;
@@ -39,6 +41,8 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    [Serializable]
     public class SyncVarRequest : SyncVarPayload
     {
         public static SyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string variable, object value)
@@ -57,6 +61,8 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    [Serializable]
     public class SyncVarCommand : SyncVarPayload
     {
         NetworkClientID sender;

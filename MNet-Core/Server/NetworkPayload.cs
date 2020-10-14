@@ -5,6 +5,8 @@ using System.Text;
 namespace MNet
 {
     #region Register
+    [Preserve]
+    [Serializable]
     public class RegisterGameServerRequest : INetworkSerializable
     {
         GameServerID id;
@@ -37,6 +39,8 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    [Serializable]
     public class RegisterGameServerResult : INetworkSerializable
     {
         bool success;
@@ -56,6 +60,8 @@ namespace MNet
     #endregion
 
     #region Remove
+    [Preserve]
+    [Serializable]
     public class RemoveGameServerRequest : INetworkSerializable
     {
         GameServerID id;
@@ -78,6 +84,8 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    [Serializable]
     public class RemoveGameServerResult : INetworkSerializable
     {
         bool success;

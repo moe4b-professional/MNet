@@ -195,6 +195,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class CreateRoomRequest : INetworkSerializable
     {
@@ -225,6 +226,7 @@ namespace MNet
     }
 
     #region Register Client
+    [Preserve]
     [Serializable]
     public sealed class RegisterClientRequest : INetworkSerializable
     {
@@ -243,6 +245,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class RegisterClientResponse : INetworkSerializable
     {
@@ -268,6 +271,7 @@ namespace MNet
     #endregion
 
     #region Ready Client
+    [Preserve]
     [Serializable]
     public sealed class ReadyClientRequest : INetworkSerializable
     {
@@ -279,6 +283,7 @@ namespace MNet
         public ReadyClientRequest() { }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class ReadyClientResponse : INetworkSerializable
     {
@@ -309,6 +314,7 @@ namespace MNet
     #endregion
 
     #region Spawn Entity
+    [Preserve]
     [Serializable]
     public sealed class SpawnEntityRequest : INetworkSerializable
     {
@@ -373,6 +379,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class SpawnEntityCommand : INetworkSerializable
     {
@@ -439,6 +446,7 @@ namespace MNet
     #endregion
 
     #region Destroy Entity
+    [Preserve]
     [Serializable]
     public sealed class DestroyEntityRequest : INetworkSerializable
     {
@@ -457,6 +465,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class DestroyEntityCommand : INetworkSerializable
     {
@@ -477,6 +486,7 @@ namespace MNet
     #endregion
 
     #region Connection
+    [Preserve]
     [Serializable]
     public sealed class ClientConnectedPayload : INetworkSerializable
     {
@@ -499,6 +509,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     [Serializable]
     public sealed class ClientDisconnectPayload : INetworkSerializable
     {
@@ -518,6 +529,8 @@ namespace MNet
     }
     #endregion
 
+    [Preserve]
+    [Serializable]
     public sealed class ChangeMasterCommand : INetworkSerializable
     {
         NetworkClientID id;
@@ -536,6 +549,8 @@ namespace MNet
     }
 
     #region Master Server
+    [Preserve]
+    [Serializable]
     public class MasterServerInfoRequest : INetworkSerializable
     {
         string version;
@@ -553,6 +568,8 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    [Serializable]
     public class MasterServerInfoResponse : INetworkSerializable
     {
         List<GameServerInfo> servers;

@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
+    [Preserve]
+    [Serializable]
     public class RoomBasicInfo : INetworkSerializable
     {
         RoomID id;
@@ -52,6 +54,8 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    [Serializable]
     public class RoomInternalInfo : INetworkSerializable
     {
         public void Select(INetworkSerializableResolver.Context context)

@@ -11,6 +11,7 @@ namespace MNet
         USA, Europe, Asia
     }
 
+    [Preserve]
     [Serializable]
     public struct GameServerID : INetworkSerializable
     {
@@ -58,6 +59,7 @@ namespace MNet
         public static bool Equals(IPAddress a, IPAddress b) => a.Equals(b);
     }
 
+    [Preserve]
     [Serializable]
     public struct GameServerInfo : INetworkSerializable
     {
