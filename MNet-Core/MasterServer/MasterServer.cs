@@ -55,7 +55,7 @@ namespace MNet
 
             foreach (var server in Servers.Values)
             {
-                if (payload.Version != server.Version) continue;
+                if (server.Versions.Contains(payload.Version) == false) continue;
 
                 list.Add(server);
             }
@@ -85,24 +85,19 @@ namespace MNet
 
         static RegisterGameServerResult RegisterServer(RegisterGameServerRequest request)
         {
-            return RegisterServer(request.ID, request.Version, request.Region, request.Key);
-        }
-
-        static RegisterGameServerResult RegisterServer(GameServerID id, string version, GameServerRegion region, string key)
-        {
-            if (key != ApiKey.Token)
+            if (request.Key != ApiKey.Token)
             {
-                Log.Info($"Server {id} Trying to Register With Invalid API Key");
+                Log.Info($"Server {request.ID} Trying to Register With Invalid API Key");
                 return new RegisterGameServerResult(false);
             }
 
-            RegisterServer(id, version, region);
+            RegisterServer(request.ID, request.Versions, request.Region);
             return new RegisterGameServerResult(true);
         }
 
-        static GameServerInfo RegisterServer(GameServerID id, string version, GameServerRegion region)
+        static GameServerInfo RegisterServer(GameServerID id, string[] versions, GameServerRegion region)
         {
-            var server = new GameServerInfo(id, version, region);
+            var server = new GameServerInfo(id, versions, region);
 
             Servers[id] = server;
 

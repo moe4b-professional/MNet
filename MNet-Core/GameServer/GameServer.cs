@@ -14,11 +14,11 @@ namespace MNet
 
         public static Config Config { get; private set; }
 
-        public static string Version => Config.Version;
+        public static string[] Versions => Config.Versions;
 
         public static GameServerRegion Region { get; private set; }
 
-        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Version, Region);
+        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Versions, Region);
 
         public static RestAPI Rest { get; private set; }
         public static RealtimeAPI Realtime { get; private set; }
@@ -33,13 +33,13 @@ namespace MNet
 
             Config = Config.Read();
 
-            Log.Info($"Server Version: {Config.Version}");
+            Log.Info($"Server Versions: {Config.Versions.ToPrettyString()}");
 
             Address = Config.PublicAddress;
             Region = GameServerRegion.Europe;
 
             MasterServer.Configure(Config.MasterAddress);
-            MasterServer.Register(ID, Version, Region, ApiKey.Token);
+            MasterServer.Register(GetInfo(), ApiKey.Token);
 
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
@@ -50,7 +50,21 @@ namespace MNet
             Lobby = new Lobby();
             Lobby.Configure();
 
+            Sandbox();
+
             while (true) Console.ReadLine();
+        }
+
+        static void Sandbox()
+        {
+            return;
+
+            var tuple = NetTuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());
+            var type = tuple.GetType();
+            var binary = NetworkSerializer.Serialize(tuple);
+
+            var payload = NetworkSerializer.Deserialize(binary, type) as NetTuple;
+            foreach (var item in payload) Log.Info(item);
         }
     }
 }

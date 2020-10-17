@@ -21,7 +21,7 @@ namespace MNet
         public NetworkTransportType NetworkTransport { get; protected set; }
 
         [JsonProperty]
-        public string Version { get; protected set; }
+        public string[] Versions { get; protected set; }
 
         protected override void WriteDefaults()
         {
@@ -30,7 +30,7 @@ namespace MNet
             PublicAddress = IPAddress.Any;
             MasterAddress = IPAddress.Any;
             NetworkTransport = NetworkTransportType.WebSocketSharp;
-            Version = "0.0.0";
+            Versions = new string[] { "0.0.0" };
         }
 
         public Config() { }

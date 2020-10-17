@@ -78,6 +78,8 @@ namespace MNet
         public NetworkTransport()
         {
             Contexts = new Dictionary<uint, TContext>();
+
+            Log.Info($"Configuring {GetType().Name}");
         }
     }
 
@@ -278,7 +280,7 @@ namespace MNet
 
         public readonly byte[] RegisterClientPayload = new byte[] { 200 };
 
-        Thread thread;
+        readonly Thread thread;
         protected virtual void Run()
         {
             while (true) Tick();

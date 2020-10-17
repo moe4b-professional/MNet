@@ -284,7 +284,7 @@ namespace MNet
 
             var value = Convert.ChangeType(behaviour, type);
 
-            return behaviour;
+            return value;
         }
     }
 }

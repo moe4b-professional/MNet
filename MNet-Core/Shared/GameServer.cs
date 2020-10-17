@@ -66,8 +66,8 @@ namespace MNet
         GameServerID id;
         public GameServerID ID => id;
 
-        string version;
-        public string Version => version;
+        string[] versions;
+        public string[] Versions => versions;
 
         GameServerRegion region;
         public GameServerRegion Region => region;
@@ -75,16 +75,16 @@ namespace MNet
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
-            context.Select(ref version);
+            context.Select(ref versions);
             context.Select(ref region);
         }
 
-        public override string ToString() => $"{id} | v{version} | {region}";
+        public override string ToString() => $"{id} | v{versions.ToPrettyString()} | {region}";
 
-        public GameServerInfo(GameServerID id, string version, GameServerRegion region)
+        public GameServerInfo(GameServerID id, string[] versions, GameServerRegion region)
         {
             this.id = id;
-            this.version = version;
+            this.versions = versions;
             this.region = region;
         }
     }
