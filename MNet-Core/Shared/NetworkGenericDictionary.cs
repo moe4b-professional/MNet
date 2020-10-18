@@ -32,7 +32,7 @@ namespace MNet
 
         public void Set<T>(TKey key, T value)
         {
-            var code = NetworkPayload.GetCode<T>();
+            ushort code = NetworkPayload.GetCode<T>();
 
             using (var writer = new NetworkWriter(DefaultValueBufferSize))
             {

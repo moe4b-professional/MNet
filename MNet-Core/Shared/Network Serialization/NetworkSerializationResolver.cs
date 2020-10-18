@@ -356,6 +356,7 @@ namespace MNet
         }
     }
     #endregion
+
     [Preserve]
     public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
     {
@@ -371,6 +372,45 @@ namespace MNet
             reader.Read(out int length);
 
             var value = reader.BlockCopy(length);
+
+            return value;
+        }
+    }
+
+    /// <summary>
+    /// Used to Serialize an Array of multiple types of objects
+    /// </summary>
+    [Preserve]
+    public sealed class ObjectArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<object[]>
+    {
+        public override void Serialize(NetworkWriter writer, object[] value)
+        {
+            writer.Write(value.Length);
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                ushort code = NetworkPayload.GetCode(value[i]);
+
+                writer.Write(code);
+
+                writer.Write(value[i]);
+            }
+        }
+
+        public override object[] Deserialize(NetworkReader reader)
+        {
+            reader.Read(out int length);
+
+            var value = new object[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                reader.Read(out ushort code);
+
+                var type = NetworkPayload.GetType(code);
+
+                value[i] = reader.Read(type);
+            }
 
             return value;
         }
@@ -435,33 +475,18 @@ namespace MNet
         {
             var value = instance as INetTuple;
 
-            byte length = value.Length;
-            writer.Write(length);
-
             for (int i = 0; i < value.Length; i++)
-            {
-                var code = NetworkPayload.GetCode(value[i]);
-                writer.Write(code);
                 writer.Write(value[i]);
-            }
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            reader.Read(out byte length);
+            var arguments = type.GetGenericArguments();
 
-            var items = new object[length];
+            var items = new object[arguments.Length];
 
-            for (int i = 0; i < length; i++)
-            {
-                reader.Read(out ushort code);
-
-                var t = NetworkPayload.GetType(code);
-
-                var element = reader.Read(t);
-
-                items[i] = element;
-            }
+            for (int i = 0; i < arguments.Length; i++)
+                items[i] = reader.Read(arguments[i]);
 
             var value = NetTuple.Create(type, items);
 

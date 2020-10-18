@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Collections.Generic;
 
 namespace MNet
 {
@@ -50,21 +51,46 @@ namespace MNet
             Lobby = new Lobby();
             Lobby.Configure();
 
-            Sandbox();
+            Sandbox.Run();
 
             while (true) Console.ReadLine();
         }
+    }
 
-        static void Sandbox()
+    public static class Sandbox
+    {
+        public static void Run()
         {
-            return;
+            
+        }
 
+        static void TupleSerialization()
+        {
             var tuple = NetTuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());
             var type = tuple.GetType();
             var binary = NetworkSerializer.Serialize(tuple);
 
             var payload = NetworkSerializer.Deserialize(binary, type) as NetTuple;
             foreach (var item in payload) Log.Info(item);
+        }
+
+        static void ObjectArraySerialization()
+        {
+            var array = new object[]
+            {
+                "Hello World",
+                20,
+                Guid.NewGuid(),
+                DateTime.Now,
+            };
+
+            var type = array.GetType();
+
+            var binary = NetworkSerializer.Serialize(array);
+
+            var value = NetworkSerializer.Deserialize(binary, type) as Array;
+
+            foreach (var item in value) Log.Info(item);
         }
     }
 }
