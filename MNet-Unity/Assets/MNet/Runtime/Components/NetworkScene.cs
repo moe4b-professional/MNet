@@ -21,7 +21,7 @@ namespace MNet
 {
     [ExecuteInEditMode]
     [DefaultExecutionOrder(ExecutionOrder)]
-    [AddComponentMenu(MNetAPI.Path + nameof(NetworkScene))]
+    [AddComponentMenu(NetworkAPI.Path + nameof(NetworkScene))]
     public class NetworkScene : MonoBehaviour
     {
         public const int ExecutionOrder = NetworkEntity.ExecutionOrder - 50;
@@ -49,8 +49,21 @@ namespace MNet
         }
 
         public Scene Scene => gameObject.scene;
+        bool IsInSameScene(NetworkEntity entity) => entity.Scene == this.Scene;
 
-        void Reset() => GetAll();
+        void FindAll()
+        {
+            list.Clear();
+
+            var targets = FindObjectsOfType<NetworkEntity>().Where(IsInSameScene);
+
+            list.AddRange(targets);
+        }
+
+        void Reset()
+        {
+            FindAll();
+        }
 
         void Awake()
         {
@@ -61,41 +74,34 @@ namespace MNet
         {
             if (Application.isPlaying == false) return;
 
-            if (MNetAPI.Client.IsConnected && MNetAPI.Client.IsReady)
+            if (NetworkAPI.Client.IsConnected && NetworkAPI.Client.IsReady)
                 EvaluateSpawn();
             else
-                MNetAPI.Room.OnReady += RoomReadyCallback;
+                NetworkAPI.Room.OnReady += RoomReadyCallback;
         }
 
         void RoomReadyCallback(ReadyClientResponse response)
         {
-            MNetAPI.Room.OnReady -= RoomReadyCallback;
+            NetworkAPI.Room.OnReady -= RoomReadyCallback;
 
             EvaluateSpawn();
         }
 
         void EvaluateSpawn()
         {
-            if (MNetAPI.Client.IsMaster) SpawnAll();
+            if (NetworkAPI.Client.IsMaster == false) return;
+
+            Spawn();
         }
 
-        public void SpawnAll()
+        public void Spawn()
         {
             for (int i = 0; i < list.Count; i++)
             {
                 if (list[i].IsReady) continue;
 
-                MNetAPI.Client.RequestSpawnEntity(Scene, i);
+                NetworkAPI.Client.SpawnSceneObject(Scene, i);
             }
-        }
-
-        void GetAll()
-        {
-            list.Clear();
-
-            var targets = FindObjectsOfType<NetworkEntity>().Where(x => x.Scene == Scene);
-
-            list.AddRange(targets);
         }
 
         public bool Add(NetworkEntity target)
@@ -123,7 +129,7 @@ namespace MNet
 
         void OnDestroy()
         {
-            MNetAPI.Room.OnReady -= RoomReadyCallback;
+            NetworkAPI.Room.OnReady -= RoomReadyCallback;
 
             Unregister(this);
         }
@@ -225,7 +231,7 @@ namespace MNet
 
                 EditorGUILayout.Space();
 
-                if (GUILayout.Button("Get All")) target.GetAll();
+                if (GUILayout.Button("Find All")) target.FindAll();
             }
         }
 #endif

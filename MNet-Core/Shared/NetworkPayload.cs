@@ -327,6 +327,9 @@ namespace MNet
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
+        NetworkClientID? owner;
+        public NetworkClientID? Owner => owner;
+
         int scene;
         public int Scene => scene;
 
@@ -342,6 +345,7 @@ namespace MNet
                 case NetworkEntityType.Dynamic:
                     context.Select(ref resource);
                     context.Select(ref attributes);
+                    context.Select(ref owner);
                     break;
 
                 case NetworkEntityType.SceneObject:
@@ -353,14 +357,14 @@ namespace MNet
 
         public SpawnEntityRequest() { }
 
-        public static SpawnEntityRequest Write(string resource) => Write(resource, null);
-        public static SpawnEntityRequest Write(string resource, AttributesCollection attributes)
+        public static SpawnEntityRequest Write(string resource, AttributesCollection attributes, NetworkClientID? owner = null)
         {
             var request = new SpawnEntityRequest()
             {
                 type = NetworkEntityType.Dynamic,
                 resource = resource,
                 attributes = attributes,
+                owner = owner,
             };
 
             return request;

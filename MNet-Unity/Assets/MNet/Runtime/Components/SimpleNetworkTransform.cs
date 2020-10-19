@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(MNetAPI.Path + nameof(SimpleNetworkTransform))]
+    [AddComponentMenu(NetworkAPI.Path + nameof(SimpleNetworkTransform))]
     public class SimpleNetworkTransform : NetworkBehaviour
     {
         Vector3 lastPosition;
@@ -27,7 +27,7 @@ namespace MNet
 
         void Update()
         {
-            if (MNetAPI.Client.IsMaster) Process();
+            if (NetworkAPI.Client.IsMaster) Process();
         }
 
         void Process()
@@ -39,7 +39,7 @@ namespace MNet
                 lastPosition = transform.position;
                 lastRotation = transform.rotation;
 
-                RequestRPC(Sync, RpcBufferMode.Last, lastPosition, lastRotation);
+                RPC(Sync, RpcBufferMode.Last, lastPosition, lastRotation);
             }
         }
 
@@ -57,7 +57,7 @@ namespace MNet
         [NetworkRPC(RemoteAutority.Master)]
         void Sync(Vector3 position, Quaternion rotation, RpcInfo info)
         {
-            if (MNetAPI.Client.IsMaster)
+            if (NetworkAPI.Client.IsMaster)
             {
                 if (info.IsBufferered == false) return;
 

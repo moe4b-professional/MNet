@@ -9,6 +9,7 @@ using System.Collections;
 using System.Reflection;
 using System.ComponentModel;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace MNet
 {
@@ -467,7 +468,7 @@ namespace MNet
     [Preserve]
     public sealed class NetTupleNetworkSerializationImplicitResolver : NetworkSerializationImplicitResolver
     {
-        public static Type Interface { get; private set; } = typeof(INetTuple);
+        public static Type Interface => typeof(INetTuple);
 
         public override bool CanResolve(Type type) => Interface.IsAssignableFrom(type);
 
@@ -491,6 +492,38 @@ namespace MNet
             var value = NetTuple.Create(type, items);
 
             return value;
+        }
+    }
+
+    [Preserve]
+    public sealed class NullableNetworkSerializationImplicitResolver : NetworkSerializationImplicitResolver
+    {
+        public static Type Class => typeof(Nullable<>);
+
+        public override bool CanResolve(Type type)
+        {
+            if (type.IsGenericType == false) return false;
+
+            return type.GetGenericTypeDefinition() == Class;
+        }
+
+        public override void Serialize(NetworkWriter writer, object instance)
+        {
+            writer.Write(instance);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            var underlying = Nullable.GetUnderlyingType(type);
+
+            var value = reader.Read(underlying);
+
+            return Activator.CreateInstance(type, value);
+        }
+
+        static NullableNetworkSerializationImplicitResolver()
+        {
+            
         }
     }
 

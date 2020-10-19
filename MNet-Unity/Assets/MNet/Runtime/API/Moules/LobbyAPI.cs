@@ -22,7 +22,7 @@ using System.Net;
 
 namespace MNet
 {
-	public static partial class MNetAPI
+	public static partial class NetworkAPI
 	{
         public static class Lobby
         {

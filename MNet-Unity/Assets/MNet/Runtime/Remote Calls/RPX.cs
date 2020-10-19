@@ -81,7 +81,7 @@ namespace MNet
         {
             var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
 
-            MNetAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
+            NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
             var info = new RpcInfo(sender);
 
@@ -115,7 +115,7 @@ namespace MNet
     {
         public NetworkClient Sender { get; private set; }
 
-        public bool IsBufferered => MNetAPI.Room.IsApplyingMessageBuffer;
+        public bool IsBufferered => NetworkAPI.Room.IsApplyingMessageBuffer;
 
         public RpcInfo(NetworkClient sender)
         {

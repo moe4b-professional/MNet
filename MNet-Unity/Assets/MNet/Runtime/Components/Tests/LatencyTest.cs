@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(MNetAPI.Path + "Tests/" + nameof(LatencyTest))]
+    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(LatencyTest))]
 	public class LatencyTest : NetworkBehaviour
 	{
         string payload = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
@@ -30,7 +30,7 @@ namespace MNet
             {
                 timestamp = Time.time;
 
-                RequestRPC(Click, Owner, payload);
+                RPC(Click, Owner, payload);
             }
         }
 

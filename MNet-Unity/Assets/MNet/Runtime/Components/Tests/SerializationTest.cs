@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(MNetAPI.Path + "Tests/" + nameof(SerializationTest))]
+    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(SerializationTest))]
 	public class SerializationTest : NetworkBehaviour
 	{
 		AttributesCollection attribute;
@@ -28,7 +28,7 @@ namespace MNet
         {
 			if (IsMine == false) return;
 
-			RequestRPC(Rpc, Entity, this, Color.red);
+			RPC(Rpc, Entity, this, Color.red);
 		}
 
         [NetworkRPC]

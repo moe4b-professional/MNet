@@ -29,15 +29,15 @@ namespace Game
 	{
         void Start()
         {
-            MNetAPI.Server.Master.OnInfo += MasterServerInfoCallback;
+            NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
 
-            MNetAPI.Lobby.OnInfo += LobbyInfoCallback;
-            MNetAPI.Room.OnCreate += RoomCreateCallback;
+            NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
+            NetworkAPI.Room.OnCreate += RoomCreateCallback;
 
-            MNetAPI.Client.Profile = new NetworkClientProfile("Moe4B");
-            MNetAPI.Client.OnReady += ClientReadyCallback;
+            NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
+            NetworkAPI.Client.OnReady += ClientReadyCallback;
 
-            MNetAPI.Server.Master.Info();
+            NetworkAPI.Server.Master.Info();
         }
 
         void Update()
@@ -48,16 +48,18 @@ namespace Game
 
                 attributes.Set(0, "Level");
 
-                MNetAPI.Room.Create("Moe4B's Game Room", 4, attributes);
+                NetworkAPI.Room.Create("Moe4B's Game Room", 4, attributes);
             }
 
-            if (Input.GetKeyDown(KeyCode.V)) MNetAPI.Lobby.GetInfo();
+            if (Input.GetKeyDown(KeyCode.V)) NetworkAPI.Lobby.GetInfo();
 
-            if (Input.GetKeyDown(KeyCode.L)) MNetAPI.Client.Disconnect();
+            if (Input.GetKeyDown(KeyCode.L)) NetworkAPI.Client.Disconnect();
 
             if (Input.GetKeyDown(KeyCode.E)) SpawnPlayer();
 
             if (Input.GetKeyDown(KeyCode.Q)) DestroyEntity();
+
+            if (Input.GetKeyDown(KeyCode.I)) Log.Info(NetworkAPI.Room.Clients.ToPrettyString());
         }
 
         void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
@@ -72,7 +74,7 @@ namespace Game
 
                     Debug.Log($"Selecting Game Server: {server}");
 
-                    MNetAPI.Server.Game.Select(server);
+                    NetworkAPI.Server.Game.Select(server);
                 }
             }
             else
@@ -91,7 +93,7 @@ namespace Game
 
                 if (room == null) return;
 
-                MNetAPI.Room.Join(room);
+                NetworkAPI.Room.Join(room);
             }
             else
             {
@@ -105,7 +107,7 @@ namespace Game
             {
                 Debug.Log("Created Room " + room.ID);
 
-                MNetAPI.Room.Join(room);
+                NetworkAPI.Room.Join(room);
             }
             else
             {
@@ -124,14 +126,14 @@ namespace Game
 
             Player.Write(ref attributes, position, rotation);
 
-            MNetAPI.Client.RequestSpawnEntity("Player", attributes);
+            NetworkAPI.Client.SpawnEntity("Player", attributes);
         }
 
         void DestroyEntity()
         {
-            if (MNetAPI.Client.Entities.Count > 0)
+            if (NetworkAPI.Client.Entities.Count > 0)
             {
-                DestoryEntity(MNetAPI.Client.Entities.Last());
+                DestoryEntity(NetworkAPI.Client.Entities.Last());
             }
             else
             {
@@ -140,7 +142,7 @@ namespace Game
         }
         void DestoryEntity(NetworkEntity entity)
         {
-            MNetAPI.Client.RequestDestoryEntity(entity);
+            NetworkAPI.Client.DestoryEntity(entity);
         }
     }
 }

@@ -19,14 +19,14 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(MNetAPI.Path + "Tests/" + nameof(RprTest))]
+    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(RprTest))]
     public class RprTest : NetworkBehaviour
     {
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
-            RequestRPC(RPC, MNetAPI.Room.Master, Callback, "Hello");
+            RPC(RPC, NetworkAPI.Room.Master, Callback, "Hello");
         }
 
         [NetworkRPC(RemoteAutority.Any)]

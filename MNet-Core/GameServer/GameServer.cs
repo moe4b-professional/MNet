@@ -64,6 +64,19 @@ namespace MNet
             
         }
 
+        static void NullableSerialization()
+        {
+            NetworkClientID? value = new NetworkClientID(20);
+
+            var binary = NetworkSerializer.Serialize(value);
+
+            Log.Info(binary.ToPrettyString());
+
+            var instance = NetworkSerializer.Deserialize<NetworkClientID?>(binary);
+
+            Log.Info(instance);
+        }
+
         static void TupleSerialization()
         {
             var tuple = NetTuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());

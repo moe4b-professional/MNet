@@ -19,19 +19,16 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    public static partial class MNetAPI
+    public static partial class NetworkAPI
     {
         public static class Client
         {
             public static NetworkClientProfile Profile { get; set; }
 
             public static NetworkClient Instance { get; private set; }
-
             public static NetworkClientID ID => Instance.ID;
 
             public static bool IsConnected => RealtimeAPI.IsConnected;
-
-            public static bool IsReady { get; private set; }
 
             public static bool IsMaster
             {
@@ -67,7 +64,7 @@ namespace MNet
             {
                 Debug.Log("Client Connected");
 
-                if (AutoReady) RequestRegister();
+                if (AutoReady) Register();
 
                 OnConnect?.Invoke();
             }
@@ -95,7 +92,9 @@ namespace MNet
             #region Register
             public static bool AutoRegister { get; set; } = true;
 
-            public static void RequestRegister()
+            public static bool IsRegistered => Instance != null;
+
+            public static void Register()
             {
                 var request = new RegisterClientRequest(Profile);
 
@@ -107,7 +106,7 @@ namespace MNet
             {
                 Instance = new NetworkClient(response.ID, Profile);
 
-                if (AutoReady) RequestReady();
+                if (AutoReady) Ready();
 
                 OnRegister?.Invoke();
             }
@@ -116,7 +115,9 @@ namespace MNet
             #region Ready
             public static bool AutoReady { get; set; } = true;
 
-            public static void RequestReady()
+            public static bool IsReady { get; private set; }
+
+            public static void Ready()
             {
                 var request = new ReadyClientRequest();
 
@@ -134,17 +135,17 @@ namespace MNet
             #endregion
 
             #region Spawn Entity
-            public static void RequestSpawnEntity(string resource) => RequestSpawnEntity(resource, null);
-            public static void RequestSpawnEntity(string resource, AttributesCollection attributes)
+            public static void SpawnEntity(string resource, NetworkClientID? owner = null) => SpawnEntity(resource, null, owner);
+            public static void SpawnEntity(string resource, AttributesCollection attributes, NetworkClientID? owner = null)
             {
-                var request = SpawnEntityRequest.Write(resource, attributes);
+                var request = SpawnEntityRequest.Write(resource, attributes, owner);
 
                 Send(request);
             }
 
-            public static void RequestSpawnEntity(NetworkEntity entity, int index) => RequestSpawnEntity(entity.Scene, index);
-            public static void RequestSpawnEntity(Scene scene, int index) => RequestSpawnEntity(scene.buildIndex, index);
-            public static void RequestSpawnEntity(int scene, int index)
+            public static void SpawnSceneObject(NetworkEntity entity, int index) => SpawnSceneObject(entity.Scene, index);
+            public static void SpawnSceneObject(Scene scene, int index) => SpawnSceneObject(scene.buildIndex, index);
+            public static void SpawnSceneObject(int scene, int index)
             {
                 if (IsMaster == false)
                 {
@@ -168,8 +169,8 @@ namespace MNet
             #endregion
 
             #region Destory Entity
-            public static void RequestDestoryEntity(NetworkEntity entity) => RequestDestoryEntity(entity.ID);
-            public static void RequestDestoryEntity(NetworkEntityID id)
+            public static void DestoryEntity(NetworkEntity entity) => DestoryEntity(entity.ID);
+            public static void DestoryEntity(NetworkEntityID id)
             {
                 var request = new DestroyEntityRequest(id);
 
@@ -186,6 +187,7 @@ namespace MNet
             }
             #endregion
 
+            #region Disconnect
             public static void Disconnect() => RealtimeAPI.Disconnect();
 
             public delegate void DisconnectDelegate();
@@ -198,6 +200,7 @@ namespace MNet
 
                 OnDisconnect?.Invoke();
             }
+            #endregion
 
             static void Clear()
             {

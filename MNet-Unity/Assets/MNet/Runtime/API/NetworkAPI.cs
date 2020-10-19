@@ -16,7 +16,7 @@ using UnityEngine.Networking;
 
 namespace MNet
 {
-    public static partial class MNetAPI
+    public static partial class NetworkAPI
     {
         public const string Path = "MNet/";
 

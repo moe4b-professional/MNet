@@ -20,7 +20,7 @@ using System.Net;
 
 namespace MNet
 {
-    public static partial class MNetAPI
+    public static partial class NetworkAPI
     {
         public static class RealtimeAPI
         {
@@ -132,7 +132,7 @@ namespace MNet
 
             static RealtimeAPI()
             {
-                MNetAPI.OnUpdate += Update;
+                NetworkAPI.OnUpdate += Update;
 
                 Application.quitting += ApplicationQuitCallback;
             }

@@ -44,7 +44,6 @@ namespace MNet
 
         #region Deserialize
         public static T Deserialize<T>(byte[] data)
-            where T : new()
         {
             using (var reader = new NetworkReader(data))
             {

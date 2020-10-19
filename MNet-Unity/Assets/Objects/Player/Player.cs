@@ -56,7 +56,32 @@ namespace Game
             var block = new MaterialPropertyBlock();
             block.SetColor("_Color", IsMine ? Color.green : Color.red);
             mesh.SetPropertyBlock(block);
+
+            if (IsMine) RequestFamiliar();
         }
+
+        #region Familiar
+        void RequestFamiliar() => RPC(SpawnFamiliar, NetworkAPI.Room.Master, FamiliarRequestCallback);
+
+        [NetworkRPC(RemoteAutority.Owner)]
+        bool SpawnFamiliar(RpcInfo info)
+        {
+            NetworkAPI.Client.SpawnEntity("Familiar", null, info.Sender.ID);
+            return true;
+        }
+
+        void FamiliarRequestCallback(RprResult result, bool value)
+        {
+            if(result != RprResult.Success)
+            {
+                Debug.LogError("Familiar Request Failed, Retrying");
+                RequestFamiliar();
+                return;
+            }
+
+            Log.Info($"Familiar Request Result: {value}");
+        }
+        #endregion
 
         void Update()
         {
@@ -68,7 +93,7 @@ namespace Game
                     y = Input.GetAxisRaw("Vertical"),
                 };
 
-                if (direction.magnitude > 0.1f) RequestRPC(RequestMove, MNetAPI.Room.Master, direction);
+                if (direction.magnitude > 0.1f) RPC(RequestMove, NetworkAPI.Room.Master, direction);
             }
         }
 
@@ -84,7 +109,7 @@ namespace Game
             var position = transform.position + (velocity * Time.deltaTime);
             var rotation = velocity.magnitude > 0.1f ? Quaternion.LookRotation(velocity) : transform.rotation;
 
-            RequestRPC(SetCoordinates, RpcBufferMode.Last, position, rotation);
+            RPC(SetCoordinates, RpcBufferMode.Last, position, rotation);
         }
 
         [NetworkRPC(RemoteAutority.Master)]

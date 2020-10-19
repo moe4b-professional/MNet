@@ -19,20 +19,20 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(MNetAPI.Path + "Tests/" + nameof(RpcTest))]
+    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(RpcTest))]
     public class RpcTest : NetworkBehaviour
     {
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
-            RequestRPC(Rpc0);
-            RequestRPC(Rpc1, 1);
-            RequestRPC(Rpc2, 1, 2);
-            RequestRPC(Rpc3, 1, 2, 3);
-            RequestRPC(Rpc4, 1, 2, 3, 4);
-            RequestRPC(Rpc5, 1, 2, 3, 4, 5);
-            RequestRPC(Rpc6, 1, 2, 3, 4, 5, 6);
+            RPC(Rpc0);
+            RPC(Rpc1, 1);
+            RPC(Rpc2, 1, 2);
+            RPC(Rpc3, 1, 2, 3);
+            RPC(Rpc4, 1, 2, 3, 4);
+            RPC(Rpc5, 1, 2, 3, 4, 5);
+            RPC(Rpc6, 1, 2, 3, 4, 5, 6);
         }
 
         [NetworkRPC]

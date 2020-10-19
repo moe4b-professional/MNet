@@ -244,7 +244,7 @@ namespace MNet
 
             reader.Read(out NetworkEntityID id);
 
-            if (MNetAPI.Room.Entities.TryGetValue(id, out entity) == false)
+            if (NetworkAPI.Room.Entities.TryGetValue(id, out entity) == false)
             {
                 Debug.LogWarning($"Network Entity {id} Couldn't be Found when Deserializing, Returning null");
                 return false;

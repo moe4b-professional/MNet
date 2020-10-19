@@ -129,6 +129,7 @@ namespace MNet
                 Write(true); //Is Null Flag Value
                 return true;
             }
+
             if (IsNullable(type)) Write(false); //Is Not Null Flag
 
             resolver.Serialize(this, value);
@@ -146,6 +147,7 @@ namespace MNet
                 Write(true); //Is Null Flag Value
                 return true;
             }
+
             if (IsNullable(type)) Write(false); //Is Not Null Flag
 
             resolver.Serialize(this, value);

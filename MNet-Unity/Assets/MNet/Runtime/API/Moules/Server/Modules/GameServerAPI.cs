@@ -22,7 +22,7 @@ using System.Runtime.CompilerServices;
 
 namespace MNet
 {
-	public static partial class MNetAPI
+	public static partial class NetworkAPI
 	{
         public static partial class Server
         {

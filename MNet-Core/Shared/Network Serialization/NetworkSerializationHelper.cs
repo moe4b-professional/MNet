@@ -20,12 +20,24 @@ namespace MNet
                 {
                     if (Dictionary.TryGetValue(type, out var result)) return result;
 
-                    result = type.IsValueType == false;
+                    result = Evaluate(type);
 
                     Dictionary.Add(type, result);
 
                     return result;
                 }
+            }
+
+            static bool Evaluate(Type type)
+            {
+                if(type.IsValueType)
+                {
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) return true;
+
+                    return false;
+                }
+
+                return true;
             }
 
             static Nullable()

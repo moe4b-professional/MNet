@@ -68,30 +68,18 @@ namespace MNet
 
     class RprCache
     {
-        public Dictionary<ushort, Data> Dictionary { get; protected set; }
+        public Dictionary<ushort, RprCallback> Dictionary { get; protected set; }
 
-        public IReadOnlyCollection<Data> Collection => Dictionary.Values;
+        public IReadOnlyCollection<RprCallback> Collection => Dictionary.Values;
 
-        public class Data
+        public void Register(RpcRequest request, NetworkClient sender, NetworkClient target)
         {
-            public RpcRequest Request { get; protected set; }
-            public ushort ID => Request.Callback;
-
-            public NetworkClient Sender { get; protected set; }
-
-            public Data(RpcRequest request, NetworkClient sender)
-            {
-                this.Request = request;
-                this.Sender = sender;
-            }
-        }
-
-        public void Register(RpcRequest request, NetworkClient sender)
-        {
-            var callback = new Data(request, sender);
+            var callback = new RprCallback(request, sender, target);
 
             Dictionary.Add(request.Callback, callback);
         }
+
+        public void TryGet(ushort callback, out RprCallback rpr) => Dictionary.TryGetValue(callback, out rpr);
 
         public bool Unregister(ushort callback)
         {
@@ -102,7 +90,24 @@ namespace MNet
 
         public RprCache()
         {
-            Dictionary = new Dictionary<ushort, Data>();
+            Dictionary = new Dictionary<ushort, RprCallback>();
+        }
+    }
+
+    class RprCallback
+    {
+        public RpcRequest Request { get; protected set; }
+        public ushort ID => Request.Callback;
+
+        public NetworkClient Sender { get; protected set; }
+        public NetworkClient Target { get; protected set; }
+
+        public RprCallback(RpcRequest request, NetworkClient sender, NetworkClient target)
+        {
+            this.Request = request;
+
+            this.Sender = sender;
+            this.Target = target;
         }
     }
 }

@@ -115,7 +115,7 @@ namespace MNet
             List = new List<Element>();
             Queue = new Queue<Element>();
 
-            MNetAPI.OnUpdate += Update;
+            NetworkAPI.OnUpdate += Update;
         }
 
         public static void Parse<T>(UnityWebRequest request, out T payload, out RestError error)

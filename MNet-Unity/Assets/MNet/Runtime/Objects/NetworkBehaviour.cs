@@ -50,7 +50,7 @@ namespace MNet
             entity.OnSpawn += SpawnCallback;
             entity.OnDespawn += DespawnCallback;
 
-            MNetAPI.Room.OnAppliedMessageBuffer += AppliedMessageBufferCallback;
+            NetworkAPI.Room.OnAppliedMessageBuffer += AppliedMessageBufferCallback;
         }
 
         void SpawnCallback()
@@ -63,7 +63,7 @@ namespace MNet
 
         void AppliedMessageBufferCallback()
         {
-            MNetAPI.Room.OnAppliedMessageBuffer -= AppliedMessageBufferCallback;
+            NetworkAPI.Room.OnAppliedMessageBuffer -= AppliedMessageBufferCallback;
 
             OnAppliedMessageBuffer();
         }
@@ -103,8 +103,8 @@ namespace MNet
 
         bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
-        protected void RequestRPC(string method, params object[] arguments) => RequestRPC(method, RpcBufferMode.None, arguments);
-        protected void RequestRPC(string method, RpcBufferMode bufferMode, params object[] arguments)
+        protected void RPC(string method, params object[] arguments) => RPC(method, RpcBufferMode.None, arguments);
+        protected void RPC(string method, RpcBufferMode bufferMode, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -117,7 +117,7 @@ namespace MNet
             SendRPC(payload);
         }
 
-        protected void RequestRPC(string method, NetworkClient target, params object[] arguments)
+        protected void RPC(string method, NetworkClient target, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -130,7 +130,7 @@ namespace MNet
             SendRPC(payload);
         }
 
-        protected void RequestRPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
+        protected void RPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -153,75 +153,75 @@ namespace MNet
                 return;
             }
 
-            if (MNetAPI.Client.IsConnected == false)
+            if (NetworkAPI.Client.IsConnected == false)
             {
                 Debug.LogWarning($"Cannot Send RPC {request.Method} When Client Isn't Connected");
                 return;
             }
 
-            MNetAPI.Client.Send(request);
+            NetworkAPI.Client.Send(request);
         }
 
         #region Generic Methods
-        public void RequestRPC(RpcMethod method)
-            => RequestRPC(method.Method.Name);
-        public void RequestRPC<T1>(RpcMethod<T1> method, T1 arg1)
-            => RequestRPC(method.Method.Name, arg1);
-        public void RequestRPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2)
-            => RequestRPC(method.Method.Name, arg1, arg2);
-        public void RequestRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3)
-            => RequestRPC(method.Method.Name, arg1, arg2, arg3);
-        public void RequestRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RequestRPC(method.Method.Name, arg1, arg2, arg3, arg4);
-        public void RequestRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RequestRPC(method.Method.Name, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RequestRPC(method.Method.Name, arg1, arg2, arg3, arg4, arg5, arg6);
+        public void RPC(RpcMethod method)
+            => RPC(method.Method.Name);
+        public void RPC<T1>(RpcMethod<T1> method, T1 arg1)
+            => RPC(method.Method.Name, arg1);
+        public void RPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2)
+            => RPC(method.Method.Name, arg1, arg2);
+        public void RPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3)
+            => RPC(method.Method.Name, arg1, arg2, arg3);
+        public void RPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => RPC(method.Method.Name, arg1, arg2, arg3, arg4);
+        public void RPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => RPC(method.Method.Name, arg1, arg2, arg3, arg4, arg5);
+        public void RPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => RPC(method.Method.Name, arg1, arg2, arg3, arg4, arg5, arg6);
 
-        public void RequestRPC(RpcMethod method, RpcBufferMode bufferMode)
-            => RequestRPC(method.Method.Name, bufferMode);
-        public void RequestRPC<T1>(RpcMethod<T1> method, RpcBufferMode bufferMode, T1 arg1)
-            => RequestRPC(method.Method.Name, bufferMode, arg1);
-        public void RequestRPC<T1, T2>(RpcMethod<T1, T2> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2)
-            => RequestRPC(method.Method.Name, bufferMode, arg1, arg2);
-        public void RequestRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3)
-            => RequestRPC(method.Method.Name, bufferMode, arg1, arg2, arg3);
-        public void RequestRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RequestRPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4);
-        public void RequestRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RequestRPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RequestRPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4, arg5, arg6);
+        public void RPC(RpcMethod method, RpcBufferMode bufferMode)
+            => RPC(method.Method.Name, bufferMode);
+        public void RPC<T1>(RpcMethod<T1> method, RpcBufferMode bufferMode, T1 arg1)
+            => RPC(method.Method.Name, bufferMode, arg1);
+        public void RPC<T1, T2>(RpcMethod<T1, T2> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2)
+            => RPC(method.Method.Name, bufferMode, arg1, arg2);
+        public void RPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3)
+            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3);
+        public void RPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4);
+        public void RPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4, arg5);
+        public void RPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4, arg5, arg6);
 
-        public void RequestRPC(RpcMethod method, NetworkClient target)
-            => RequestRPC(method.Method.Name, target);
-        public void RequestRPC<T1>(RpcMethod<T1> method, NetworkClient target, T1 arg1)
-            => RequestRPC(method.Method.Name, target, arg1);
-        public void RequestRPC<T1, T2>(RpcMethod<T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
-            => RequestRPC(method.Method.Name, target, arg1, arg2);
-        public void RequestRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            => RequestRPC(method.Method.Name, target, arg1, arg2, arg3);
-        public void RequestRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RequestRPC(method.Method.Name, target, arg1, arg2, arg3, arg4);
-        public void RequestRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RequestRPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RequestRPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
+        public void RPC(RpcMethod method, NetworkClient target)
+            => RPC(method.Method.Name, target);
+        public void RPC<T1>(RpcMethod<T1> method, NetworkClient target, T1 arg1)
+            => RPC(method.Method.Name, target, arg1);
+        public void RPC<T1, T2>(RpcMethod<T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
+            => RPC(method.Method.Name, target, arg1, arg2);
+        public void RPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
+            => RPC(method.Method.Name, target, arg1, arg2, arg3);
+        public void RPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => RPC(method.Method.Name, target, arg1, arg2, arg3, arg4);
+        public void RPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => RPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5);
+        public void RPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => RPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
 
-        public void RequestRPC<TResult>(RprMethod<TResult> method, NetworkClient target, RprCallback<TResult> callback)
-            => RequestRPC(method.Method.Name, target, callback);
-        public void RequestRPC<TResult, T1>(RprMethod<TResult, T1> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1)
-            => RequestRPC(method.Method.Name, target, callback, arg1);
-        public void RequestRPC<TResult, T1, T2>(RprMethod<TResult, T1, T2> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2)
-            => RequestRPC(method.Method.Name, target, callback, arg1, arg2);
-        public void RequestRPC<TResult, T1, T2, T3>(RprMethod<TResult, T1, T2, T3> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
-            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3);
-        public void RequestRPC<TResult, T1, T2, T3, T4>(RprMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4);
-        public void RequestRPC<TResult, T1, T2, T3, T4, T5>(RprMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5);
-        public void RequestRPC<TResult, T1, T2, T3, T4, T5, T6>(RprMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RequestRPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
+        public void RPC<TResult>(RprMethod<TResult> method, NetworkClient target, RprCallback<TResult> callback)
+            => RPC(method.Method.Name, target, callback);
+        public void RPC<TResult, T1>(RprMethod<TResult, T1> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1)
+            => RPC(method.Method.Name, target, callback, arg1);
+        public void RPC<TResult, T1, T2>(RprMethod<TResult, T1, T2> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2)
+            => RPC(method.Method.Name, target, callback, arg1, arg2);
+        public void RPC<TResult, T1, T2, T3>(RprMethod<TResult, T1, T2, T3> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
+            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3);
+        public void RPC<TResult, T1, T2, T3, T4>(RprMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4);
+        public void RPC<TResult, T1, T2, T3, T4, T5>(RprMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5);
+        public void RPC<TResult, T1, T2, T3, T4, T5, T6>(RprMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
         protected internal virtual void InvokeRPC(RpcCommand command)
@@ -287,7 +287,7 @@ namespace MNet
             if (command.Type == RpcType.Return) SendRPR(command, result);
         }
 
-        void ResolveRPC(RpcCommand command, RprResult result) => MNetAPI.Room.ResolveRPC(command, result);
+        void ResolveRPC(RpcCommand command, RprResult result) => NetworkAPI.Room.ResolveRPC(command, result);
         #endregion
 
         #region RPR
@@ -295,7 +295,7 @@ namespace MNet
         {
             var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, value);
 
-            MNetAPI.Client.Send(payload);
+            NetworkAPI.Client.Send(payload);
         }
         #endregion
 
@@ -355,7 +355,7 @@ namespace MNet
 
             SendSyncVar(request);
 
-            MNetAPI.Client.Send(request);
+            NetworkAPI.Client.Send(request);
         }
 
         void SendSyncVar(SyncVarRequest request)
@@ -366,7 +366,7 @@ namespace MNet
                 return;
             }
 
-            if (MNetAPI.Client.IsConnected == false)
+            if (NetworkAPI.Client.IsConnected == false)
             {
                 Debug.LogWarning($"Cannot Send SyncVar {request.Variable} When Client Isn't Connected");
                 return;
@@ -429,7 +429,7 @@ namespace MNet
 
             if (authority.HasFlag(RemoteAutority.Master))
             {
-                if (sender == MNetAPI.Room.Master?.ID)
+                if (sender == NetworkAPI.Room.Master?.ID)
                     return true;
             }
 

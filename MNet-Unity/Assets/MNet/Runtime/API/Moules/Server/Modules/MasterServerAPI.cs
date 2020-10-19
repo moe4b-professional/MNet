@@ -21,13 +21,13 @@ using UnityEngine.Networking;
 
 namespace MNet
 {
-	public static partial class MNetAPI
+	public static partial class NetworkAPI
 	{
         public static partial class Server
         {
             public static class Master
             {
-                public static string Address => MNetAPI.Address;
+                public static string Address => NetworkAPI.Address;
 
                 public static DirectedRestAPI Rest { get; private set; }
 
@@ -40,7 +40,7 @@ namespace MNet
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
-                public static void Info() => Info(MNetAPI.Version);
+                public static void Info() => Info(NetworkAPI.Version);
                 public static void Info(string version)
                 {
                     var payload = new MasterServerInfoRequest(version);
@@ -53,7 +53,7 @@ namespace MNet
 
                         Servers = error == null ? info.Servers : null;
 
-                        if (error == null && Servers?.Count == 0) Debug.LogWarning($"No Game Servers Found for Version {MNetAPI.Version}");
+                        if (error == null && Servers?.Count == 0) Debug.LogWarning($"No Game Servers Found for Version {NetworkAPI.Version}");
 
                         OnInfo?.Invoke(info, error);
                     }

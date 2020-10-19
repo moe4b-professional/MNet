@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(MNetAPI.Path + "Tests/" + nameof(SyncVarTest))]
+    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(SyncVarTest))]
 	public class SyncVarTest : NetworkBehaviour
     {
         public string field;

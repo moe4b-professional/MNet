@@ -152,7 +152,6 @@ namespace MNet
             Log.Info($"Room {this.ID}: Client {id} Connected");
         }
 
-        #region Client Messages
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, ArraySegment<byte> raw)
         {
             //Log.Info($"{message.Type} Binary Size: {raw.Count}");
@@ -207,7 +206,9 @@ namespace MNet
             }
         }
 
+        #region Register Client
         void RegisterClient(NetworkClientID id, RegisterClientRequest request) => RegisterClient(id, request.Profile);
+
         void RegisterClient(NetworkClientID id, NetworkClientProfile profile)
         {
             if (Clients.ContainsKey(id))
@@ -233,6 +234,7 @@ namespace MNet
             var payload = new ClientConnectedPayload(info);
             Broadcast(payload);
         }
+        #endregion
 
         void ReadyClient(NetworkClient client)
         {
@@ -283,7 +285,7 @@ namespace MNet
         {
             var command = RpcCommand.Write(sender.ID, request);
 
-            if (Clients.TryGetValue(request.Target, out var client) == false)
+            if (Clients.TryGetValue(request.Target, out var target) == false)
             {
                 Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
 
@@ -292,9 +294,9 @@ namespace MNet
                 return;
             }
 
-            SendTo(client, command);
+            SendTo(target, command);
 
-            if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender);
+            if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender, target);
         }
         #endregion
 
@@ -303,19 +305,21 @@ namespace MNet
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
-                Log.Warning($"No Entity {request.Entity} Found to Invoke RPC Callback On");
-                return;
-            }
-            
-            if (Clients.TryGetValue(request.Target, out var target) == false)
-            {
-                Log.Warning($"No Client {request.Target} Found to Invoke RPC Callback On");
+                Log.Warning($"No Entity {request.Entity} Found to Invoke RPR On");
                 return;
             }
 
-            if (sender != entity.Owner)
+            if (Clients.TryGetValue(request.Target, out var target) == false)
             {
-                Log.Warning($"Client {sender.Name} Trying to Invoke RPC Callback on Entity {entity.ID} Without Having Ownership of that Entity");
+                Log.Warning($"No Client {request.Target} Found to Invoke RPR On");
+                return;
+            }
+
+            entity.RprCache.TryGet(request.Callback, out var callback);
+
+            if(sender != callback.Target)
+            {
+                Log.Info($"Client {sender} Sending RPR for Client {callback.Sender} Even Thought They Aren't the RPR Callback Target");
                 return;
             }
 
@@ -366,16 +370,35 @@ namespace MNet
                 return null;
             }
 
+            if(request.Owner != null && sender != Master)
+            {
+                Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Object for Client {request.Owner}");
+                return null;
+            }
+
             var id = Entities.Reserve();
 
-            var entity = new NetworkEntity(sender, id, request.Type);
+            NetworkClient owner;
 
-            sender.Entities.Add(entity);
+            if (request.Owner.HasValue)
+                Clients.TryGetValue(request.Owner.Value, out owner);
+            else
+                owner = sender;
+
+            if(owner == null)
+            {
+                Log.Warning($"No Owner Found For Spawn Request");
+                return null;
+            }
+
+            var entity = new NetworkEntity(owner, id, request.Type);
+
+            owner.Entities.Add(entity);
             Entities.Assign(id, entity);
 
             if (request.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
 
-            var command = SpawnEntityCommand.Write(sender.ID, entity.ID, request);
+            var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
 
             var message = Broadcast(command);
 
@@ -385,6 +408,7 @@ namespace MNet
             return entity;
         }
 
+        #region Destory Entity
         void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
         {
             if (Entities.TryGetValue(request.ID, out var entity) == false)
@@ -400,14 +424,6 @@ namespace MNet
             }
 
             DestroyEntity(entity);
-        }
-        #endregion
-
-        void ClientDisconnected(NetworkClientID id)
-        {
-            Log.Info($"Room {this.ID}: Client {id} Disconnected");
-
-            if (Clients.TryGetValue(id, out var client)) RemoveClient(client);
         }
 
         void DestroyEntity(NetworkEntity entity)
@@ -426,6 +442,14 @@ namespace MNet
             var command = new DestroyEntityCommand(entity.ID);
 
             Broadcast(command);
+        }
+        #endregion
+
+        void ClientDisconnected(NetworkClientID id)
+        {
+            Log.Info($"Room {this.ID}: Client {id} Disconnected");
+
+            if (Clients.TryGetValue(id, out var client)) RemoveClient(client);
         }
 
         void RemoveClient(NetworkClient client)

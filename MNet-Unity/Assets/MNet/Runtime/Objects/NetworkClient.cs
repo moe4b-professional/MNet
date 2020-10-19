@@ -19,10 +19,11 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
+    [Serializable]
 	public class NetworkClient
 	{
         public NetworkClientID ID { get; protected set; }
-        public bool IsMaster => this == MNetAPI.Room.Master;
+        public bool IsMaster => this == NetworkAPI.Room.Master;
 
         public NetworkClientProfile Profile { get; protected set; }
         public string Name => Profile.Name;

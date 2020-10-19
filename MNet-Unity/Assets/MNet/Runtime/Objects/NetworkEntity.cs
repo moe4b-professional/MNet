@@ -35,7 +35,7 @@ namespace MNet
             Owner = client;
         }
 
-        public bool IsMine => Owner?.ID == MNetAPI.Client.ID;
+        public bool IsMine => Owner?.ID == NetworkAPI.Client.ID;
 
         public AttributesCollection Attributes { get; protected set; }
 
@@ -158,7 +158,7 @@ namespace MNet
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
 
-                MNetAPI.Room.ResolveRPC(command, RprResult.InvalidBehaviour);
+                NetworkAPI.Room.ResolveRPC(command, RprResult.InvalidBehaviour);
 
                 return;
             }
@@ -214,13 +214,13 @@ namespace MNet
 
         public static bool TryFind(NetworkEntityID id, out NetworkEntity entity)
         {
-            if (MNetAPI.Client.IsConnected == false)
+            if (NetworkAPI.Client.IsConnected == false)
             {
                 entity = null;
                 return false;
             }
 
-            if (MNetAPI.Room.Entities.TryGetValue(id, out entity)) return true;
+            if (NetworkAPI.Room.Entities.TryGetValue(id, out entity)) return true;
 
             return false;
         }

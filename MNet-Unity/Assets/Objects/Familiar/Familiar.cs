@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -18,17 +17,15 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-namespace MNet
-{
-    public static class MNetEditor
-    {
-        [MenuItem(NetworkAPI.Path + "Configuration", false, 0)]
-        static void Configuration()
-        {
-            var asset = MNetAPIConfig.Load();
+using MNet;
 
-            Selection.activeObject = asset;
+namespace Game
+{
+	public class Familiar : NetworkBehaviour
+	{
+		void Start()
+        {
+			name = $"Player {Owner}'s Familiar";
         }
-    }
+	}
 }
-#endif
