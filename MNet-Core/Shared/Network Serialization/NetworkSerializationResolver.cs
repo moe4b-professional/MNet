@@ -16,9 +16,9 @@ namespace MNet
     [Preserve]
     public abstract class NetworkSerializationResolver
     {
-        public abstract bool CanResolve(Type type);
+        public abstract bool CanResolve(Type target);
 
-        public abstract void Serialize(NetworkWriter writer, object instance);
+        public abstract void Serialize(NetworkWriter writer, object instance, Type type);
 
         public abstract object Deserialize(NetworkReader reader, Type type);
 
@@ -30,7 +30,13 @@ namespace MNet
 
         public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
 
-        static readonly object SyncLock = new object();
+        protected static readonly object SyncLock = new object();
+
+        /// <summary>
+        /// Method used to be called from derived classes' static constructors to make sure the base class's constructor is invoked as well
+        /// Has no functionality, it just works !
+        /// </summary>
+        protected static void Initialiaze() { }
 
         public static NetworkSerializationResolver Retrive(Type type)
         {
@@ -38,27 +44,14 @@ namespace MNet
             {
                 if (Dictionary.TryGetValue(type, out var value)) return value;
 
-                for (int i = 0; i < Explicit.Count; i++)
-                {
-                    if (Explicit[i].CanResolve(type))
-                    {
-                        Dictionary.Add(type, Explicit[i]);
+                bool CanResolve(NetworkSerializationResolver resolver) => resolver.CanResolve(type);
 
-                        return Explicit[i];
-                    }
-                }
+                if (value == null) value = Explicit.FirstOrDefault(CanResolve);
+                if (value == null) value = Implicit.FirstOrDefault(CanResolve);
 
-                for (int i = 0; i < Implicit.Count; i++)
-                {
-                    if (Implicit[i].CanResolve(type))
-                    {
-                        Dictionary.Add(type, Implicit[i]);
+                if (value != null) Dictionary.Add(type, value);
 
-                        return Implicit[i];
-                    }
-                }
-
-                return null;
+                return value;
             }
         }
 
@@ -103,11 +96,11 @@ namespace MNet
     {
         public static NetworkSerializationExplicitResolver<T> Instance { get; private set; }
 
-        public Type Target { get; private set; } = typeof(T);
+        public static Type Type => typeof(T);
 
-        public override bool CanResolve(Type type) => type == Target;
+        public override bool CanResolve(Type target) => Type == target;
 
-        public override void Serialize(NetworkWriter writer, object instance) => Serialize(writer, (T)instance);
+        public override void Serialize(NetworkWriter writer, object instance, Type type) => Serialize(writer, (T)instance);
         public abstract void Serialize(NetworkWriter writer, T value);
 
         public override object Deserialize(NetworkReader reader, Type type) => Deserialize(reader);
@@ -116,6 +109,12 @@ namespace MNet
         public NetworkSerializationExplicitResolver()
         {
             Instance = this;
+        }
+
+        static NetworkSerializationExplicitResolver()
+        {
+            //Explicitly Called to make sure that the base class's static constructor is called
+            Initialiaze();
         }
     }
 
@@ -416,13 +415,74 @@ namespace MNet
             return value;
         }
     }
+
+    /// <summary>
+    /// Used to Serialize a List of multiple types of objects
+    /// </summary>
+    [Preserve]
+    public sealed class ObjectListNetworkSerializationResolver : NetworkSerializationExplicitResolver<List<object>>
+    {
+        public override void Serialize(NetworkWriter writer, List<object> value)
+        {
+            writer.Write(value.Count);
+
+            for (int i = 0; i < value.Count; i++)
+            {
+                ushort code = NetworkPayload.GetCode(value[i]);
+
+                writer.Write(code);
+
+                writer.Write(value[i]);
+            }
+        }
+
+        public override List<object> Deserialize(NetworkReader reader)
+        {
+            reader.Read(out int count);
+
+            var value = new List<object>(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                reader.Read(out ushort code);
+
+                var type = NetworkPayload.GetType(code);
+
+                var instance = reader.Read(type);
+
+                value.Add(instance);
+            }
+
+            return value;
+        }
+    }
     #endregion
 
     #region Implicit
     [Preserve]
     public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
     {
+        new public static NetworkSerializationResolver Retrive(Type target)
+        {
+            lock (SyncLock)
+            {
+                if (Dictionary.TryGetValue(target, out var value)) return value;
 
+                bool CanResolve(NetworkSerializationResolver resolver) => resolver.CanResolve(target);
+
+                if (value == null) value = Implicit.FirstOrDefault(CanResolve);
+
+                if (value != null) Dictionary.Add(target, value);
+
+                return value;
+            }
+        }
+
+        static NetworkSerializationImplicitResolver()
+        {
+            //Explicitly Called to make sure that the base class's static constructor is called
+            Initialiaze();
+        }
     }
 
     [Preserve]
@@ -430,14 +490,14 @@ namespace MNet
     {
         public static HashSet<Type> Types { get; private set; }
 
-        public override bool CanResolve(Type type)
+        public override bool CanResolve(Type target)
         {
-            if (type.IsGenericType == false) return false;
+            if (target.IsGenericType == false) return false;
 
-            return Types.Contains(type.GetGenericTypeDefinition());
+            return Types.Contains(target.GetGenericTypeDefinition());
         }
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             throw GetException();
         }
@@ -470,9 +530,9 @@ namespace MNet
     {
         public static Type Interface => typeof(INetTuple);
 
-        public override bool CanResolve(Type type) => Interface.IsAssignableFrom(type);
+        public override bool CanResolve(Type target) => Interface.IsAssignableFrom(target);
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             var value = instance as INetTuple;
 
@@ -498,16 +558,16 @@ namespace MNet
     [Preserve]
     public sealed class NullableNetworkSerializationImplicitResolver : NetworkSerializationImplicitResolver
     {
-        public static Type Class => typeof(Nullable<>);
+        public static Type GenericTypeDefinition => typeof(Nullable<>);
 
-        public override bool CanResolve(Type type)
+        public override bool CanResolve(Type target)
         {
-            if (type.IsGenericType == false) return false;
+            if (target.IsGenericType == false) return false;
 
-            return type.GetGenericTypeDefinition() == Class;
+            return target.GetGenericTypeDefinition() == GenericTypeDefinition;
         }
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             writer.Write(instance);
         }
@@ -532,9 +592,9 @@ namespace MNet
     {
         public Type Interface => typeof(INetworkSerializable);
 
-        public override bool CanResolve(Type type) => Interface.IsAssignableFrom(type);
+        public override bool CanResolve(Type target) => Interface.IsAssignableFrom(target);
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             var value = instance as INetworkSerializable;
 
@@ -586,31 +646,32 @@ namespace MNet
     [Preserve]
     public sealed class ArrayNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public override bool CanResolve(Type type) => type.IsArray;
+        public override bool CanResolve(Type target) => target.IsArray;
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            var array = (IList)instance;
+            var array = instance as IList;
 
             NetworkSerializationHelper.Length.Write(array.Count, writer);
 
-            for (int i = 0; i < array.Count; i++)
-                writer.Write(array[i]);
+            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+
+            for (int i = 0; i < array.Count; i++) writer.Write(array[i], elementType);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var element = type.GetElementType();
-
             NetworkSerializationHelper.Length.Read(out var length, reader);
 
-            var array = Array.CreateInstance(element, length);
+            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+
+            var array = Array.CreateInstance(elementType, length);
 
             for (int i = 0; i < length; i++)
             {
-                var value = reader.Read(element);
+                var element = reader.Read(elementType);
 
-                array.SetValue(value, i);
+                array.SetValue(element, i);
             }
 
             return array;
@@ -622,21 +683,22 @@ namespace MNet
     [Preserve]
     public sealed class ListNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public override bool CanResolve(Type type)
+        public override bool CanResolve(Type target)
         {
-            if (type.IsGenericType == false) return false;
+            if (target.IsGenericType == false) return false;
 
-            return type.GetGenericTypeDefinition() == typeof(List<>);
+            return target.GetGenericTypeDefinition() == typeof(List<>);
         }
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             var list = instance as IList;
 
             NetworkSerializationHelper.Length.Write(list.Count, writer);
 
-            for (int i = 0; i < list.Count; i++)
-                writer.Write(list[i]);
+            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+
+            for (int i = 0; i < list.Count; i++) writer.Write(list[i], elementType);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
@@ -645,13 +707,13 @@ namespace MNet
 
             var list = Activator.CreateInstance(type, count) as IList;
 
-            var element = type.GetGenericArguments()[0];
+            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
 
             for (int i = 0; i < count; i++)
             {
-                var value = reader.Read(element);
+                var element = reader.Read(elementType);
 
-                list.Add(value);
+                list.Add(element);
             }
 
             return list;
@@ -663,38 +725,40 @@ namespace MNet
     [Preserve]
     public sealed class DictionaryNetworkSerializationResolvery : NetworkSerializationImplicitResolver
     {
-        public override bool CanResolve(Type type)
+        public override bool CanResolve(Type target)
         {
-            if (type.IsGenericType == false) return false;
+            if (target.IsGenericType == false) return false;
 
-            return type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+            return target.GetGenericTypeDefinition() == typeof(Dictionary<,>);
         }
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             var dictionary = (IDictionary)instance;
 
             NetworkSerializationHelper.Length.Write(dictionary.Count, writer);
 
+            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var keyType, out var valueType);
+
             foreach (DictionaryEntry entry in dictionary)
             {
-                writer.Write(entry.Key);
-                writer.Write(entry.Value);
+                writer.Write(entry.Key, keyType);
+                writer.Write(entry.Value, valueType);
             }
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var arguments = type.GetGenericArguments();
-
             NetworkSerializationHelper.Length.Read(out var count, reader);
 
             var dictionary = Activator.CreateInstance(type, count) as IDictionary;
 
+            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var keyType, out var valueType);
+
             for (int i = 0; i < count; i++)
             {
-                var key = reader.Read(arguments[0]);
-                var value = reader.Read(arguments[1]);
+                var key = reader.Read(keyType);
+                var value = reader.Read(valueType);
 
                 dictionary.Add(key, value);
             }
@@ -709,12 +773,10 @@ namespace MNet
     [Preserve]
     public sealed class EnumNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public override bool CanResolve(Type type) => type.IsEnum;
+        public override bool CanResolve(Type target) => target.IsEnum;
 
-        public override void Serialize(NetworkWriter writer, object instance)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            var type = instance.GetType();
-
             var backing = Enum.GetUnderlyingType(type);
 
             var value = Convert.ChangeType(instance, backing);

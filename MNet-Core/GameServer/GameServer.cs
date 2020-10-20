@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+
+using System.Collections;
 using System.Collections.Generic;
 
 namespace MNet
@@ -61,7 +63,7 @@ namespace MNet
     {
         public static void Run()
         {
-            
+
         }
 
         static void NullableSerialization()
@@ -77,7 +79,30 @@ namespace MNet
             Log.Info(instance);
         }
 
-        static void TupleSerialization()
+        static void NullableListSerialization()
+        {
+            var list = new List<int?>()
+            {
+                42,
+                null,
+                12,
+                420,
+                null,
+                69
+            };
+
+            var type = list.GetType();
+
+            var binary = NetworkSerializer.Serialize(list);
+
+            Log.Info(binary.ToPrettyString());
+
+            var value = NetworkSerializer.Deserialize(binary, type) as IList;
+
+            Log.Info(value.ToPrettyString());
+        }
+
+        static void NetTupleSerialization()
         {
             var tuple = NetTuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());
             var type = tuple.GetType();
@@ -102,6 +127,25 @@ namespace MNet
             var binary = NetworkSerializer.Serialize(array);
 
             var value = NetworkSerializer.Deserialize(binary, type) as Array;
+
+            foreach (var item in value) Log.Info(item);
+        }
+
+        static void ObjectListSerialization()
+        {
+            var list = new List<object>
+            {
+                "Hello World",
+                20,
+                Guid.NewGuid(),
+                DateTime.Now,
+            };
+
+            var type = list.GetType();
+
+            var binary = NetworkSerializer.Serialize(list);
+
+            var value = NetworkSerializer.Deserialize(binary, type) as IList;
 
             foreach (var item in value) Log.Info(item);
         }

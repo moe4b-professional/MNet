@@ -101,81 +101,87 @@ namespace MNet
             Position += 1;
         }
 
+        #region Write
         public void Write<T>(T value)
         {
             var type = typeof(T);
 
-            if (WriteExplicit(value, type))
-            {
+            if (ResolveNull(value, type)) return;
 
-            }
-            else if (WriteImplicit(value, type))
-            {
+            if (ResolveExplicit(value, type)) return;
 
-            }
-            else
-            {
-                throw new NotImplementedException($"Type {type} isn't supported for Network Serialization");
-            }
+            if (ResolveImplicit(value, type)) return;
+
+            throw FormatResolverException(type);
         }
-        bool WriteExplicit<T>(T value, Type type)
+
+        public void Write(object value)
+        {
+            var type = value == null ? null : value.GetType();
+
+            Write(value, type);
+        }
+        public void Write(object value, Type type)
+        {
+            if (ResolveNull(value, type)) return;
+
+            if (ResolveAny(value, type)) return;
+
+            throw FormatResolverException(type);
+        }
+        #endregion
+
+        #region Resolve
+        bool ResolveNull(object value, Type type)
+        {
+            if (value == null)
+            {
+                Write(true); //Is Null Flag Value
+                return true;
+            }
+
+            if (IsNullable(type)) Write(false); //Is Not Null Flag
+
+            return false;
+        }
+
+        bool ResolveExplicit<T>(T value, Type type)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
             if (resolver == null) return false;
 
-            if (value == null)
-            {
-                Write(true); //Is Null Flag Value
-                return true;
-            }
-
-            if (IsNullable(type)) Write(false); //Is Not Null Flag
-
             resolver.Serialize(this, value);
-
             return true;
         }
-        bool WriteImplicit(object value, Type type)
+
+        bool ResolveImplicit(object value, Type type)
         {
             var resolver = NetworkSerializationImplicitResolver.Retrive(type);
 
             if (resolver == null) return false;
 
-            if (value == null)
-            {
-                Write(true); //Is Null Flag Value
-                return true;
-            }
-
-            if (IsNullable(type)) Write(false); //Is Not Null Flag
-
-            resolver.Serialize(this, value);
-
+            resolver.Serialize(this, value, type);
             return true;
         }
 
-        public void Write(object value)
+        bool ResolveAny(object value, Type type)
         {
-            if (value == null)
-            {
-                Write(true); //Is Null Flag Value
-                return;
-            }
-
-            var type = value.GetType();
-
-            if (IsNullable(type)) Write(false); //Is Not Null Flag
-
             var resolver = NetworkSerializationResolver.Retrive(type);
 
-            if (resolver == null)
-                throw new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+            if (resolver == null) return false;
 
-            resolver.Serialize(this, value);
+            resolver.Serialize(this, value, type);
+            return true;
         }
+        #endregion
 
         public NetworkWriter(int size) : base(new byte[size]) { }
+
+        public static NotImplementedException FormatResolverException(Type type)
+        {
+            return new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+        }
     }
 
     public class NetworkReader : NetworkStream
@@ -191,43 +197,38 @@ namespace MNet
             return destination;
         }
 
+        #region Read
         public void Read<T>(out T value) => value = Read<T>();
         public T Read<T>()
         {
             var type = typeof(T);
 
-            if (ReadExplicit(out T value, type)) return value;
+            T value = default;
 
-            if (ReadImplicit(out var instance, type))
-            {
-                try
-                {
-                    value = (T)instance;
-                }
-                catch (InvalidCastException)
-                {
-                    throw new InvalidCastException($"Trying to read {instance.GetType()} as {typeof(T)}");
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
+            if (ResolveNull(type, ref value)) return value;
 
-                return value;
-            }
+            if (ResolveExplicit(type, ref value)) return value;
+
+            if (ResolveImplicit(type, ref value)) return value;
 
             throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
         }
-        bool ReadExplicit<T>(out T value, Type type)
+        
+        public object Read(Type type)
         {
-            var resolver = NetworkSerializationExplicitResolver<T>.Instance;
+            object value = default;
 
-            if (resolver == null)
-            {
-                value = default;
-                return false;
-            }
+            if (ResolveNull(type, ref value)) return value;
 
+            if (ResolveAny(type, ref value)) return value;
+
+            throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+        }
+        #endregion
+
+        #region Resolve
+        bool ResolveNull<T>(Type type, ref T value)
+        {
             if (IsNullable(type))
             {
                 Read(out bool isNull);
@@ -239,52 +240,60 @@ namespace MNet
                 }
             }
 
+            return false;
+        }
+
+        bool ResolveExplicit<T>(Type type, ref T value)
+        {
+            var resolver = NetworkSerializationExplicitResolver<T>.Instance;
+
+            if (resolver == null) return false;
+
             value = resolver.Deserialize(this);
             return true;
         }
-        bool ReadImplicit(out object value, Type type)
+
+        bool ResolveImplicit<T>(Type type, ref T value)
+        {
+            object instance = null;
+
+            if (ResolveImplicit(type, ref instance) == false) return false;
+
+            try
+            {
+                value = (T)instance;
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidCastException($"NetworkReader Trying to read {instance.GetType()} as {typeof(T)}");
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            return true;
+        }
+        bool ResolveImplicit(Type type, ref object value)
         {
             var resolver = NetworkSerializationImplicitResolver.Retrive(type);
 
-            if (resolver == null)
-            {
-                value = null;
-                return false;
-            }
-
-            if (IsNullable(type))
-            {
-                Read(out bool isNull);
-
-                if (isNull)
-                {
-                    value = null;
-                    return true;
-                }
-            }
+            if (resolver == null) return false;
 
             value = resolver.Deserialize(this, type);
             return true;
         }
 
-        public object Read(Type type)
+        bool ResolveAny(Type type, ref object value)
         {
-            var serializer = NetworkSerializationResolver.Retrive(type);
+            var resolver = NetworkSerializationResolver.Retrive(type);
 
-            if (serializer == null)
-                throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+            if (resolver == null) return false;
 
-            if (IsNullable(type))
-            {
-                Read(out bool isNull);
-
-                if (isNull) return null;
-            }
-
-            var value = serializer.Deserialize(this, type);
-
-            return value;
+            value = resolver.Deserialize(this, type);
+            return true;
         }
+        #endregion
 
         public NetworkReader(byte[] data) : base(data) { }
     }
