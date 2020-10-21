@@ -31,7 +31,6 @@ namespace MNet
 
         #region Read Info
         public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Version, Capacity, Occupancy, Attributes);
-        public static RoomBasicInfo ReadBasicInfo(Room room) => room.ReadBasicInfo();
 
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
 
@@ -67,7 +66,7 @@ namespace MNet
             for (int i = 0; i < SceneObjects.Count; i++)
                 SceneObjects[i].SetOwner(Master);
         }
-        
+
         void ChangeMaster(NetworkClient target)
         {
             SetMaster(target);
@@ -214,9 +213,9 @@ namespace MNet
 
         void RegisterClient(NetworkClientID id, NetworkClientProfile profile)
         {
-            if(IsFull)
+            if (IsFull)
             {
-                TransportContext.Disconnect(id, DisconnectCode.CapacityFull);
+                TransportContext.Disconnect(id, DisconnectCode.FullCapacity);
                 return;
             }
 
@@ -326,7 +325,7 @@ namespace MNet
 
             entity.RprCache.TryGet(request.Callback, out var callback);
 
-            if(sender != callback.Target)
+            if (sender != callback.Target)
             {
                 Log.Info($"Client {sender} Sending RPR for Client {callback.Sender} Even Thought They Aren't the RPR Callback Target");
                 return;
@@ -357,7 +356,7 @@ namespace MNet
         #region SyncVar
         void InvokeSyncVar(NetworkClient sender, SyncVarRequest request)
         {
-            if(Entities.TryGetValue(request.Entity, out var entity) == false)
+            if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
                 Log.Warning($"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}");
                 return;
@@ -373,13 +372,13 @@ namespace MNet
 
         NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
-            if(request.Type == NetworkEntityType.SceneObject && sender != Master)
+            if (request.Type == NetworkEntityType.SceneObject && sender != Master)
             {
                 Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Scene Object");
                 return null;
             }
 
-            if(request.Owner != null && sender != Master)
+            if (request.Owner != null && sender != Master)
             {
                 Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Object for Client {request.Owner}");
                 return null;
@@ -394,7 +393,7 @@ namespace MNet
             else
                 owner = sender;
 
-            if(owner == null)
+            if (owner == null)
             {
                 Log.Warning($"No Owner Found For Spawn Request");
                 return null;

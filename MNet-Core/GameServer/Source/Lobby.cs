@@ -14,8 +14,6 @@ namespace MNet
     {
         public AutoKeyDictionary<RoomID, Room> Rooms { get; protected set; }
 
-        public RoomBasicInfo[] ReadRoomsInfo() => Rooms.Dictionary.ToArray(Room.ReadBasicInfo);
-
         public RestAPI Rest => GameServer.Rest;
 
         public void Configure()
@@ -53,6 +51,7 @@ namespace MNet
             RestAPI.WriteTo(response, info);
         }
 
+        #region Create Room
         public void CreateRoom(HttpListenerRequest request, HttpListenerResponse response)
         {
             CreateRoomRequest payload;
@@ -69,6 +68,7 @@ namespace MNet
             var info = CreateRoom(payload);
             RestAPI.WriteTo(response, info);
         }
+
         public RoomBasicInfo CreateRoom(CreateRoomRequest request)
         {
             var room = CreateRoom(request.Name, request.Version, request.Capacity, request.Attributes);
@@ -77,6 +77,7 @@ namespace MNet
 
             return info;
         }
+
         public Room CreateRoom(string name, Version version, byte capacity, AttributesCollection attributes)
         {
             Log.Info($"Creating Room '{name}'");
@@ -93,10 +94,13 @@ namespace MNet
 
             return room;
         }
+        #endregion
 
-        void StopRoomCallback(Room room)
+        void StopRoomCallback(Room room) => RemoveRoom(room.ID);
+
+        public bool RemoveRoom(RoomID id)
         {
-            Rooms.Remove(room.ID);
+            return Rooms.Remove(id);
         }
 
         public Lobby()

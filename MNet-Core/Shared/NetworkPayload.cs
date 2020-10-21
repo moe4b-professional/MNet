@@ -126,23 +126,16 @@ namespace MNet
         static void RegisterInternal()
         {
             Register<byte>(0);
-
             Register<short>(1);
             Register<ushort>(2);
-
             Register<int>(3);
             Register<uint>(4);
-
             Register<float>(5);
-
             Register<bool>(6);
-
             Register<string>(7);
 
             Register<Guid>(8);
             Register<DateTime>(9);
-
-            Register<CreateRoomRequest>(10);
 
             Register<RegisterClientRequest>(11);
             Register<RegisterClientResponse>(12);
@@ -159,8 +152,6 @@ namespace MNet
             Register<ClientConnectedPayload>(19);
             Register<ClientDisconnectPayload>(20);
 
-            Register<LobbyInfo>(21);
-
             Register<RoomBasicInfo>(22);
             Register<RoomInternalInfo>(23);
 
@@ -170,10 +161,9 @@ namespace MNet
 
             Register<RpcRequest>(26);
             Register<RpcCommand>(27);
+            Register<RpcBufferMode>(28);
 
-            Register<AttributesCollection>(28);
-
-            Register<RpcBufferMode>(29);
+            Register<AttributesCollection>(29);
 
             Register<ChangeMasterCommand>(32);
 
@@ -195,6 +185,7 @@ namespace MNet
         }
     }
 
+    #region REST
     [Preserve]
     [Serializable]
     public sealed class CreateRoomRequest : INetworkSerializable
@@ -229,6 +220,76 @@ namespace MNet
         }
     }
 
+    #region Master Server
+    [Preserve]
+    [Serializable]
+    public class MasterServerInfoRequest : INetworkSerializable
+    {
+        Version version;
+        public Version Version => version;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref version);
+        }
+
+        public MasterServerInfoRequest() { }
+        public MasterServerInfoRequest(Version version)
+        {
+            this.version = version;
+        }
+    }
+
+    [Preserve]
+    [Serializable]
+    public class MasterServerInfoResponse : INetworkSerializable
+    {
+        Version minimumVersion;
+        public Version MinimumVersion => minimumVersion;
+
+        List<GameServerInfo> servers;
+        public List<GameServerInfo> Servers => servers;
+
+        public int Size => servers.Count;
+
+        public GameServerInfo this[int index] => servers[index];
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref minimumVersion);
+            context.Select(ref servers);
+        }
+
+        public MasterServerInfoResponse() { }
+        public MasterServerInfoResponse(Version minimumVersion, List<GameServerInfo> servers)
+        {
+            this.minimumVersion = minimumVersion;
+            this.servers = servers;
+        }
+    }
+    #endregion
+
+    [Preserve]
+    [Serializable]
+    public sealed class GetLobbyInfoRequest : INetworkSerializable
+    {
+        Version version;
+        public Version Version => version;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref version);
+        }
+
+        public GetLobbyInfoRequest() { }
+        public GetLobbyInfoRequest(Version version)
+        {
+            this.version = version;
+        }
+    }
+    #endregion
+
+    #region RealTime
     #region Register Client
     [Preserve]
     [Serializable]
@@ -555,72 +616,5 @@ namespace MNet
             this.id = id;
         }
     }
-
-    #region Master Server
-    [Preserve]
-    [Serializable]
-    public class MasterServerInfoRequest : INetworkSerializable
-    {
-        Version version;
-        public Version Version => version;
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref version);
-        }
-
-        public MasterServerInfoRequest() { }
-        public MasterServerInfoRequest(Version version)
-        {
-            this.version = version;
-        }
-    }
-
-    [Preserve]
-    [Serializable]
-    public class MasterServerInfoResponse : INetworkSerializable
-    {
-        Version minimumVersion;
-        public Version MinimumVersion => minimumVersion;
-
-        List<GameServerInfo> servers;
-        public List<GameServerInfo> Servers => servers;
-
-        public int Size => servers.Count;
-
-        public GameServerInfo this[int index] => servers[index];
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref minimumVersion);
-            context.Select(ref servers);
-        }
-
-        public MasterServerInfoResponse() { }
-        public MasterServerInfoResponse(Version minimumVersion, List<GameServerInfo> servers)
-        {
-            this.minimumVersion = minimumVersion;
-            this.servers = servers;
-        }
-    }
     #endregion
-
-    [Preserve]
-    [Serializable]
-    public sealed class GetLobbyInfoRequest : INetworkSerializable
-    {
-        Version version;
-        public Version Version => version;
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref version);
-        }
-
-        public GetLobbyInfoRequest() { }
-        public GetLobbyInfoRequest(Version version)
-        {
-            this.version = version;
-        }
-    }
 }

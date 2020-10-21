@@ -11,7 +11,7 @@ namespace MNet
 
     public enum DisconnectCode : byte
     {
-        Normal, Unknown, CapacityFull, InvalidContext
+        Normal, Unknown, FullCapacity, InvalidContext
     }
 
     public static class NetworkTransportUtility
