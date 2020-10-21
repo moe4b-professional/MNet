@@ -107,6 +107,8 @@ namespace MNet
             {
                 PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.Mono2x);
 
+                PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Standalone, ManagedStrippingLevel.Disabled);
+
                 Perform($"Build/Windows/Mono/{Application.productName}.exe", BuildTarget.StandaloneWindows, Options);
             }
 
@@ -114,6 +116,8 @@ namespace MNet
             public static void IL2CPP()
             {
                 PlayerSettings.SetScriptingBackend(BuildTargetGroup.Standalone, ScriptingImplementation.IL2CPP);
+
+                PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Standalone, ManagedStrippingLevel.High);
 
                 Perform($"Build/Windows/IL2CPP/{Application.productName}.exe", BuildTarget.StandaloneWindows, Options);
             }
