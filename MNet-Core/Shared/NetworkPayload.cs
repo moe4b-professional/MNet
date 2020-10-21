@@ -580,6 +580,9 @@ namespace MNet
     [Serializable]
     public class MasterServerInfoResponse : INetworkSerializable
     {
+        Version minimumVersion;
+        public Version MinimumVersion => minimumVersion;
+
         List<GameServerInfo> servers;
         public List<GameServerInfo> Servers => servers;
 
@@ -589,12 +592,14 @@ namespace MNet
 
         public void Select(INetworkSerializableResolver.Context context)
         {
+            context.Select(ref minimumVersion);
             context.Select(ref servers);
         }
 
         public MasterServerInfoResponse() { }
-        public MasterServerInfoResponse(List<GameServerInfo> servers)
+        public MasterServerInfoResponse(Version minimumVersion, List<GameServerInfo> servers)
         {
+            this.minimumVersion = minimumVersion;
             this.servers = servers;
         }
     }

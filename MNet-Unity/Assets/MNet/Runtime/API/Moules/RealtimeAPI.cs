@@ -103,11 +103,11 @@ namespace MNet
                 OnMessage?.Invoke(message);
             }
 
-            public delegate void CloseDelegate();
-            public static event CloseDelegate OnDisconnect;
-            static void DisconnectCallback()
+            public delegate void DisconnectDelegate(DisconnectCode code);
+            public static event DisconnectDelegate OnDisconnect;
+            static void DisconnectCallback(DisconnectCode code)
             {
-                OnDisconnect?.Invoke();
+                OnDisconnect?.Invoke(code);
             }
 
             public delegate void ErrorDelegate();

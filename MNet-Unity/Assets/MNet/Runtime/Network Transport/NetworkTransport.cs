@@ -65,18 +65,18 @@ namespace MNet
         #endregion
 
         #region Disconnect
-        public delegate void DisconnectDelegate();
+        public delegate void DisconnectDelegate(DisconnectCode code);
         public event DisconnectDelegate OnDisconnect;
-        void InvokeDisconnected()
+        void InvokeDisconnected(DisconnectCode code)
         {
-            OnDisconnect?.Invoke();
+            OnDisconnect?.Invoke(code);
         }
 
-        protected virtual void QueueDisconnect()
+        protected virtual void QueueDisconnect(DisconnectCode code)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeDisconnected();
+            void Action() => InvokeDisconnected(code);
         }
         #endregion
 
@@ -137,10 +137,7 @@ namespace MNet
 
             IsRegistered = code == 200;
 
-            if (IsRegistered)
-                QueueConnect();
-            else
-                QueueDisconnect();
+            if (IsRegistered) QueueConnect();
         }
 
         protected virtual void ProcessMessage(byte[] raw)

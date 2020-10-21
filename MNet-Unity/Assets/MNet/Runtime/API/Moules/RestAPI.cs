@@ -108,7 +108,7 @@ namespace MNet
 
         public delegate void CallbackDelegate(UnityWebRequest request);
 
-        public RestAPI(ushort port)
+        public RestAPI(ushort port, RestScheme scheme)
         {
             this.Port = port;
 
@@ -145,39 +145,6 @@ namespace MNet
         }
     }
 
-    public class GenericRestAPI : RestAPI
-    {
-        public void GET(string ip, string path, CallbackDelegate callback, bool enqueue)
-        {
-            var downloader = new DownloadHandlerBuffer();
-
-            Send(ip, path, "GET", null, downloader, callback, enqueue);
-        }
-        public void PUT<T>(string ip, string path, T payload, CallbackDelegate callback, bool enqueue)
-        {
-            var data = NetworkSerializer.Serialize(payload);
-
-            var uploader = new UploadHandlerRaw(data);
-            var downloader = new DownloadHandlerBuffer();
-
-            Send(ip, path, "PUT", uploader, downloader, callback, enqueue);
-        }
-        public void POST<T>(string ip, string path, T payload, CallbackDelegate callback, bool enqueue)
-        {
-            var data = NetworkSerializer.Serialize(payload);
-
-            var uploader = new UploadHandlerRaw(data);
-            var downloader = new DownloadHandlerBuffer();
-
-            Send(ip, path, "POST", uploader, downloader, callback, enqueue);
-        }
-
-        public GenericRestAPI(ushort port) : base(port)
-        {
-
-        }
-    }
-
     public class DirectedRestAPI : RestAPI
     {
         public string IP { get; protected set; }
@@ -211,13 +178,9 @@ namespace MNet
             Send(IP, path, "POST", uploader, downloader, callback, enqueue);
         }
 
-        public DirectedRestAPI(ushort port) : base(port)
+        public DirectedRestAPI(ushort port, RestScheme scheme) : base(port, scheme)
         {
 
-        }
-        public DirectedRestAPI(string ip, ushort port) : this(port)
-        {
-            SetIP(ip);
         }
     }
 

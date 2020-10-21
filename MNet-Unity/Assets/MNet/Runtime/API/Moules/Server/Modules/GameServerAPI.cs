@@ -47,18 +47,21 @@ namespace MNet
 
                 public static void Configure()
                 {
-                    Rest = new DirectedRestAPI(Constants.Server.Game.Rest.Port);
+                    Rest = new DirectedRestAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
                 }
 
-                public static void Select(GameServerInfo info) => Select(info.ID);
+                public delegate void SelectDelegate(GameServerID id);
+                public static event SelectDelegate OnSelect;
                 public static void Select(GameServerID id)
                 {
                     Selection = id;
 
                     Rest.SetIP(id.Address);
+
+                    OnSelect?.Invoke(id);
                 }
+                public static void Select(GameServerInfo info) => Select(info.ID);
             }
         }
-        
     }
 }

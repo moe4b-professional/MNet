@@ -16,6 +16,8 @@ namespace MNet
     {
         public static Config Config { get; private set; }
 
+        public static Version MinimumVersion => Config.MinimumVersion;
+
         public static RestAPI Rest { get; private set; }
 
         public static Dictionary<GameServerID, GameServerInfo> Servers { get; private set; }
@@ -27,6 +29,8 @@ namespace MNet
             ApiKey.Read();
 
             Config = Config.Read();
+
+            Log.Info($"Minimum Version: {MinimumVersion}");
 
             Rest = new RestAPI(Constants.Server.Master.Rest.Port);
             Rest.Start();
@@ -53,14 +57,17 @@ namespace MNet
 
             var list = new List<GameServerInfo>(Servers.Count);
 
-            foreach (var server in Servers.Values)
+            if (payload.Version >= MinimumVersion)
             {
-                if (server.Supports(payload.Version) == false) continue;
+                foreach (var server in Servers.Values)
+                {
+                    if (server.Supports(payload.Version) == false) continue;
 
-                list.Add(server);
+                    list.Add(server);
+                }
             }
 
-            var info = new MasterServerInfoResponse(list);
+            var info = new MasterServerInfoResponse(MinimumVersion, list);
 
             RestAPI.WriteTo(response, info);
         }

@@ -87,9 +87,16 @@ namespace MNet
 
             Rooms.Assign(id, room);
 
+            room.OnStop += StopRoomCallback;
+
             room.Start();
 
             return room;
+        }
+
+        void StopRoomCallback(Room room)
+        {
+            Rooms.Remove(room.ID);
         }
 
         public Lobby()

@@ -90,7 +90,7 @@ namespace MNet
 
             static void SelfReadyCallback(ReadyClientResponse response) => Ready(response);
 
-            static void SelfDisconnectCallback() => Clear();
+            static void SelfDisconnectCallback(DisconnectCode code) => Clear();
             #endregion
 
             #region Clients
@@ -441,6 +441,8 @@ namespace MNet
 
             static Room()
             {
+                Setup();
+
                 Client.OnConnect += SelfConnectCallback;
                 Client.OnReady += SelfReadyCallback;
                 Client.OnDisconnect += SelfDisconnectCallback;

@@ -14,7 +14,7 @@ namespace MNet
     {
         public static IPAddress Address { get; private set; }
         public static ushort Port => Constants.Server.Master.Rest.Port;
-        public static RestScheme Scheme { get; private set; } = RestScheme.HTTP;
+        public static RestScheme Scheme => GameServer.Config.RestScheme;
         public static string URL => $"{Scheme}://{Address}:{Port}";
 
         public static void Configure(IPAddress address)

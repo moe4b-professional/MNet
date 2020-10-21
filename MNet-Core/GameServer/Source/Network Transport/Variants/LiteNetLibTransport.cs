@@ -56,7 +56,12 @@ namespace MNet
 
         protected override void Send(NetPeer connection, byte[] raw) => connection.Send(raw, DeliveryMethod.ReliableOrdered);
 
-        protected override void Disconnect(NetPeer connection) => connection.Disconnect();
+        public override void Disconnect(NetPeer connection, DisconnectCode code)
+        {
+            var binary = NetworkSerializer.Serialize(code);
+
+            connection.Disconnect(binary);
+        }
 
         public LiteNetLibTransport(int port)
         {
@@ -70,10 +75,7 @@ namespace MNet
     {
         public NetManager Server => Transport.Server;
 
-        public override void Disconnect(LiteNetLibTransportClient client)
-        {
-            client.Connection.Disconnect();
-        }
+        public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code) => Transport.Disconnect(client.Peer, code);
 
         public override void Send(LiteNetLibTransportClient client, byte[] raw)
         {

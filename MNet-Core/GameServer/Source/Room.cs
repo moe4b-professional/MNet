@@ -25,6 +25,8 @@ namespace MNet
         public byte Capacity { get; protected set; }
         public byte Occupancy => (byte)Clients.Count;
 
+        public bool IsFull => Occupancy >= Capacity;
+
         public AttributesCollection Attributes { get; protected set; }
 
         #region Read Info
@@ -212,6 +214,12 @@ namespace MNet
 
         void RegisterClient(NetworkClientID id, NetworkClientProfile profile)
         {
+            if(IsFull)
+            {
+                TransportContext.Disconnect(id, DisconnectCode.CapacityFull);
+                return;
+            }
+
             if (Clients.ContainsKey(id))
             {
                 Log.Warning($"Client {id} Already Registered With Room {this.ID}, Ignoring Register Request");
@@ -451,6 +459,8 @@ namespace MNet
             Log.Info($"Room {this.ID}: Client {id} Disconnected");
 
             if (Clients.TryGetValue(id, out var client)) RemoveClient(client);
+
+            if (Occupancy == 0) Stop();
         }
 
         void RemoveClient(NetworkClient client)
@@ -470,13 +480,17 @@ namespace MNet
             Broadcast(payload);
         }
 
-        public void Stop()
+        public delegate void StopDelegate(Room room);
+        public event StopDelegate OnStop;
+        void Stop()
         {
-            Log.Info($"Stopping Room: {ID}");
+            Log.Info($"Stopping Room {ID}");
 
             schedule.Stop();
 
             GameServer.Realtime.Unregister(ID.Value);
+
+            OnStop?.Invoke(this);
         }
 
         public Room(RoomID id, string name, Version version, byte capacity, AttributesCollection attributes)

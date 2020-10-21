@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Network API Config
   m_EditorClassIdentifier: 
   address: 127.0.0.1
+  restScheme: 0
   transport: 0
   version:
     value: 0.1

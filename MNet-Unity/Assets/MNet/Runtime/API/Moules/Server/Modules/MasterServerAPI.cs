@@ -35,7 +35,8 @@ namespace MNet
 
                 public static void Configure()
                 {
-                    Rest = new DirectedRestAPI(Address, Constants.Server.Master.Rest.Port);
+                    Rest = new DirectedRestAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
+                    Rest.SetIP(Address);
                 }
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);

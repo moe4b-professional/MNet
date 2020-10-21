@@ -101,14 +101,15 @@ namespace MNet
                 Send(request);
             }
 
-            public static event Action OnRegister;
+            public delegate void RegisterDelegate(NetworkClientID id);
+            public static event RegisterDelegate OnRegister;
             static void RegisterCallback(RegisterClientResponse response)
             {
                 Instance = new NetworkClient(response.ID, Profile);
 
                 if (AutoReady) Ready();
 
-                OnRegister?.Invoke();
+                OnRegister?.Invoke(ID);
             }
             #endregion
 
@@ -190,15 +191,15 @@ namespace MNet
             #region Disconnect
             public static void Disconnect() => RealtimeAPI.Disconnect();
 
-            public delegate void DisconnectDelegate();
+            public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
-            static void DisconnectedCallback()
+            static void DisconnectedCallback(DisconnectCode code)
             {
-                Debug.Log($"Client Disconnected");
+                Debug.Log($"Client Disconnected, Code: {code}");
 
                 Clear();
 
-                OnDisconnect?.Invoke();
+                OnDisconnect?.Invoke(code);
             }
             #endregion
 

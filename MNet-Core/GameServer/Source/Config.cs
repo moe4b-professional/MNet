@@ -18,6 +18,9 @@ namespace MNet
         public IPAddress MasterAddress { get; protected set; }
 
         [JsonProperty]
+        public RestScheme RestScheme { get; protected set; }
+
+        [JsonProperty]
         public NetworkTransportType NetworkTransport { get; protected set; }
 
         [JsonProperty]
@@ -29,6 +32,7 @@ namespace MNet
 
             PublicAddress = IPAddress.Any;
             MasterAddress = IPAddress.Any;
+            RestScheme = RestScheme.HTTP;
             NetworkTransport = NetworkTransportType.WebSocketSharp;
             Versions = new Version[] { Version.Zero };
         }

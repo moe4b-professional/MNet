@@ -64,7 +64,14 @@ namespace MNet
         #region Callbacks
         public void OnPeerConnected(NetPeer peer) => RequestRegister();
 
-        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => QueueDisconnect();
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
+        {
+            var data = info.AdditionalData;
+
+            var code = data.AvailableBytes > 0 ? (DisconnectCode)data.GetByte() : DisconnectCode.Unknown;
+
+            QueueDisconnect(code);
+        }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
 
@@ -77,9 +84,7 @@ namespace MNet
         }
 
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
-
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
-
         public void OnConnectionRequest(ConnectionRequest request) { }
         #endregion
 

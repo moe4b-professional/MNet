@@ -54,15 +54,19 @@ namespace MNet
         {
             QueueConnect();
         }
+
         void RecievedMessageCallback(object sender, MessageEventArgs args)
         {
             var message = NetworkMessage.Read(args.RawData);
 
             QueueRecievedMessage(message);
         }
+
         void CloseCallback(object sender, CloseEventArgs args)
         {
-            QueueDisconnect();
+            var code = NetworkTransportUtility.WebSocketSharp.GetDisconnectCode(args.Code);
+
+            QueueDisconnect(code);
         }
         #endregion
 

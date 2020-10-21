@@ -95,9 +95,11 @@ namespace MNet
             Sessions.Broadcast(raw);
         }
 
-        public override void Disconnect(WebSocketTransportClient client)
+        public override void Disconnect(WebSocketTransportClient client, DisconnectCode code)
         {
-            Sessions.CloseSession(client.InternalID);
+            var value = NetworkTransportUtility.WebSocketSharp.GetDisconnectValue(code);
+
+            Sessions.CloseSession(client.InternalID, value, null);
         }
 
         public override void Close()

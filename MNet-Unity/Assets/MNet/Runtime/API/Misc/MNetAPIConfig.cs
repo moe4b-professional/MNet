@@ -41,6 +41,10 @@ namespace MNet
         public string Address => address;
 
         [SerializeField]
+        RestScheme restScheme = RestScheme.HTTP;
+        public RestScheme RestScheme => restScheme;
+
+        [SerializeField]
         protected NetworkTransportType transport;
         public NetworkTransportType Transport => transport;
 
