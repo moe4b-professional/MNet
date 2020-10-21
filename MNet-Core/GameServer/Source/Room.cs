@@ -20,14 +20,15 @@ namespace MNet
 
         public string Name { get; protected set; }
 
-        public byte Capacity { get; protected set; }
+        public Version Version { get; protected set; }
 
-        public int PlayersCount => Clients.Count;
+        public byte Capacity { get; protected set; }
+        public byte Occupancy => (byte)Clients.Count;
 
         public AttributesCollection Attributes { get; protected set; }
 
         #region Read Info
-        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, PlayersCount, Attributes);
+        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Version, Capacity, Occupancy, Attributes);
         public static RoomBasicInfo ReadBasicInfo(Room room) => room.ReadBasicInfo();
 
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
@@ -478,11 +479,15 @@ namespace MNet
             GameServer.Realtime.Unregister(ID.Value);
         }
 
-        public Room(RoomID id, string name, byte capacity, AttributesCollection attributes)
+        public Room(RoomID id, string name, Version version, byte capacity, AttributesCollection attributes)
         {
             this.ID = id;
             this.Name = name;
+
+            this.Version = version;
+
             this.Capacity = capacity;
+
             this.Attributes = attributes;
 
             MessageBuffer = new NetworkMessageCollection();

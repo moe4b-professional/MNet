@@ -86,8 +86,8 @@ namespace MNet
         #endregion
 
         #region Read
+        public static void Read<TPayload>(SharpHttpRequest request, out TPayload payload) => payload = Read<TPayload>(request);
         public static TPayload Read<TPayload>(SharpHttpRequest request)
-            where TPayload : new()
         {
             var binary = Read(request);
 

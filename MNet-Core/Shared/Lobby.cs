@@ -13,10 +13,10 @@ namespace MNet
         GameServerInfo server;
         public GameServerInfo Server => server;
 
-        RoomBasicInfo[] rooms;
-        public RoomBasicInfo[] Rooms { get { return rooms; } }
+        List<RoomBasicInfo> rooms;
+        public List<RoomBasicInfo> Rooms { get { return rooms; } }
 
-        public int Size => rooms.Length;
+        public int Size => rooms.Count;
 
         public RoomBasicInfo this[int index] => rooms[index];
 
@@ -27,7 +27,7 @@ namespace MNet
         }
 
         public LobbyInfo() { }
-        public LobbyInfo(GameServerInfo server, RoomBasicInfo[] rooms)
+        public LobbyInfo(GameServerInfo server, List<RoomBasicInfo> rooms)
         {
             this.server = server;
             this.rooms = rooms;

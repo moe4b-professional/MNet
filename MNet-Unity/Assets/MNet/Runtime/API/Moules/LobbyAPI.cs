@@ -31,7 +31,9 @@ namespace MNet
             public static event InfoDelegate OnInfo;
             public static void GetInfo()
             {
-                Server.Game.Rest.GET(Constants.Server.Game.Rest.Requests.Lobby.Info, Callback, false);
+                var payload = new GetLobbyInfoRequest(NetworkAPI.Version);
+
+                Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, Callback, false);
 
                 void Callback(UnityWebRequest request)
                 {

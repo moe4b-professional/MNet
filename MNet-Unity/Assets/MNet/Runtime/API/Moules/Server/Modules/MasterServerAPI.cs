@@ -41,7 +41,7 @@ namespace MNet
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
                 public static void Info() => Info(NetworkAPI.Version);
-                public static void Info(string version)
+                public static void Info(Version version)
                 {
                     var payload = new MasterServerInfoRequest(version);
 

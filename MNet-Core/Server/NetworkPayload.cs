@@ -13,7 +13,7 @@ namespace MNet
         public GameServerInfo Info => info;
 
         public GameServerID ID => info.ID;
-        public string[] Versions => info.Versions;
+        public Version[] Versions => info.Versions;
         public GameServerRegion Region => info.Region;
 
         string key;

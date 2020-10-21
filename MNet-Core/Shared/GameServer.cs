@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 
@@ -66,8 +67,20 @@ namespace MNet
         GameServerID id;
         public GameServerID ID => id;
 
-        string[] versions;
-        public string[] Versions => versions;
+        Version[] versions;
+        public Version[] Versions => versions;
+
+        public bool Supports(Version version)
+        {
+            for (int i = 0; i < versions.Length; i++)
+            {
+                if (versions[i] == Version.Zero) return true;
+
+                if (versions[i] == version) return true;
+            }
+
+            return false;
+        }
 
         GameServerRegion region;
         public GameServerRegion Region => region;
@@ -81,7 +94,7 @@ namespace MNet
 
         public override string ToString() => $"{id} | v{versions.ToPrettyString()} | {region}";
 
-        public GameServerInfo(GameServerID id, string[] versions, GameServerRegion region)
+        public GameServerInfo(GameServerID id, Version[] versions, GameServerRegion region)
         {
             this.id = id;
             this.versions = versions;

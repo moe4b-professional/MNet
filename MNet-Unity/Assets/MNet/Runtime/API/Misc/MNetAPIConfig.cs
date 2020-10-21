@@ -23,6 +23,19 @@ namespace MNet
     [CreateAssetMenu]
     public class MNetAPIConfig : ScriptableObject
     {
+        public static MNetAPIConfig Load()
+        {
+            var configs = Resources.LoadAll<MNetAPIConfig>("");
+
+            if (configs.Length == 0) return null;
+
+            var instance = configs[0];
+
+            instance.Configure();
+
+            return instance;
+        }
+
         [SerializeField]
         protected string address = "127.0.0.1";
         public string Address => address;
@@ -33,15 +46,11 @@ namespace MNet
 
         [SerializeField]
         protected NetworkVersionProperty version = new NetworkVersionProperty("0.0.1");
-        public string Version => version.Value;
+        public Version Version { get; protected set; }
 
-        public static MNetAPIConfig Load()
+        void Configure()
         {
-            var configs = Resources.LoadAll<MNetAPIConfig>("");
-
-            if (configs.Length > 0) return configs[0];
-
-            return null;
+            Version = version.Value;
         }
     }
 
@@ -54,7 +63,9 @@ namespace MNet
         [SerializeField]
         bool infer;
 
-        public string Value => infer ? Application.version : value;
+        public string Text => infer ? Application.version : value;
+
+        public Version Value => Version.Parse(Text);
 
         public NetworkVersionProperty(string value)
         {

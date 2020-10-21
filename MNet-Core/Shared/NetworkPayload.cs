@@ -202,6 +202,9 @@ namespace MNet
         string name;
         public string Name => name;
 
+        Version version;
+        public Version Version => version;
+
         byte capacity;
         public byte Capacity => capacity;
 
@@ -211,16 +214,17 @@ namespace MNet
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref name);
+            context.Select(ref version);
             context.Select(ref capacity);
             context.Select(ref attributes);
         }
 
         public CreateRoomRequest() { }
-        public CreateRoomRequest(string name, byte capacity) : this(name, capacity, null) { }
-        public CreateRoomRequest(string name, byte capacity, AttributesCollection attributes)
+        public CreateRoomRequest(string name, Version version, byte capacity, AttributesCollection attributes)
         {
             this.name = name;
             this.capacity = capacity;
+            this.version = version;
             this.attributes = attributes;
         }
     }
@@ -557,8 +561,8 @@ namespace MNet
     [Serializable]
     public class MasterServerInfoRequest : INetworkSerializable
     {
-        string version;
-        public string Version => version;
+        Version version;
+        public Version Version => version;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
@@ -566,7 +570,7 @@ namespace MNet
         }
 
         public MasterServerInfoRequest() { }
-        public MasterServerInfoRequest(string version)
+        public MasterServerInfoRequest(Version version)
         {
             this.version = version;
         }
@@ -595,4 +599,23 @@ namespace MNet
         }
     }
     #endregion
+
+    [Preserve]
+    [Serializable]
+    public sealed class GetLobbyInfoRequest : INetworkSerializable
+    {
+        Version version;
+        public Version Version => version;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref version);
+        }
+
+        public GetLobbyInfoRequest() { }
+        public GetLobbyInfoRequest(Version version)
+        {
+            this.version = version;
+        }
+    }
 }

@@ -17,7 +17,7 @@ namespace MNet
 
         public static Config Config { get; private set; }
 
-        public static string[] Versions => Config.Versions;
+        public static Version[] Versions => Config.Versions;
 
         public static GameServerRegion Region { get; private set; }
 

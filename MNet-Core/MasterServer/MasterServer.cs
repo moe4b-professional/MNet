@@ -43,7 +43,7 @@ namespace MNet
             MasterServerInfoRequest payload;
             try
             {
-                payload = RestAPI.Read<MasterServerInfoRequest>(request);
+                RestAPI.Read(request, out payload);
             }
             catch (Exception)
             {
@@ -51,11 +51,11 @@ namespace MNet
                 return;
             }
 
-            var list = new List<GameServerInfo>();
+            var list = new List<GameServerInfo>(Servers.Count);
 
             foreach (var server in Servers.Values)
             {
-                if (server.Versions.Contains(payload.Version) == false) continue;
+                if (server.Supports(payload.Version) == false) continue;
 
                 list.Add(server);
             }
@@ -71,7 +71,7 @@ namespace MNet
             RegisterGameServerRequest payload;
             try
             {
-                payload = RestAPI.Read<RegisterGameServerRequest>(request);
+                RestAPI.Read(request, out payload);
             }
             catch (Exception)
             {
@@ -95,7 +95,7 @@ namespace MNet
             return new RegisterGameServerResult(true);
         }
 
-        static GameServerInfo RegisterServer(GameServerID id, string[] versions, GameServerRegion region)
+        static GameServerInfo RegisterServer(GameServerID id, Version[] versions, GameServerRegion region)
         {
             var server = new GameServerInfo(id, versions, region);
 
@@ -113,7 +113,7 @@ namespace MNet
             RemoveGameServerRequest payload;
             try
             {
-                payload = RestAPI.Read<RemoveGameServerRequest>(request);
+                RestAPI.Read(request, out payload);
             }
             catch (Exception)
             {

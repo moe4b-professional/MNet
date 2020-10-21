@@ -70,10 +70,9 @@ namespace MNet
             public delegate void CreateDelegate(RoomBasicInfo room, RestError error);
             public static event CreateDelegate OnCreate;
 
-            public static void Create(string name, byte capacity) => Create(name, capacity, null);
-            public static void Create(string name, byte capacity, AttributesCollection attributes)
+            public static void Create(string name, byte capacity, AttributesCollection attributes = null)
             {
-                var payload = new CreateRoomRequest(name, capacity, attributes);
+                var payload = new CreateRoomRequest(name, NetworkAPI.Version, capacity, attributes);
 
                 Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback, false);
 

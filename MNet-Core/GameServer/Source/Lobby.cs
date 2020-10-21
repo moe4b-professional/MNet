@@ -26,9 +26,29 @@ namespace MNet
 
         public void GetInfo(HttpListenerRequest request, HttpListenerResponse response)
         {
-            var rooms = ReadRoomsInfo();
+            GetLobbyInfoRequest payload;
+            try
+            {
+                RestAPI.Read(request, out payload);
+            }
+            catch (Exception)
+            {
+                RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(GetLobbyInfoRequest)}");
+                return;
+            }
 
-            var info = new LobbyInfo(GameServer.GetInfo(), rooms);
+            var list = new List<RoomBasicInfo>(Rooms.Count);
+
+            foreach (var room in Rooms.Values)
+            {
+                if (room.Version != payload.Version) continue;
+
+                var instance = room.ReadBasicInfo();
+
+                list.Add(instance);
+            }
+
+            var info = new LobbyInfo(GameServer.GetInfo(), list);
 
             RestAPI.WriteTo(response, info);
         }
@@ -38,7 +58,7 @@ namespace MNet
             CreateRoomRequest payload;
             try
             {
-                payload = RestAPI.Read<CreateRoomRequest>(request);
+                RestAPI.Read(request, out payload);
             }
             catch (Exception)
             {
@@ -51,19 +71,19 @@ namespace MNet
         }
         public RoomBasicInfo CreateRoom(CreateRoomRequest request)
         {
-            var room = CreateRoom(request.Name, request.Capacity, request.Attributes);
+            var room = CreateRoom(request.Name, request.Version, request.Capacity, request.Attributes);
 
             var info = room.ReadBasicInfo();
 
             return info;
         }
-        public Room CreateRoom(string name, byte capacity, AttributesCollection attributes)
+        public Room CreateRoom(string name, Version version, byte capacity, AttributesCollection attributes)
         {
             Log.Info($"Creating Room '{name}'");
 
             var id = Rooms.Reserve();
 
-            var room = new Room(id, name, capacity, attributes);
+            var room = new Room(id, name, version, capacity, attributes);
 
             Rooms.Assign(id, room);
 

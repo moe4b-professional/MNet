@@ -17,11 +17,14 @@ namespace MNet
         string name;
         public string Name { get { return name; } }
 
-        int maxPlayers;
-        public int MaxPlayers { get { return maxPlayers; } }
+        Version version;
+        public Version Version => version;
 
-        int playersCount;
-        public int PlayersCount { get { return playersCount; } }
+        byte capacity;
+        public byte Capacity { get { return capacity; } }
+
+        byte occupancy;
+        public byte Occupancy { get { return occupancy; } }
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
@@ -30,18 +33,26 @@ namespace MNet
         {
             context.Select(ref id);
             context.Select(ref name);
-            context.Select(ref maxPlayers);
-            context.Select(ref playersCount);
+
+            context.Select(ref version);
+
+            context.Select(ref capacity);
+            context.Select(ref occupancy);
+
             context.Select(ref attributes);
         }
 
         public RoomBasicInfo() { }
-        public RoomBasicInfo(RoomID id, string name, int maxPlayers, int playersCount, AttributesCollection attributes)
+        public RoomBasicInfo(RoomID id, string name, Version version, byte capacity, byte occupancy, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
-            this.maxPlayers = maxPlayers;
-            this.playersCount = playersCount;
+
+            this.version = version;
+
+            this.capacity = capacity;
+            this.occupancy = occupancy;
+
             this.attributes = attributes;
         }
 
@@ -49,8 +60,8 @@ namespace MNet
         {
             return "ID: " + ID + Environment.NewLine +
                 "Name: " + Name + Environment.NewLine +
-                "MaxPlayers: " + MaxPlayers + Environment.NewLine +
-                "PlayersCount: " + PlayersCount + Environment.NewLine;
+                "MaxPlayers: " + Capacity + Environment.NewLine +
+                "PlayersCount: " + Occupancy + Environment.NewLine;
         }
     }
 
