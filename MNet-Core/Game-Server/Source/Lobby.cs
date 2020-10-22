@@ -31,7 +31,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(GetLobbyInfoRequest)}");
+                RestAPI.Write(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(GetLobbyInfoRequest)}");
                 return;
             }
 
@@ -48,7 +48,7 @@ namespace MNet
 
             var info = new LobbyInfo(GameServer.GetInfo(), list);
 
-            RestAPI.WriteTo(response, info);
+            RestAPI.Write(response, info);
         }
 
         #region Create Room
@@ -61,12 +61,12 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.WriteTo(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomRequest)}");
+                RestAPI.Write(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomRequest)}");
                 return;
             }
 
             var info = CreateRoom(payload);
-            RestAPI.WriteTo(response, info);
+            RestAPI.Write(response, info);
         }
 
         public RoomBasicInfo CreateRoom(CreateRoomRequest request)

@@ -37,7 +37,7 @@ namespace MNet
 
             Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
-            if (Router.Process(request, response) == false) WriteTo(response, SharpHttpCode.NotFound, "Error 404");
+            if (Router.Process(request, response) == false) Write(response, SharpHttpCode.NotFound, "Error 404");
         }
 
         public RestAPI(int port)
@@ -56,17 +56,20 @@ namespace MNet
 
         //Static Utility
         #region Write
-        public static void WriteTo(SharpHttpResponse response, SharpHttpCode code, string message)
+        public static void Write(SharpHttpResponse response, SharpHttpCode code, string message)
         {
             var data = Encoding.UTF8.GetBytes(message);
 
             response.StatusCode = (int)code;
+            response.StatusDescription = message;
+
             response.ContentEncoding = Encoding.UTF8;
             response.WriteContent(data);
+
             response.Close();
         }
 
-        public static void WriteTo<TPayload>(SharpHttpResponse response, TPayload payload)
+        public static void Write<TPayload>(SharpHttpResponse response, TPayload payload)
         {
             var raw = NetworkSerializer.Serialize(payload);
 

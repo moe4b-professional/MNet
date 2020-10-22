@@ -67,37 +67,20 @@ namespace MNet
         GameServerID id;
         public GameServerID ID => id;
 
-        Version[] versions;
-        public Version[] Versions => versions;
-
-        public bool Supports(Version version)
-        {
-            for (int i = 0; i < versions.Length; i++)
-            {
-                if (versions[i] == Version.Zero) return true;
-
-                if (versions[i] == version) return true;
-            }
-
-            return false;
-        }
-
         GameServerRegion region;
         public GameServerRegion Region => region;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
-            context.Select(ref versions);
             context.Select(ref region);
         }
 
-        public override string ToString() => $"{id} | v{versions.ToPrettyString()} | {region}";
+        public override string ToString() => $"{id} | {region}";
 
-        public GameServerInfo(GameServerID id, Version[] versions, GameServerRegion region)
+        public GameServerInfo(GameServerID id, GameServerRegion region)
         {
             this.id = id;
-            this.versions = versions;
             this.region = region;
         }
     }

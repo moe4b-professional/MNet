@@ -30,7 +30,7 @@ namespace MNet
         public AttributesCollection Attributes { get; protected set; }
 
         #region Read Info
-        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Version, Capacity, Occupancy, Attributes);
+        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
 
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
 

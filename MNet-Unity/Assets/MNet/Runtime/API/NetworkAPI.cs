@@ -20,7 +20,7 @@ namespace MNet
     {
         public const string Path = "MNet/";
 
-        public static MNetAPIConfig Config { get; private set; }
+        public static NetworkAPIConfig Config { get; private set; }
 
         public static string Address => Config.Address;
 
@@ -29,7 +29,7 @@ namespace MNet
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
-            Config = MNetAPIConfig.Load();
+            Config = NetworkAPIConfig.Load();
 
             if (Config == null)
                 throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");

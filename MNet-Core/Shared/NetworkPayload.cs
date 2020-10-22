@@ -225,18 +225,28 @@ namespace MNet
     [Serializable]
     public class MasterServerInfoRequest : INetworkSerializable
     {
-        Version version;
-        public Version Version => version;
+        Version apiVersion;
+        public Version ApiVersion => apiVersion;
+
+        Version gameVersion;
+        public Version GameVersion => gameVersion;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-            context.Select(ref version);
+            //Note to Self
+            //Always Keep these in the same order to ensure backwards compatibility
+            context.Select(ref apiVersion);
+            context.Select(ref gameVersion);
+            //End of Note
         }
 
-        public MasterServerInfoRequest() { }
-        public MasterServerInfoRequest(Version version)
+        public MasterServerInfoRequest()
         {
-            this.version = version;
+            apiVersion = Constants.ApiVersion;
+        }
+        public MasterServerInfoRequest(Version gameVersion) : this()
+        {
+            this.gameVersion = gameVersion;
         }
     }
 
@@ -244,26 +254,21 @@ namespace MNet
     [Serializable]
     public class MasterServerInfoResponse : INetworkSerializable
     {
-        Version minimumVersion;
-        public Version MinimumVersion => minimumVersion;
+        GameServerInfo[] servers;
+        public GameServerInfo[] Servers => servers;
 
-        List<GameServerInfo> servers;
-        public List<GameServerInfo> Servers => servers;
-
-        public int Size => servers.Count;
+        public int Size => servers.Length;
 
         public GameServerInfo this[int index] => servers[index];
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-            context.Select(ref minimumVersion);
             context.Select(ref servers);
         }
 
         public MasterServerInfoResponse() { }
-        public MasterServerInfoResponse(Version minimumVersion, List<GameServerInfo> servers)
+        public MasterServerInfoResponse(GameServerInfo[] servers)
         {
-            this.minimumVersion = minimumVersion;
             this.servers = servers;
         }
     }

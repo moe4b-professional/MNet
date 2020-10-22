@@ -2,6 +2,5 @@
   "PublicAddress": "127.0.0.1",
   "MasterAddress": "127.0.0.1",
   "RestScheme": "HTTP",
-  "NetworkTransport": "WebSocketSharp",
-  "Versions": [ "0.0", "0.1" ]
+  "NetworkTransport": "WebSocketSharp"
 }

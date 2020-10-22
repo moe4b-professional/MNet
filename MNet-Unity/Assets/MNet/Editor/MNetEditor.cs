@@ -25,7 +25,7 @@ namespace MNet
         [MenuItem(NetworkAPI.Path + "Configuration", false, 0)]
         static void Configuration()
         {
-            var asset = MNetAPIConfig.Load();
+            var asset = NetworkAPIConfig.Load();
 
             Selection.activeObject = asset;
         }

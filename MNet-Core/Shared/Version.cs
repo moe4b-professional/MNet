@@ -16,6 +16,11 @@ namespace MNet
         byte patch;
         public byte Patch => patch;
 
+        /// <summary>
+        /// Numerical Value to Describe the Version, used for Comparison & Hashing
+        /// </summary>
+        public int Value => (patch) + (minor * 1000) + (major * 1000000);
+
         public const char Splitter = '.';
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -25,7 +30,7 @@ namespace MNet
             context.Select(ref patch);
         }
 
-        public override int GetHashCode() => major ^ minor ^ patch;
+        public override int GetHashCode() => Value.GetHashCode();
 
         public override string ToString() => $"{major}.{minor}.{patch}";
 
@@ -53,28 +58,14 @@ namespace MNet
         public Version(byte major, byte minor) : this(major, minor, 0) { }
         public Version(byte major) : this(major, 0, 0) { }
 
-        public static bool operator ==(Version a, Version b) => a.Equals(b);
-        public static bool operator !=(Version a, Version b) => !a.Equals(b);
+        public static bool operator ==(Version left, Version right) => left.Equals(right);
+        public static bool operator !=(Version left, Version right) => !left.Equals(right);
 
-        public static bool operator >(Version a, Version b)
-        {
-            if (a.major > b.major) return true;
-            if (a.minor > b.minor) return true;
-            if (a.patch > b.patch) return true;
+        public static bool operator >(Version left, Version right) => left.Value > right.Value;
+        public static bool operator <(Version left, Version right) => left.Value < right.Value;
 
-            return false;
-        }
-        public static bool operator >=(Version a, Version b) => a == b || a > b;
-
-        public static bool operator <(Version a, Version b)
-        {
-            if (a.major < b.major) return true;
-            if (a.minor < b.minor) return true;
-            if (a.patch < b.patch) return true;
-
-            return false;
-        }
-        public static bool operator <=(Version a, Version b) => a == b || a < b;
+        public static bool operator >=(Version left, Version right) => left == right || left > right;
+        public static bool operator <=(Version left, Version right) => left == right || left < right;
 
         //Static Utility
         public static Version Zero { get; private set; } = new Version(0, 0, 0);
@@ -83,7 +74,7 @@ namespace MNet
         {
             if (TryParse(text, out var result)) return result;
 
-            throw new ArgumentException();
+            throw new ArgumentException($"{text} Cannot be Parsed as a Version");
         }
 
         public static bool TryParse(string text, out Version version)

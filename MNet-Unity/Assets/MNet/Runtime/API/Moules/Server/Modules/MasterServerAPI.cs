@@ -29,13 +29,13 @@ namespace MNet
             {
                 public static string Address => NetworkAPI.Address;
 
-                public static DirectedRestAPI Rest { get; private set; }
+                public static RestAPI Rest { get; private set; }
 
-                public static List<GameServerInfo> Servers { get; private set; }
+                public static GameServerInfo[] Servers { get; private set; }
 
                 public static void Configure()
                 {
-                    Rest = new DirectedRestAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
+                    Rest = new RestAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
                     Rest.SetIP(Address);
                 }
 
@@ -54,7 +54,7 @@ namespace MNet
 
                         Servers = error == null ? info.Servers : null;
 
-                        if (error == null && Servers?.Count == 0) Debug.LogWarning($"No Game Servers Found for Version {NetworkAPI.Version}");
+                        if (error == null && Servers?.Length == 0) Debug.LogWarning($"No Game Servers Found for Version {NetworkAPI.Version}");
 
                         OnInfo?.Invoke(info, error);
                     }

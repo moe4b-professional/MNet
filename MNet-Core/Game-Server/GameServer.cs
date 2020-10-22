@@ -17,11 +17,9 @@ namespace MNet
 
         public static Config Config { get; private set; }
 
-        public static Version[] Versions => Config.Versions;
-
         public static GameServerRegion Region { get; private set; }
 
-        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Versions, Region);
+        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
 
         public static RestAPI Rest { get; private set; }
         public static RealtimeAPI Realtime { get; private set; }
@@ -30,19 +28,19 @@ namespace MNet
 
         static void Main(string[] args)
         {
-            Console.Title = "Game Sever";
+            Console.Title = $"Game Sever | Network API v{Constants.ApiVersion}";
+
+            Log.Info($"Network API Version: {Constants.ApiVersion}");
 
             ApiKey.Read();
 
             Config = Config.Read();
 
-            Log.Info($"Server Versions: {Config.Versions.ToPrettyString()}");
-
             Address = Config.PublicAddress;
             Region = GameServerRegion.Europe;
 
             MasterServer.Configure(Config.MasterAddress);
-            MasterServer.Register(GetInfo(), ApiKey.Token);
+            MasterServer.Register(ID, Region, ApiKey.Token);
 
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();

@@ -17,9 +17,6 @@ namespace MNet
         string name;
         public string Name { get { return name; } }
 
-        Version version;
-        public Version Version => version;
-
         byte capacity;
         public byte Capacity { get { return capacity; } }
 
@@ -34,8 +31,6 @@ namespace MNet
             context.Select(ref id);
             context.Select(ref name);
 
-            context.Select(ref version);
-
             context.Select(ref capacity);
             context.Select(ref occupancy);
 
@@ -43,12 +38,10 @@ namespace MNet
         }
 
         public RoomBasicInfo() { }
-        public RoomBasicInfo(RoomID id, string name, Version version, byte capacity, byte occupancy, AttributesCollection attributes)
+        public RoomBasicInfo(RoomID id, string name, byte capacity, byte occupancy, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
-
-            this.version = version;
 
             this.capacity = capacity;
             this.occupancy = occupancy;

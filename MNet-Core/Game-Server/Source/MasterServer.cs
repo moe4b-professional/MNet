@@ -14,7 +14,9 @@ namespace MNet
     {
         public static IPAddress Address { get; private set; }
         public static ushort Port => Constants.Server.Master.Rest.Port;
+
         public static RestScheme Scheme => GameServer.Config.RestScheme;
+
         public static string URL => $"{Scheme}://{Address}:{Port}";
 
         public static void Configure(IPAddress address)
@@ -24,9 +26,9 @@ namespace MNet
 
         public static HttpClient Client { get; private set; }
 
-        public static RegisterGameServerResult Register(GameServerInfo info, string key)
+        public static RegisterGameServerResult Register(GameServerID id, GameServerRegion region, string key)
         {
-            var request = new RegisterGameServerRequest(info, key);
+            var request = new RegisterGameServerRequest(id, region, key);
             var content = RestAPI.WriteContent(request);
 
             HttpResponseMessage response;

@@ -43,11 +43,11 @@ namespace MNet
                     }
                 }
 
-                public static DirectedRestAPI Rest { get; private set; }
+                public static RestAPI Rest { get; private set; }
 
                 public static void Configure()
                 {
-                    Rest = new DirectedRestAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
+                    Rest = new RestAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
                 }
 
                 public delegate void SelectDelegate(GameServerID id);

@@ -22,13 +22,21 @@ using System.Net;
 
 namespace MNet
 {
-    public abstract class RestAPI
+    public class RestAPI
     {
         public ushort Port { get; protected set; }
-        public static RestScheme Scheme { get; protected set; }
+
+        public RestScheme Scheme { get; protected set; }
+
+        public string IP { get; protected set; }
+        public void SetIP(string value)
+        {
+            this.IP = value;
+        }
 
         public List<Element> List { get; private set; }
         public Queue<Element> Queue { get; private set; }
+
         public class Element
         {
             public UnityWebRequest Request { get; protected set; }
@@ -44,20 +52,6 @@ namespace MNet
         }
 
         static bool IsDone(Element element) => element.Request.isDone;
-
-        public Element Register(UnityWebRequest request, CallbackDelegate callback, bool inqueue)
-        {
-            var element = new Element(request, callback);
-
-            if (inqueue)
-                Queue.Enqueue(element);
-            else
-                List.Add(element);
-
-            request.SendWebRequest();
-
-            return element;
-        }
 
         void Update()
         {
@@ -106,11 +100,55 @@ namespace MNet
             Register(request, callback, enqueue);
         }
 
+        public Element Register(UnityWebRequest request, CallbackDelegate callback, bool inqueue)
+        {
+            var element = new Element(request, callback);
+
+            if (inqueue)
+                Queue.Enqueue(element);
+            else
+                List.Add(element);
+
+            request.SendWebRequest();
+
+            return element;
+        }
+
+        #region Methods
+        public void GET(string path, CallbackDelegate callback, bool enqueue)
+        {
+            var downloader = new DownloadHandlerBuffer();
+
+            Send(IP, path, "GET", null, downloader, callback, enqueue);
+        }
+
+        public void PUT<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
+        {
+            var data = NetworkSerializer.Serialize(payload);
+
+            var uploader = new UploadHandlerRaw(data);
+            var downloader = new DownloadHandlerBuffer();
+
+            Send(IP, path, "PUT", uploader, downloader, callback, enqueue);
+        }
+
+        public void POST<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
+        {
+            var data = NetworkSerializer.Serialize(payload);
+
+            var uploader = new UploadHandlerRaw(data);
+            var downloader = new DownloadHandlerBuffer();
+
+            Send(IP, path, "POST", uploader, downloader, callback, enqueue);
+        }
+        #endregion
+
         public delegate void CallbackDelegate(UnityWebRequest request);
 
         public RestAPI(ushort port, RestScheme scheme)
         {
             this.Port = port;
+            this.Scheme = scheme;
 
             List = new List<Element>();
             Queue = new Queue<Element>();
@@ -124,7 +162,7 @@ namespace MNet
             if (request.isHttpError || request.isNetworkError)
             {
                 payload = default;
-                error = new RestError(request);
+                error = RestError.From(request);
                 return;
             }
 
@@ -145,45 +183,6 @@ namespace MNet
         }
     }
 
-    public class DirectedRestAPI : RestAPI
-    {
-        public string IP { get; protected set; }
-        public void SetIP(string value)
-        {
-            this.IP = value;
-        }
-
-        public void GET(string path, CallbackDelegate callback, bool enqueue)
-        {
-            var downloader = new DownloadHandlerBuffer();
-
-            Send(IP, path, "GET", null, downloader, callback, enqueue);
-        }
-        public void PUT<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
-        {
-            var data = NetworkSerializer.Serialize(payload);
-
-            var uploader = new UploadHandlerRaw(data);
-            var downloader = new DownloadHandlerBuffer();
-
-            Send(IP, path, "PUT", uploader, downloader, callback, enqueue);
-        }
-        public void POST<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
-        {
-            var data = NetworkSerializer.Serialize(payload);
-
-            var uploader = new UploadHandlerRaw(data);
-            var downloader = new DownloadHandlerBuffer();
-
-            Send(IP, path, "POST", uploader, downloader, callback, enqueue);
-        }
-
-        public DirectedRestAPI(ushort port, RestScheme scheme) : base(port, scheme)
-        {
-
-        }
-    }
-
     public class RestError
     {
         public long Code { get; protected set; }
@@ -196,8 +195,23 @@ namespace MNet
             this.Message = message;
         }
 
-        public RestError(UnityWebRequest request) : this(request.responseCode, request.error) { }
+        public static RestError From(UnityWebRequest request)
+        {
+            var code = request.responseCode;
 
-        public override string ToString() => $"REST Error: {Message}";
+            var message = GetMessage(request);
+
+            return new RestError(code, message);
+        }
+
+        public static string GetMessage(UnityWebRequest request)
+        {
+            if (request?.downloadHandler?.data?.Length > 0)
+                return request.downloadHandler.text;
+
+            return request.error;
+        }
+
+        public override string ToString() => $"REST Error: {Code}, Message: {Message}";
     }
 }

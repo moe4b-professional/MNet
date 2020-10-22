@@ -20,17 +20,21 @@ namespace MNet
 
         public static RestAPI Rest { get; private set; }
 
-        public static Dictionary<GameServerID, GameServerInfo> Servers { get; private set; }
+        public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
+
+        static object SyncLock = new object();
 
         static void Main(string[] args)
         {
-            Console.Title = "Master Sever";
+            Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
+
+            Log.Info($"Network API Version: {Constants.ApiVersion}");
 
             ApiKey.Read();
 
             Config = Config.Read();
 
-            Log.Info($"Minimum Version: {MinimumVersion}");
+            Log.Info($"Minimum Game Version: {MinimumVersion}");
 
             Rest = new RestAPI(Constants.Server.Master.Rest.Port);
             Rest.Start();
@@ -51,25 +55,40 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.WriteTo(response, SharpHttpCode.NotAcceptable, $"Error Reading Info Request");
+                RestAPI.Write(response, SharpHttpCode.NotAcceptable, $"Error Reading Info Request");
                 return;
             }
 
-            var list = new List<GameServerInfo>(Servers.Count);
-
-            if (payload.Version >= MinimumVersion)
+            if (payload.ApiVersion != Constants.ApiVersion)
             {
-                foreach (var server in Servers.Values)
-                {
-                    if (server.Supports(payload.Version) == false) continue;
-
-                    list.Add(server);
-                }
+                var text = $"Mismatched API Versions [Client: {payload.ApiVersion}, Server: {Constants.ApiVersion}]" +
+                    $", Please use the Same Network API Release on the Client and Server";
+                RestAPI.Write(response, SharpHttpCode.Gone, text);
+                return;
             }
 
-            var info = new MasterServerInfoResponse(MinimumVersion, list);
+            if (payload.GameVersion < MinimumVersion)
+            {
+                var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {MinimumVersion}";
+                RestAPI.Write(response, SharpHttpCode.Gone, text);
+                return;
+            }
 
-            RestAPI.WriteTo(response, info);
+            var list = Query();
+
+            var info = new MasterServerInfoResponse(list);
+
+            RestAPI.Write(response, info);
+        }
+
+        static GameServerInfo[] Query()
+        {
+            lock (SyncLock)
+            {
+                var list = Servers.ToArray(GameServer.GetInfo);
+
+                return list;
+            }
         }
 
         #region Register Server
@@ -82,12 +101,12 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.WriteTo(response, SharpHttpCode.NotAcceptable, $"Error Reading Register Request");
+                RestAPI.Write(response, SharpHttpCode.NotAcceptable, $"Error Reading Register Request");
                 return;
             }
 
             var result = RegisterServer(payload);
-            RestAPI.WriteTo(response, result);
+            RestAPI.Write(response, result);
         }
 
         static RegisterGameServerResult RegisterServer(RegisterGameServerRequest request)
@@ -98,15 +117,18 @@ namespace MNet
                 return new RegisterGameServerResult(false);
             }
 
-            RegisterServer(request.ID, request.Versions, request.Region);
+            RegisterServer(request.ID, request.Region);
             return new RegisterGameServerResult(true);
         }
 
-        static GameServerInfo RegisterServer(GameServerID id, Version[] versions, GameServerRegion region)
+        static GameServer RegisterServer(GameServerID id, GameServerRegion region)
         {
-            var server = new GameServerInfo(id, versions, region);
+            var server = new GameServer(id, region);
 
-            Servers[id] = server;
+            lock (SyncLock)
+            {
+                Servers[id] = server;
+            }
 
             Log.Info($"Registering Server: {server}");
 
@@ -124,22 +146,25 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.WriteTo(response, SharpHttpCode.NotAcceptable, $"Error Reading Remove Request");
+                RestAPI.Write(response, SharpHttpCode.NotAcceptable, $"Error Reading Remove Request");
                 return;
             }
 
             RemoveServer(payload.ID);
 
             var result = new RemoveGameServerResult(true);
-            RestAPI.WriteTo(response, result);
+            RestAPI.Write(response, result);
         }
 
         static bool RemoveServer(GameServerID id)
         {
-            if (Servers.Remove(id))
+            lock (SyncLock)
             {
-                Log.Info($"Removing Server: {id}");
-                return true;
+                if (Servers.Remove(id))
+                {
+                    Log.Info($"Removing Server: {id}");
+                    return true;
+                }
             }
 
             return false;
@@ -148,7 +173,28 @@ namespace MNet
 
         static MasterServer()
         {
-            Servers = new Dictionary<GameServerID, GameServerInfo>();
+            Servers = new Dictionary<GameServerID, GameServer>();
+        }
+    }
+
+    [Serializable]
+    public struct GameServer
+    {
+        GameServerID id;
+        public GameServerID ID => id;
+
+        GameServerRegion region;
+        public GameServerRegion Region => region;
+
+        public GameServerInfo GetInfo() => new GameServerInfo(id, region);
+        public static GameServerInfo GetInfo(GameServer server) => server.GetInfo();
+
+        public override string ToString() => $"{id} | {region}";
+
+        public GameServer(GameServerID id, GameServerRegion region)
+        {
+            this.id = id;
+            this.region = region;
         }
     }
 }

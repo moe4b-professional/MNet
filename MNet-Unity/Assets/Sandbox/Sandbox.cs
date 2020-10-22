@@ -66,8 +66,6 @@ namespace Game
         {
             if (error == null)
             {
-                Debug.Log($"Minimum Game Version: {info.MinimumVersion}");
-                Debug.Log($"Current Version Supported: {NetworkAPI.Version >= info.MinimumVersion}");
                 Debug.Log($"Game Servers Count: {info.Size}");
 
                 if (info.Size > 0)

@@ -21,11 +21,11 @@ using MNet;
 namespace MNet
 {
     [CreateAssetMenu]
-    public class MNetAPIConfig : ScriptableObject
+    public class NetworkAPIConfig : ScriptableObject
     {
-        public static MNetAPIConfig Load()
+        public static NetworkAPIConfig Load()
         {
-            var configs = Resources.LoadAll<MNetAPIConfig>("");
+            var configs = Resources.LoadAll<NetworkAPIConfig>("");
 
             if (configs.Length == 0) return null;
 
@@ -56,6 +56,37 @@ namespace MNet
         {
             Version = version.Value;
         }
+
+#if UNITY_EDITOR
+        [CustomEditor(typeof(NetworkAPIConfig))]
+        public class Inspector : Editor
+        {
+            public static GUIStyle VersionLabelStyle;
+
+            void OnEnable()
+            {
+                VersionLabelStyle = new GUIStyle()
+                {
+                    fontSize = 15,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                    normal = new GUIStyleState()
+                    {
+                        textColor = new Color(0.27f, 1, 0.27f),
+                    }
+                };
+            }
+
+            public override void OnInspectorGUI()
+            {
+                base.OnInspectorGUI();
+
+                EditorGUILayout.Space();
+
+                EditorGUILayout.LabelField($"API Version: {Constants.ApiVersion}", VersionLabelStyle);
+            }
+        }
+#endif
     }
 
     [Serializable]

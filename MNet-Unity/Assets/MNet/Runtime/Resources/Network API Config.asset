@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5976159ead0d3724a836094e129f0bfa, type: 3}
+  m_Script: {fileID: 11500000, guid: cb3371d12fbd87148b5e95d7e39d7206, type: 3}
   m_Name: Network API Config
   m_EditorClassIdentifier: 
   address: 127.0.0.1
   restScheme: 0
   transport: 0
   version:
-    value: 0.1
+    value: 0.0.1
     infer: 1

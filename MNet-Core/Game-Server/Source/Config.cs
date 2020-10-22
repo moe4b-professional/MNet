@@ -23,18 +23,16 @@ namespace MNet
         [JsonProperty]
         public NetworkTransportType NetworkTransport { get; protected set; }
 
-        [JsonProperty]
-        public Version[] Versions { get; protected set; }
-
         protected override void WriteDefaults()
         {
             base.WriteDefaults();
 
             PublicAddress = IPAddress.Any;
             MasterAddress = IPAddress.Any;
+
             RestScheme = RestScheme.HTTP;
+
             NetworkTransport = NetworkTransportType.WebSocketSharp;
-            Versions = new Version[] { Version.Zero };
         }
 
         public Config() { }
