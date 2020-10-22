@@ -4,4 +4,5 @@ MNet operates on a relay like architecture where a single client is marked as th
 MNet comes with two server executables:
 - A Master Server that is used to list all regional available servers and handle versioning.
 - A Game Server that is used to host player's rooms.
+
 The intened usage is to have a single Master Server and multiple regional Game Servers, where clients can then connect to.
