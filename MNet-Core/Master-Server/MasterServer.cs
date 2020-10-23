@@ -9,6 +9,7 @@ using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
 using System.Threading;
 using System.Linq;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MNet
 {
@@ -22,9 +23,9 @@ namespace MNet
 
         public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
 
-        static object SyncLock = new object();
+        static readonly object SyncLock = new object();
 
-        static void Main(string[] args)
+        static void Main()
         {
             Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
 
@@ -44,6 +45,16 @@ namespace MNet
             Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
 
             while (true) Console.ReadLine();
+        }
+
+        static GameServerInfo[] Query()
+        {
+            lock (SyncLock)
+            {
+                var list = Servers.ToArray(GameServer.GetInfo);
+
+                return list;
+            }
         }
 
         static void GetInfo(SharpHttpRequest request, SharpHttpResponse response)
@@ -81,16 +92,6 @@ namespace MNet
             RestAPI.Write(response, info);
         }
 
-        static GameServerInfo[] Query()
-        {
-            lock (SyncLock)
-            {
-                var list = Servers.ToArray(GameServer.GetInfo);
-
-                return list;
-            }
-        }
-
         #region Register Server
         static void RegisterServer(SharpHttpRequest request, SharpHttpResponse response)
         {
@@ -117,20 +118,20 @@ namespace MNet
                 return new RegisterGameServerResult(false);
             }
 
-            RegisterServer(request.ID, request.Region);
+            RegisterServer(request.Info);
             return new RegisterGameServerResult(true);
         }
 
-        static GameServer RegisterServer(GameServerID id, GameServerRegion region)
+        static GameServer RegisterServer(GameServerInfo info)
         {
-            var server = new GameServer(id, region);
+            var server = new GameServer(info);
 
             lock (SyncLock)
             {
-                Servers[id] = server;
+                Servers[info.ID] = server;
             }
 
-            Log.Info($"Registering Server: {server}");
+            Log.Info($"Registering Server: [{server}]");
 
             return server;
         }
@@ -180,21 +181,20 @@ namespace MNet
     [Serializable]
     public struct GameServer
     {
-        GameServerID id;
-        public GameServerID ID => id;
+        GameServerInfo info;
+        public GameServerInfo Info => info;
 
-        GameServerRegion region;
-        public GameServerRegion Region => region;
+        public GameServerID ID => info.ID;
+        public string Name => info.Name;
+        public GameServerRegion Region => info.Region;
 
-        public GameServerInfo GetInfo() => new GameServerInfo(id, region);
-        public static GameServerInfo GetInfo(GameServer server) => server.GetInfo();
+        public static GameServerInfo GetInfo(GameServer server) => server.Info;
 
-        public override string ToString() => $"{id} | {region}";
+        public override string ToString() => info.ToString();
 
-        public GameServer(GameServerID id, GameServerRegion region)
+        public GameServer(GameServerInfo info)
         {
-            this.id = id;
-            this.region = region;
+            this.info = info;
         }
     }
 }

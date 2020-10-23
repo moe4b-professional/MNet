@@ -12,10 +12,16 @@ namespace MNet
     public partial class Config : Config<Config>
     {
         [JsonProperty]
+        public string Name { get; protected set; }
+
+        [JsonProperty]
         public IPAddress PublicAddress { get; protected set; }
 
         [JsonProperty]
         public IPAddress MasterAddress { get; protected set; }
+
+        [JsonProperty]
+        public GameServerRegion Region { get; protected set; }
 
         [JsonProperty]
         public RestScheme RestScheme { get; protected set; }
@@ -27,8 +33,12 @@ namespace MNet
         {
             base.WriteDefaults();
 
+            Name = "Game Server";
+
             PublicAddress = IPAddress.Any;
             MasterAddress = IPAddress.Any;
+
+            Region = GameServerRegion.Europe;
 
             RestScheme = RestScheme.HTTP;
 

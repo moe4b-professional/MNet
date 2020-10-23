@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet-Unity-Editor", "..\MNe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteNetLib", "..\MNet-Unity\LiteNetLib.csproj", "{1B4927FD-1A71-E482-79DE-F153996F9CDF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meta-Composer", "Meta-Composer\Meta-Composer.csproj", "{FEAF5553-ADDD-400F-B09D-B7C082B92B24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meta-Composer", "Meta-Composer\Meta-Composer.csproj", "{FEAF5553-ADDD-400F-B09D-B7C082B92B24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

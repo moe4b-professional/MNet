@@ -26,9 +26,9 @@ namespace MNet
 
         public static HttpClient Client { get; private set; }
 
-        public static RegisterGameServerResult Register(GameServerID id, GameServerRegion region, string key)
+        public static RegisterGameServerResult Register(GameServerInfo info, string key)
         {
-            var request = new RegisterGameServerRequest(id, region, key);
+            var request = new RegisterGameServerRequest(info, key);
             var content = RestAPI.WriteContent(request);
 
             HttpResponseMessage response;

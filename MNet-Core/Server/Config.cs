@@ -23,7 +23,7 @@ namespace MNet
 
         }
 
-        //Static
+        //Static Utility
         private static JsonSerializerSettings SerializerSettings { get; set; }
 
         public static T Read()

@@ -9,27 +9,26 @@ namespace MNet
     [Serializable]
     public class RegisterGameServerRequest : INetworkSerializable
     {
-        GameServerID id;
-        public GameServerID ID => id;
+        GameServerInfo info;
+        public GameServerInfo Info => info;
 
-        GameServerRegion region;
-        public GameServerRegion Region => region;
+        public GameServerID ID => info.ID;
+        public string Name => info.Name;
+        public GameServerRegion Region => info.Region;
 
         string key;
         public string Key => key;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-            context.Select(ref id);
-            context.Select(ref region);
+            context.Select(ref info);
             context.Select(ref key);
         }
 
         public RegisterGameServerRequest() { }
-        public RegisterGameServerRequest(GameServerID id, GameServerRegion region, string key)
+        public RegisterGameServerRequest(GameServerInfo info, string key)
         {
-            this.id = id;
-            this.region = region;
+            this.info = info;
             this.key = key;
         }
     }

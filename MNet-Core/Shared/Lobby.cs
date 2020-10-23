@@ -10,8 +10,8 @@ namespace MNet
     [Serializable]
     public class LobbyInfo : INetworkSerializable
     {
-        GameServerInfo server;
-        public GameServerInfo Server => server;
+        GameServerID server;
+        public GameServerID Server => server;
 
         List<RoomBasicInfo> rooms;
         public List<RoomBasicInfo> Rooms { get { return rooms; } }
@@ -27,7 +27,7 @@ namespace MNet
         }
 
         public LobbyInfo() { }
-        public LobbyInfo(GameServerInfo server, List<RoomBasicInfo> rooms)
+        public LobbyInfo(GameServerID server, List<RoomBasicInfo> rooms)
         {
             this.server = server;
             this.rooms = rooms;

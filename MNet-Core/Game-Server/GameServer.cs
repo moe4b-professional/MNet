@@ -8,6 +8,8 @@ namespace MNet
 {
     static class GameServer
     {
+        public static Config Config { get; private set; }
+
         public static GameServerID ID { get; private set; }
         public static IPAddress Address
         {
@@ -15,18 +17,18 @@ namespace MNet
             private set => ID = new GameServerID(value);
         }
 
-        public static Config Config { get; private set; }
+        public static string Name => Config.Name;
 
-        public static GameServerRegion Region { get; private set; }
+        public static GameServerRegion Region => Config.Region;
 
-        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
+        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Name, Region);
 
         public static RestAPI Rest { get; private set; }
         public static RealtimeAPI Realtime { get; private set; }
 
         public static Lobby Lobby { get; private set; }
 
-        static void Main(string[] args)
+        static void Main()
         {
             Console.Title = $"Game Sever | Network API v{Constants.ApiVersion}";
 
@@ -37,10 +39,13 @@ namespace MNet
             Config = Config.Read();
 
             Address = Config.PublicAddress;
-            Region = GameServerRegion.Europe;
+
+            Log.Info($"Server ID: {ID}");
+            Log.Info($"Server Name: {Name}");
+            Log.Info($"Server Region: {Region}");
 
             MasterServer.Configure(Config.MasterAddress);
-            MasterServer.Register(ID, Region, ApiKey.Token);
+            MasterServer.Register(GetInfo(), ApiKey.Token);
 
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
@@ -59,12 +64,14 @@ namespace MNet
 
     public static class Sandbox
     {
+#pragma warning disable IDE0051 // Remove unused private members
         public static void Run()
         {
 
         }
 
         static void NullableSerialization()
+
         {
             NetworkClientID? value = new NetworkClientID(20);
 
@@ -148,4 +155,5 @@ namespace MNet
             foreach (var item in value) Log.Info(item);
         }
     }
+#pragma warning restore IDE0051 // Remove unused private members
 }

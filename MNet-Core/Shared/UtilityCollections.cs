@@ -76,23 +76,18 @@ namespace MNet
         public delegate TKey IncrementDelegate(TKey value);
         public IncrementDelegate Incrementor { get; protected set; }
 
-        object SyncLock = new object();
-
         public TKey Reserve()
         {
-            lock (SyncLock)
+            if (vacant.TryDequeue(out var key) == false)
             {
-                if (vacant.TryDequeue(out var key) == false)
-                {
-                    key = index;
+                key = index;
 
-                    Increment();
-                }
-
-                Add(key);
-
-                return key;
+                Increment();
             }
+
+            Add(key);
+
+            return key;
         }
 
         void Add(TKey key)
@@ -102,14 +97,11 @@ namespace MNet
 
         public bool Free(TKey key)
         {
-            lock (SyncLock)
-            {
-                if (Contains(key) == false) return false;
+            if (Contains(key) == false) return false;
 
-                Remove(key);
-                vacant.Enqueue(key);
-                return true;
-            }
+            Remove(key);
+            vacant.Enqueue(key);
+            return true;
         }
 
         void Remove(TKey key)

@@ -12,7 +12,7 @@ namespace MNet
         {
             public static Dictionary<Type, bool> Dictionary { get; private set; }
 
-            static object SyncLock = new object();
+            static readonly object SyncLock = new object();
 
             public static bool Check(Type type)
             {

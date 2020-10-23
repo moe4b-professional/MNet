@@ -26,13 +26,18 @@ namespace MNet
 
         public TContext this[uint code] => Contexts[code];
 
+        readonly protected object ContextLock = new object();
+
         public abstract void Start();
 
         public virtual TContext Register(uint id)
         {
             var context = Create(id);
 
-            Contexts.Add(id, context);
+            lock (ContextLock)
+            {
+                Contexts.Add(id, context);
+            }
 
             return context;
         }
@@ -53,7 +58,10 @@ namespace MNet
         {
             context.Close();
 
-            Contexts.Remove(context.ID);
+            lock (ContextLock)
+            {
+                Contexts.Remove(context.ID);
+            }
         }
 
         public NetworkTransport()
@@ -71,19 +79,10 @@ namespace MNet
     {
         public Dictionary<TIID, TClient> Clients { get; protected set; }
 
+        #region Register
         public HashSet<TIID> UnregisteredClients { get; protected set; }
 
         public readonly byte[] RegisterClientPayload = new byte[] { 200 };
-
-        readonly Thread thread;
-        protected virtual void Run()
-        {
-            while (true) Tick();
-        }
-
-        protected abstract void Tick();
-
-        protected abstract TIID GetIID(TConnection connection);
 
         protected virtual void MarkUnregisteredConnection(TConnection connection)
         {
@@ -92,15 +91,6 @@ namespace MNet
             UnregisteredClients.Add(iid);
         }
 
-        protected virtual void ProcessMessage(TConnection connection, byte[] raw)
-        {
-            var iid = GetIID(connection);
-
-            if (UnregisteredClients.Contains(iid))
-                RegisterConnection(connection, raw);
-            else
-                RouteMessage(connection, raw);
-        }
         protected virtual void RegisterConnection(TConnection connection, byte[] data)
         {
             var iid = GetIID(connection);
@@ -131,6 +121,28 @@ namespace MNet
 
             Send(connection, RegisterClientPayload);
         }
+        #endregion
+
+        readonly Thread thread;
+        protected virtual void Run()
+        {
+            while (true) Tick();
+        }
+
+        protected abstract void Tick();
+
+        protected abstract TIID GetIID(TConnection connection);
+
+        protected virtual void ProcessMessage(TConnection connection, byte[] raw)
+        {
+            var iid = GetIID(connection);
+
+            if (UnregisteredClients.Contains(iid))
+                RegisterConnection(connection, raw);
+            else
+                RouteMessage(connection, raw);
+        }
+
         protected virtual void RouteMessage(TConnection connection, byte[] raw)
         {
             var iid = GetIID(connection);
@@ -211,6 +223,13 @@ namespace MNet
 
         public AutoKeyDictionary<NetworkClientID, TClient> Clients { get; protected set; }
 
+        public bool TryGetClient(NetworkClientID id, out TClient client)
+        {
+            lock (ClientLock) { return Clients.TryGetValue(id, out client); }
+        }
+
+        protected readonly object ClientLock = new object();
+
         #region Connect
         public event NetworkTransportConnectDelegate OnConnect;
         void InvokeConnect(TClient client)
@@ -266,17 +285,25 @@ namespace MNet
 
         public virtual TClient RegisterClient(TConnection connection)
         {
-            var id = Clients.Reserve();
+            NetworkClientID id;
+
+            lock (ClientLock)
+            {
+                id = Clients.Reserve();
+            }
 
             var client = CreateClient(id, connection);
 
-            Clients.Assign(id, client);
+            lock (ClientLock)
+            {
+                Clients.Assign(id, client);
+            }
 
             QueueConnect(client);
 
             return client;
         }
-        protected abstract TClient CreateClient(NetworkClientID clientID, TConnection connection);
+        public virtual void UnregisterClient(TClient client) => QueueDisconnect(client);
 
         public virtual void RegisterMessage(TClient sender, byte[] raw)
         {
@@ -285,22 +312,23 @@ namespace MNet
             QueueMessage(sender, message, raw);
         }
 
-        public virtual void UnregisterClient(TClient client)
-        {
-            QueueDisconnect(client);
-        }
-
         protected virtual void RemoveClient(TClient client)
         {
-            Clients.Remove(client.ClientID);
+            lock (ClientLock)
+            {
+                Clients.Remove(client.ClientID);
+            }
 
             DestoryClient(client);
         }
+
+        protected abstract TClient CreateClient(NetworkClientID clientID, TConnection connection);
         protected virtual void DestoryClient(TClient client) { }
 
+        #region Send
         public virtual void Send(NetworkClientID target, byte[] raw)
         {
-            if (Clients.TryGetValue(target, out var client) == false)
+            if (TryGetClient(target, out var client) == false)
             {
                 Log.Warning($"No Transport Client Registered With ID: {target}");
                 return;
@@ -308,27 +336,20 @@ namespace MNet
 
             Send(client, raw);
         }
-        public abstract void Send(TClient client, byte[] raw);
 
+        public abstract void Send(TClient client, byte[] raw);
+        #endregion
+
+        #region Broadcast
         public virtual void Broadcast(byte[] raw) => Broadcast(Clients.Values, raw);
+
         public virtual void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw)
         {
-            var collection = new TClient[targets.Count];
-
-            var index = 0;
-
-            foreach (var target in targets)
-            {
-                if (Clients.TryGetValue(target, out var client) == false)
-                    Log.Warning($"No Transport Client Registered With ID: {target}");
-
-                collection[index] = client;
-
-                index += 1;
-            }
+            var collection = GetClientsFrom(targets);
 
             Broadcast(collection, raw);
         }
+
         public virtual void Broadcast(IReadOnlyCollection<TClient> targets, byte[] raw)
         {
             foreach (var target in targets)
@@ -338,14 +359,33 @@ namespace MNet
                 Send(target, raw);
             }
         }
+        #endregion
 
+        public TClient[] GetClientsFrom(IReadOnlyCollection<NetworkClientID> targets)
+        {
+            var collection = new TClient[targets.Count];
+
+            var index = 0;
+
+            foreach (var target in targets)
+            {
+                if (TryGetClient(target, out collection[index]) == false)
+                    Log.Warning($"No Transport Client Registered With ID: {target}");
+
+                index += 1;
+            }
+
+            return collection;
+        }
+
+        #region Disconnect
         public virtual void Disconnect(TClient client) => Disconnect(client, DisconnectCode.Normal);
         public abstract void Disconnect(TClient client, DisconnectCode code);
 
         public virtual void Disconnect(NetworkClientID clientID) => Disconnect(clientID, DisconnectCode.Normal);
         public virtual void Disconnect(NetworkClientID clientID, DisconnectCode code)
         {
-            if (Clients.TryGetValue(clientID, out var client) == false)
+            if (TryGetClient(clientID, out var client) == false)
             {
                 Log.Warning($"No Transport Client Registered With ID: {clientID}");
                 return;
@@ -353,6 +393,7 @@ namespace MNet
 
             Disconnect(client, code);
         }
+        #endregion
 
         public virtual void Close()
         {

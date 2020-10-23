@@ -72,7 +72,7 @@ namespace Game
                 {
                     var server = info[0];
 
-                    Debug.Log($"Selecting Game Server: {server}");
+                    Debug.Log($"Selecting Game Server: [{server}]");
 
                     NetworkAPI.Server.Game.Select(server);
                 }

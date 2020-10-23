@@ -67,20 +67,25 @@ namespace MNet
         GameServerID id;
         public GameServerID ID => id;
 
+        string name;
+        public string Name => name;
+
         GameServerRegion region;
         public GameServerRegion Region => region;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
+            context.Select(ref name);
             context.Select(ref region);
         }
 
-        public override string ToString() => $"{id} | {region}";
+        public override string ToString() => $"{name} | {id} | {region}";
 
-        public GameServerInfo(GameServerID id, GameServerRegion region)
+        public GameServerInfo(GameServerID id, string name, GameServerRegion region)
         {
             this.id = id;
+            this.name = name;
             this.region = region;
         }
     }
