@@ -126,10 +126,7 @@ namespace MNet
         {
             var server = new GameServer(info);
 
-            lock (SyncLock)
-            {
-                Servers[info.ID] = server;
-            }
+            lock (SyncLock) Servers[info.ID] = server;
 
             Log.Info($"Registering Server: [{server}]");
 

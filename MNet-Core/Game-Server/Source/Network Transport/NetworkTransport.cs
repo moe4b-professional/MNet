@@ -34,10 +34,7 @@ namespace MNet
         {
             var context = Create(id);
 
-            lock (ContextLock)
-            {
-                Contexts.Add(id, context);
-            }
+            lock (ContextLock) Contexts.Add(id, context);
 
             return context;
         }
@@ -58,10 +55,7 @@ namespace MNet
         {
             context.Close();
 
-            lock (ContextLock)
-            {
-                Contexts.Remove(context.ID);
-            }
+            lock (ContextLock) Contexts.Remove(context.ID);
         }
 
         public NetworkTransport()
@@ -225,7 +219,7 @@ namespace MNet
 
         public bool TryGetClient(NetworkClientID id, out TClient client)
         {
-            lock (ClientLock) { return Clients.TryGetValue(id, out client); }
+            lock (ClientLock) return Clients.TryGetValue(id, out client);
         }
 
         protected readonly object ClientLock = new object();
@@ -287,17 +281,11 @@ namespace MNet
         {
             NetworkClientID id;
 
-            lock (ClientLock)
-            {
-                id = Clients.Reserve();
-            }
+            lock (ClientLock) id = Clients.Reserve();
 
             var client = CreateClient(id, connection);
 
-            lock (ClientLock)
-            {
-                Clients.Assign(id, client);
-            }
+            lock (ClientLock) Clients.Assign(id, client);
 
             QueueConnect(client);
 
@@ -314,10 +302,7 @@ namespace MNet
 
         protected virtual void RemoveClient(TClient client)
         {
-            lock (ClientLock)
-            {
-                Clients.Remove(client.ClientID);
-            }
+            lock (ClientLock) Clients.Remove(client.ClientID);
 
             DestoryClient(client);
         }

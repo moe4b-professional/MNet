@@ -110,10 +110,7 @@ namespace MNet
 
         public bool RemoveRoom(RoomID id)
         {
-            lock (SyncLock)
-            {
-                return Rooms.Remove(id);
-            }
+            lock (SyncLock) return Rooms.Remove(id);
         }
 
         public Lobby()
