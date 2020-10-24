@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,7 +14,7 @@ namespace MNet
 {
     class Lobby
     {
-        public AutoKeyDictionary<RoomID, Room> Rooms { get; protected set; }
+        public RoomCollection Rooms { get; protected set; }
 
         public RestAPI Rest => GameServer.Rest;
 
@@ -37,30 +39,18 @@ namespace MNet
                 return;
             }
 
-            var list = Query(payload.Version);
+            var list = Query(payload.AppID, payload.Version);
 
             var info = new LobbyInfo(GameServer.ID, list);
 
             RestAPI.Write(response, info);
         }
 
-        public List<RoomBasicInfo> Query(Version version)
+        public List<RoomBasicInfo> Query(AppID appID, Version version)
         {
-            var list = new List<RoomBasicInfo>(Rooms.Count);
+            var targets = Rooms.Query(appID, version);
 
-            lock (SyncLock)
-            {
-                foreach (var room in Rooms.Values)
-                {
-                    if (room.Version != version) continue;
-
-                    var info = room.ReadBasicInfo();
-
-                    list.Add(info);
-                }
-            }
-
-            return list;
+            return targets.ToList(Room.GetBasicInfo);
         }
 
         #region Create Room
@@ -77,13 +67,13 @@ namespace MNet
                 return;
             }
 
-            var room = CreateRoom(payload.Name, payload.Version, payload.Capacity, payload.Attributes);
-            var info = room.ReadBasicInfo();
+            var room = CreateRoom(payload.AppID, payload.Version, payload.Name, payload.Capacity, payload.Attributes);
+            var info = room.GetBasicInfo();
 
             RestAPI.Write(response, info);
         }
 
-        public Room CreateRoom(string name, Version version, byte capacity, AttributesCollection attributes)
+        public Room CreateRoom(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             Log.Info($"Creating Room '{name}'");
 
@@ -93,9 +83,9 @@ namespace MNet
             {
                 var id = Rooms.Reserve();
 
-                room = new Room(id, name, version, capacity, attributes);
+                room = new Room(id, appID, version, name, capacity, attributes);
 
-                Rooms.Assign(id, room);
+                Rooms.Add(room);
             }
 
             room.OnStop += RoomStopCallback;
@@ -106,16 +96,16 @@ namespace MNet
         }
         #endregion
 
-        void RoomStopCallback(Room room) => RemoveRoom(room.ID);
+        void RoomStopCallback(Room room) => RemoveRoom(room);
 
-        public bool RemoveRoom(RoomID id)
+        public bool RemoveRoom(Room room)
         {
-            lock (SyncLock) return Rooms.Remove(id);
+            lock (SyncLock) return Rooms.Remove(room);
         }
 
         public Lobby()
         {
-            Rooms = new AutoKeyDictionary<RoomID, Room>(RoomID.Increment);
+            Rooms = new RoomCollection();
         }
     }
 }

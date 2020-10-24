@@ -17,7 +17,7 @@ namespace MNet
     {
         public static Config Config { get; private set; }
 
-        public static Version MinimumVersion => Config.MinimumVersion;
+        public static Dictionary<AppID, AppConfiguration> Apps { get; private set; }
 
         public static RestAPI Rest { get; private set; }
 
@@ -27,6 +27,18 @@ namespace MNet
 
         static void Main()
         {
+            try
+            {
+                Procedure();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        static void Procedure()
+        {
             Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");
@@ -35,7 +47,10 @@ namespace MNet
 
             Config = Config.Read();
 
-            Log.Info($"Minimum Game Version: {MinimumVersion}");
+            Apps = Config.Apps.ToDictionary(AppConfiguration.SelectID);
+
+            Log.Info("Registered Apps:");
+            foreach (var app in Apps.Values) Log.Info(app);
 
             Rest = new RestAPI(Constants.Server.Master.Rest.Port);
             Rest.Start();
@@ -78,9 +93,15 @@ namespace MNet
                 return;
             }
 
-            if (payload.GameVersion < MinimumVersion)
+            if (Apps.TryGetValue(payload.AppID, out var app) == false)
             {
-                var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {MinimumVersion}";
+                RestAPI.Write(response, SharpHttpCode.Gone, $"App ID {payload.AppID} Not Registered with Server");
+                return;
+            }
+
+            if (payload.GameVersion < app.MinimumVersion)
+            {
+                var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {app.MinimumVersion}";
                 RestAPI.Write(response, SharpHttpCode.Gone, text);
                 return;
             }
@@ -128,7 +149,7 @@ namespace MNet
 
             lock (SyncLock) Servers[info.ID] = server;
 
-            Log.Info($"Registering Server: [{server}]");
+            Log.Info($"Registering Server: {server}");
 
             return server;
         }
@@ -172,26 +193,6 @@ namespace MNet
         static MasterServer()
         {
             Servers = new Dictionary<GameServerID, GameServer>();
-        }
-    }
-
-    [Serializable]
-    public struct GameServer
-    {
-        GameServerInfo info;
-        public GameServerInfo Info => info;
-
-        public GameServerID ID => info.ID;
-        public string Name => info.Name;
-        public GameServerRegion Region => info.Region;
-
-        public static GameServerInfo GetInfo(GameServer server) => server.Info;
-
-        public override string ToString() => info.ToString();
-
-        public GameServer(GameServerInfo info)
-        {
-            this.info = info;
         }
     }
 }

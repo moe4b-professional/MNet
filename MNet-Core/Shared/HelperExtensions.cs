@@ -23,5 +23,21 @@ namespace MNet
 
             return array;
         }
+
+        public static List<TResult> ToList<TResult, TValue>(this IReadOnlyCollection<TValue> collection, Func<TValue, TResult> function)
+        {
+            if (collection == null) return new List<TResult>(0);
+
+            var list = new List<TResult>(collection.Count);
+
+            foreach (var value in collection)
+            {
+                var item = function(value);
+
+                list.Add(item);
+            }
+
+            return list;
+        }
     }
 }

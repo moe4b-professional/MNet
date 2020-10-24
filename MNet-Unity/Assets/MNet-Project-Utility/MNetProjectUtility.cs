@@ -54,7 +54,7 @@ namespace MNet
                 [MenuItem(Path + "Master", priority = Priority)]
                 public static void Master()
                 {
-                    var path = ParsePath("MasterServer");
+                    var path = ParsePath("Master-Server");
 
                     StartProcess(path);
                 }
@@ -62,7 +62,7 @@ namespace MNet
                 [MenuItem(Path + "Game", priority = Priority)]
                 public static void Game()
                 {
-                    var path = ParsePath("GameServer");
+                    var path = ParsePath("Game-Server");
 
                     StartProcess(path);
                 }

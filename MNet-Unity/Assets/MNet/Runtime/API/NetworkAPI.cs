@@ -24,6 +24,8 @@ namespace MNet
 
         public static string Address => Config.Address;
 
+        public static AppID AppID { get; private set; }
+
         public static Version Version => Config.Version;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
@@ -43,12 +45,29 @@ namespace MNet
         {
             Log.Output = LogOutput;
 
+            ParseAppID();
+
             Server.Configure();
-
-            Client.Configure();
             RealtimeAPI.Configure();
-
+            Client.Configure();
             Room.Configure();
+        }
+
+        static void ParseAppID()
+        {
+            if (string.IsNullOrEmpty(Config.AppID))
+                throw new Exception("Please Enter an App ID in Network API Config");
+
+            if (Guid.TryParse(Config.AppID, out var guid) == false)
+                throw new Exception($"Couldn't Parse '{Config.AppID}' as App ID, Please Enter a Valid App ID in Network API Config");
+
+            AppID = new AppID(guid);
+        }
+
+        public static event Action OnUpdate;
+        public static void Update()
+        {
+            OnUpdate?.Invoke();
         }
 
         static void LogOutput(object target, Log.Level level)
@@ -72,12 +91,6 @@ namespace MNet
                     Debug.Log(target);
                     break;
             }
-        }
-
-        public static event Action OnUpdate;
-        public static void Update()
-        {
-            OnUpdate?.Invoke();
         }
 
         static void RegisterPlayerLoop<TType>(PlayerLoopSystem.UpdateFunction callback)

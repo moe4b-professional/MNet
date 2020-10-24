@@ -30,6 +30,18 @@ namespace MNet
 
         static void Main()
         {
+            try
+            {
+                Procedure();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        static void Procedure()
+        {
             Console.Title = $"Game Sever | Network API v{Constants.ApiVersion}";
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");

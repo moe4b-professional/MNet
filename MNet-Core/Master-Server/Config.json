@@ -1,3 +1,8 @@
 {
-  "MinimumVersion": "0.0.0"
+  "Apps": [
+    {
+      "ID": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+      "MinimumVersion": "0.0.0"
+    }
+  ]
 }

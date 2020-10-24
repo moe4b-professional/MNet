@@ -18,9 +18,11 @@ namespace MNet
     {
         public RoomID ID { get; protected set; }
 
-        public string Name { get; protected set; }
+        public AppID AppID { get; protected set; }
 
         public Version Version { get; protected set; }
+
+        public string Name { get; protected set; }
 
         public byte Capacity { get; protected set; }
         public byte Occupancy => (byte)Clients.Count;
@@ -30,11 +32,12 @@ namespace MNet
         public AttributesCollection Attributes { get; protected set; }
 
         #region Read Info
-        public RoomBasicInfo ReadBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
+        public RoomBasicInfo GetBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
+        public static RoomBasicInfo GetBasicInfo(Room room) => room.GetBasicInfo();
 
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
 
-        public RoomInternalInfo ReadInternalInfo()
+        public RoomInternalInfo GetInternalInfo()
         {
             var info = new RoomInternalInfo();
 
@@ -235,7 +238,7 @@ namespace MNet
 
             Log.Info($"Room {this.ID}: Client {id} Registerd");
 
-            var room = ReadInternalInfo();
+            var room = GetInternalInfo();
             var response = new RegisterClientResponse(id, room);
             SendTo(client, response);
 
@@ -492,12 +495,14 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, string name, Version version, byte capacity, AttributesCollection attributes)
+        public Room(RoomID id, AppID appID, Version version, string name,  byte capacity, AttributesCollection attributes)
         {
             this.ID = id;
-            this.Name = name;
 
             this.Version = version;
+            this.AppID = appID;
+
+            this.Name = name;
 
             this.Capacity = capacity;
 

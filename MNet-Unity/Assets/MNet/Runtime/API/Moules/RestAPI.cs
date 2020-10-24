@@ -212,6 +212,6 @@ namespace MNet
             return request.error;
         }
 
-        public override string ToString() => $"REST Error: {Code}, Message: {Message}";
+        public override string ToString() => $"REST Error: {Message}";
     }
 }

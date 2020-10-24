@@ -20,8 +20,8 @@ using UnityEngine.Networking;
 
 namespace MNet
 {
-	public static partial class NetworkAPI
-	{
+    public static partial class NetworkAPI
+    {
         public static class Room
         {
             #region Master
@@ -72,7 +72,7 @@ namespace MNet
 
             public static void Create(string name, byte capacity, AttributesCollection attributes = null)
             {
-                var payload = new CreateRoomRequest(name, NetworkAPI.Version, capacity, attributes);
+                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, attributes);
 
                 Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback, false);
 

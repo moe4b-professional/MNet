@@ -22,6 +22,9 @@ using UnityEngine.Networking;
 using WebSocketSharp;
 
 using MNet;
+using System.Reflection;
+using System.Text;
+using System.Net;
 
 namespace Game
 {
@@ -72,7 +75,7 @@ namespace Game
                 {
                     var server = info[0];
 
-                    Debug.Log($"Selecting Game Server: [{server}]");
+                    Debug.Log($"Selecting Game Server: {server}");
 
                     NetworkAPI.Server.Game.Select(server);
                 }

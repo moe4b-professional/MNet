@@ -41,6 +41,10 @@ namespace MNet
         public string Address => address;
 
         [SerializeField]
+        protected string appID;
+        public string AppID => appID;
+
+        [SerializeField]
         RestScheme restScheme = RestScheme.HTTP;
         public RestScheme RestScheme => restScheme;
 
@@ -49,7 +53,7 @@ namespace MNet
         public NetworkTransportType Transport => transport;
 
         [SerializeField]
-        protected NetworkVersionProperty version = new NetworkVersionProperty("0.0.1");
+        protected VersionProperty version = new VersionProperty("0.0.1");
         public Version Version { get; protected set; }
 
         void Configure()
@@ -69,7 +73,7 @@ namespace MNet
                 {
                     fontSize = 15,
                     fontStyle = FontStyle.Bold,
-                    alignment = TextAnchor.MiddleCenter,
+                    //alignment = TextAnchor.MiddleCenter,
                     normal = new GUIStyleState()
                     {
                         textColor = new Color(0.27f, 1, 0.27f),
@@ -79,18 +83,18 @@ namespace MNet
 
             public override void OnInspectorGUI()
             {
-                base.OnInspectorGUI();
 
-                EditorGUILayout.Space();
 
                 EditorGUILayout.LabelField($"API Version: {Constants.ApiVersion}", VersionLabelStyle);
+                EditorGUILayout.Space();
+                base.OnInspectorGUI();
             }
         }
 #endif
     }
 
     [Serializable]
-    public class NetworkVersionProperty
+    public class VersionProperty
     {
         [SerializeField]
         string value;
@@ -102,26 +106,32 @@ namespace MNet
 
         public Version Value => Version.Parse(Text);
 
-        public NetworkVersionProperty(string value)
+        public VersionProperty(string value)
         {
             this.value = value;
             infer = true;
         }
 
 #if UNITY_EDITOR
-        [CustomPropertyDrawer(typeof(NetworkVersionProperty))]
+        [CustomPropertyDrawer(typeof(VersionProperty))]
         public class Drawer : PropertyDrawer
         {
             SerializedProperty property;
             SerializedProperty value;
             SerializedProperty infer;
 
+            public static GUIContent InferGUIContent;
+
             void Init(SerializedProperty property)
             {
+                if (this.property == property) return;
+
                 this.property = property;
 
-                value = property.FindPropertyRelative(nameof(NetworkVersionProperty.value));
-                infer = property.FindPropertyRelative(nameof(NetworkVersionProperty.infer));
+                value = property.FindPropertyRelative(nameof(VersionProperty.value));
+                infer = property.FindPropertyRelative(nameof(VersionProperty.infer));
+
+                InferGUIContent = new GUIContent("Infer Version", "Toggle On to Infer Version from the Project's Version");
             }
 
             public static float LineHeight => EditorGUIUtility.singleLineHeight;
@@ -156,7 +166,7 @@ namespace MNet
             {
                 var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
 
-                infer.boolValue = EditorGUI.Toggle(area, "Infer Version", infer.boolValue);
+                infer.boolValue = EditorGUI.Toggle(area, InferGUIContent, infer.boolValue);
 
                 rect.y += LineHeight;
                 rect.height -= LineHeight;

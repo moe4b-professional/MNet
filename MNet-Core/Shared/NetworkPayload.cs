@@ -190,6 +190,9 @@ namespace MNet
     [Serializable]
     public sealed class CreateRoomRequest : INetworkSerializable
     {
+        AppID appID;
+        public AppID AppID => appID;
+
         string name;
         public string Name => name;
 
@@ -204,15 +207,17 @@ namespace MNet
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-            context.Select(ref name);
+            context.Select(ref appID);
             context.Select(ref version);
+            context.Select(ref name);
             context.Select(ref capacity);
             context.Select(ref attributes);
         }
 
         public CreateRoomRequest() { }
-        public CreateRoomRequest(string name, Version version, byte capacity, AttributesCollection attributes)
+        public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
         {
+            this.appID = appID;
             this.name = name;
             this.capacity = capacity;
             this.version = version;
@@ -228,6 +233,9 @@ namespace MNet
         Version apiVersion;
         public Version ApiVersion => apiVersion;
 
+        AppID appID;
+        public AppID AppID => appID;
+
         Version gameVersion;
         public Version GameVersion => gameVersion;
 
@@ -236,16 +244,19 @@ namespace MNet
             //Note to Self
             //Always Keep these in the same order to ensure backwards compatibility
             context.Select(ref apiVersion);
-            context.Select(ref gameVersion);
             //End of Note
+
+            context.Select(ref appID);
+            context.Select(ref gameVersion);
         }
 
         public MasterServerInfoRequest()
         {
             apiVersion = Constants.ApiVersion;
         }
-        public MasterServerInfoRequest(Version gameVersion) : this()
+        public MasterServerInfoRequest(AppID appID, Version gameVersion) : this()
         {
+            this.appID = appID;
             this.gameVersion = gameVersion;
         }
     }
@@ -278,17 +289,22 @@ namespace MNet
     [Serializable]
     public sealed class GetLobbyInfoRequest : INetworkSerializable
     {
+        AppID appID;
+        public AppID AppID => appID;
+
         Version version;
         public Version Version => version;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
+            context.Select(ref appID);
             context.Select(ref version);
         }
 
         public GetLobbyInfoRequest() { }
-        public GetLobbyInfoRequest(Version version)
+        public GetLobbyInfoRequest(AppID appID, Version version)
         {
+            this.appID = appID;
             this.version = version;
         }
     }

@@ -41,10 +41,9 @@ namespace MNet
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
-                public static void Info() => Info(NetworkAPI.Version);
-                public static void Info(Version version)
+                public static void Info()
                 {
-                    var payload = new MasterServerInfoRequest(version);
+                    var payload = new MasterServerInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
                     Rest.POST(Constants.Server.Master.Rest.Requests.Info, payload, Callback, false);
 
@@ -53,8 +52,6 @@ namespace MNet
                         RestAPI.Parse(request, out MasterServerInfoResponse info, out var error);
 
                         Servers = error == null ? info.Servers : null;
-
-                        if (error == null && Servers?.Length == 0) Debug.LogWarning($"No Game Servers Found for Version {NetworkAPI.Version}");
 
                         OnInfo?.Invoke(info, error);
                     }
