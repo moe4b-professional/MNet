@@ -125,7 +125,7 @@ namespace MNet
             var type = tuple.GetType();
             var binary = NetworkSerializer.Serialize(tuple);
 
-            var payload = NetworkSerializer.Deserialize(binary, type) as NetTuple;
+            var payload = NetworkSerializer.Deserialize(binary, type) as INetTuple;
             foreach (var item in payload) Log.Info(item);
         }
 

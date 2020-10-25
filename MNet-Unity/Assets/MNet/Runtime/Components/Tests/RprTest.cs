@@ -30,16 +30,16 @@ namespace MNet
         }
 
         [NetworkRPC(RemoteAutority.Any)]
-        string RPC(string text, RpcInfo info)
+        (RuntimePlatform platform, DateTime date) RPC(string text, RpcInfo info)
         {
-            return Application.platform.ToString();
+            return (Application.platform, DateTime.Now);
         }
 
-        void Callback(RprResult result, string value)
+        void Callback(RprResult result, (RuntimePlatform platform, DateTime date) value)
         {
             if (result == RprResult.Success)
             {
-                Debug.Log("RPR: " + value);
+                Debug.Log($"RPR: {value}");
             }
             else
             {

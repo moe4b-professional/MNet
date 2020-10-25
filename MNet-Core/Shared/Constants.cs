@@ -8,7 +8,7 @@ namespace MNet
 {
     public static class Constants
     {
-        public static Version ApiVersion { get; private set; } = new Version(0, 0, 10);
+        public static Version ApiVersion { get; private set; } = new Version(0, 0, 11);
 
         public static class Server
         {

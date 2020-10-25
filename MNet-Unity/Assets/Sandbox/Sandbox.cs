@@ -41,6 +41,8 @@ namespace Game
             NetworkAPI.Client.OnReady += ClientReadyCallback;
 
             NetworkAPI.Server.Master.Info();
+
+            Log.Info(Example.Class.Method());
         }
 
         void Update()

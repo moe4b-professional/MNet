@@ -24,7 +24,7 @@ namespace StressClient
 
         static NetworkEntityID entityID;
 
-        static void Main(string[] args)
+        static void Main()
         {
             var port = Constants.Server.Game.Realtime.Port;
 

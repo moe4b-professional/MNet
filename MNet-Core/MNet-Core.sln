@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.30503.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csproj", "{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{FD0B8738-0CAD-4D95-8A27-DD40C20D923F}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stress-Test", "Stress-Client\Stress-Test.csproj", "{6185A9D5-C34F-46FF-A929-DA3B6B41F452}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Game-Server", "Game-Server\Game-Server.csproj", "{C06A8B62-0279-4523-8AB8-BB1E48143808}"
@@ -23,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteNetLib", "..\MNet-Unity
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meta-Composer", "Meta-Composer\Meta-Composer.csproj", "{FEAF5553-ADDD-400F-B09D-B7C082B92B24}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "Shared\Shared.csproj", "{EB8C277E-AECA-4B4E-A12A-B4CED8C82F55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,10 +33,6 @@ Global
 		{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FD0B8738-0CAD-4D95-8A27-DD40C20D923F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FD0B8738-0CAD-4D95-8A27-DD40C20D923F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FD0B8738-0CAD-4D95-8A27-DD40C20D923F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FD0B8738-0CAD-4D95-8A27-DD40C20D923F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -66,6 +62,10 @@ Global
 		{FEAF5553-ADDD-400F-B09D-B7C082B92B24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FEAF5553-ADDD-400F-B09D-B7C082B92B24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FEAF5553-ADDD-400F-B09D-B7C082B92B24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB8C277E-AECA-4B4E-A12A-B4CED8C82F55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB8C277E-AECA-4B4E-A12A-B4CED8C82F55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB8C277E-AECA-4B4E-A12A-B4CED8C82F55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB8C277E-AECA-4B4E-A12A-B4CED8C82F55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

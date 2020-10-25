@@ -10,6 +10,7 @@ using System.Reflection;
 using System.ComponentModel;
 using System.Net;
 using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
 
 namespace MNet
 {
@@ -488,41 +489,33 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationImplicitResolver : NetworkSerializationImplicitResolver
     {
-        public static HashSet<Type> Types { get; private set; }
+        public static Type Interface => typeof(ITuple);
 
-        public override bool CanResolve(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return Types.Contains(target.GetGenericTypeDefinition());
-        }
+        public override bool CanResolve(Type target) => Interface.IsAssignableFrom(target);
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            throw GetException();
+            var value = instance as ITuple;
+
+            for (int i = 0; i < value.Length; i++)
+                writer.Write(value[i]);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            throw GetException();
+            var arguments = type.GetGenericArguments();
+
+            var items = new object[arguments.Length];
+
+            for (int i = 0; i < arguments.Length; i++)
+                items[i] = reader.Read(arguments[i]);
+
+            var value = Activator.CreateInstance(type, items);
+
+            return value;
         }
 
         NotImplementedException GetException() => new NotImplementedException("Tuple Serialization is Still not Supported, Please use NetTuple instead");
-
-        static TupleNetworkSerializationImplicitResolver()
-        {
-            Types = new HashSet<Type>()
-            {
-                typeof(Tuple<>),
-                typeof(Tuple<,>),
-                typeof(Tuple<,,>),
-                typeof(Tuple<,,,>),
-                typeof(Tuple<,,,,>),
-                typeof(Tuple<,,,,,>),
-                typeof(Tuple<,,,,,,>),
-                typeof(Tuple<,,,,,,,>),
-            };
-        }
     }
 
     [Preserve]

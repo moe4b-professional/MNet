@@ -21,8 +21,8 @@ using MNet;
 
 namespace Game
 {
-	public class Player : NetworkBehaviour
-	{
+    public class Player : NetworkBehaviour
+    {
         public MeshRenderer mesh;
 
         public float speed;
@@ -72,7 +72,7 @@ namespace Game
 
         void FamiliarRequestCallback(RprResult result, bool value)
         {
-            if(result != RprResult.Success)
+            if (result != RprResult.Success)
             {
                 Debug.LogError("Familiar Request Failed, Retrying");
                 RequestFamiliar();
