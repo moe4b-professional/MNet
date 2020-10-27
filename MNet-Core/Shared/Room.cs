@@ -9,7 +9,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public class RoomBasicInfo : INetworkSerializable
+    public struct RoomBasicInfo : INetworkSerializable
     {
         RoomID id;
         public RoomID ID { get { return id; } }
@@ -37,7 +37,6 @@ namespace MNet
             context.Select(ref attributes);
         }
 
-        public RoomBasicInfo() { }
         public RoomBasicInfo(RoomID id, string name, byte capacity, byte occupancy, AttributesCollection attributes)
         {
             this.id = id;
@@ -60,14 +59,34 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class RoomInternalInfo : INetworkSerializable
+    public struct RoomInnerInfo : INetworkSerializable
     {
         public void Select(INetworkSerializableResolver.Context context)
         {
 
         }
+    }
 
-        public RoomInternalInfo() { }
+    [Preserve]
+    public struct RoomInfo : INetworkSerializable
+    {
+        RoomBasicInfo basic;
+        public RoomBasicInfo Basic => basic;
+
+        RoomInnerInfo inner;
+        public RoomInnerInfo Inner => inner;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref basic);
+            context.Select(ref inner);
+        }
+
+        public RoomInfo(RoomBasicInfo basic, RoomInnerInfo inner)
+        {
+            this.basic = basic;
+            this.inner = inner;
+        }
     }
 
     public struct RoomID : INetworkSerializable

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,31 +7,26 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
-    static class NetworkSerializationHelper
+    public static class NetworkSerializationHelper
     {
         public static class Nullable
         {
-            public static Dictionary<Type, bool> Dictionary { get; private set; }
-
-            static readonly object SyncLock = new object();
+            public static ConcurrentDictionary<Type, bool> Dictionary { get; private set; }
 
             public static bool Check(Type type)
             {
-                lock (SyncLock)
-                {
-                    if (Dictionary.TryGetValue(type, out var result)) return result;
+                if (Dictionary.TryGetValue(type, out var value)) return value;
 
-                    result = Evaluate(type);
+                value = Evaluate(type);
 
-                    Dictionary.Add(type, result);
+                Dictionary.TryAdd(type, value);
 
-                    return result;
-                }
+                return value;
             }
 
             static bool Evaluate(Type type)
             {
-                if(type.IsValueType)
+                if (type.IsValueType)
                 {
                     if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) return true;
 
@@ -42,7 +38,7 @@ namespace MNet
 
             static Nullable()
             {
-                Dictionary = new Dictionary<Type, bool>();
+                Dictionary = new ConcurrentDictionary<Type, bool>();
             }
         }
 
@@ -61,56 +57,62 @@ namespace MNet
             public static void Read(out ushort length, NetworkReader reader) => reader.Read(out length);
         }
 
-        public static class CollectionElement
+        public static class GenericArguments
         {
-            public static Dictionary<Type, Type> Single { get; private set; }
-            static void Register(Type type, Type element) => Single.Add(type, element);
-
-            public static Dictionary<Type, (Type, Type)> Double { get; private set; }
-            static void Register(Type type, Type element1, Type element2) => Double.Add(type, (element1, element2));
+            public static ConcurrentDictionary<Type, Type[]> Dictionary { get; private set; }
 
             public static void Retrieve(Type type, out Type element)
             {
-                if (Single.TryGetValue(type, out element)) return;
+                if (Dictionary.TryGetValue(type, out var elements))
+                {
+                    element = elements[0];
+
+                    return;
+                }
 
                 if (type.IsArray)
                 {
                     element = type.GetElementType();
-                    Register(type, element);
+                    elements = new Type[] { element };
+
+                    Dictionary.TryAdd(type, elements);
+
                     return;
                 }
 
                 if (type.IsGenericType)
                 {
-                    var arguments = type.GetGenericArguments();
+                    elements = type.GetGenericArguments();
+                    element = elements[0];
 
-                    element = arguments[0];
-
-                    Register(type, element);
+                    Dictionary.TryAdd(type, elements);
 
                     return;
                 }
+
+                element = null;
             }
 
             public static void Retrieve(Type type, out Type element1, out Type element2)
             {
-                if(Double.TryGetValue(type, out var result))
+                if (Dictionary.TryGetValue(type, out var elements))
                 {
-                    element1 = result.Item1;
-                    element2 = result.Item2;
+                    element1 = elements[0];
+                    element2 = elements[1];
+
                     return;
                 }
 
-                if(type.IsGenericType)
+                if (type.IsGenericType)
                 {
-                    var arguments = type.GetGenericArguments();
+                    elements = type.GetGenericArguments();
 
-                    if (arguments.Length >= 2)
+                    if (elements.Length >= 2)
                     {
-                        element1 = arguments[0];
-                        element2 = arguments[1];
+                        element1 = elements[0];
+                        element2 = elements[1];
 
-                        Register(type, element1, element2);
+                        Dictionary.TryAdd(type, elements);
 
                         return;
                     }
@@ -120,10 +122,25 @@ namespace MNet
                 element2 = null;
             }
 
-            static CollectionElement()
+            public static void Retrieve(Type type, out Type[] elements)
             {
-                Single = new Dictionary<Type, Type>();
-                Double = new Dictionary<Type, (Type, Type)>();
+                if (Dictionary.TryGetValue(type, out elements)) return;
+
+                if (type.IsGenericType)
+                {
+                    elements = type.GetGenericArguments();
+
+                    Dictionary.TryAdd(type, elements);
+
+                    return;
+                }
+
+                elements = null;
+            }
+
+            static GenericArguments()
+            {
+                Dictionary = new ConcurrentDictionary<Type, Type[]>();
             }
         }
     }

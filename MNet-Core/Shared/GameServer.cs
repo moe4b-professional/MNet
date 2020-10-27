@@ -9,7 +9,7 @@ namespace MNet
     [Serializable]
     public enum GameServerRegion : byte
     {
-        USA, Europe, Asia
+        Local, USA, Europe, Asia
     }
 
     [Preserve]

@@ -64,7 +64,7 @@ namespace MNet
             {
                 Debug.Log("Client Connected");
 
-                if (AutoReady) Register();
+                if (AutoRegister) Register();
 
                 OnConnect?.Invoke();
             }
@@ -101,7 +101,7 @@ namespace MNet
                 Send(request);
             }
 
-            public delegate void RegisterDelegate(NetworkClientID id);
+            public delegate void RegisterDelegate(RegisterClientResponse response);
             public static event RegisterDelegate OnRegister;
             static void RegisterCallback(RegisterClientResponse response)
             {
@@ -109,7 +109,7 @@ namespace MNet
 
                 if (AutoReady) Ready();
 
-                OnRegister?.Invoke(ID);
+                OnRegister?.Invoke(response);
             }
             #endregion
 

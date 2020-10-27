@@ -3,6 +3,8 @@ using System.Net;
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace MNet
 {
@@ -79,7 +81,33 @@ namespace MNet
 #pragma warning disable IDE0051 // Remove unused private members
         public static void Run()
         {
+            
+        }
 
+        static void NullableTupleSerialization()
+        {
+            Tuple<DateTime?, Guid?, int?> tuple = new Tuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);
+
+            var type = tuple.GetType();
+
+            var binary = NetworkSerializer.Serialize(tuple);
+
+            var value = NetworkSerializer.Deserialize(binary, type) as ITuple;
+
+            for (int i = 0; i < value.Length; i++) Log.Info(value[i]);
+        }
+
+        static void CreateRooms()
+        {
+            var app = AppID.Parse("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA");
+
+            var version = Version.Create(0, 1);
+
+            var attributes = new AttributesCollection();
+            attributes.Set(0, "Level 1");
+
+            GameServer.Lobby.CreateRoom(app, version, "Game Room #1", 4, attributes);
+            GameServer.Lobby.CreateRoom(app, version, "Game Room #2", 8, attributes);
         }
 
         static void NullableSerialization()

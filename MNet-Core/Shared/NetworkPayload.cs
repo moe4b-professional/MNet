@@ -153,7 +153,7 @@ namespace MNet
             Register<ClientDisconnectPayload>(20);
 
             Register<RoomBasicInfo>(22);
-            Register<RoomInternalInfo>(23);
+            Register<RoomInnerInfo>(23);
 
             Register<NetworkClientInfo>(24);
 
@@ -338,8 +338,8 @@ namespace MNet
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        RoomInternalInfo room;
-        public RoomInternalInfo Room => room;
+        RoomInfo room;
+        public RoomInfo Room => room;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
@@ -348,7 +348,7 @@ namespace MNet
         }
 
         public RegisterClientResponse() { }
-        public RegisterClientResponse(NetworkClientID id, RoomInternalInfo room)
+        public RegisterClientResponse(NetworkClientID id, RoomInfo room)
         {
             this.id = id;
             this.room = room;

@@ -67,6 +67,8 @@ namespace MNet
         public static event Action OnUpdate;
         public static void Update()
         {
+            if (Application.isPlaying == false) return;
+
             OnUpdate?.Invoke();
         }
 

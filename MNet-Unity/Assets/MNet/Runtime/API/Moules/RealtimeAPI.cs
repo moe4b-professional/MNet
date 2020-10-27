@@ -85,7 +85,21 @@ namespace MNet
 
             static void Update()
             {
-                if (Transport != null) Transport.Poll();
+                if (Transport != null) Process();
+            }
+
+            public static bool Pause { get; private set; } = false;
+
+            static void Process()
+            {
+                while(true)
+                {
+                    if (Pause) break;
+
+                    if (Transport.InputQueue.TryDequeue(out var action) == false) break;
+
+                    action();
+                }
             }
 
             #region Callbacks

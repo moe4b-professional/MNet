@@ -8,7 +8,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public class LobbyInfo : INetworkSerializable
+    public struct LobbyInfo : INetworkSerializable
     {
         GameServerID server;
         public GameServerID Server => server;
@@ -26,7 +26,6 @@ namespace MNet
             context.Select(ref rooms);
         }
 
-        public LobbyInfo() { }
         public LobbyInfo(GameServerID server, List<RoomBasicInfo> rooms)
         {
             this.server = server;

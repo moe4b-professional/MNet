@@ -43,6 +43,8 @@ namespace MNet
                     }
                 }
 
+                public static GameServerInfo Info => Master.Servers[ID];
+
                 public static RestAPI Rest { get; private set; }
 
                 public static void Configure()

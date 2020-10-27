@@ -497,13 +497,15 @@ namespace MNet
         {
             var value = instance as ITuple;
 
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
+
             for (int i = 0; i < value.Length; i++)
-                writer.Write(value[i]);
+                writer.Write(value[i], arguments[i]);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var arguments = type.GetGenericArguments();
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
 
             var items = new object[arguments.Length];
 
@@ -529,13 +531,15 @@ namespace MNet
         {
             var value = instance as INetTuple;
 
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
+
             for (int i = 0; i < value.Length; i++)
-                writer.Write(value[i]);
+                writer.Write(value[i], arguments[i]);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var arguments = type.GetGenericArguments();
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
 
             var items = new object[arguments.Length];
 
@@ -647,22 +651,22 @@ namespace MNet
 
             NetworkSerializationHelper.Length.Write(array.Count, writer);
 
-            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
 
-            for (int i = 0; i < array.Count; i++) writer.Write(array[i], elementType);
+            for (int i = 0; i < array.Count; i++) writer.Write(array[i], argument);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
             NetworkSerializationHelper.Length.Read(out var length, reader);
 
-            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
 
-            var array = Array.CreateInstance(elementType, length);
+            var array = Array.CreateInstance(argument, length);
 
             for (int i = 0; i < length; i++)
             {
-                var element = reader.Read(elementType);
+                var element = reader.Read(argument);
 
                 array.SetValue(element, i);
             }
@@ -689,9 +693,9 @@ namespace MNet
 
             NetworkSerializationHelper.Length.Write(list.Count, writer);
 
-            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
 
-            for (int i = 0; i < list.Count; i++) writer.Write(list[i], elementType);
+            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
@@ -700,11 +704,11 @@ namespace MNet
 
             var list = Activator.CreateInstance(type, count) as IList;
 
-            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var elementType);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
 
             for (int i = 0; i < count; i++)
             {
-                var element = reader.Read(elementType);
+                var element = reader.Read(argument);
 
                 list.Add(element);
             }
@@ -731,7 +735,7 @@ namespace MNet
 
             NetworkSerializationHelper.Length.Write(dictionary.Count, writer);
 
-            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var keyType, out var valueType);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
 
             foreach (DictionaryEntry entry in dictionary)
             {
@@ -746,7 +750,7 @@ namespace MNet
 
             var dictionary = Activator.CreateInstance(type, count) as IDictionary;
 
-            NetworkSerializationHelper.CollectionElement.Retrieve(type, out var keyType, out var valueType);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
 
             for (int i = 0; i < count; i++)
             {

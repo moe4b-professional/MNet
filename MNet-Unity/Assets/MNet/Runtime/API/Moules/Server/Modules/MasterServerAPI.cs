@@ -31,17 +31,19 @@ namespace MNet
 
                 public static RestAPI Rest { get; private set; }
 
-                public static GameServerInfo[] Servers { get; private set; }
+                public static Dictionary<GameServerID, GameServerInfo> Servers { get; private set; }
 
                 public static void Configure()
                 {
                     Rest = new RestAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
                     Rest.SetIP(Address);
+
+                    Servers = new Dictionary<GameServerID, GameServerInfo>();
                 }
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
-                public static void Info()
+                public static void GetInfo()
                 {
                     var payload = new MasterServerInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
@@ -51,10 +53,17 @@ namespace MNet
                     {
                         RestAPI.Parse(request, out MasterServerInfoResponse info, out var error);
 
-                        Servers = error == null ? info.Servers : null;
+                        if (error == null) Register(info.Servers);
 
                         OnInfo?.Invoke(info, error);
                     }
+                }
+
+                static void Register(IList<GameServerInfo> list)
+                {
+                    Servers.Clear();
+
+                    for (int i = 0; i < list.Count; i++) Servers.Add(list[i].ID, list[i]);
                 }
             }
         }

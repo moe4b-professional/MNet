@@ -1,8 +1,8 @@
 {
-  "Name": "EU Server #1",
+  "Name": "Local #1",
   "PublicAddress": "127.0.0.1",
   "MasterAddress": "127.0.0.1",
-  "Region": "Europe",
+  "Region": "Local",
   "RestScheme": "HTTP",
   "NetworkTransport": "WebSocketSharp"
 }

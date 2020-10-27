@@ -22,14 +22,11 @@ using UnityEngine.Networking;
 using WebSocketSharp;
 
 using MNet;
-using System.Reflection;
-using System.Text;
-using System.Net;
 
 namespace Game
 {
-	public class Sandbox : MonoBehaviour
-	{
+    public class Sandbox : MonoBehaviour
+    {
         void Start()
         {
             NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
@@ -40,9 +37,7 @@ namespace Game
             NetworkAPI.Client.Profile = new NetworkClientProfile("Moe4B");
             NetworkAPI.Client.OnReady += ClientReadyCallback;
 
-            NetworkAPI.Server.Master.Info();
-
-            Log.Info(Example.Class.Method());
+            NetworkAPI.Server.Master.GetInfo();
         }
 
         void Update()
@@ -90,15 +85,11 @@ namespace Game
 
         void LobbyInfoCallback(LobbyInfo lobby, RestError error)
         {
-            if(error == null)
+            if (error == null)
             {
                 Debug.Log("Lobby Size: " + lobby.Size);
 
-                var room = lobby.Rooms.FirstOrDefault();
-
-                if (room == null) return;
-
-                NetworkAPI.Room.Join(room);
+                if(lobby.Size > 0) NetworkAPI.Room.Join(lobby[0]);
             }
             else
             {

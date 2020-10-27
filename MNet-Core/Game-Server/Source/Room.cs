@@ -35,14 +35,19 @@ namespace MNet
         public RoomBasicInfo GetBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
         public static RoomBasicInfo GetBasicInfo(Room room) => room.GetBasicInfo();
 
-        public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
+        public RoomInnerInfo GetInnerInfo() => new RoomInnerInfo();
+        public static RoomInnerInfo GetInnerInfo(Room room) => room.GetInnerInfo();
 
-        public RoomInternalInfo GetInternalInfo()
+        public RoomInfo GetInfo()
         {
-            var info = new RoomInternalInfo();
+            var basic = GetBasicInfo();
+            var inner = GetInnerInfo();
 
-            return info;
+            return new RoomInfo(basic, inner);
         }
+        public static RoomInfo GetInfo(Room room) => room.GetInfo();
+
+        public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
         #endregion
 
         public INetworkTransportContext TransportContext { get; protected set; }
@@ -238,7 +243,7 @@ namespace MNet
 
             Log.Info($"Room {this.ID}: Client {id} Registerd");
 
-            var room = GetInternalInfo();
+            var room = GetInfo();
             var response = new RegisterClientResponse(id, room);
             SendTo(client, response);
 

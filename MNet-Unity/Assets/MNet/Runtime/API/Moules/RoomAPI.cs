@@ -24,6 +24,8 @@ namespace MNet
     {
         public static class Room
         {
+            public static RoomBasicInfo BasicInfo { get; private set; }
+
             #region Master
             public static NetworkClient Master { get; private set; }
 
@@ -61,9 +63,9 @@ namespace MNet
             }
 
             #region Join
-            public static void Join(RoomBasicInfo room) => Join(room.ID);
+            public static void Join(RoomBasicInfo info) => Join(info.ID);
 
-            public static void Join(RoomID room) => RealtimeAPI.Connect(Server.Game.ID, room);
+            public static void Join(RoomID id) => RealtimeAPI.Connect(Server.Game.ID, id);
             #endregion
 
             #region Create

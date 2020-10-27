@@ -80,12 +80,6 @@ namespace MNet
         }
         #endregion
 
-        public virtual void Poll()
-        {
-            while (InputQueue.TryDequeue(out var action))
-                action();
-        }
-
         public abstract void Send(byte[] raw);
 
         public abstract void Close();
