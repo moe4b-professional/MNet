@@ -140,5 +140,15 @@ namespace Game
         {
             NetworkAPI.Client.DestroyEntity(entity);
         }
+
+        [MenuItem("Tools/Add Latency Tests")]
+        static void AddLatencyTests()
+        {
+            var selection = Selection.activeGameObject;
+
+            if (selection == null) return;
+
+            for (int i = 0; i < 10; i++) selection.AddComponent<LatencyTest>();
+        }
     }
 }

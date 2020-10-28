@@ -45,19 +45,19 @@ namespace MNet.Example
 		public void Quit()
         {
 			if (NetworkAPI.Client.IsConnected)
-            {
+			{
 				Popup.Show("Disconnecting");
 
 				NetworkAPI.Client.OnDisconnect += Callback;
 				NetworkAPI.Client.Disconnect();
 			}
 			else
-            {
+			{
 				Core.Scenes.LoadMainMenu();
 			}
 
 			void Callback(DisconnectCode code)
-            {
+			{
 				NetworkAPI.Client.OnDisconnect -= Callback;
 
 				Popup.Hide();
