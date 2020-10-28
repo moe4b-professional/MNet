@@ -36,6 +36,13 @@ namespace MNet.Example
             NetworkAPI.Server.Master.OnInfo += MasterInfoCallback;
         }
 
+        public override void Init()
+        {
+            base.Init();
+
+            Populate(NetworkAPI.Server.Master.Servers.Values);
+        }
+
         void MasterInfoCallback(MasterServerInfoResponse info, RestError error)
         {
             Clear();
@@ -43,19 +50,21 @@ namespace MNet.Example
             if (error == null) Populate(info.Servers);
         }
 
-        void Populate(IList<GameServerInfo> list)
+        void Populate(ICollection<GameServerInfo> collection)
         {
             Clear();
 
-            var entries = GameServerUITemplate.CreateAll(template, layout, list, InitTemplate);
+            var entries = GameServerUITemplate.CreateAll(template, collection, InitTemplate);
             templates.AddRange(entries);
         }
 
-        void InitTemplate(GameServerUITemplate instance, int index)
+        void InitTemplate(GameServerUITemplate template, int index)
         {
-            Initializer.Perform(instance);
+            Initializer.Perform(template);
 
-            instance.OnClick += TemplateClickCallback;
+            template.SetParent(layout);
+
+            template.OnClick += TemplateClickCallback;
         }
 
         void TemplateClickCallback(GameServerUITemplate template)

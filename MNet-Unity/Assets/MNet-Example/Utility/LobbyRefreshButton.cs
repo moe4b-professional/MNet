@@ -47,7 +47,7 @@ namespace MNet.Example
 			button.interactable = true;
 		}
 
-		void OnDestory()
+		void OnDestroy()
 		{
 			NetworkAPI.Lobby.OnInfo -= Callback;
 		}

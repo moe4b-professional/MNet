@@ -33,7 +33,7 @@ namespace MNet.Example
     {
         public TData Data { get; protected set; }
 
-        public virtual void Set(TData data)
+        public virtual void SetData(TData data)
         {
             this.Data = data;
 
@@ -46,20 +46,32 @@ namespace MNet.Example
         }
 
         //Static Utility
-        public static TSelf[] CreateAll(GameObject prefab, Transform parent, IList<TData> list, ProcessDelegate<TSelf> action)
+        public static List<TSelf> CreateAll(GameObject prefab, ICollection<TData> collection, ProcessDelegate<TSelf> action)
         {
-            var templates = new TSelf[list.Count];
+            return CreateAll(prefab, collection, Selector, action);
 
-            for (int i = 0; i < list.Count; i++)
+            TData Selector(TData data) => data;
+        }
+
+        public static List<TSelf> CreateAll<T>(GameObject prefab, ICollection<T> collection, Func<T, TData> selector, ProcessDelegate<TSelf> action)
+        {
+            var templates = new List<TSelf>(collection.Count);
+
+            var index = 0;
+
+            foreach (var item in collection)
             {
+                var data = selector(item);
+
                 var instance = Instantiate(prefab);
 
                 var script = instance.GetComponent<TSelf>();
-                script.Set(list[i]);
-                script.SetParent(parent);
-                action(script, i);
+                script.SetData(data);
+                action(script, index);
 
-                templates[i] = script;
+                templates.Add(script);
+
+                index += 1;
             }
 
             return templates;

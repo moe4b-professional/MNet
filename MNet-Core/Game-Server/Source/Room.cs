@@ -424,18 +424,18 @@ namespace MNet
             return entity;
         }
 
-        #region Destory Entity
+        #region Destroy Entity
         void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
         {
             if (Entities.TryGetValue(request.ID, out var entity) == false)
             {
-                Log.Warning($"Client {sender} Trying to Destory Non Registered Entity {request.ID}");
+                Log.Warning($"Client {sender} Trying to Destroy Non Registered Entity {request.ID}");
                 return;
             }
 
             if (sender != entity.Owner && sender != Master)
             {
-                Log.Warning($"Client {sender} Trying to Destory Entity {entity} Without Having Authority on that Entity");
+                Log.Warning($"Client {sender} Trying to Destroy Entity {entity} Without Having Authority on that Entity");
                 return;
             }
 

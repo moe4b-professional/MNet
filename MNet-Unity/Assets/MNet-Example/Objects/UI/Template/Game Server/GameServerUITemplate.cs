@@ -50,9 +50,9 @@ namespace MNet.Example
             OnClick?.Invoke(this);
         }
 
-        public override void Set(GameServerInfo data)
+        public override void SetData(GameServerInfo data)
         {
-            base.Set(data);
+            base.SetData(data);
 
             Rename($"{data.Name} | {data.ID}");
         }

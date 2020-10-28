@@ -140,25 +140,7 @@ namespace MNet.Example
 
             void Start()
 			{
-				GetMasterServerInfo();
-			}
-
-			void GetMasterServerInfo()
-			{
-				Popup.Show("Retrieving Servers");
-
-				NetworkAPI.Server.Master.OnInfo += Callback;
-				NetworkAPI.Server.Master.GetInfo();
-
-				void Callback(MasterServerInfoResponse info, RestError error)
-				{
-					NetworkAPI.Server.Master.OnInfo -= Callback;
-
-					if (error == null)
-						Popup.Hide();
-					else
-						Popup.Show("Could not Retrieve Servers", "Retry", GetMasterServerInfo);
-				}
+				
 			}
 
 			void ClientConnectCallback()

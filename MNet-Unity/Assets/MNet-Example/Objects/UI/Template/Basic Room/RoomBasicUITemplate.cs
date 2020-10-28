@@ -56,9 +56,9 @@ namespace MNet.Example
             OnClick?.Invoke(this);
         }
 
-        public override void Set(RoomBasicInfo data)
+        public override void SetData(RoomBasicInfo data)
         {
-            base.Set(data);
+            base.SetData(data);
 
             Rename($"{data.Name} | {data.ID}");
         }

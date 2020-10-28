@@ -129,16 +129,16 @@ namespace Game
         {
             if (NetworkAPI.Client.Entities.Count > 0)
             {
-                DestoryEntity(NetworkAPI.Client.Entities.Last());
+                DestroyEntity(NetworkAPI.Client.Entities.Last());
             }
             else
             {
                 Debug.LogWarning("No More Entities to Destroy");
             }
         }
-        void DestoryEntity(NetworkEntity entity)
+        void DestroyEntity(NetworkEntity entity)
         {
-            NetworkAPI.Client.DestoryEntity(entity);
+            NetworkAPI.Client.DestroyEntity(entity);
         }
     }
 }

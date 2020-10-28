@@ -240,9 +240,9 @@ namespace MNet
                 throw new NotImplementedException();
             }
 
-            public delegate void DestoryEntityDelegate(NetworkEntity entity);
-            public static event DestoryEntityDelegate OnDestoryEntity;
-            static void DestoryEntity(DestroyEntityCommand command)
+            public delegate void DestroyEntityDelegate(NetworkEntity entity);
+            public static event DestroyEntityDelegate OnDestroyEntity;
+            static void DestroyEntity(DestroyEntityCommand command)
             {
                 if (Entities.TryGetValue(command.ID, out var entity) == false)
                 {
@@ -259,7 +259,7 @@ namespace MNet
 
                 entity.Despawn();
 
-                OnDestoryEntity?.Invoke(entity);
+                OnDestroyEntity?.Invoke(entity);
             }
             #endregion
 
@@ -320,7 +320,7 @@ namespace MNet
                     {
                         var command = message.Read<DestroyEntityCommand>();
 
-                        DestoryEntity(command);
+                        DestroyEntity(command);
                     }
                     else if (message.Is<RprCommand>())
                     {

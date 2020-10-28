@@ -33,6 +33,12 @@ namespace MNet.Example
         {
 			Instance = this;
 
+			if (NetworkAPI.Client.IsConnected == false)
+			{
+				Core.Scenes.LoadMainMenu();
+				return;
+			}
+
 			UI = FindObjectOfType<LevelUI>();
 		}
 

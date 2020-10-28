@@ -169,22 +169,22 @@ namespace MNet
             }
             #endregion
 
-            #region Destory Entity
-            public static void DestoryEntity(NetworkEntity entity) => DestoryEntity(entity.ID);
-            public static void DestoryEntity(NetworkEntityID id)
+            #region Destroy Entity
+            public static void DestroyEntity(NetworkEntity entity) => DestroyEntity(entity.ID);
+            public static void DestroyEntity(NetworkEntityID id)
             {
                 var request = new DestroyEntityRequest(id);
 
                 Send(request);
             }
 
-            public delegate void DestoryEntityDelegate(NetworkEntity entity);
-            public static event DestoryEntityDelegate OnDestoryEntity;
-            static void DestoryEntityCallback(NetworkEntity entity)
+            public delegate void DestroyEntityDelegate(NetworkEntity entity);
+            public static event DestroyEntityDelegate OnDestroyEntity;
+            static void DestroyEntityCallback(NetworkEntity entity)
             {
                 if (entity.Owner != Instance) return;
 
-                OnDestoryEntity?.Invoke(entity);
+                OnDestroyEntity?.Invoke(entity);
             }
             #endregion
 
@@ -217,7 +217,7 @@ namespace MNet
                 RealtimeAPI.OnDisconnect += DisconnectedCallback;
 
                 Room.OnSpawnEntity += SpawnEntityCallback;
-                Room.OnDestoryEntity += DestoryEntityCallback;
+                Room.OnDestroyEntity += DestroyEntityCallback;
 
                 IsReady = false;
             }

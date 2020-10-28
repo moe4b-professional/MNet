@@ -304,11 +304,11 @@ namespace MNet
         {
             lock (ClientLock) Clients.Remove(client.ClientID);
 
-            DestoryClient(client);
+            DestroyClient(client);
         }
 
         protected abstract TClient CreateClient(NetworkClientID clientID, TConnection connection);
-        protected virtual void DestoryClient(TClient client) { }
+        protected virtual void DestroyClient(TClient client) { }
 
         #region Send
         public virtual void Send(NetworkClientID target, byte[] raw)

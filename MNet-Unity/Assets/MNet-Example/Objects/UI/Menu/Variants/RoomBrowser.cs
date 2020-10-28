@@ -68,15 +68,17 @@ namespace MNet.Example
         {
             Clear();
 
-            var entries = RoomBasicUITemplate.CreateAll(template, scroll.content, list, InitTemplate);
+            var entries = RoomBasicUITemplate.CreateAll(template, list, InitTemplate);
             templates.AddRange(entries);
         }
 
-        void InitTemplate(RoomBasicUITemplate instance, int index)
+        void InitTemplate(RoomBasicUITemplate template, int index)
         {
-            Initializer.Perform(instance);
+            Initializer.Perform(template);
 
-            instance.OnClick += TemplateClickCallback;
+            template.SetParent(scroll.content);
+
+            template.OnClick += TemplateClickCallback;
         }
 
         void TemplateClickCallback(RoomBasicUITemplate template)
@@ -99,7 +101,7 @@ namespace MNet.Example
             NetworkAPI.Lobby.OnGetInfo -= GetLobbyInfoCallback;
         }
 
-        void OnDestory()
+        void OnDestroy()
         {
             NetworkAPI.Lobby.OnInfo -= LobbyInfoCallback;
             NetworkAPI.Lobby.OnClear -= Clear;
