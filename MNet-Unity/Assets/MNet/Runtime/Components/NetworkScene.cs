@@ -96,8 +96,10 @@ namespace MNet
 
         public void Spawn()
         {
-            for (int i = 0; i < list.Count; i++)
+            for (ushort i = 0; i < list.Count; i++)
             {
+                if (list[i] == null) continue;
+
                 if (list[i].IsReady) continue;
 
                 NetworkAPI.Client.SpawnSceneObject(Scene, i);

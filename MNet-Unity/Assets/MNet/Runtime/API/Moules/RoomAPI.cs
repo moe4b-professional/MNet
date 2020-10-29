@@ -32,17 +32,17 @@ namespace MNet
             static bool AssignMaster(NetworkClientID id)
             {
                 if (Clients.TryGetValue(id, out var target) == false)
-                {
                     Debug.LogError($"No Master Client With ID {id} Could be Found, Assigning Null!");
-                    Master = null;
-                    return false;
-                }
 
                 Master = target;
                 Debug.Log($"Assigned {Master} as Master Client");
 
                 for (int i = 0; i < SceneObjects.Count; i++)
+                {
+                    if (SceneObjects[i] == null) continue;
+
                     SceneObjects[i].SetOwner(Master);
+                }
 
                 return true;
             }
@@ -174,7 +174,9 @@ namespace MNet
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
-                var entity = CreateEntity(command);
+                var entity = AssimilateEntity(command);
+
+                entity.Configure();
 
                 Debug.Log($"Spawned '{entity.name}' with ID: {command.ID}, Owned By Client {command.Owner}");
 
@@ -193,7 +195,7 @@ namespace MNet
                 OnSpawnEntity?.Invoke(entity);
             }
 
-            static NetworkEntity CreateEntity(SpawnEntityCommand command)
+            static NetworkEntity AssimilateEntity(SpawnEntityCommand command)
             {
                 if (command.Type == NetworkEntityType.Dynamic)
                 {
@@ -250,16 +252,19 @@ namespace MNet
                     return;
                 }
 
-                Debug.Log("Destroying " + entity.name);
+                Debug.Log($"Destroying '{entity.name}'");
 
                 var owner = entity.Owner;
 
                 Entities.Remove(entity.ID);
+                SceneObjects.Remove(entity);
                 owner?.Entities.Remove(entity);
 
                 entity.Despawn();
 
                 OnDestroyEntity?.Invoke(entity);
+
+                Object.Destroy(entity.gameObject);
             }
             #endregion
 

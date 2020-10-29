@@ -16,12 +16,11 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
-using WebSocketSharp;
 
 namespace MNet.Example
 {
-	[DefaultExecutionOrder(ExecutionOrder)]
-	public class Core : MonoBehaviour
+	[CreateAssetMenu]
+	public class Core : ScriptableObject
 	{
 		public const int ExecutionOrder = -400;
 
@@ -30,12 +29,14 @@ namespace MNet.Example
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 		static void OnLoad()
 		{
-			var prefab = Resources.Load<GameObject>(nameof(Core));
+			var assets = Resources.LoadAll<Core>("");
 
-			var gameObject = Instantiate(prefab);
+			if (assets.Length == 0) throw new Exception("No Core Asset Found");
 
-			gameObject.name = prefab.name;
-			DontDestroyOnLoad(gameObject);
+			Instance = assets[0];
+
+			Instance.Configure();
+			Instance.Init();
 		}
 
 		[SerializeField]
@@ -135,7 +136,7 @@ namespace MNet.Example
 				NetworkAPI.Client.OnConnect += ClientConnectCallback;
 				NetworkAPI.Client.OnRegister += ClientRegisterCallback;
 
-				Core.OnStart += Start;
+				Core.OnInit += Start;
 			}
 
             void Start()
@@ -189,8 +190,30 @@ namespace MNet.Example
 		public class UIProperty : Property
 		{
 			[SerializeField]
-			PopupPanel popup = default;
-			public PopupPanel Popup => popup;
+            GameObject prefab = default;
+
+            public CoreUIContainer Container { get; protected set; }
+
+			public PopupPanel Popup => Container.Popup;
+
+			protected override void Configure()
+			{
+				base.Configure();
+
+				var gameObject = Instantiate(prefab);
+				gameObject.name = prefab.name;
+				DontDestroyOnLoad(gameObject);
+
+				Container = gameObject.GetComponent<CoreUIContainer>();
+				Initializer.Configure(Container);
+
+				Core.OnInit += Init;
+			}
+
+			void Init()
+			{
+				Initializer.Init(Container);
+			}
 		}
 
 		[Serializable]
@@ -198,7 +221,12 @@ namespace MNet.Example
 		{
 			public static Core Core => Core.Instance;
 
-			public static Coroutine StartCoroutine(IEnumerator routine) => Core.StartCoroutine(routine);
+			/// <summary>
+			/// Use to call coroutines and other things that require a monobehaviour
+			/// </summary>
+			public static SceneAccessor SceneAccessor => Core.SceneAccessor;
+
+			public static Coroutine StartCoroutine(IEnumerator routine) => SceneAccessor.StartCoroutine(routine);
 
 			protected virtual void Configure()
 			{
@@ -215,21 +243,22 @@ namespace MNet.Example
 			action(UI);
 		}
 
-		void Awake()
-		{
-			Instance = this;
+		/// <summary>
+		/// Use to call coroutines and other things that require a monobehaviour
+		/// </summary>
+		public SceneAccessor SceneAccessor { get; protected set; }
 
-			Initializer.Configure(gameObject);
+		void Configure()
+		{
+			SceneAccessor = SceneAccessor.Create();
 
 			ForAllProperties(Property.Configure);
 		}
 
-		public event Action OnStart;
-		void Start()
+		public event Action OnInit;
+		void Init()
 		{
-			Initializer.Init(gameObject);
-
-			OnStart?.Invoke();
+			OnInit?.Invoke();
 		}
 
 		void Update()

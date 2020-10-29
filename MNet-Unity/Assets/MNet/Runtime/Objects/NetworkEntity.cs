@@ -50,30 +50,29 @@ namespace MNet
 
         protected virtual void Awake()
         {
-            if (Application.isPlaying)
+            if (Application.isPlaying == false) NetworkScene.Register(this);
+        }
+
+        public void Configure()
+        {
+            Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
+
+            var targets = GetComponentsInChildren<NetworkBehaviour>();
+
+            if (targets.Length > byte.MaxValue)
+                throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
+
+            for (byte i = 0; i < targets.Length; i++)
             {
-                Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
+                var id = new NetworkBehaviourID(i);
 
-                var targets = GetComponentsInChildren<NetworkBehaviour>();
+                targets[i].Configure(this, id);
 
-                if (targets.Length > byte.MaxValue)
-                    throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
-
-                for (byte i = 0; i < targets.Length; i++)
-                {
-                    var id = new NetworkBehaviourID(i);
-
-                    targets[i].Configure(this, id);
-
-                    Behaviours.Add(id, targets[i]);
-                }
-            }
-            else
-            {
-                NetworkScene.Register(this);
+                Behaviours.Add(id, targets[i]);
             }
         }
 
+        #region Spawn
         public event Action OnSpawn;
         public void Spawn(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type)
         {
@@ -87,6 +86,15 @@ namespace MNet
 
             OnSpawn?.Invoke();
         }
+
+        public event Action OnDespawn;
+        public virtual void Despawn()
+        {
+            IsReady = false;
+
+            OnDespawn?.Invoke();
+        }
+        #endregion
 
         #region RPR
         public AutoKeyDictionary<ushort, RprBind> RPRs { get; protected set; }
@@ -131,7 +139,7 @@ namespace MNet
             {
                 bind.Invoke(arguments);
             }
-            catch(TargetInvocationException)
+            catch (TargetInvocationException)
             {
                 throw;
             }
@@ -177,26 +185,9 @@ namespace MNet
             target.InvokeSyncVar(command);
         }
 
-        public event Action OnDespawn;
-        public virtual void Despawn()
-        {
-            IsReady = false;
-
-            if (Type == NetworkEntityType.Dynamic)
-            {
-                Destroy(gameObject);
-            }
-            else if (Type == NetworkEntityType.SceneObject)
-            {
-
-            }
-
-            OnDespawn?.Invoke();
-        }
-
         protected virtual void OnDestroy()
         {
-            if(Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
+            if (Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
         }
 
         public NetworkEntity()

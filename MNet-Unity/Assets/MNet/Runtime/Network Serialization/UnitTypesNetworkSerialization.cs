@@ -21,7 +21,7 @@ namespace MNet
 {
     [Preserve]
     public class UnitTypesNetworkSerialization
-	{
+    {
         public static class IDs
         {
             public const ushort Start = NetworkPayload.MinCode;
@@ -37,7 +37,7 @@ namespace MNet
             public const ushort Color = Vector3Int + 1;
         }
 
-		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
             NetworkPayload.Register<Quaternion>(IDs.Quaternion);
@@ -53,9 +53,9 @@ namespace MNet
             NetworkPayload.Register<NetworkEntity>(IDs.NetworkEntity, true);
             NetworkPayload.Register<NetworkBehaviour>(IDs.NetworkBehaviour, true);
         }
-	}
+    }
 
-    #region Vector
+    #region Vector2
     [Preserve]
     public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
     {
@@ -90,7 +90,9 @@ namespace MNet
             return new Vector2Int(x, y);
         }
     }
+    #endregion
 
+    #region Vector3
     [Preserve]
     public class Vector3SerializationResolver : NetworkSerializationExplicitResolver<Vector3>
     {
@@ -129,7 +131,9 @@ namespace MNet
             return new Vector3Int(x, y, z);
         }
     }
+    #endregion
 
+    #region Vector4
     [Preserve]
     public class Vector4SerializationResolver : NetworkSerializationExplicitResolver<Vector4>
     {
@@ -276,7 +280,7 @@ namespace MNet
 
             reader.Read(out NetworkBehaviourID behaviourID);
 
-            if(entity.TryGetBehaviour(behaviourID, out var behaviour) == false)
+            if (entity.TryGetBehaviour(behaviourID, out var behaviour) == false)
             {
                 Debug.LogWarning($"Network Behaviour {behaviourID} Couldn't be Found on Entity '{entity}' when Deserializing, Returning null");
                 return null;

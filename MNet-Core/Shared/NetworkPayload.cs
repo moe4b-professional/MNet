@@ -416,11 +416,11 @@ namespace MNet
         NetworkClientID? owner;
         public NetworkClientID? Owner => owner;
 
-        int scene;
-        public int Scene => scene;
+        byte scene;
+        public byte Scene => scene;
 
-        int index;
-        public int Index => index;
+        ushort index;
+        public ushort Index => index;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
@@ -456,7 +456,7 @@ namespace MNet
             return request;
         }
 
-        public static SpawnEntityRequest Write(int scene, int index)
+        public static SpawnEntityRequest Write(byte scene, ushort index)
         {
             var request = new SpawnEntityRequest()
             {

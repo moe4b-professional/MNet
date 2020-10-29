@@ -23,7 +23,7 @@ using System.Threading;
 namespace MNet
 {
     public partial class NetworkBehaviour : MonoBehaviour
-	{
+    {
         public NetworkBehaviourID ID { get; protected set; }
 
         public NetworkEntity Entity { get; protected set; }
@@ -31,11 +31,10 @@ namespace MNet
         public bool IsMine => Entity == null ? false : Entity.IsMine;
         public bool IsReady => Entity == null ? false : Entity.IsReady;
 
-        public NetworkClient Owner => Entity == null ? null : Entity.Owner;
+        public NetworkClient Owner => Entity?.Owner;
+        public AttributesCollection Attributes => Entity?.Attributes;
 
-        public AttributesCollection Attributes => Entity == null ? null : Entity.Attributes;
-
-        public virtual bool DisableOnUnready => true;
+        public virtual bool MirrorReadyToEnable => true;
 
         public void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
@@ -45,14 +44,13 @@ namespace MNet
             ParseRPCs();
             ParseSyncVars();
 
-            if (DisableOnUnready) enabled = false;
+            if (MirrorReadyToEnable && IsReady == false) enabled = false;
 
             entity.OnSpawn += SpawnCallback;
             entity.OnDespawn += DespawnCallback;
-
-            NetworkAPI.Room.OnAppliedMessageBuffer += AppliedMessageBufferCallback;
         }
 
+        #region Spawn
         void SpawnCallback()
         {
             enabled = true;
@@ -61,21 +59,14 @@ namespace MNet
         }
         protected virtual void OnSpawn() { }
 
-        void AppliedMessageBufferCallback()
-        {
-            NetworkAPI.Room.OnAppliedMessageBuffer -= AppliedMessageBufferCallback;
-
-            OnAppliedMessageBuffer();
-        }
-        protected virtual void OnAppliedMessageBuffer() { }
-
         void DespawnCallback()
         {
-            if (DisableOnUnready) enabled = false;
+            if (MirrorReadyToEnable) enabled = false;
 
             OnDespawn();
         }
         protected virtual void OnDespawn() { }
+        #endregion
 
         #region RPC
         protected Dictionary<string, RpcBind> RPCs { get; private set; }
@@ -145,7 +136,7 @@ namespace MNet
             SendRPC(payload);
         }
 
-        protected virtual void SendRPC(RpcRequest request)
+        protected void SendRPC(RpcRequest request)
         {
             if (IsReady == false)
             {
@@ -224,7 +215,7 @@ namespace MNet
             => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
-        protected internal virtual void InvokeRPC(RpcCommand command)
+        protected internal void InvokeRPC(RpcCommand command)
         {
             if (FindRPC(command.Method, out var bind) == false)
             {
@@ -339,9 +330,9 @@ namespace MNet
 
         bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
-        #pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0060 // Remove unused parameter
         protected void SetSyncVar<T>(string name, T field, T value) => SetSyncVar(name, value);
-        #pragma warning restore IDE0060 // Remove unused parameter
+#pragma warning restore IDE0060 // Remove unused parameter
 
         protected void SetSyncVar(string variable, object value)
         {
@@ -373,9 +364,9 @@ namespace MNet
             }
         }
 
-        protected internal virtual void InvokeSyncVar(SyncVarCommand command)
+        protected internal void InvokeSyncVar(SyncVarCommand command)
         {
-            if(SyncVars.TryGetValue(command.Variable, out var bind) == false)
+            if (SyncVars.TryGetValue(command.Variable, out var bind) == false)
             {
                 Debug.LogWarning($"No SyncVar {command.Variable} Found to Invoke");
                 return;

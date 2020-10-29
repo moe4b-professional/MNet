@@ -144,9 +144,9 @@ namespace MNet
                 Send(request);
             }
 
-            public static void SpawnSceneObject(NetworkEntity entity, int index) => SpawnSceneObject(entity.Scene, index);
-            public static void SpawnSceneObject(Scene scene, int index) => SpawnSceneObject(scene.buildIndex, index);
-            public static void SpawnSceneObject(int scene, int index)
+            public static void SpawnSceneObject(NetworkEntity entity, ushort index) => SpawnSceneObject(entity.Scene, index);
+            public static void SpawnSceneObject(Scene scene, ushort index) => SpawnSceneObject((byte)scene.buildIndex, index);
+            public static void SpawnSceneObject(byte scene, ushort index)
             {
                 if (IsMaster == false)
                 {
