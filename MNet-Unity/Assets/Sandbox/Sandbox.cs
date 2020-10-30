@@ -27,6 +27,19 @@ namespace Game
 {
     public class Sandbox : MonoBehaviour
     {
+        public GameObject prefab;
+
+        void Start()
+        {
+            Instantiate(prefab);
+
+            Debug.Log("Instantiate");
+        }
+    }
+
+    /*
+    public class Sandbox : MonoBehaviour
+    {
         void Start()
         {
             NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
@@ -151,4 +164,5 @@ namespace Game
             for (int i = 0; i < 10; i++) selection.AddComponent<LatencyTest>();
         }
     }
+    */
 }

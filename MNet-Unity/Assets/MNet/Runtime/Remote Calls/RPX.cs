@@ -123,7 +123,7 @@ namespace MNet
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
         public RemoteAutority Authority { get; private set; }

@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -18,17 +17,28 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-namespace MNet
+namespace Game
 {
-    public static class MNetEditor
-    {
-        [MenuItem(Constants.Path + "Configuration", false, 0)]
-        static void Configuration()
+	[DefaultExecutionOrder(-200)]
+	public class SampleBehaviour : MonoBehaviour
+	{
+		void Awake()
         {
-            var asset = NetworkAPIConfig.Load();
-
-            Selection.activeObject = asset;
+			Debug.Log("Awake");
         }
-    }
+
+		void Start()
+        {
+			Debug.Log("Start");
+		}
+
+		bool updateLogged = false;
+		void Update()
+        {
+			if (updateLogged) return;
+
+			Debug.Log("Update");
+			updateLogged = true;
+		}
+	}
 }
-#endif

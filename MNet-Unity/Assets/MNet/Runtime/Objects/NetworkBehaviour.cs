@@ -22,7 +22,7 @@ using System.Threading;
 
 namespace MNet
 {
-    public partial class NetworkBehaviour : MonoBehaviour
+    public abstract partial class NetworkBehaviour : MonoBehaviour
     {
         public NetworkBehaviourID ID { get; protected set; }
 
@@ -34,9 +34,41 @@ namespace MNet
         public NetworkClient Owner => Entity?.Owner;
         public AttributesCollection Attributes => Entity?.Attributes;
 
+        /// <summary>
+        /// Mirrors 'IsReady' to Component's 'enabled' Property,
+        /// Set to True by default to ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
+        /// Override to False if normal Unity callback behaviour is desired
+        /// </summary>
         public virtual bool MirrorReadyToEnable => true;
 
-        public void Configure(NetworkEntity entity, NetworkBehaviourID id)
+        protected virtual void Reset()
+        {
+#if UNITY_EDITOR
+            ResolveEntity();
+#endif
+        }
+
+#if UNITY_EDITOR
+        void ResolveEntity()
+        {
+            var entity = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
+
+            if (entity == null)
+            {
+                entity = gameObject.AddComponent<NetworkEntity>();
+                ComponentUtility.MoveComponentUp(entity);
+            }
+        }
+#endif
+
+        public void UpdateReadyState()
+        {
+            if (MirrorReadyToEnable == false) return;
+
+            enabled = IsReady;
+        }
+
+        public virtual void Configure(NetworkEntity entity, NetworkBehaviourID id)
         {
             this.Entity = entity;
             this.ID = id;
@@ -44,7 +76,7 @@ namespace MNet
             ParseRPCs();
             ParseSyncVars();
 
-            if (MirrorReadyToEnable && IsReady == false) enabled = false;
+            UpdateReadyState();
 
             entity.OnSpawn += SpawnCallback;
             entity.OnDespawn += DespawnCallback;
@@ -53,7 +85,7 @@ namespace MNet
         #region Spawn
         void SpawnCallback()
         {
-            enabled = true;
+            UpdateReadyState();
 
             OnSpawn();
         }
@@ -61,7 +93,7 @@ namespace MNet
 
         void DespawnCallback()
         {
-            if (MirrorReadyToEnable) enabled = false;
+            UpdateReadyState();
 
             OnDespawn();
         }
@@ -330,9 +362,12 @@ namespace MNet
 
         bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
-#pragma warning disable IDE0060 // Remove unused parameter
+#pragma warning disable IDE0060
+        /// <summary>
+        /// Overload for ensuring type safety
+        /// </summary>
         protected void SetSyncVar<T>(string name, T field, T value) => SetSyncVar(name, value);
-#pragma warning restore IDE0060 // Remove unused parameter
+#pragma warning restore IDE0060
 
         protected void SetSyncVar(string variable, object value)
         {

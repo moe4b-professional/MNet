@@ -12,14 +12,11 @@ using Object = UnityEngine.Object;
 
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
-using UnityEngine.Networking;
 
 namespace MNet
 {
     public static partial class NetworkAPI
     {
-        public const string Path = "MNet/";
-
         public static NetworkAPIConfig Config { get; private set; }
 
         public static string Address => Config.Address;

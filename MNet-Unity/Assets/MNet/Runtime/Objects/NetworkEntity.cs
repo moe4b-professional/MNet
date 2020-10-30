@@ -50,14 +50,18 @@ namespace MNet
 
         protected virtual void Awake()
         {
-            if (Application.isPlaying == false) NetworkScene.Register(this);
+            if (Application.isPlaying == false)
+            {
+                NetworkScene.Register(this);
+                return;
+            }
         }
 
         public void Configure()
         {
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
-            var targets = GetComponentsInChildren<NetworkBehaviour>();
+            var targets = GetComponentsInChildren<NetworkBehaviour>(true);
 
             if (targets.Length > byte.MaxValue)
                 throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
@@ -68,8 +72,20 @@ namespace MNet
 
                 targets[i].Configure(this, id);
 
-                Behaviours.Add(id, targets[i]);
+                Behaviours[id] = targets[i];
             }
+        }
+
+        public void UpdateReadyState()
+        {
+            ICollection<NetworkBehaviour> collection;
+
+            if (Behaviours == null || Behaviours.Count == 0)
+                collection = GetComponentsInChildren<NetworkBehaviour>(true);
+            else
+                collection = Behaviours.Values;
+
+            foreach (var behaviour in collection) behaviour.UpdateReadyState();
         }
 
         #region Spawn

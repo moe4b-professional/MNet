@@ -21,7 +21,7 @@ namespace MNet
 {
     [ExecuteInEditMode]
     [DefaultExecutionOrder(ExecutionOrder)]
-    [AddComponentMenu(NetworkAPI.Path + nameof(NetworkScene))]
+    [AddComponentMenu(Constants.Path + "Network Scene")]
     public class NetworkScene : MonoBehaviour
     {
         public const int ExecutionOrder = NetworkEntity.ExecutionOrder - 50;
@@ -67,7 +67,18 @@ namespace MNet
 
         void Awake()
         {
-            Register(this);
+            if(Application.isPlaying == false)
+            {
+                Register(this);
+                return;
+            }
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] == null) return;
+
+                list[i].UpdateReadyState();
+            }
         }
 
         void Start()
@@ -87,6 +98,7 @@ namespace MNet
             EvaluateSpawn();
         }
 
+        #region Spawn
         void EvaluateSpawn()
         {
             if (NetworkAPI.Client.IsMaster == false) return;
@@ -105,6 +117,7 @@ namespace MNet
                 NetworkAPI.Client.SpawnSceneObject(Scene, i);
             }
         }
+        #endregion
 
         public bool Add(NetworkEntity target)
         {
@@ -124,10 +137,8 @@ namespace MNet
 
             return true;
         }
-        public bool Remove(NetworkEntity target)
-        {
-            return list.Remove(target);
-        }
+
+        public bool Remove(NetworkEntity target) => list.Remove(target);
 
         void OnDestroy()
         {

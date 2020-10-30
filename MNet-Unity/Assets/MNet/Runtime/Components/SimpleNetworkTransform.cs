@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(NetworkAPI.Path + nameof(SimpleNetworkTransform))]
+    [AddComponentMenu(Constants.Path + "Simple Network Transform")]
     public class SimpleNetworkTransform : NetworkBehaviour
     {
         Vector3 lastPosition;

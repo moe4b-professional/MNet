@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(SyncVarTest))]
+    [AddComponentMenu(Constants.Path + "Tests/" + "Sync Var Test")]
 	public class SyncVarTest : NetworkBehaviour
     {
         public string field;
@@ -39,7 +39,9 @@ namespace MNet
         {
             base.OnSpawn();
 
-            if (Entity.IsMine) SetSyncVar(nameof(Field), Field, Application.platform.ToString());
+            if (Entity.IsMine == false) return;
+
+            SetSyncVar(nameof(Field), Field, NetworkAPI.Client.Profile.Name);
         }
     }
 }

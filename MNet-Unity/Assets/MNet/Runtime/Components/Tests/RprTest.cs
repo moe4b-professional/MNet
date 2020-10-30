@@ -19,32 +19,32 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(RprTest))]
+    [AddComponentMenu(Constants.Path + "Tests/" + "RPR Test")]
     public class RprTest : NetworkBehaviour
     {
+        public const string Payload = "Hello World";
+
+        public bool success = false;
+
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
-            RPC(RPC, NetworkAPI.Room.Master, Callback, "Hello");
+            RPC(Call, NetworkAPI.Room.Master, Callback);
         }
 
         [NetworkRPC(RemoteAutority.Any)]
-        (RuntimePlatform platform, DateTime date) RPC(string text, RpcInfo info)
-        {
-            return (Application.platform, DateTime.Now);
-        }
+        string Call(RpcInfo info) => Payload;
 
-        void Callback(RprResult result, (RuntimePlatform platform, DateTime date) value)
+        void Callback(RprResult result, string value)
         {
-            if (result == RprResult.Success)
+            if(result != RprResult.Success)
             {
-                Debug.Log($"RPR: {value}");
+                Debug.LogError("RPR Test Failed: " + result);
+                return;
             }
-            else
-            {
-                Debug.LogError("RPR Failed: " + result);
-            }
+
+            success = value == Payload;
         }
     }
 }

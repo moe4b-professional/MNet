@@ -19,72 +19,43 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(RpcTest))]
+    [AddComponentMenu(Constants.Path + "Tests/" + "RPC Test")]
     public class RpcTest : NetworkBehaviour
     {
+        public List<bool> results = new List<bool>();
+
+        public const int Count = 7;
+
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
-            RPC(Rpc0);
-            RPC(Rpc1, 1);
-            RPC(Rpc2, 1, 2);
-            RPC(Rpc3, 1, 2, 3);
-            RPC(Rpc4, 1, 2, 3, 4);
-            RPC(Rpc5, 1, 2, 3, 4, 5);
-            RPC(Rpc6, 1, 2, 3, 4, 5, 6);
+            for (int i = 0; i < Count; i++) results.Add(false);
+
+            RPC(Call0);
+            RPC(Call1, 0);
+            RPC(Call2, 0, 1);
+            RPC(Call3, 0, 1, 2);
+            RPC(Call4, 0, 1, 2, 3);
+            RPC(Call5, 0, 1, 2, 3, 4);
+            RPC(Call6, 0, 1, 2, 3, 4, 5);
         }
 
-        [NetworkRPC]
-        void Rpc0(RpcInfo info)
+        [NetworkRPC] void Call0(RpcInfo info) => Call();
+        [NetworkRPC] void Call1(int a, RpcInfo info) => Call(a);
+        [NetworkRPC] void Call2(int a, int b, RpcInfo info) => Call(a, b);
+        [NetworkRPC] void Call3(int a, int b, int c, RpcInfo info) => Call(a, b, c);
+        [NetworkRPC] void Call4(int a, int b, int c, int d, RpcInfo info) => Call(a, b, c, d);
+        [NetworkRPC] void Call5(int a, int b, int c, int d, int e, RpcInfo info) => Call(a, b, c, d, e);
+        [NetworkRPC] void Call6(int a, int b, int c, int d, int e, int f, RpcInfo info) => Call(a, b, c, d, e, f);
+
+        void Call(params int[] arguments)
         {
-            Log();
-        }
+            var input = arguments.Sum();
 
-        [NetworkRPC]
-        void Rpc1(int a, RpcInfo info)
-        {
-            Log(a);
-        }
+            var expectation = Enumerable.Range(0, arguments.Length).Sum();
 
-        [NetworkRPC]
-        void Rpc2(int a, int b, RpcInfo info)
-        {
-            Log(a, b);
-        }
-
-        [NetworkRPC]
-        void Rpc3(int a, int b, int c, RpcInfo info)
-        {
-            Log(a, b, c);
-        }
-
-        [NetworkRPC]
-        void Rpc4(int a, int b, int c, int d, RpcInfo info)
-        {
-            Log(a, b, c, d);
-        }
-
-        [NetworkRPC]
-        void Rpc5(int a, int b, int c, int d, int e, RpcInfo info)
-        {
-            Log(a, b, c, d, e);
-        }
-
-        [NetworkRPC]
-        void Rpc6(int a, int b, int c, int d, int e, int f, RpcInfo info)
-        {
-            Log(a, b, c, d, e, f);
-        }
-
-        void Log(params object[] parameters)
-        {
-            var text = "RPC";
-
-            for (int i = 0; i < parameters.Length; i++)
-                text += $" {parameters[i]}";
-
-            Debug.Log(text);
+            if (input == expectation) results[arguments.Length] = true;
         }
     }
 }

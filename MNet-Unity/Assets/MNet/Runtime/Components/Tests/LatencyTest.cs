@@ -19,14 +19,14 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(NetworkAPI.Path + "Tests/" + nameof(LatencyTest))]
-	public class LatencyTest : NetworkBehaviour
-	{
+    [AddComponentMenu(Constants.Path + "Tests/" + "Latency Test")]
+    public class LatencyTest : NetworkBehaviour
+    {
         const string Payload = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
-        public List<float> samples = new List<float>();
+        public int maxSamples = 20;
 
-        public int maxSampleCount = 20;
+        public List<float> samples = new List<float>();
 
         public float average = 0f;
 
@@ -34,14 +34,10 @@ namespace MNet
 
         void Update()
         {
-            if (IsMine && Input.GetKey(KeyCode.Mouse0) && isProcessing == false)
-            {
-                var time = Time.time;
+            if (isProcessing) return;
 
-                isProcessing = true;
-
-                RPC(Click, Owner, Payload, time);
-            }
+            isProcessing = true;
+            RPC(Click, Owner, Payload, Time.time);
         }
 
         [NetworkRPC]
@@ -58,7 +54,7 @@ namespace MNet
         {
             samples.Add(rtt);
 
-            if (samples.Count > maxSampleCount) samples.RemoveAt(0);
+            if (samples.Count > maxSamples) samples.RemoveRange(0, samples.Count - maxSamples);
 
             average = samples.Sum() / samples.Count;
         }

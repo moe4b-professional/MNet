@@ -21,8 +21,6 @@ namespace MNet.Example
 {
     public class SampleNetworkBehaviour : NetworkBehaviour
     {
-        public override bool MirrorReadyToEnable => base.MirrorReadyToEnable;
-
         protected override void OnSpawn()
         {
             base.OnSpawn();

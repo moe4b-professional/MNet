@@ -23,7 +23,7 @@ namespace MNet
 {
 	public static class MNetProjectUtility
 	{
-        public const string Path = NetworkAPI.Path;
+        public const string Path = Constants.Path;
 
         public const int Priority = 1000;
 
