@@ -137,7 +137,6 @@ namespace MNet
 
             return true;
         }
-
         public bool Remove(NetworkEntity target) => list.Remove(target);
 
         void OnDestroy()
