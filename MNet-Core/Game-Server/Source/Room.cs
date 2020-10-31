@@ -52,11 +52,7 @@ namespace MNet
 
         public INetworkTransportContext TransportContext { get; protected set; }
 
-        #region Schedule
         Schedule schedule;
-
-        public const long DefaultTickInterval = 50;
-        #endregion
 
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
@@ -500,7 +496,7 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, AppID appID, Version version, string name,  byte capacity, AttributesCollection attributes)
+        public Room(RoomID id, AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             this.ID = id;
 
@@ -520,7 +516,7 @@ namespace MNet
 
             SceneObjects = new List<NetworkEntity>();
 
-            schedule = new Schedule(DefaultTickInterval, Tick);
+            schedule = new Schedule(50, Tick);
         }
     }
 }
