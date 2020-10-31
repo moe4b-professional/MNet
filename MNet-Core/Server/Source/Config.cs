@@ -15,7 +15,12 @@ namespace MNet
 
         protected virtual void WriteDefaults()
         {
-            
+
+        }
+
+        protected virtual void Validate()
+        {
+
         }
 
         public Config()
@@ -33,8 +38,12 @@ namespace MNet
             instance.WriteDefaults();
 
             var json = LoadJson();
+            if (json == null)
+                Log.Error($"No {FileName} File Found");
+            else
+                JsonConvert.PopulateObject(json, instance, SerializerSettings);
 
-            JsonConvert.PopulateObject(json, instance, SerializerSettings);
+            instance.Validate();
 
             return instance;
         }
@@ -49,49 +58,9 @@ namespace MNet
         static Config()
         {
             SerializerSettings = new JsonSerializerSettings();
+
             SerializerSettings.Converters.Add(IPAddressConverter.Instance);
             SerializerSettings.Converters.Add(VersionConverter.Instance);
-        }
-    }
-
-    class IPAddressConverter : JsonConverter
-    {
-        public static IPAddressConverter Instance { get; private set; } = new IPAddressConverter();
-
-        public override bool CanConvert(Type type) => typeof(IPAddress).IsAssignableFrom(type);
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var text = value.ToString();
-
-            writer.WriteValue(text);
-        }
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var text = (string)reader.Value;
-
-            return IPAddress.Parse(text);
-        }
-    }
-
-    class VersionConverter : JsonConverter
-    {
-        public static VersionConverter Instance { get; private set; } = new VersionConverter();
-
-        public override bool CanConvert(Type objectType) => objectType == typeof(Version);
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var text = value.ToString();
-
-            writer.WriteValue(text);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var text = (string)reader.Value;
-
-            return Version.Parse(text);
         }
     }
 }

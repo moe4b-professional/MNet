@@ -20,7 +20,7 @@ using Random = UnityEngine.Random;
 namespace MNet
 {
     [AddComponentMenu(Constants.Path + "Tests/" + "Sync Var Test")]
-	public class SyncVarTest : NetworkBehaviour
+    public class SyncVarTest : NetworkBehaviour
     {
         public string field;
         [SyncVar(RemoteAutority.Owner | RemoteAutority.Master)]
@@ -29,8 +29,6 @@ namespace MNet
             get => field;
             set
             {
-                Debug.Log($"Set {nameof(Field)}, Old: '{field}', New: '{value}'");
-
                 field = value;
             }
         }

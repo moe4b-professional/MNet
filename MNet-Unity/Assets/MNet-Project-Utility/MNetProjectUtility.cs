@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -21,8 +22,8 @@ using UnityEditor.Build.Reporting;
 
 namespace MNet
 {
-	public static class MNetProjectUtility
-	{
+    public static class MNetProjectUtility
+    {
         public const string Path = Constants.Path;
 
         public const int Priority = 1000;
@@ -176,3 +177,4 @@ namespace MNet
         }
     }
 }
+#endif

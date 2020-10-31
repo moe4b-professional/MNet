@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -27,7 +28,7 @@ namespace MNet.Example
         public int callbackOrder => 0;
         public void OnPreprocessBuild(BuildTarget target, string path)
         {
-            
+
         }
 
         public void OnPreprocessBuild(BuildReport report)
@@ -36,3 +37,4 @@ namespace MNet.Example
         }
     }
 }
+#endif

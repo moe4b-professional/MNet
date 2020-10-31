@@ -91,8 +91,10 @@ namespace MNet
             callback(request);
         }
 
-        protected void Send(string ip, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue)
+        protected void Send(string ip, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue = false)
         {
+            if (string.IsNullOrEmpty(ip)) throw new ArgumentException("Rest API IP address cannot be empty", nameof(ip));
+
             var url = $"{Scheme}://{ip}:{Port}{path}";
 
             var request = new UnityWebRequest(url, method, downloader, uploader);
@@ -115,14 +117,14 @@ namespace MNet
         }
 
         #region Methods
-        public void GET(string path, CallbackDelegate callback, bool enqueue)
+        public void GET(string path, CallbackDelegate callback, bool enqueue = false)
         {
             var downloader = new DownloadHandlerBuffer();
 
             Send(IP, path, "GET", null, downloader, callback, enqueue);
         }
 
-        public void PUT<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
+        public void PUT<T>(string path, T payload, CallbackDelegate callback, bool enqueue = false)
         {
             var data = NetworkSerializer.Serialize(payload);
 
@@ -132,7 +134,7 @@ namespace MNet
             Send(IP, path, "PUT", uploader, downloader, callback, enqueue);
         }
 
-        public void POST<T>(string path, T payload, CallbackDelegate callback, bool enqueue)
+        public void POST<T>(string path, T payload, CallbackDelegate callback, bool enqueue = false)
         {
             var data = NetworkSerializer.Serialize(payload);
 

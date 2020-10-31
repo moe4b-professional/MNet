@@ -35,10 +35,10 @@ namespace MNet
 
             Name = "Game Server";
 
-            PublicAddress = IPAddress.Any;
-            MasterAddress = IPAddress.Any;
+            PublicAddress = null;
+            MasterAddress = null;
 
-            Region = GameServerRegion.Europe;
+            Region = GameServerRegion.Local;
 
             RestScheme = RestScheme.HTTP;
 

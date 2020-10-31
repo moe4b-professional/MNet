@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using MNet;
 
 namespace Game
 {
@@ -23,18 +24,18 @@ namespace Game
 	public class SampleBehaviour : MonoBehaviour
 	{
 		void Awake()
-        {
+		{
 			Debug.Log("Awake");
-        }
+		}
 
 		void Start()
-        {
+		{
 			Debug.Log("Start");
 		}
 
 		bool updateLogged = false;
 		void Update()
-        {
+		{
 			if (updateLogged) return;
 
 			Debug.Log("Update");

@@ -76,7 +76,7 @@ namespace MNet
             {
                 var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, attributes);
 
-                Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback, false);
+                Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
 
                 void Callback(UnityWebRequest request)
                 {
@@ -154,7 +154,7 @@ namespace MNet
             public static event ClientDisconnectedDelegate OnClientDisconnected;
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
-                Debug.Log($"Client {payload.ID} Disconnected to Room");
+                Debug.Log($"Client {payload.ID} Disconnected from Room");
 
                 if (Clients.TryGetValue(payload.ID, out var client))
                     RemoveClient(client);

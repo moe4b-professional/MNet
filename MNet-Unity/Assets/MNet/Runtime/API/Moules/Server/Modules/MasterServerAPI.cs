@@ -47,7 +47,7 @@ namespace MNet
                 {
                     var payload = new MasterServerInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
-                    Rest.POST(Constants.Server.Master.Rest.Requests.Info, payload, Callback, false);
+                    Rest.POST(Constants.Server.Master.Rest.Requests.Info, payload, Callback);
 
                     void Callback(UnityWebRequest request)
                     {

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Net;
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
+
+using System.Net.Http;
 
 namespace MNet
 {
@@ -36,7 +36,7 @@ namespace MNet
             {
                 Procedure();
             }
-            catch (Exception)
+            catch
             {
                 throw;
             }
@@ -52,7 +52,7 @@ namespace MNet
 
             Config = Config.Read();
 
-            Address = Config.PublicAddress;
+            ResolveAddress();
 
             Log.Info($"Server ID: {ID}");
             Log.Info($"Server Name: {Name}");
@@ -74,14 +74,44 @@ namespace MNet
 
             while (true) Console.ReadLine();
         }
+
+        static void ResolveAddress()
+        {
+            if (Config.PublicAddress != null)
+            {
+                Address = Config.PublicAddress;
+                return;
+            }
+
+            if (Config.Region == GameServerRegion.Local)
+            {
+                Address = IPAddress.Parse("127.0.0.1");
+                return;
+            }
+
+            Log.Info("Retrieving Public IP");
+            try
+            {
+                Address = PublicIP.Retrieve();
+            }
+            catch (Exception ex)
+            {
+                var text = $"Could not Retrieve Public IP for Server, " +
+                    $"Please Explicitly Set {nameof(Config.PublicAddress)} Property in {Config.FileName} Config File";
+
+                Log.Error(text);
+
+                Log.Error($"Public IP Retrieval Exception: {ex}");
+            }
+        }
     }
 
+#pragma warning disable IDE0051
     public static class Sandbox
     {
-#pragma warning disable IDE0051 // Remove unused private members
         public static void Run()
         {
-            
+
         }
 
         static void NullableTupleSerialization()
@@ -195,5 +225,5 @@ namespace MNet
             foreach (var item in value) Log.Info(item);
         }
     }
-#pragma warning restore IDE0051 // Remove unused private members
+#pragma warning restore IDE0051
 }

@@ -24,6 +24,8 @@ namespace MNet
     {
         public List<bool> results = new List<bool>();
 
+        public bool success = false;
+
         public const int Count = 7;
 
         protected override void OnSpawn()
@@ -56,6 +58,8 @@ namespace MNet
             var expectation = Enumerable.Range(0, arguments.Length).Sum();
 
             if (input == expectation) results[arguments.Length] = true;
+
+            success = results.Aggregate((x, z) => x & z);
         }
     }
 }
