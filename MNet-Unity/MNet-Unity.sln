@@ -1,8 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30503.244
-MinimumVisualStudioVersion = 10.0.40219.1
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MNet-Unity", "MNet-Unity.csproj", "{BE1C6F00-BF17-A24A-7C74-DA0167650178}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{1856A5CF-3901-2E75-D979-E95CAF2BC13B}"
@@ -16,16 +14,19 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{BE1C6F00-BF17-A24A-7C74-DA0167650178}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE1C6F00-BF17-A24A-7C74-DA0167650178}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE1C6F00-BF17-A24A-7C74-DA0167650178}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE1C6F00-BF17-A24A-7C74-DA0167650178}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1856A5CF-3901-2E75-D979-E95CAF2BC13B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1856A5CF-3901-2E75-D979-E95CAF2BC13B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1856A5CF-3901-2E75-D979-E95CAF2BC13B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1856A5CF-3901-2E75-D979-E95CAF2BC13B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{06B80577-3407-2F92-B156-C0A0601F761A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06B80577-3407-2F92-B156-C0A0601F761A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{06B80577-3407-2F92-B156-C0A0601F761A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06B80577-3407-2F92-B156-C0A0601F761A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {4848FF64-CAFF-415D-8DF5-42D04B59BAC5}
 	EndGlobalSection
 EndGlobal
