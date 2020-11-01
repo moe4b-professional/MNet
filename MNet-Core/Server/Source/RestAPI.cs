@@ -12,7 +12,7 @@ using System.Net;
 
 using SharpHttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
-using SharpHttpCode = WebSocketSharp.Net.HttpStatusCode;
+
 using System.Net.Http;
 
 namespace MNet
@@ -37,7 +37,7 @@ namespace MNet
 
             Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
-            if (Router.Process(request, response) == false) Write(response, SharpHttpCode.NotFound, "Error 404");
+            if (Router.Process(request, response) == false) Write(response, RestStatusCode.NotFound, "Error 404");
         }
 
         public RestAPI(int port)
@@ -56,7 +56,7 @@ namespace MNet
 
         //Static Utility
         #region Write
-        public static void Write(SharpHttpResponse response, SharpHttpCode code, string message)
+        public static void Write(SharpHttpResponse response, RestStatusCode code, string message)
         {
             var data = Encoding.UTF8.GetBytes(message);
 

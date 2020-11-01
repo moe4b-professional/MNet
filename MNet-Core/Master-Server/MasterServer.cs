@@ -2,14 +2,11 @@
 using System.Net;
 using System.Collections.Generic;
 
-using SharpHttpCode = WebSocketSharp.Net.HttpStatusCode;
 using SharpHttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
 
-using System.Threading;
 using System.Linq;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace MNet
 {
@@ -81,7 +78,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.Write(response, SharpHttpCode.NotAcceptable, $"Error Reading Info Request");
+                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 
@@ -89,20 +86,20 @@ namespace MNet
             {
                 var text = $"Mismatched API Versions [Client: {payload.ApiVersion}, Server: {Constants.ApiVersion}]" +
                     $", Please use the Same Network API Release on the Client and Server";
-                RestAPI.Write(response, SharpHttpCode.Gone, text);
+                RestAPI.Write(response, RestStatusCode.MismatchedApiVersion, text);
                 return;
             }
 
             if (Apps.TryGetValue(payload.AppID, out var app) == false)
             {
-                RestAPI.Write(response, SharpHttpCode.Gone, $"App ID {payload.AppID} Not Registered with Server");
+                RestAPI.Write(response, RestStatusCode.InvalidAppID, $"App ID '{payload.AppID}' Not Registered with Server");
                 return;
             }
 
             if (payload.GameVersion < app.MinimumVersion)
             {
                 var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {app.MinimumVersion}";
-                RestAPI.Write(response, SharpHttpCode.Gone, text);
+                RestAPI.Write(response, RestStatusCode.VersionNotSupported, text);
                 return;
             }
 
@@ -123,7 +120,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.Write(response, SharpHttpCode.NotAcceptable, $"Error Reading Register Request");
+                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 
@@ -165,7 +162,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.Write(response, SharpHttpCode.NotAcceptable, $"Error Reading Remove Request");
+                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 

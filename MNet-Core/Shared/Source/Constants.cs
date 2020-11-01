@@ -72,5 +72,13 @@ namespace MNet
                 }
             }
         }
+
+        public static class NetworkTransport
+        {
+            public static class WebSocket
+            {
+                public const ushort DisconnectCodeOffset = 2000;
+            }
+        }
     }
 }

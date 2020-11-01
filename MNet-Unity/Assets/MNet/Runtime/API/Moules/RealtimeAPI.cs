@@ -134,7 +134,11 @@ namespace MNet
 
             public static void Disconnect()
             {
-                if (IsConnected == false) return;
+                if (IsConnected == false)
+                {
+                    Debug.LogWarning("Disconnecting Client When They Aren't Connected, Ignoring");
+                    return;
+                }
 
                 Transport.Close();
             }

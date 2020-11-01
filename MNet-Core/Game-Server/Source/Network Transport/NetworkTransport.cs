@@ -415,7 +415,9 @@ namespace MNet
         }
     }
 
+    #region Delegates
     public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
     public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
+    #endregion
 }

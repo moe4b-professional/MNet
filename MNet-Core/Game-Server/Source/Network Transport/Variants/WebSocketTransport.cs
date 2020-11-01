@@ -3,9 +3,10 @@ using System.Net;
 using System.Text;
 using System.Collections.Generic;
 
-using WebSocketSharp.Server;
-using WebSocketSharp;
 using System.Diagnostics;
+
+using WebSocketSharp;
+using WebSocketSharp.Server;
 
 namespace MNet
 {
@@ -97,7 +98,7 @@ namespace MNet
 
         public override void Disconnect(WebSocketTransportClient client, DisconnectCode code)
         {
-            var value = NetworkTransportUtility.WebSocketSharp.GetDisconnectValue(code);
+            var value = DisconnectCodeToValue(code);
 
             Sessions.CloseSession(client.InternalID, value, null);
         }
@@ -118,6 +119,15 @@ namespace MNet
             Server.AddWebSocketService<Behaviour>(Path, InitBehaviour);
 
             Host = Server.WebSocketServices[Path];
+        }
+
+        public static ushort DisconnectCodeToValue(DisconnectCode code)
+        {
+            var value = Convert.ToUInt16(code);
+
+            value += Constants.NetworkTransport.WebSocket.DisconnectCodeOffset;
+
+            return value;
         }
     }
 

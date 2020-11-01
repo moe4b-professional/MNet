@@ -1,9 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Net.Sockets;
+using System.Collections.Generic;
+
 using LiteNetLib;
 
 namespace MNet
@@ -58,7 +59,7 @@ namespace MNet
 
         public override void Disconnect(NetPeer connection, DisconnectCode code)
         {
-            var binary = NetworkSerializer.Serialize(code);
+            var binary = DisconnectCodeToBinary(code);
 
             connection.Disconnect(binary);
         }
@@ -68,6 +69,13 @@ namespace MNet
             this.Port = port;
 
             Server = new NetManager(this);
+        }
+
+        public static byte[] DisconnectCodeToBinary(DisconnectCode code)
+        {
+            var value = Convert.ToByte(code);
+
+            return new byte[] { value };
         }
     }
 

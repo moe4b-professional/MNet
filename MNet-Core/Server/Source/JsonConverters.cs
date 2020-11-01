@@ -25,6 +25,8 @@ namespace MNet
 
             if (text == null) return null;
 
+            if (text == "localhost") return IPAddress.Loopback;
+
             return IPAddress.Parse(text);
         }
     }

@@ -17,10 +17,11 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using LiteNetLib;
 using System.Threading;
 using System.Net;
 using System.Net.Sockets;
+
+using LiteNetLib;
 
 namespace MNet
 {
@@ -46,15 +47,12 @@ namespace MNet
         {
             base.Connect(serverID, roomID);
 
-            Client.Start();
-
             Peer = Client.Connect(serverID.Address, Port, "");
         }
 
         protected override void Tick()
         {
             if (Client == null) return;
-            if (Client.IsRunning == false) return;
 
             Client.PollEvents();
 
@@ -66,9 +64,7 @@ namespace MNet
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
-            var data = info.AdditionalData;
-
-            var code = data.AvailableBytes > 0 ? (DisconnectCode)data.GetByte() : DisconnectCode.Unknown;
+            var code = InfoToDisconnectCode(info);
 
             QueueDisconnect(code);
         }
@@ -95,14 +91,56 @@ namespace MNet
 
         public override void Close()
         {
-            Client.Stop();
-
             Peer.Disconnect();
         }
 
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
+
+            Client.Start();
+        }
+
+        public static DisconnectCode InfoToDisconnectCode(DisconnectInfo info)
+        {
+            if (info.Reason == DisconnectReason.RemoteConnectionClose)
+            {
+                try
+                {
+                    var value = info.AdditionalData.GetByte();
+
+                    var code = (DisconnectCode)value;
+
+                    return code;
+                }
+                catch (Exception)
+                {
+                    return DisconnectCode.Unknown;
+                }
+            }
+
+            switch (info.Reason)
+            {
+                case DisconnectReason.DisconnectPeerCalled:
+                    return DisconnectCode.Normal;
+
+                case DisconnectReason.ConnectionFailed:
+                    return DisconnectCode.ConnectionFailed;
+
+                case DisconnectReason.Timeout:
+                    return DisconnectCode.Timeout;
+
+                case DisconnectReason.HostUnreachable:
+                    return DisconnectCode.ServerUnreachable;
+
+                case DisconnectReason.NetworkUnreachable:
+                    return DisconnectCode.NetworkUnreachable;
+
+                case DisconnectReason.ConnectionRejected:
+                    return DisconnectCode.Rejected;
+            }
+
+            return DisconnectCode.Unknown;
         }
     }
 }

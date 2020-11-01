@@ -1,6 +1,6 @@
 {
   "Name": "Server #1",
-  "MasterAddress": "127.0.0.1",
+  "MasterAddress": "localhost",
   "PublicAddress": null,
   "Region": "Local",
   "RestScheme": "HTTP",

@@ -64,7 +64,7 @@ namespace MNet
 
         void CloseCallback(object sender, CloseEventArgs args)
         {
-            var code = NetworkTransportUtility.WebSocketSharp.GetDisconnectCode(args.Code);
+            var code = ValueToDisconnectCode(args.Code);
 
             QueueDisconnect(code);
         }
@@ -77,12 +77,35 @@ namespace MNet
 
         public override void Close()
         {
-            Socket.CloseAsync();
+            Socket.CloseAsync(CloseStatusCode.Normal);
         }
 
         public WebSocketTransport() : base()
         {
 
+        }
+
+        public static DisconnectCode ValueToDisconnectCode(ushort value)
+        {
+            if (value < Constants.NetworkTransport.WebSocket.DisconnectCodeOffset)
+            {
+                var code = (CloseStatusCode)value;
+
+                switch (code)
+                {
+                    case CloseStatusCode.Normal:
+                        return DisconnectCode.Normal;
+
+                    case CloseStatusCode.InvalidData:
+                        return DisconnectCode.InvalidData;
+                }
+
+                return DisconnectCode.Unknown;
+            }
+
+            value -= Constants.NetworkTransport.WebSocket.DisconnectCodeOffset;
+
+            return (DisconnectCode)value;
         }
 	}
 }

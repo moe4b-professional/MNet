@@ -69,7 +69,7 @@
     <Compile Include="Source\NetworkTransport.cs" />
     <Compile Include="Source\Preserve.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\Rest.cs" />
+    <Compile Include="Source\REST.cs" />
     <Compile Include="Source\Room.cs" />
     <Compile Include="Source\RPX.cs" />
     <Compile Include="Source\SyncVar.cs" />

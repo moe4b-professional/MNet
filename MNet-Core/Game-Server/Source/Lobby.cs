@@ -35,7 +35,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.Write(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(GetLobbyInfoRequest)}");
+                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                RestAPI.Write(response, HttpStatusCode.NotAcceptable, $"Error Reading {nameof(CreateRoomRequest)}");
+                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 

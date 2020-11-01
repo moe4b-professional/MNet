@@ -91,17 +91,6 @@ namespace MNet
             callback(request);
         }
 
-        protected void Send(string ip, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue = false)
-        {
-            if (string.IsNullOrEmpty(ip)) throw new ArgumentException("Rest API IP address cannot be empty", nameof(ip));
-
-            var url = $"{Scheme}://{ip}:{Port}{path}";
-
-            var request = new UnityWebRequest(url, method, downloader, uploader);
-
-            Register(request, callback, enqueue);
-        }
-
         public Element Register(UnityWebRequest request, CallbackDelegate callback, bool inqueue)
         {
             var element = new Element(request, callback);
@@ -117,6 +106,17 @@ namespace MNet
         }
 
         #region Methods
+        protected void Send(string ip, string path, string method, UploadHandler uploader, DownloadHandler downloader, CallbackDelegate callback, bool enqueue = false)
+        {
+            if (string.IsNullOrEmpty(ip)) throw new ArgumentException("Rest API IP address cannot be empty", nameof(ip));
+
+            var url = $"{Scheme}://{ip}:{Port}{path}";
+
+            var request = new UnityWebRequest(url, method, downloader, uploader);
+
+            Register(request, callback, enqueue);
+        }
+
         public void GET(string path, CallbackDelegate callback, bool enqueue = false)
         {
             var downloader = new DownloadHandlerBuffer();
@@ -165,6 +165,9 @@ namespace MNet
             {
                 payload = default;
                 error = RestError.From(request);
+
+                Debug.LogError(error);
+
                 return;
             }
 
@@ -187,11 +190,11 @@ namespace MNet
 
     public class RestError
     {
-        public long Code { get; protected set; }
+        public RestStatusCode Code { get; protected set; }
 
         public string Message { get; protected set; }
 
-        public RestError(long code, string message)
+        public RestError(RestStatusCode code, string message)
         {
             this.Code = code;
             this.Message = message;
@@ -199,7 +202,7 @@ namespace MNet
 
         public static RestError From(UnityWebRequest request)
         {
-            var code = request.responseCode;
+            var code = (RestStatusCode)request.responseCode;
 
             var message = GetMessage(request);
 
@@ -214,6 +217,6 @@ namespace MNet
             return request.error;
         }
 
-        public override string ToString() => $"{Message}";
+        public override string ToString() => $"{Code}: {Message}";
     }
 }
