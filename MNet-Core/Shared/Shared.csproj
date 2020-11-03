@@ -34,6 +34,9 @@
   <PropertyGroup>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -86,6 +89,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>set /p Destination=&lt;"$(ProjectDir)DLL Copy Destination.txt"
-xcopy /y /d "$(TargetPath)" "$(SolutionDir)%25Destination%25"</PostBuildEvent>
+xcopy /y /d "$(TargetPath)" "$(ProjectDir)%25Destination%25"</PostBuildEvent>
   </PropertyGroup>
 </Project>

@@ -1,5 +1,7 @@
 @echo off
 
+cd %~dp0
+
 rmdir /s /q "MNet-Release"
 mkdir "MNet-Release"
 
