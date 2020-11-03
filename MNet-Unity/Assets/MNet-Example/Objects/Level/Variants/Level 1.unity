@@ -389,6 +389,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   results: 
+  success: 0
 --- !u!114 &358559475
 MonoBehaviour:
   m_ObjectHideFlags: 0

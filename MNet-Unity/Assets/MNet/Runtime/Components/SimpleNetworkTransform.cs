@@ -59,7 +59,7 @@ namespace MNet
         {
             if (NetworkAPI.Client.IsMaster)
             {
-                if (info.IsBufferered == false) return;
+                if (info.IsBuffered == false) return;
 
                 lastPosition = position;
                 lastRotation = rotation;

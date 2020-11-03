@@ -53,6 +53,7 @@
     <Compile Include="Source\CollectionPrettyPrint.cs" />
     <Compile Include="Source\Constants.cs" />
     <Compile Include="Source\GameServer.cs" />
+    <Compile Include="Source\GeneralExtensions.cs" />
     <Compile Include="Source\HelperExtensions.cs" />
     <Compile Include="Source\Lobby.cs" />
     <Compile Include="Source\Log.cs" />

@@ -22,16 +22,21 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Tests/" + "Sync Var Test")]
     public class SyncVarTest : NetworkBehaviour
     {
-        public string field;
+        [SerializeField]
+        string field;
         [SyncVar(RemoteAutority.Owner | RemoteAutority.Master)]
         public string Field
         {
             get => field;
-            set
+            private set
             {
+                Debug.Log($"Set Field, New Value: '{value}', Old Value: '{field}'");
+
                 field = value;
             }
         }
+
+        void SyncField(string value) => SyncVar(nameof(Field), Field, value);
 
         protected override void OnSpawn()
         {
@@ -39,7 +44,7 @@ namespace MNet
 
             if (Entity.IsMine == false) return;
 
-            SetSyncVar(nameof(Field), Field, NetworkAPI.Client.Profile.Name);
+            SyncField(NetworkAPI.Client.Profile.Name);
         }
     }
 }

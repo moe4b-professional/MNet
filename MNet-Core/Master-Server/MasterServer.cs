@@ -16,9 +16,9 @@ namespace MNet
 
         public static Dictionary<AppID, AppConfiguration> Apps { get; private set; }
 
-        public static RestAPI Rest { get; private set; }
-
         public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
+
+        public static RestAPI Rest { get; private set; }
 
         static readonly object SyncLock = new object();
 

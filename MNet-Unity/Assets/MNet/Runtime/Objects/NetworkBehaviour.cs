@@ -118,7 +118,7 @@ namespace MNet
                 var bind = new RpcBind(this, attribute, method);
 
                 if (RPCs.ContainsKey(bind.Name))
-                    throw new Exception($"Rpc Named {bind.Name} Already Registered On Behaviour {GetType()}, Please Assign Every RPC a Unique Name And Don't Overload the RPC Methods");
+                    throw new Exception($"Rpc '{bind.Name}' Already Registered On '{GetType()}', Please Assign Every RPC a Unique Name And Don't Overload RPC Methods");
 
                 RPCs.Add(bind.Name, bind);
             }
@@ -157,7 +157,13 @@ namespace MNet
         {
             if (FindRPC(method, out var bind) == false)
             {
-                Debug.LogError($"No RPC Found With Name {method}");
+                Debug.LogError($"No RPC With Name '{method}' Found on Entity '{Entity}'");
+                return;
+            }
+
+            if (bind.ReturnType != typeof(TResult))
+            {
+                Debug.LogError($"RPC '{bind}' has Mismatched RPR Return Types '{bind.ReturnType.Name}' vs '{typeof(TResult).Name}'");
                 return;
             }
 
@@ -168,7 +174,7 @@ namespace MNet
             SendRPC(payload);
         }
 
-        protected void SendRPC(RpcRequest request)
+        void SendRPC(RpcRequest request)
         {
             if (IsReady == false)
             {
@@ -247,11 +253,11 @@ namespace MNet
             => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
-        protected internal void InvokeRPC(RpcCommand command)
+        internal void InvokeRPC(RpcCommand command)
         {
             if (FindRPC(command.Method, out var bind) == false)
             {
-                Debug.LogWarning($"No RPC with Name {command.Method} found on {GetType().Name}");
+                Debug.LogWarning($"Can not Invoke Non-Existant RPC '{command.Method}' On '{GetType()}'");
 
                 ResolveRPC(command, RprResult.MethodNotFound);
 
@@ -260,7 +266,7 @@ namespace MNet
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
-                Debug.LogWarning($"Invalid Authority To Invoke RPC {bind.Name} Sent From Client {command.Sender}");
+                Debug.LogWarning($"Invalid Authority To Invoke RPC {bind} Sent From Client {command.Sender}");
 
                 ResolveRPC(command, RprResult.InvalidAuthority);
 
@@ -274,7 +280,7 @@ namespace MNet
             }
             catch (Exception e)
             {
-                var text = $"Error trying to Parse RPC Arguments of Method '{command.Method}' on {this}, Invalid Data Sent Most Likely \n" +
+                var text = $"Error trying to Parse RPC Arguments of Method '{command.Method}' on '{this}', Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
                     $"{e}";
 
@@ -366,10 +372,10 @@ namespace MNet
         /// <summary>
         /// Overload for ensuring type safety
         /// </summary>
-        protected void SetSyncVar<T>(string name, T field, T value) => SetSyncVar(name, value);
+        protected void SyncVar<T>(string name, T field, T value) => SyncVar(name, value);
 #pragma warning restore IDE0060
 
-        protected void SetSyncVar(string variable, object value)
+        protected void SyncVar(string variable, object value)
         {
             if (FindSyncVar(variable, out var bind) == false)
             {
@@ -399,7 +405,7 @@ namespace MNet
             }
         }
 
-        protected internal void InvokeSyncVar(SyncVarCommand command)
+        internal void InvokeSyncVar(SyncVarCommand command)
         {
             if (SyncVars.TryGetValue(command.Variable, out var bind) == false)
             {

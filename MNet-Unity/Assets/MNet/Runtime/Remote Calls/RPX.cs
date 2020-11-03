@@ -55,8 +55,9 @@ namespace MNet
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
 
+        public Type ReturnType => MethodInfo.ReturnType;
+
         public bool HasInfoParameter { get; protected set; }
-        public bool HasReturn { get; protected set; }
 
         public RpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
@@ -83,9 +84,12 @@ namespace MNet
 
             NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
-            var info = new RpcInfo(sender);
+            if (HasInfoParameter)
+            {
+                var info = new RpcInfo(sender);
 
-            if (HasInfoParameter) arguments[arguments.Length - 1] = info;
+                arguments[arguments.Length - 1] = info;
+            }
 
             return arguments;
         }
@@ -94,6 +98,8 @@ namespace MNet
         {
             return MethodInfo.Invoke(Behaviour, arguments);
         }
+
+        public override string ToString() => $"{Entity.name}->{Name}";
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method)
         {
@@ -107,7 +113,6 @@ namespace MNet
             ParametersInfo = method.GetParameters();
 
             HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
-            HasReturn = MethodInfo.ReturnType != null;
         }
     }
 
@@ -115,11 +120,12 @@ namespace MNet
     {
         public NetworkClient Sender { get; private set; }
 
-        public bool IsBufferered => NetworkAPI.Room.IsApplyingMessageBuffer;
+        public bool IsBuffered { get; private set; }
 
         public RpcInfo(NetworkClient sender)
         {
             this.Sender = sender;
+            this.IsBuffered = NetworkAPI.Room.IsApplyingMessageBuffer;
         }
     }
 
@@ -182,19 +188,9 @@ namespace MNet
             this.ReturnType = Parameters[1].ParameterType;
         }
 
-        public static object GetDefault(Type type)
-        {
-            if (type.IsValueType) return Activator.CreateInstance(type);
+        public static object GetDefault(Type type) => type.IsValueType ? Activator.CreateInstance(type) : null;
 
-            return null;
-        }
-
-        public static ushort Increment(ushort id)
-        {
-            id += 1;
-
-            return id;
-        }
+        public static ushort Increment(ushort id) => id += 1;
     }
 
     public delegate void RprCallback<T>(RprResult result, T value);

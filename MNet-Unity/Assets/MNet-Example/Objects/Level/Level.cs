@@ -19,31 +19,38 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
+	[DefaultExecutionOrder(ExecutionOrder)]
 	public class Level : NetworkBehaviour
 	{
+		public const int ExecutionOrder = -200;
+
 		public static Level Instance { get; protected set; }
 
 		public LevelUI UI { get; protected set; }
 
 		static Core Core => Core.Instance;
-
 		PopupPanel Popup => Core.UI.Popup;
 
 		void Awake()
-        {
-			Instance = this;
-
+		{
 			if (NetworkAPI.Client.IsConnected == false)
 			{
 				Core.Scenes.LoadMainMenu();
 				return;
 			}
 
+			Instance = this;
+
 			UI = FindObjectOfType<LevelUI>();
 		}
 
+		void Start()
+		{
+			
+		}
+
 		public void Quit()
-        {
+		{
 			if (NetworkAPI.Client.IsConnected)
 			{
 				Popup.Show("Disconnecting");
@@ -65,5 +72,5 @@ namespace MNet.Example
 				Core.Scenes.LoadMainMenu();
 			}
 		}
-    }
+	}
 }
