@@ -47,15 +47,13 @@ namespace MNet
 
             }
 
-            public static NetworkMessage Send<T>(T payload)
+            public static bool Send<T>(T payload)
             {
                 var message = NetworkMessage.Write(payload);
 
                 var raw = NetworkSerializer.Serialize(message);
 
-                RealtimeAPI.Send(raw);
-
-                return message;
+                return RealtimeAPI.Send(raw);
             }
 
             public delegate void ConnectDelegate();

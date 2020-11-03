@@ -21,11 +21,20 @@ namespace MNet.Example
 {
     public class SampleNetworkBehaviour : NetworkBehaviour
     {
-        protected override void OnSpawn()
-        {
-            base.OnSpawn();
+        [SyncVar(RemoteAutority.Master)]
+        public string text;
 
-            NetworkAPI.Client.DestroyEntity(Entity);
+        [NetworkRPC(RemoteAutority.Master)]
+        void Call(RpcInfo info)
+        {
+            transform.position += Vector3.one * 4;
+        }
+
+        void Start()
+        {
+            SyncVar("text", "Hello World");
+
+            RPC(Call, RpcBufferMode.All);
         }
     }
 }

@@ -99,7 +99,7 @@ namespace MNet
             return MethodInfo.Invoke(Behaviour, arguments);
         }
 
-        public override string ToString() => $"{Entity.name}->{Name}";
+        public override string ToString() => $"{Entity}->{Name}";
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method)
         {

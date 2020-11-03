@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using System.Net.Cache;
 
 namespace MNet.Example
 {
@@ -42,11 +43,6 @@ namespace MNet.Example
 			Instance = this;
 
 			UI = FindObjectOfType<LevelUI>();
-		}
-
-		void Start()
-		{
-			
 		}
 
 		public void Quit()

@@ -115,7 +115,7 @@
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkEntity.cs" />
      <Compile Include="Assets\MNet\Runtime\Remote Calls\RPX.cs" />
      <Compile Include="Assets\MNet\Runtime\Remote Calls\SyncVar.cs" />
-     <Compile Include="Assets\MNet\Utility\Dependancy.cs" />
+     <Compile Include="Assets\MNet\Runtime\Utility\Dependancy.cs" />
      <None Include="Assets\MNet-Example\MNet-Unity.asmref" />
      <None Include="Assets\MNet-Project-Utility\MNet-Unity.asmref" />
      <None Include="Assets\MNet\MNet-Unity.asmdef" />

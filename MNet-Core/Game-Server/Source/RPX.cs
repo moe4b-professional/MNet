@@ -68,7 +68,7 @@ namespace MNet
 
     class RprCache
     {
-        public Dictionary<ushort, RprCallback> Dictionary { get; protected set; }
+        public Dictionary<(NetworkClientID client, ushort id), RprCallback> Dictionary { get; protected set; }
 
         public IReadOnlyCollection<RprCallback> Collection => Dictionary.Values;
 
@@ -76,21 +76,32 @@ namespace MNet
         {
             var callback = new RprCallback(request, sender, target);
 
-            Dictionary.Add(request.Callback, callback);
+            var key = (sender.ID, request.Callback);
+
+            Dictionary.Add(key, callback);
         }
 
-        public void TryGet(ushort callback, out RprCallback rpr) => Dictionary.TryGetValue(callback, out rpr);
-
-        public bool Unregister(ushort callback)
+        public bool TryGet(RprRequest request, out RprCallback callback) => TryGet(request.Target, request.ID, out callback);
+        public bool TryGet(NetworkClientID client, ushort id, out RprCallback callback)
         {
-            return Dictionary.Remove(callback);
+            var key = (client, id);
+
+            return Dictionary.TryGetValue(key, out callback);
+        }
+
+        public bool Unregister(RprRequest request) => Unregister(request.Target, request.ID);
+        public bool Unregister(NetworkClientID client, ushort id)
+        {
+            var key = (client, id);
+
+            return Dictionary.Remove(key);
         }
 
         public void Clear() => Dictionary.Clear();
 
         public RprCache()
         {
-            Dictionary = new Dictionary<ushort, RprCallback>();
+            Dictionary = new Dictionary<(NetworkClientID, ushort), RprCallback>();
         }
     }
 
@@ -101,6 +112,8 @@ namespace MNet
 
         public NetworkClient Sender { get; protected set; }
         public NetworkClient Target { get; protected set; }
+
+        public override string ToString() => $"[ ID: {ID} | Sender: {Sender} | Target: {Target} ]";
 
         public RprCallback(RpcRequest request, NetworkClient sender, NetworkClient target)
         {

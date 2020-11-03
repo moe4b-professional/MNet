@@ -91,6 +91,8 @@ namespace MNet
             }
         }
 
+        public override string ToString() => $"RPC Request: {method}";
+
         public RpcRequest() { }
 
         public static byte[] Serialize(params object[] arguments)
@@ -269,8 +271,8 @@ namespace MNet
         NetworkClientID target;
         public NetworkClientID Target => target;
 
-        ushort callback;
-        public ushort Callback => callback;
+        ushort id;
+        public ushort ID => id;
 
         RprResult result;
         public RprResult Result => result;
@@ -283,31 +285,33 @@ namespace MNet
             context.Select(ref entity);
             context.Select(ref target);
 
-            context.Select(ref callback);
+            context.Select(ref id);
 
             context.Select(ref result);
 
             if (result == RprResult.Success) context.Select(ref raw);
         }
 
+        public override string ToString() => $"RPR Request: {id}";
+
         public RprRequest()
         {
 
         }
 
-        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort callback, RprResult result)
+        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort id, RprResult result)
         {
             var payload = new RprRequest()
             {
                 entity = entity,
                 target = target,
-                callback = callback,
+                id = id,
                 result = result,
             };
 
             return payload;
         }
-        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort callback, object value)
+        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort id, object value)
         {
             var raw = NetworkSerializer.Serialize(value);
 
@@ -315,7 +319,7 @@ namespace MNet
             {
                 entity = entity,
                 target = target,
-                callback = callback,
+                id = id,
                 result = RprResult.Success,
                 raw = raw,
             };
@@ -331,8 +335,8 @@ namespace MNet
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
 
-        ushort callback;
-        public ushort Callback => callback;
+        ushort id;
+        public ushort ID => id;
 
         RprResult result;
         public RprResult Result => result;
@@ -351,7 +355,7 @@ namespace MNet
         {
             context.Select(ref entity);
 
-            context.Select(ref callback);
+            context.Select(ref id);
             context.Select(ref result);
 
             if(result == RprResult.Success) context.Select(ref raw);
@@ -362,25 +366,25 @@ namespace MNet
 
         }
 
-        public static RprCommand Write(NetworkEntityID entity, RprRequest request) => Write(entity, request.Callback, request.Result, request.Raw);
-        public static RprCommand Write(NetworkEntityID entity, ushort callback, RprResult result, byte[] raw)
+        public static RprCommand Write(NetworkEntityID entity, RprRequest request) => Write(entity, request.ID, request.Result, request.Raw);
+        public static RprCommand Write(NetworkEntityID entity, ushort id, RprResult result, byte[] raw)
         {
             var payload = new RprCommand()
             {
                 entity = entity,
-                callback = callback,
+                id = id,
                 result = result,
                 raw = raw,
             };
 
             return payload;
         }
-        public static RprCommand Write(NetworkEntityID entity, ushort callback, RprResult result)
+        public static RprCommand Write(NetworkEntityID entity, ushort id, RprResult result)
         {
             var command = new RprCommand()
             {
                 entity = entity,
-                callback = callback,
+                id = id,
                 result = result,
             };
 

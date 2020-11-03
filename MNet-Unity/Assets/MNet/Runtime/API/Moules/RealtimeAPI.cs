@@ -64,7 +64,7 @@ namespace MNet
                 Transport.Connect(serverID, roomID);
             }
 
-            public static void Send(byte[] raw)
+            public static bool Send(byte[] raw)
             {
                 if (IsConnected == false)
                 {
@@ -77,10 +77,11 @@ namespace MNet
                     ///gets disconnected before the Send method is called
                     ///which will result in an exception
                     Debug.LogWarning("Cannot Send Data When Client Isn't Connected");
-                    return;
+                    return false;
                 }
 
                 Transport.Send(raw);
+                return true;
             }
 
             static void Update()
@@ -88,7 +89,7 @@ namespace MNet
                 if (Transport != null) Process();
             }
 
-            public static bool Pause { get; private set; } = false;
+            public static bool Pause { get; set; } = false;
 
             static void Process()
             {

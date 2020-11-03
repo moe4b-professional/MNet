@@ -306,9 +306,9 @@ namespace MNet
                 return;
             }
 
-            SendTo(target, command);
-
             if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender, target);
+
+            SendTo(target, command);
         }
         #endregion
 
@@ -317,17 +317,21 @@ namespace MNet
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
-                Log.Warning($"No Entity {request.Entity} Found to Invoke RPR On");
+                Log.Warning($"No Entity '{request.Entity}' Found to Invoke RPR On");
                 return;
             }
 
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
-                Log.Warning($"No Client {request.Target} Found to Invoke RPR On");
+                Log.Warning($"No Client '{request.Target}' Found to Invoke RPR On");
                 return;
             }
 
-            entity.RprCache.TryGet(request.Callback, out var callback);
+            if(entity.RprCache.TryGet(request, out var callback) == false)
+            {
+                Log.Warning($"No RPR '{request.ID}' Found in '{entity}'s RPR Cache");
+                return;
+            }
 
             if (sender != callback.Target)
             {
@@ -335,7 +339,8 @@ namespace MNet
                 return;
             }
 
-            entity.RprCache.Unregister(request.Callback);
+            if (entity.RprCache.Unregister(request) == false)
+                Log.Warning($"Couldn't Unregister Cached RPR {callback.ID}");
 
             var command = RprCommand.Write(entity.ID, request);
 
@@ -343,9 +348,9 @@ namespace MNet
         }
 
         void ResolveRpr(NetworkClient target, RpcRequest request, RprResult result) => ResolveRpr(target, request.Entity, request.Callback, result);
-        void ResolveRpr(NetworkClient target, NetworkEntityID entity, ushort callback, RprResult result)
+        void ResolveRpr(NetworkClient target, NetworkEntityID entity, ushort id, RprResult result)
         {
-            var command = RprCommand.Write(entity, callback, result);
+            var command = RprCommand.Write(entity, id, result);
 
             SendTo(target, command);
         }

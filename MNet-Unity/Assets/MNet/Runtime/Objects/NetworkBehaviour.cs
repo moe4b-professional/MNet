@@ -43,14 +43,12 @@ namespace MNet
 
         protected virtual void Reset()
         {
-#if UNITY_EDITOR
             ResolveEntity();
-#endif
         }
 
-#if UNITY_EDITOR
         void ResolveEntity()
         {
+#if UNITY_EDITOR
             var entity = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
 
             if (entity == null)
@@ -58,8 +56,8 @@ namespace MNet
                 entity = gameObject.AddComponent<NetworkEntity>();
                 ComponentUtility.MoveComponentUp(entity);
             }
-        }
 #endif
+        }
 
         public void UpdateReadyState()
         {
@@ -126,70 +124,66 @@ namespace MNet
 
         bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
-        protected void RPC(string method, params object[] arguments) => RPC(method, RpcBufferMode.None, arguments);
-        protected void RPC(string method, RpcBufferMode bufferMode, params object[] arguments)
+        #region Literal Methods
+        protected bool RPC(string method, params object[] arguments) => RPC(method, RpcBufferMode.None, arguments);
+        protected bool RPC(string method, RpcBufferMode bufferMode, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
-                return;
+                return false;
             }
 
             var payload = bind.CreateRequest(bufferMode, arguments);
 
-            SendRPC(payload);
+            return RPC(bind, payload);
         }
 
-        protected void RPC(string method, NetworkClient target, params object[] arguments)
+        protected bool RPC(string method, NetworkClient target, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
-                return;
+                return false;
             }
 
             var payload = bind.CreateRequest(target.ID, arguments);
 
-            SendRPC(payload);
+            return RPC(bind, payload);
         }
 
-        protected void RPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
+        protected bool RPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
                 Debug.LogError($"No RPC With Name '{method}' Found on Entity '{Entity}'");
-                return;
+                return false;
             }
 
             if (bind.ReturnType != typeof(TResult))
             {
                 Debug.LogError($"RPC '{bind}' has Mismatched RPR Return Types '{bind.ReturnType.Name}' vs '{typeof(TResult).Name}'");
-                return;
+                return false;
             }
 
             var rpr = Entity.RegisterRPR(result.Method, result.Target);
 
             var payload = bind.CreateRequest(target.ID, rpr.ID, arguments);
 
-            SendRPC(payload);
+            return RPC(bind, payload);
         }
 
-        void SendRPC(RpcRequest request)
+        bool RPC(RpcBind bind, RpcRequest request)
         {
-            if (IsReady == false)
+            if(ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
             {
-                Debug.LogError($"Trying to Invoke RPC {request.Method} on {name} Before It's Ready, Please Wait Untill IsReady or After OnSpawn Method");
-                return;
+                Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                return false;
             }
 
-            if (NetworkAPI.Client.IsConnected == false)
-            {
-                Debug.LogWarning($"Cannot Send RPC {request.Method} When Client Isn't Connected");
-                return;
-            }
-
-            NetworkAPI.Client.Send(request);
+            return Send(request);
         }
+        #endregion
 
         #region Generic Methods
         public void RPC(RpcMethod method)
@@ -257,7 +251,7 @@ namespace MNet
         {
             if (FindRPC(command.Method, out var bind) == false)
             {
-                Debug.LogWarning($"Can not Invoke Non-Existant RPC '{command.Method}' On '{GetType()}'");
+                Debug.LogWarning($"Can't Invoke Non-Existant RPC '{command.Method}' On '{GetType()}'");
 
                 ResolveRPC(command, RprResult.MethodNotFound);
 
@@ -266,7 +260,7 @@ namespace MNet
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
-                Debug.LogWarning($"Invalid Authority To Invoke RPC {bind} Sent From Client {command.Sender}");
+                Debug.LogWarning($"RPC '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
 
                 ResolveRPC(command, RprResult.InvalidAuthority);
 
@@ -368,42 +362,36 @@ namespace MNet
 
         bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
-#pragma warning disable IDE0060
+        #region Methods
         /// <summary>
         /// Overload for ensuring type safety
         /// </summary>
-        protected void SyncVar<T>(string name, T field, T value) => SyncVar(name, value);
-#pragma warning restore IDE0060
+        protected bool SyncVar<T>(string name, T field, T value) => SyncVar(name, value);
 
-        protected void SyncVar(string variable, object value)
+        protected bool SyncVar(string variable, object value)
         {
             if (FindSyncVar(variable, out var bind) == false)
             {
                 Debug.LogError($"No SyncVar Found With Name {variable}");
-                return;
+                return false;
             }
 
             var request = bind.CreateRequest(value);
 
-            SendSyncVar(request);
-
-            NetworkAPI.Client.Send(request);
+            return SyncVar(bind, request);
         }
 
-        void SendSyncVar(SyncVarRequest request)
+        bool SyncVar(SyncVarBind bind, SyncVarRequest request)
         {
-            if (IsReady == false)
+            if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
             {
-                Debug.LogError($"Trying to Invoke SyncVar {request.Variable} on {name} Before It's Ready, Please Wait Untill IsReady or After OnSpawn Method");
-                return;
+                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                return false;
             }
 
-            if (NetworkAPI.Client.IsConnected == false)
-            {
-                Debug.LogWarning($"Cannot Send SyncVar {request.Variable} When Client Isn't Connected");
-                return;
-            }
+            return Send(request);
         }
+        #endregion
 
         internal void InvokeSyncVar(SyncVarCommand command)
         {
@@ -415,7 +403,7 @@ namespace MNet
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
-                Debug.LogWarning($"Invalid Authority To Invoke SyncVar {bind.Name} Sent From Client {command.Sender}");
+                Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
                 return;
             }
 
@@ -451,6 +439,9 @@ namespace MNet
 
         public bool ValidateAuthority(NetworkClientID sender, RemoteAutority authority)
         {
+            //instantly validate every buffered message
+            if (NetworkAPI.Room.IsApplyingMessageBuffer) return true;
+
             if (authority.HasFlag(RemoteAutority.Any)) return true;
 
             if (authority.HasFlag(RemoteAutority.Owner))
@@ -466,6 +457,23 @@ namespace MNet
             }
 
             return false;
+        }
+
+        protected virtual bool Send<T>(T payload)
+        {
+            if (IsReady == false)
+            {
+                Debug.LogError($"Trying to Send Payload '{payload}' Before Entity '{this}' is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}");
+                return false;
+            }
+
+            if (NetworkAPI.Client.IsConnected == false)
+            {
+                Debug.LogWarning($"Cannot Send Payload '{payload}' When Network Client Isn't Connected");
+                return false;
+            }
+
+            return NetworkAPI.Client.Send(payload);
         }
 
         public NetworkBehaviour()

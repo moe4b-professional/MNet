@@ -82,6 +82,8 @@ namespace MNet
             throw new NotImplementedException();
         }
 
+        public override string ToString() => $"{Entity}->{Name}";
+
         SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field, PropertyInfo property)
         {
             this.Behaviour = behaviour;
@@ -94,13 +96,11 @@ namespace MNet
             if (IsField) Name = FieldInfo.Name;
             if (IsProperty) Name = PropertyInfo.Name;
         }
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field)
-            : this(behaviour, attribute, field, null)
+        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field) : this(behaviour, attribute, field, null)
         {
 
         }
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property)
-            : this(behaviour, attribute, null, property)
+        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property) : this(behaviour, attribute, null, property)
         {
             if (property.SetMethod == null || property.GetMethod == null)
             {
