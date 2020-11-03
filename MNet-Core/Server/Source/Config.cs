@@ -60,7 +60,6 @@ namespace MNet
             SerializerSettings = new JsonSerializerSettings();
 
             SerializerSettings.Converters.Add(IPAddressConverter.Instance);
-            SerializerSettings.Converters.Add(VersionConverter.Instance);
         }
     }
 }

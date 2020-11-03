@@ -67,6 +67,8 @@ namespace MNet
         public static bool operator >=(Version left, Version right) => left == right || left > right;
         public static bool operator <=(Version left, Version right) => left == right || left < right;
 
+        public static explicit operator Version(string text) => Parse(text);
+
         //Static Utility
         public static Version Zero { get; private set; } = new Version(0, 0, 0);
 

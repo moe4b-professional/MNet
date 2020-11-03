@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,14 +9,12 @@ namespace MNet
 {
     class RpcBuffer
     {
-        public Dictionary<string, NetworkMessageCollection> Dictionary { get; protected set; }
+        public Dictionary<(NetworkBehaviourID behaviour, string method), NetworkMessageCollection> Dictionary { get; protected set; }
 
         public HashSet<NetworkMessage> Hash { get; protected set; }
 
         public delegate void BufferDelegate(NetworkMessage message);
         public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> collection);
-
-        public static string RequestToID(RpcRequest request) => $"{request.Behaviour}{request.Method}";
 
         public void Set(NetworkMessage message, RpcRequest request, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
         {
@@ -27,13 +26,13 @@ namespace MNet
 
             if (request.BufferMode == RpcBufferMode.None) return;
 
-            var id = RequestToID(request);
+            var key = (request.Behaviour, request.Method);
 
-            if (Dictionary.TryGetValue(id, out var collection) == false)
+            if (Dictionary.TryGetValue(key, out var collection) == false)
             {
                 collection = new NetworkMessageCollection();
 
-                Dictionary.Add(id, collection);
+                Dictionary.Add(key, collection);
             }
 
             if (request.BufferMode == RpcBufferMode.Last)
@@ -60,7 +59,7 @@ namespace MNet
 
         public RpcBuffer()
         {
-            Dictionary = new Dictionary<string, NetworkMessageCollection>();
+            Dictionary = new Dictionary<(NetworkBehaviourID, string), NetworkMessageCollection>();
 
             Hash = new HashSet<NetworkMessage>();
         }

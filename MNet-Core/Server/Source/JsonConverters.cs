@@ -30,25 +30,4 @@ namespace MNet
             return IPAddress.Parse(text);
         }
     }
-
-    class VersionConverter : JsonConverter
-    {
-        public static VersionConverter Instance { get; private set; } = new VersionConverter();
-
-        public override bool CanConvert(Type objectType) => objectType == typeof(Version);
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var text = value.ToString();
-
-            writer.WriteValue(text);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var text = (string)reader.Value;
-
-            return Version.Parse(text);
-        }
-    }
 }
