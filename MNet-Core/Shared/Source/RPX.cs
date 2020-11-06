@@ -177,6 +177,9 @@ namespace MNet
         string method;
         public string Method { get { return method; } }
 
+        TimeValue time = default;
+        public TimeValue Time => time;
+
         byte[] raw;
         public byte[] Raw { get { return raw; } }
 
@@ -209,6 +212,8 @@ namespace MNet
             context.Select(ref entity);
             context.Select(ref behaviour);
             context.Select(ref method);
+            context.Select(ref time);
+
             context.Select(ref raw);
 
             context.Select(ref type);
@@ -229,7 +234,7 @@ namespace MNet
 
         public RpcCommand() { }
 
-        public static RpcCommand Write(NetworkClientID sender, RpcRequest request)
+        public static RpcCommand Write(NetworkClientID sender, RpcRequest request, TimeValue time)
         {
             var command = new RpcCommand()
             {
@@ -240,6 +245,7 @@ namespace MNet
                 raw = request.Raw,
                 type = request.Type,
                 callback = request.Callback,
+                time = time,
             };
 
             return command;

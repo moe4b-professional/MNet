@@ -28,7 +28,7 @@ namespace MNet
             public static NetworkClient Instance { get; private set; }
             public static NetworkClientID ID => Instance.ID;
 
-            public static bool IsConnected => RealtimeAPI.IsConnected;
+            public static bool IsConnected => Realtime.IsConnected;
 
             public static bool IsMaster
             {
@@ -53,7 +53,7 @@ namespace MNet
 
                 var raw = NetworkSerializer.Serialize(message);
 
-                return RealtimeAPI.Send(raw);
+                return Realtime.Send(raw);
             }
 
             public delegate void ConnectDelegate();
@@ -187,7 +187,7 @@ namespace MNet
             #endregion
 
             #region Disconnect
-            public static void Disconnect() => RealtimeAPI.Disconnect();
+            public static void Disconnect() => Realtime.Disconnect();
 
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
@@ -210,9 +210,9 @@ namespace MNet
 
             static Client()
             {
-                RealtimeAPI.OnConnect += ConnectCallback;
-                RealtimeAPI.OnMessage += MessageCallback;
-                RealtimeAPI.OnDisconnect += DisconnectedCallback;
+                Realtime.OnConnect += ConnectCallback;
+                Realtime.OnMessage += MessageCallback;
+                Realtime.OnDisconnect += DisconnectedCallback;
 
                 Room.OnSpawnEntity += SpawnEntityCallback;
                 Room.OnDestroyEntity += DestroyEntityCallback;

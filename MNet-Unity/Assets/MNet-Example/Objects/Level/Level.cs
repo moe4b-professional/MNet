@@ -45,6 +45,19 @@ namespace MNet.Example
 			UI = FindObjectOfType<LevelUI>();
 		}
 
+		IEnumerator Start()
+		{
+			yield return new WaitForSecondsRealtime(2f);
+
+			RPC(Call);
+		}
+
+		[NetworkRPC]
+		void Call(RpcInfo info)
+		{
+			Debug.Log($"Level Call Time: {info.Time.Seconds}");
+		}
+
 		public void Quit()
 		{
 			if (NetworkAPI.Client.IsConnected)

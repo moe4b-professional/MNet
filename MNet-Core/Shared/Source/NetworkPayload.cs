@@ -1,19 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-
-using WebSocketSharp;
-using WebSocketSharp.Net;
+using System.Collections.Generic;
 
 namespace MNet
 {
     public static class NetworkPayload
     {
-        public const ushort MinCode = 400;
+        public const ushort MinCode = 4000;
 
         public static Dictionary<ushort, Type> Codes { get; private set; }
         public static Dictionary<Type, ushort> Types { get; private set; }
@@ -114,12 +109,12 @@ namespace MNet
         static void ValidateTypeDuplicate(ushort code, Type type)
         {
             if (TryGetType(code, out var duplicate))
-                throw new Exception($"NetworkPayload Type Duplicate Found, {type} & {duplicate} both registered with code {code}");
+                throw new Exception($"NetworkPayload Type Duplicate Found, '{type}' & '{duplicate}' both registered with code '{code}'");
         }
         static void ValidateCodeDuplicate(ushort code, Type type)
         {
             if (TryGetCode(type, out var duplicate))
-                throw new Exception($"NetworkPayload Type Duplicate Found, Code {code} & {duplicate} Both Registered to {type}");
+                throw new Exception($"NetworkPayload Type Duplicate Found, Code '{code}' & '{duplicate}' Both Registered to '{type}'");
         }
         #endregion
 
@@ -136,6 +131,7 @@ namespace MNet
 
             Register<Guid>(8);
             Register<DateTime>(9);
+            Register<TimeSpan>(10);
 
             Register<RegisterClientRequest>(11);
             Register<RegisterClientResponse>(12);
@@ -172,6 +168,11 @@ namespace MNet
 
             Register<SyncVarRequest>(37);
             Register<SyncVarCommand>(38);
+
+            Register<long>(39);
+            Register<ulong>(40);
+
+            Register<double>(41);
         }
 
         static NetworkPayload()
@@ -361,12 +362,18 @@ namespace MNet
     [Serializable]
     public sealed class ReadyClientRequest : INetworkSerializable
     {
+        DateTime timestamp = default;
+        public DateTime Timestamp => timestamp;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
 
         }
 
-        public ReadyClientRequest() { }
+        public ReadyClientRequest()
+        {
+            timestamp = DateTime.UtcNow;
+        }
     }
 
     [Preserve]
@@ -382,19 +389,24 @@ namespace MNet
         List<NetworkMessage> buffer;
         public List<NetworkMessage> Buffer => buffer;
 
+        RoomTimeResponse time = default;
+        public RoomTimeResponse Time => time;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref clients);
             context.Select(ref buffer);
             context.Select(ref master);
+            context.Select(ref time);
         }
 
         public ReadyClientResponse() { }
-        public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, List<NetworkMessage> buffer)
+        public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, List<NetworkMessage> buffer, RoomTimeResponse time)
         {
             this.clients = clients;
             this.master = master;
             this.buffer = buffer;
+            this.time = time;
         }
     }
     #endregion
@@ -637,5 +649,49 @@ namespace MNet
             this.id = id;
         }
     }
+
+    #region Time
+    [Preserve]
+    [Serializable]
+    public sealed class RoomTimeRequest : INetworkSerializable
+    {
+        DateTime timestamp = default;
+        public DateTime Timestamp => timestamp;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref timestamp);
+        }
+
+        public RoomTimeRequest()
+        {
+            timestamp = DateTime.UtcNow;
+        }
+    }
+
+    [Preserve]
+    [Serializable]
+    public sealed class RoomTimeResponse : INetworkSerializable
+    {
+        TimeValue time = default;
+        public TimeValue Time => time;
+
+        DateTime requestTimestamp = default;
+        public DateTime RequestTimestamp => requestTimestamp;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref time);
+            context.Select(ref requestTimestamp);
+        }
+
+        public RoomTimeResponse() { }
+        public RoomTimeResponse(TimeValue time, DateTime requestTimestamp)
+        {
+            this.time = time;
+            this.requestTimestamp = requestTimestamp;
+        }
+    }
+    #endregion
     #endregion
 }

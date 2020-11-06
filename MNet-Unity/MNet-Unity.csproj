@@ -92,12 +92,13 @@
      <Compile Include="Assets\MNet\Runtime\API\Misc\NetworkAPIConfig.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\ClientAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\LobbyAPI.cs" />
-     <Compile Include="Assets\MNet\Runtime\API\Moules\RealtimeAPI.cs" />
+     <Compile Include="Assets\MNet\Runtime\API\Moules\Realtime.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RestAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RoomAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\Modules\GameServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\Modules\MasterServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\ServerAPI.cs" />
+     <Compile Include="Assets\MNet\Runtime\API\Moules\TimeAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\NetworkAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\NetworkScene.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\SimpleNetworkTransform.cs" />

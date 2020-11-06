@@ -65,7 +65,7 @@ namespace MNet
             #region Join
             public static void Join(RoomBasicInfo info) => Join(info.ID);
 
-            public static void Join(RoomID id) => RealtimeAPI.Connect(Server.Game.ID, id);
+            public static void Join(RoomID id) => Realtime.Connect(Server.Game.ID, id);
             #endregion
 
             #region Create

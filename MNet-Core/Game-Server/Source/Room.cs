@@ -52,7 +52,11 @@ namespace MNet
 
         public INetworkTransportContext TransportContext { get; protected set; }
 
-        Schedule schedule;
+        public Scheduler Scheduler { get; protected set; }
+
+        public DateTime Timestamp { get; protected set; }
+
+        public TimeValue Time { get; protected set; }
 
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
@@ -140,22 +144,26 @@ namespace MNet
             TransportContext.OnMessage += MessageRecievedCallback;
             TransportContext.OnDisconnect += ClientDisconnected;
 
-            schedule.Start();
-        }
+            Timestamp = DateTime.UtcNow;
 
-        public event Action OnTick;
-        void Tick()
-        {
-            //Log.Info($"Delta Time: {Schedule.DeltaTime}\n" + $"Processing: {InputQueue.Count}");
-
-            TransportContext.Poll();
-
-            OnTick?.Invoke();
+            Scheduler.Start();
         }
 
         void ClientConnected(NetworkClientID id)
         {
             Log.Info($"Room {this.ID}: Client {id} Connected");
+        }
+
+        public event Action OnTick;
+        void Tick()
+        {
+            Log.Info($"Time: {Time.Seconds}");
+
+            Time.CalculateFrom(Timestamp);
+
+            TransportContext.Poll();
+
+            OnTick?.Invoke();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, ArraySegment<byte> raw)
@@ -198,7 +206,13 @@ namespace MNet
                 {
                     var request = message.Read<ReadyClientRequest>();
 
-                    ReadyClient(client);
+                    ReadyClient(client, request);
+                }
+                else if(message.Is<RoomTimeRequest>())
+                {
+                    var request = message.Read<RoomTimeRequest>();
+
+                    ProcessTimeRequest(client, request);
                 }
             }
             else
@@ -248,15 +262,17 @@ namespace MNet
         }
         #endregion
 
-        void ReadyClient(NetworkClient client)
+        void ReadyClient(NetworkClient client, ReadyClientRequest request)
         {
-            Log.Info($"Room {this.ID}: Client {client.ID} Set Ready");
-
             client.Ready();
 
-            var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, MessageBuffer.List);
+            var time = new RoomTimeResponse(Time, request.Timestamp);
+
+            var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, MessageBuffer.List, time);
 
             SendTo(client, response);
+
+            Log.Info($"Room {this.ID}: Client {client.ID} Set Ready");
         }
 
         #region RPC
@@ -286,7 +302,7 @@ namespace MNet
 
         void InvokeBroadcastRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity)
         {
-            var command = RpcCommand.Write(sender.ID, request);
+            var command = RpcCommand.Write(sender.ID, request, Time);
 
             var message = Broadcast(command);
 
@@ -295,7 +311,7 @@ namespace MNet
 
         void InvokeTargetedRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity)
         {
-            var command = RpcCommand.Write(sender.ID, request);
+            var command = RpcCommand.Write(sender.ID, request, Time);
 
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
@@ -378,6 +394,13 @@ namespace MNet
             entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }
         #endregion
+
+        void ProcessTimeRequest(NetworkClient sender, RoomTimeRequest request)
+        {
+            var response = new RoomTimeResponse(Time, request.Timestamp);
+
+            SendTo(sender, response);
+        }
 
         NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
@@ -494,7 +517,7 @@ namespace MNet
         {
             Log.Info($"Stopping Room {ID}");
 
-            schedule.Stop();
+            Scheduler.Stop();
 
             GameServer.Realtime.Unregister(ID.Value);
 
@@ -521,7 +544,9 @@ namespace MNet
 
             SceneObjects = new List<NetworkEntity>();
 
-            schedule = new Schedule(50, Tick);
+            Scheduler = new Scheduler(50, Tick);
+
+            Time = new TimeValue();
         }
     }
 }

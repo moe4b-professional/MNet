@@ -22,7 +22,7 @@ namespace MNet
 {
     public static partial class NetworkAPI
     {
-        public static class RealtimeAPI
+        public static class Realtime
         {
             public static NetworkTransport Transport { get; private set; }
 
@@ -149,7 +149,7 @@ namespace MNet
                 if (IsConnected) Disconnect();
             }
 
-            static RealtimeAPI()
+            static Realtime()
             {
                 NetworkAPI.OnUpdate += Update;
 

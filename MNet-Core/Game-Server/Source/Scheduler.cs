@@ -1,20 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MNet
 {
-    public class Schedule
+    public class Scheduler
     {
-        public float ElapsedTime { get; protected set; }
-        public float DeltaTime { get; protected set; }
-
         public long Interval { get; protected set; }
+
+        public long DeltaTime { get; protected set; }
+
+        public long ElapsedTime { get; protected set; }
 
         Thread thread;
         Stopwatch stopwatch;
@@ -47,7 +48,7 @@ namespace MNet
 
             if (Interval > elapsed) Sleep(Interval - elapsed);
 
-            DeltaTime = stopwatch.ElapsedMilliseconds / 1000f;
+            DeltaTime = stopwatch.ElapsedMilliseconds;
 
             ElapsedTime += DeltaTime;
 
@@ -61,12 +62,12 @@ namespace MNet
             run = false;
         }
 
-        public Schedule(long interval, Delegate callback)
+        public Scheduler(long interval, Delegate callback)
         {
             this.Interval = interval;
 
-            ElapsedTime = 0f;
-            DeltaTime = interval / 1000;
+            ElapsedTime = 0;
+            DeltaTime = interval;
 
             this.callback = callback;
 

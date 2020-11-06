@@ -233,6 +233,46 @@ namespace MNet
     }
 
     [Preserve]
+    public sealed class LongNetworkSerializationResolver : NetworkSerializationExplicitResolver<long>
+    {
+        public override void Serialize(NetworkWriter writer, long value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            writer.Insert(binary);
+        }
+
+        public override long Deserialize(NetworkReader reader)
+        {
+            var value = BitConverter.ToInt64(reader.Data, reader.Position);
+
+            reader.Position += sizeof(long);
+
+            return value;
+        }
+    }
+
+    [Preserve]
+    public sealed class ULongNetworkSerializationResolver : NetworkSerializationExplicitResolver<ulong>
+    {
+        public override void Serialize(NetworkWriter writer, ulong value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            writer.Insert(binary);
+        }
+
+        public override ulong Deserialize(NetworkReader reader)
+        {
+            var value = BitConverter.ToUInt64(reader.Data, reader.Position);
+
+            reader.Position += sizeof(ulong);
+
+            return value;
+        }
+    }
+
+    [Preserve]
     public sealed class FloatNetworkSerializationResolver : NetworkSerializationExplicitResolver<float>
     {
         public override void Serialize(NetworkWriter writer, float value)
@@ -247,6 +287,26 @@ namespace MNet
             var value = BitConverter.ToSingle(reader.Data, reader.Position);
 
             reader.Position += sizeof(float);
+
+            return value;
+        }
+    }
+
+    [Preserve]
+    public sealed class DoubleNetworkSerializationResolver : NetworkSerializationExplicitResolver<double>
+    {
+        public override void Serialize(NetworkWriter writer, double value)
+        {
+            var binary = BitConverter.GetBytes(value);
+
+            writer.Insert(binary);
+        }
+
+        public override double Deserialize(NetworkReader reader)
+        {
+            var value = BitConverter.ToDouble(reader.Data, reader.Position);
+
+            reader.Position += sizeof(double);
 
             return value;
         }
@@ -316,19 +376,34 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, DateTime value)
         {
-            var text = value.ToString();
+            long exchange = value.ToBinary();
 
-            writer.Write(text);
+            writer.Write(exchange);
         }
 
         public override DateTime Deserialize(NetworkReader reader)
         {
-            reader.Read(out string text);
+            reader.Read(out long exchange);
 
-            if (DateTime.TryParse(text, out var date))
-                return date;
-            else
-                return new DateTime();
+            return DateTime.FromBinary(exchange);
+        }
+    }
+
+    [Preserve]
+    public class TimeSpanNetworkSerializationResolver : NetworkSerializationExplicitResolver<TimeSpan>
+    {
+        public override void Serialize(NetworkWriter writer, TimeSpan value)
+        {
+            long ticks = value.Ticks;
+
+            writer.Write(ticks);
+        }
+
+        public override TimeSpan Deserialize(NetworkReader reader)
+        {
+            reader.Read(out long ticks);
+
+            return TimeSpan.FromTicks(ticks);
         }
     }
 
@@ -616,16 +691,16 @@ namespace MNet
         public class Context
         {
             public NetworkWriter Writer { get; protected set; }
-            public bool IsWriting => Writer != null;
+            public bool IsWritingBinary => Writer != null;
 
             public NetworkReader Reader { get; protected set; }
-            public bool IsReading => Reader != null;
+            public bool IsReadingBinary => Reader != null;
 
             public void Select<T>(ref T value)
             {
-                if (IsWriting) Writer.Write(value);
+                if (IsWritingBinary) Writer.Write(value);
 
-                if (IsReading) Reader.Read(out value);
+                if (IsReadingBinary) Reader.Read(out value);
             }
 
             public Context(NetworkWriter writer)

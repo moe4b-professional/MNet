@@ -45,8 +45,9 @@ namespace MNet
             ParseAppID();
 
             Server.Configure();
-            RealtimeAPI.Configure();
+            Realtime.Configure();
             Client.Configure();
+            Time.Configure();
             Room.Configure();
         }
 

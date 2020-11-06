@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 using System.Net.Http;
+using System.Threading;
 
 namespace MNet
 {
@@ -106,9 +107,9 @@ namespace MNet
         }
     }
 
-#pragma warning disable IDE0051
     public static class Sandbox
     {
+#pragma warning disable IDE0051
         public static void Run()
         {
 
@@ -224,6 +225,6 @@ namespace MNet
 
             foreach (var item in value) Log.Info(item);
         }
-    }
 #pragma warning restore IDE0051
+    }
 }

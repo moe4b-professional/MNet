@@ -86,7 +86,7 @@ namespace MNet
 
             if (HasInfoParameter)
             {
-                var info = new RpcInfo(sender);
+                var info = new RpcInfo(sender, command.Time);
 
                 arguments[arguments.Length - 1] = info;
             }
@@ -120,11 +120,15 @@ namespace MNet
     {
         public NetworkClient Sender { get; private set; }
 
+        public TimeValue Time { get; private set; }
+
         public bool IsBuffered { get; private set; }
 
-        public RpcInfo(NetworkClient sender)
+        public RpcInfo(NetworkClient sender, TimeValue time)
         {
             this.Sender = sender;
+            this.Time = time;
+
             this.IsBuffered = NetworkAPI.Room.IsApplyingMessageBuffer;
         }
     }
