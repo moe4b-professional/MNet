@@ -18,7 +18,6 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using System.Reflection;
-using System.Threading;
 
 namespace MNet
 {
@@ -35,11 +34,11 @@ namespace MNet
         public AttributesCollection Attributes => Entity?.Attributes;
 
         /// <summary>
-        /// Mirrors 'IsReady' to Component's 'enabled' Property,
+        /// Reflects 'IsReady' to Component's 'enabled' Property,
         /// Set to True by default to ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
         /// Override to False if normal Unity callback behaviour is desired
         /// </summary>
-        public virtual bool MirrorReadyToEnable => true;
+        public virtual bool ReflectReadyToEnable => true;
 
         protected virtual void Reset()
         {
@@ -61,7 +60,7 @@ namespace MNet
 
         public void UpdateReadyState()
         {
-            if (MirrorReadyToEnable == false) return;
+            if (ReflectReadyToEnable == false) return;
 
             enabled = IsReady;
         }
@@ -87,14 +86,18 @@ namespace MNet
 
             OnSpawn();
         }
-        protected virtual void OnSpawn() { }
 
+        protected virtual void OnSpawn() { }
+        #endregion
+
+        #region Despawn
         void DespawnCallback()
         {
             UpdateReadyState();
 
             OnDespawn();
         }
+
         protected virtual void OnDespawn() { }
         #endregion
 
@@ -124,7 +127,7 @@ namespace MNet
 
         bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
-        #region Literal Methods
+        #region Methods
         protected bool RPC(string method, params object[] arguments) => RPC(method, RpcBufferMode.None, arguments);
         protected bool RPC(string method, RpcBufferMode bufferMode, params object[] arguments)
         {
@@ -183,68 +186,6 @@ namespace MNet
 
             return Send(request);
         }
-        #endregion
-
-        #region Generic Methods
-        public void RPC(RpcMethod method)
-            => RPC(method.Method.Name);
-        public void RPC<T1>(RpcMethod<T1> method, T1 arg1)
-            => RPC(method.Method.Name, arg1);
-        public void RPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2)
-            => RPC(method.Method.Name, arg1, arg2);
-        public void RPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3)
-            => RPC(method.Method.Name, arg1, arg2, arg3);
-        public void RPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RPC(method.Method.Name, arg1, arg2, arg3, arg4);
-        public void RPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RPC(method.Method.Name, arg1, arg2, arg3, arg4, arg5);
-        public void RPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RPC(method.Method.Name, arg1, arg2, arg3, arg4, arg5, arg6);
-
-        public void RPC(RpcMethod method, RpcBufferMode bufferMode)
-            => RPC(method.Method.Name, bufferMode);
-        public void RPC<T1>(RpcMethod<T1> method, RpcBufferMode bufferMode, T1 arg1)
-            => RPC(method.Method.Name, bufferMode, arg1);
-        public void RPC<T1, T2>(RpcMethod<T1, T2> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2)
-            => RPC(method.Method.Name, bufferMode, arg1, arg2);
-        public void RPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3)
-            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3);
-        public void RPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4);
-        public void RPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4, arg5);
-        public void RPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, RpcBufferMode bufferMode, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RPC(method.Method.Name, bufferMode, arg1, arg2, arg3, arg4, arg5, arg6);
-
-        public void RPC(RpcMethod method, NetworkClient target)
-            => RPC(method.Method.Name, target);
-        public void RPC<T1>(RpcMethod<T1> method, NetworkClient target, T1 arg1)
-            => RPC(method.Method.Name, target, arg1);
-        public void RPC<T1, T2>(RpcMethod<T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
-            => RPC(method.Method.Name, target, arg1, arg2);
-        public void RPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            => RPC(method.Method.Name, target, arg1, arg2, arg3);
-        public void RPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RPC(method.Method.Name, target, arg1, arg2, arg3, arg4);
-        public void RPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5);
-        public void RPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RPC(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
-
-        public void RPC<TResult>(RprMethod<TResult> method, NetworkClient target, RprCallback<TResult> callback)
-            => RPC(method.Method.Name, target, callback);
-        public void RPC<TResult, T1>(RprMethod<TResult, T1> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1)
-            => RPC(method.Method.Name, target, callback, arg1);
-        public void RPC<TResult, T1, T2>(RprMethod<TResult, T1, T2> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2)
-            => RPC(method.Method.Name, target, callback, arg1, arg2);
-        public void RPC<TResult, T1, T2, T3>(RprMethod<TResult, T1, T2, T3> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
-            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3);
-        public void RPC<TResult, T1, T2, T3, T4>(RprMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4);
-        public void RPC<TResult, T1, T2, T3, T4, T5>(RprMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5);
-        public void RPC<TResult, T1, T2, T3, T4, T5, T6>(RprMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => RPC(method.Method.Name, target, callback, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
         internal void InvokeRPC(RpcCommand command)

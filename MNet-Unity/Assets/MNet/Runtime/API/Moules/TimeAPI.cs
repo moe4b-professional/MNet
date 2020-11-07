@@ -47,10 +47,7 @@ namespace MNet
                 Calculate();
             }
 
-            static void Calculate()
-            {
-                Value.CalculateFrom(timestamp, offset);
-            }
+            static void Calculate() => Value.CalculateFrom(timestamp, offset);
 
             public static void Configure()
             {
