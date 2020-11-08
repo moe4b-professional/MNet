@@ -177,8 +177,8 @@ namespace MNet
         string method;
         public string Method { get { return method; } }
 
-        TimeValue time = default;
-        public TimeValue Time => time;
+        NetworkTimeSpan time = default;
+        public NetworkTimeSpan Time => time;
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -234,7 +234,7 @@ namespace MNet
 
         public RpcCommand() { }
 
-        public static RpcCommand Write(NetworkClientID sender, RpcRequest request, TimeValue time)
+        public static RpcCommand Write(NetworkClientID sender, RpcRequest request, NetworkTimeSpan time)
         {
             var command = new RpcCommand()
             {

@@ -77,7 +77,7 @@
     <Compile Include="Source\Room.cs" />
     <Compile Include="Source\RPX.cs" />
     <Compile Include="Source\SyncVar.cs" />
-    <Compile Include="Source\TimeValue.cs" />
+    <Compile Include="Source\NetworkTimeSpan.cs" />
     <Compile Include="Source\UtilityCollections.cs" />
     <Compile Include="Source\Version.cs" />
   </ItemGroup>

@@ -23,31 +23,32 @@ namespace MNet
     {
 		public static class Time
 		{
-            public static TimeValue Value { get; private set; }
+            public static NetworkTimeSpan Span { get; private set; }
 
-            public static float Milliseconds => Value.Milliseconds;
-            public static float Seconds => Value.Seconds;
+            public static float Milliseconds => Span.Millisecond;
+            public static float Seconds => Span.Seconds;
 
-            static DateTime timestamp;
+            /// <summary>
+            /// UTC Timestamp in client time of when the client last recieved a RoomTime message
+            /// </summary>
+            static DateTime stamp;
 
-            static double offset;
+            /// <summary>
+            /// Room's time offset in ticks when timestamp was set + half of round trip time
+            /// </summary>
+            static long offset;
 
-            static void Set(RoomTimeResponse response)
+            static void Set(RoomTimeResponse response) => Set(response.Time, DateTime.UtcNow - response.RequestTimestamp);
+            static void Set(NetworkTimeSpan value, TimeSpan rtt)
             {
-                var tripTime = (DateTime.UtcNow - response.RequestTimestamp).TotalMilliseconds / 2;
+                stamp = DateTime.UtcNow;
 
-                Set(response.Time.Value, tripTime);
-            }
-            static void Set(double value, double tripTime)
-            {
-                timestamp = DateTime.UtcNow;
-
-                offset = value + tripTime;
+                offset = value.Ticks + (rtt.Ticks / 2);
 
                 Calculate();
             }
 
-            static void Calculate() => Value.CalculateFrom(timestamp, offset);
+            static void Calculate() => Span = NetworkTimeSpan.Calculate(stamp, offset);
 
             public static void Configure()
             {
@@ -75,12 +76,12 @@ namespace MNet
 
             static void Clear()
             {
-                Value.Clear();
+                Span = default;
             }
 
             static Time()
             {
-                Value = new TimeValue();
+                Span = default;
 
                 Client.OnReady += ClientReadyCallback;
                 Client.OnMessage += ClientMessageCallback;

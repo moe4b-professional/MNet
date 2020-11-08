@@ -56,7 +56,7 @@ namespace MNet
 
         public DateTime Timestamp { get; protected set; }
 
-        public TimeValue Time { get; protected set; }
+        public NetworkTimeSpan Time { get; protected set; }
 
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
@@ -159,7 +159,7 @@ namespace MNet
         {
             Log.Info($"Time: {Time.Seconds}");
 
-            Time.CalculateFrom(Timestamp);
+            Time = NetworkTimeSpan.Calculate(Timestamp);
 
             TransportContext.Poll();
 
@@ -212,7 +212,13 @@ namespace MNet
                 {
                     var request = message.Read<RoomTimeRequest>();
 
-                    ProcessTimeRequest(client, request);
+                    ProcessTime(client, request);
+                }
+                else if(message.Is<PingRequest>())
+                {
+                    var request = message.Read<PingRequest>();
+
+                    ProcessPing(client, request);
                 }
             }
             else
@@ -395,9 +401,16 @@ namespace MNet
         }
         #endregion
 
-        void ProcessTimeRequest(NetworkClient sender, RoomTimeRequest request)
+        void ProcessTime(NetworkClient sender, RoomTimeRequest request)
         {
             var response = new RoomTimeResponse(Time, request.Timestamp);
+
+            SendTo(sender, response);
+        }
+
+        void ProcessPing(NetworkClient sender, PingRequest request)
+        {
+            var response = new PingResponse(request);
 
             SendTo(sender, response);
         }
@@ -545,8 +558,6 @@ namespace MNet
             SceneObjects = new List<NetworkEntity>();
 
             Scheduler = new Scheduler(50, Tick);
-
-            Time = new TimeValue();
         }
     }
 }

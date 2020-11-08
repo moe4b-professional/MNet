@@ -120,11 +120,11 @@ namespace MNet
     {
         public NetworkClient Sender { get; private set; }
 
-        public TimeValue Time { get; private set; }
+        public NetworkTimeSpan Time { get; private set; }
 
         public bool IsBuffered { get; private set; }
 
-        public RpcInfo(NetworkClient sender, TimeValue time)
+        public RpcInfo(NetworkClient sender, NetworkTimeSpan time)
         {
             this.Sender = sender;
             this.Time = time;

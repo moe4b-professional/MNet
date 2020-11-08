@@ -673,8 +673,8 @@ namespace MNet
     [Serializable]
     public sealed class RoomTimeResponse : INetworkSerializable
     {
-        TimeValue time = default;
-        public TimeValue Time => time;
+        NetworkTimeSpan time = default;
+        public NetworkTimeSpan Time => time;
 
         DateTime requestTimestamp = default;
         public DateTime RequestTimestamp => requestTimestamp;
@@ -686,11 +686,58 @@ namespace MNet
         }
 
         public RoomTimeResponse() { }
-        public RoomTimeResponse(TimeValue time, DateTime requestTimestamp)
+        public RoomTimeResponse(NetworkTimeSpan time, DateTime requestTimestamp)
         {
             this.time = time;
             this.requestTimestamp = requestTimestamp;
         }
+    }
+    #endregion
+
+    #region Ping
+    [Preserve]
+    [Serializable]
+    public sealed class PingRequest : INetworkSerializable
+    {
+        DateTime timestamp = default;
+        public DateTime Timestamp => timestamp;
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref timestamp);
+        }
+
+        public PingRequest()
+        {
+            timestamp = DateTime.UtcNow;
+        }
+    }
+
+    [Preserve]
+    [Serializable]
+    public sealed class PingResponse : INetworkSerializable
+    {
+        DateTime timestamp = default;
+        public DateTime Timestamp => timestamp;
+
+        public TimeSpan TimeSpan { get; private set; }
+
+        public void Process()
+        {
+            TimeSpan = (DateTime.UtcNow - timestamp);
+        }
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref timestamp);
+        }
+
+        public PingResponse() { }
+        public PingResponse(DateTime timestamp)
+        {
+            this.timestamp = timestamp;
+        }
+        public PingResponse(PingRequest request) : this(request.Timestamp) { }
     }
     #endregion
     #endregion
