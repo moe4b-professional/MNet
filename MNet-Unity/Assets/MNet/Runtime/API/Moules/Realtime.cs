@@ -37,20 +37,6 @@ namespace MNet
                 Transport.OnDisconnect += DisconnectCallback;
             }
 
-            static NetworkTransport CreateTransport(NetworkTransportType type)
-            {
-                switch (type)
-                {
-                    case NetworkTransportType.WebSocketSharp:
-                        return new WebSocketTransport();
-
-                    case NetworkTransportType.LiteNetLib:
-                        return new LiteNetLibTransport();
-                }
-
-                throw new NotImplementedException();
-            }
-
             public static void Connect(GameServerID serverID, RoomID roomID)
             {
                 if (IsConnected)
@@ -64,7 +50,7 @@ namespace MNet
                 Transport.Connect(serverID, roomID);
             }
 
-            public static bool Send(byte[] raw)
+            public static bool Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
             {
                 if (IsConnected == false)
                 {
@@ -80,7 +66,7 @@ namespace MNet
                     return false;
                 }
 
-                Transport.Send(raw);
+                Transport.Send(raw, channel);
                 return true;
             }
 
@@ -111,11 +97,11 @@ namespace MNet
                 OnConnect?.Invoke();
             }
 
-            public delegate void MessageDelegate(NetworkMessage message);
+            public delegate void MessageDelegate(NetworkMessage message, DeliveryChannel channel);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(NetworkMessage message)
+            static void MessageCallback(NetworkMessage message, DeliveryChannel channel)
             {
-                OnMessage?.Invoke(message);
+                OnMessage?.Invoke(message, channel);
             }
 
             public delegate void DisconnectDelegate(DisconnectCode code);
@@ -154,6 +140,20 @@ namespace MNet
                 NetworkAPI.OnUpdate += Update;
 
                 Application.quitting += ApplicationQuitCallback;
+            }
+
+            static NetworkTransport CreateTransport(NetworkTransportType type)
+            {
+                switch (type)
+                {
+                    case NetworkTransportType.WebSocketSharp:
+                        return new WebSocketTransport();
+
+                    case NetworkTransportType.LiteNetLib:
+                        return new LiteNetLibTransport();
+                }
+
+                throw new NotImplementedException();
             }
         }
     }

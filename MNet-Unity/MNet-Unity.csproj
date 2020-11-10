@@ -104,6 +104,7 @@
      <Compile Include="Assets\MNet\Runtime\Components\SimpleNetworkTransform.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\LatencyTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\NetworkTimeTest.cs" />
+     <Compile Include="Assets\MNet\Runtime\Components\Tests\PacketLossTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\RpcTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\RprTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\SerializationTest.cs" />

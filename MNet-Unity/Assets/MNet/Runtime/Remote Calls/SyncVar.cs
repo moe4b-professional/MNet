@@ -21,13 +21,14 @@ using System.Reflection;
 
 namespace MNet
 {
-	public class SyncVarBind
-	{
+    public class SyncVarBind
+    {
         public NetworkBehaviour Behaviour { get; protected set; }
         public NetworkEntity Entity => Behaviour.Entity;
 
         public SyncVarAttribute Attribute { get; protected set; }
         public RemoteAutority Authority => Attribute.Authority;
+        public DeliveryChannel Channel => Attribute.Channel;
 
         public FieldInfo FieldInfo { get; protected set; }
         public bool IsField => FieldInfo != null;
@@ -110,17 +111,20 @@ namespace MNet
                 throw new Exception(text);
             }
         }
-	}
+    }
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class SyncVarAttribute : Attribute
     {
         public RemoteAutority Authority { get; private set; }
+        public DeliveryChannel Channel { get; private set; }
 
-        public SyncVarAttribute() : this(RemoteAutority.Any) { }
-        public SyncVarAttribute(RemoteAutority authotity)
+        public SyncVarAttribute(RemoteAutority authotity = RemoteAutority.Any, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             this.Authority = authotity;
+            this.Channel = channel;
         }
+        public SyncVarAttribute(RemoteAutority authority) : this(authority, DeliveryChannel.Reliable) { }
+        public SyncVarAttribute(DeliveryChannel channel) : this(RemoteAutority.Any, channel) { }
     }
 }

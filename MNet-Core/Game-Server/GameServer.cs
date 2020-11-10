@@ -112,7 +112,7 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-
+            
         }
 
         static void NullableTupleSerialization()

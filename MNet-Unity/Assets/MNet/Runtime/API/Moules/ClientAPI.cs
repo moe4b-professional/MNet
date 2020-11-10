@@ -25,8 +25,8 @@ namespace MNet
         {
             public static NetworkClientProfile Profile { get; set; }
 
-            public static NetworkClient Instance { get; private set; }
-            public static NetworkClientID ID => Instance.ID;
+            public static NetworkClient Self { get; private set; }
+            public static NetworkClientID ID => Self.ID;
 
             public static bool IsConnected => Realtime.IsConnected;
 
@@ -34,26 +34,31 @@ namespace MNet
             {
                 get
                 {
-                    if (Instance == null) return false;
+                    if (Self == null) return false;
 
-                    return Room.Master == Instance;
+                    return Room.Master == Self;
                 }
             }
 
-            public static IReadOnlyList<NetworkEntity> Entities => Instance?.Entities;
+            public static IReadOnlyList<NetworkEntity> Entities => Self?.Entities;
 
             public static void Configure()
             {
 
             }
 
-            public static bool Send<T>(T payload)
+            public static bool Send<T>(T payload, DeliveryChannel channel = DeliveryChannel.Reliable)
             {
-                var message = NetworkMessage.Write(payload);
+                if (IsConnected == false)
+                {
+                    Debug.LogWarning($"Cannot Send Payload '{payload}' When Network Client Isn't Connected");
+                    return false;
+                }
 
+                var message = NetworkMessage.Write(payload);
                 var raw = NetworkSerializer.Serialize(message);
 
-                return Realtime.Send(raw);
+                return Realtime.Send(raw, channel);
             }
 
             public delegate void ConnectDelegate();
@@ -67,9 +72,9 @@ namespace MNet
                 OnConnect?.Invoke();
             }
 
-            public delegate void MessageDelegate(NetworkMessage message);
+            public delegate void MessageDelegate(NetworkMessage message, DeliveryChannel channel);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(NetworkMessage message)
+            static void MessageCallback(NetworkMessage message, DeliveryChannel channel)
             {
                 if (message.Is<RegisterClientResponse>())
                 {
@@ -84,13 +89,13 @@ namespace MNet
                     ReadyCallback(response);
                 }
 
-                OnMessage?.Invoke(message);
+                OnMessage?.Invoke(message, channel);
             }
 
             #region Register
             public static bool AutoRegister { get; set; } = true;
 
-            public static bool IsRegistered => Instance != null;
+            public static bool IsRegistered => Self != null;
 
             public static void Register()
             {
@@ -103,7 +108,7 @@ namespace MNet
             public static event RegisterDelegate OnRegister;
             static void RegisterCallback(RegisterClientResponse response)
             {
-                Instance = new NetworkClient(response.ID, Profile);
+                Self = new NetworkClient(response.ID, Profile);
 
                 if (AutoReady) Ready();
 
@@ -161,7 +166,7 @@ namespace MNet
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntityCallback(NetworkEntity entity)
             {
-                if (entity.Owner != Instance) return;
+                if (entity.Owner != Self) return;
 
                 OnSpawnEntity?.Invoke(entity);
             }
@@ -180,7 +185,7 @@ namespace MNet
             public static event DestroyEntityDelegate OnDestroyEntity;
             static void DestroyEntityCallback(NetworkEntity entity)
             {
-                if (entity.Owner != Instance) return;
+                if (entity.Owner != Self) return;
 
                 OnDestroyEntity?.Invoke(entity);
             }
@@ -203,7 +208,7 @@ namespace MNet
 
             static void Clear()
             {
-                Instance = null;
+                Self = null;
 
                 IsReady = false;
             }

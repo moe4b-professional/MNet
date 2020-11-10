@@ -65,7 +65,7 @@ namespace MNet
             {
                 base.OnMessage(args);
 
-                TransportContext.RegisterMessage(Client, args.RawData);
+                TransportContext.RegisterMessage(Client, args.RawData, DeliveryChannel.Reliable);
             }
 
             protected override void OnClose(CloseEventArgs args)
@@ -84,19 +84,19 @@ namespace MNet
             return client;
         }
 
-        public override void Send(WebSocketTransportClient client, byte[] raw)
+        public override void Send(WebSocketTransportClient client, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             if (client.IsOpen == false) return;
 
             Sessions.SendTo(raw, client.InternalID);
         }
 
-        public override void Broadcast(byte[] raw)
+        public override void Broadcast(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             Sessions.Broadcast(raw);
         }
 
-        public override void Disconnect(WebSocketTransportClient client, DisconnectCode code)
+        public override void Disconnect(WebSocketTransportClient client, DisconnectCode code = DisconnectCode.Normal)
         {
             var value = DisconnectCodeToValue(code);
 

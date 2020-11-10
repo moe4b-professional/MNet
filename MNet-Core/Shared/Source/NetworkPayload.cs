@@ -63,10 +63,10 @@ namespace MNet
             return false;
         }
 
-        public static bool TryGetCodeFromImplicit(Type type, out ushort code)
+        public static bool TryGetCodeFromImplicit(Type target, out ushort code)
         {
             for (int i = 0; i < Implicits.Count; i++)
-                if (Implicits[i].IsAssignableFrom(type))
+                if (Implicits[i].IsAssignableFrom(target))
                     return TryGetCode(Implicits[i], out code);
 
             code = 0;
@@ -152,7 +152,6 @@ namespace MNet
             Register<RoomInnerInfo>(23);
 
             Register<NetworkClientInfo>(24);
-
             Register<NetworkClientProfile>(25);
 
             Register<RpcRequest>(26);
@@ -173,6 +172,12 @@ namespace MNet
             Register<ulong>(40);
 
             Register<double>(41);
+
+            Register<RoomTimeRequest>(42);
+            Register<RoomTimeResponse>(43);
+
+            Register<PingRequest>(44);
+            Register<PingResponse>(45);
         }
 
         static NetworkPayload()

@@ -59,7 +59,7 @@ namespace MNet
         {
             var message = NetworkMessage.Read(args.RawData);
 
-            QueueRecievedMessage(message);
+            QueueRecievedMessage(message, DeliveryChannel.Reliable);
         }
 
         void CloseCallback(object sender, CloseEventArgs args)
@@ -70,7 +70,7 @@ namespace MNet
         }
         #endregion
 
-        public override void Send(byte[] raw)
+        public override void Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             Socket.Send(raw);
         }

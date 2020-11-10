@@ -49,18 +49,18 @@ namespace MNet
         #endregion
 
         #region Message
-        public delegate void MessageDelegate(NetworkMessage message);
+        public delegate void MessageDelegate(NetworkMessage message, DeliveryChannel channel);
         public event MessageDelegate OnRecievedMessage;
-        void InvokeRecievedMessage(NetworkMessage message)
+        void InvokeRecievedMessage(NetworkMessage message, DeliveryChannel channel)
         {
-            OnRecievedMessage?.Invoke(message);
+            OnRecievedMessage?.Invoke(message, channel);
         }
 
-        protected virtual void QueueRecievedMessage(NetworkMessage message)
+        protected virtual void QueueRecievedMessage(NetworkMessage message, DeliveryChannel channel)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeRecievedMessage(message);
+            void Action() => InvokeRecievedMessage(message, channel);
         }
         #endregion
 
@@ -80,7 +80,7 @@ namespace MNet
         }
         #endregion
 
-        public abstract void Send(byte[] raw);
+        public abstract void Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable);
 
         public abstract void Close();
 
@@ -123,7 +123,7 @@ namespace MNet
         {
             var raw = BitConverter.GetBytes(Room.Value);
 
-            Send(raw);
+            Send(raw, DeliveryChannel.Reliable);
         }
         protected virtual void RegisterCallback(byte[] raw)
         {
@@ -134,13 +134,13 @@ namespace MNet
             if (IsRegistered) QueueConnect();
         }
 
-        protected virtual void ProcessMessage(byte[] raw)
+        protected virtual void ProcessMessage(byte[] raw, DeliveryChannel channel)
         {
             if (IsRegistered)
             {
                 var message = NetworkMessage.Read(raw);
 
-                QueueRecievedMessage(message);
+                QueueRecievedMessage(message, channel);
             }
             else
             {

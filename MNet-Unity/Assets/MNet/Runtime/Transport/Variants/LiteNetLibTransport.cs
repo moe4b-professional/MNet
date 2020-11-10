@@ -64,6 +64,8 @@ namespace MNet
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
+            Debug.Log($"Internal LiteNetLib Disconnect Code: {info.Reason}");
+
             var code = InfoToDisconnectCode(info);
 
             QueueDisconnect(code);
@@ -76,7 +78,9 @@ namespace MNet
             var raw = new byte[reader.AvailableBytes];
             Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
 
-            ProcessMessage(raw);
+            var channel = DeliveryGlossary[deliveryMethod];
+
+            ProcessMessage(raw, channel);
         }
 
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
@@ -84,9 +88,11 @@ namespace MNet
         public void OnConnectionRequest(ConnectionRequest request) { }
         #endregion
 
-        public override void Send(byte[] raw)
+        public override void Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
-            Peer.Send(raw, DeliveryMethod.ReliableOrdered);
+            var method = DeliveryGlossary[channel];
+
+            Peer.Send(raw, method);
         }
 
         public override void Close()
@@ -141,6 +147,19 @@ namespace MNet
             }
 
             return DisconnectCode.Unknown;
+        }
+
+
+        //Static Utility
+
+        public static Glossary<DeliveryChannel, DeliveryMethod> DeliveryGlossary { get; private set; }
+
+        static LiteNetLibTransport()
+        {
+            DeliveryGlossary = new Glossary<DeliveryChannel, DeliveryMethod>();
+
+            DeliveryGlossary.Add(DeliveryChannel.Reliable, DeliveryMethod.ReliableOrdered);
+            DeliveryGlossary.Add(DeliveryChannel.Unreliable, DeliveryMethod.Unreliable);
         }
     }
 }

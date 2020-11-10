@@ -45,7 +45,9 @@ namespace MNet
             var raw = new byte[reader.AvailableBytes];
             Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
 
-            ProcessMessage(peer, raw);
+            var channel = DeliveryGlossary[deliveryMethod];
+
+            ProcessMessage(peer, raw, channel);
         }
 
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
@@ -77,19 +79,33 @@ namespace MNet
 
             return new byte[] { value };
         }
+
+        //Static Utility
+
+        public static Glossary<DeliveryChannel, DeliveryMethod> DeliveryGlossary { get; private set; }
+
+        static LiteNetLibTransport()
+        {
+            DeliveryGlossary = new Glossary<DeliveryChannel, DeliveryMethod>();
+
+            DeliveryGlossary.Add(DeliveryChannel.Reliable, DeliveryMethod.ReliableOrdered);
+            DeliveryGlossary.Add(DeliveryChannel.Unreliable, DeliveryMethod.Unreliable);
+        }
     }
 
     class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
     {
         public NetManager Server => Transport.Server;
 
-        public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code) => Transport.Disconnect(client.Peer, code);
-
-        public override void Send(LiteNetLibTransportClient client, byte[] raw)
+        public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
-            client.Peer.Send(raw, DeliveryMethod.ReliableOrdered);
+            var method = LiteNetLibTransport.DeliveryGlossary[channel];
+
+            client.Peer.Send(raw, method);
         }
-        
+
+        public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code = DisconnectCode.Normal) => Transport.Disconnect(client.Peer, code);
+
         protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
         {
             var client = new LiteNetLibTransportClient(this, clientID, connection);

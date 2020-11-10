@@ -23,4 +23,21 @@ namespace MNet
         InvalidContext,
         InvalidData
     }
+
+    public enum DeliveryChannel : byte
+    {
+        /// <summary>
+        /// Reliable and ordered. Packets won't be dropped, won't be duplicated, will arrive in order.
+        /// </summary>
+        Reliable = 2,
+        /// <summary>
+        /// Unreliable. Packets can be dropped, can be duplicated, can arrive without order.
+        /// </summary>
+        Unreliable = 4
+    }
+
+    public static partial class NetworkTransportUtility
+    {
+        
+    }
 }

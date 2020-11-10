@@ -127,17 +127,17 @@ namespace MNet
 
         protected abstract TIID GetIID(TConnection connection);
 
-        protected virtual void ProcessMessage(TConnection connection, byte[] raw)
+        protected virtual void ProcessMessage(TConnection connection, byte[] raw, DeliveryChannel channel)
         {
             var iid = GetIID(connection);
 
             if (UnregisteredClients.Contains(iid))
                 RegisterConnection(connection, raw);
             else
-                RouteMessage(connection, raw);
+                RouteMessage(connection, raw, channel);
         }
 
-        protected virtual void RouteMessage(TConnection connection, byte[] raw)
+        protected virtual void RouteMessage(TConnection connection, byte[] raw, DeliveryChannel channel)
         {
             var iid = GetIID(connection);
 
@@ -149,7 +149,7 @@ namespace MNet
 
             var context = client.Context;
 
-            context.RegisterMessage(client, raw);
+            context.RegisterMessage(client, raw, channel);
         }
 
         protected virtual void RemoveConnection(TConnection connection)
@@ -196,13 +196,12 @@ namespace MNet
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
 
-        void Send(NetworkClientID target, byte[] raw);
+        void Send(NetworkClientID target, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable);
 
-        void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw);
-        void Broadcast(byte[] raw);
+        void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable);
+        void Broadcast(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable);
 
-        void Disconnect(NetworkClientID clientID);
-        void Disconnect(NetworkClientID clientID, DisconnectCode code);
+        void Disconnect(NetworkClientID clientID, DisconnectCode code = DisconnectCode.Normal);
     }
 
     abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransportContext
@@ -241,16 +240,16 @@ namespace MNet
 
         #region Message
         public event NetworkTransportMessageDelegate OnMessage;
-        void InvokeMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw)
+        void InvokeMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw, DeliveryChannel channel)
         {
-            OnMessage?.Invoke(client.ClientID, message, raw);
+            OnMessage?.Invoke(client.ClientID, message, raw, channel);
         }
 
-        protected virtual void QueueMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw)
+        protected virtual void QueueMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw, DeliveryChannel channel)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeMessage(client, message, raw);
+            void Action() => InvokeMessage(client, message, raw, channel);
         }
         #endregion
 
@@ -293,11 +292,11 @@ namespace MNet
         }
         public virtual void UnregisterClient(TClient client) => QueueDisconnect(client);
 
-        public virtual void RegisterMessage(TClient sender, byte[] raw)
+        public virtual void RegisterMessage(TClient sender, byte[] raw, DeliveryChannel channel)
         {
             var message = NetworkMessage.Read(raw);
 
-            QueueMessage(sender, message, raw);
+            QueueMessage(sender, message, raw, channel);
         }
 
         protected virtual void RemoveClient(TClient client)
@@ -311,7 +310,7 @@ namespace MNet
         protected virtual void DestroyClient(TClient client) { }
 
         #region Send
-        public virtual void Send(NetworkClientID target, byte[] raw)
+        public void Send(NetworkClientID target, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             if (TryGetClient(target, out var client) == false)
             {
@@ -319,29 +318,29 @@ namespace MNet
                 return;
             }
 
-            Send(client, raw);
+            Send(client, raw, channel);
         }
 
-        public abstract void Send(TClient client, byte[] raw);
+        public abstract void Send(TClient target, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable);
         #endregion
 
         #region Broadcast
-        public virtual void Broadcast(byte[] raw) => Broadcast(Clients.Values, raw);
+        public virtual void Broadcast(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable) => Broadcast(Clients.Values, raw, channel);
 
-        public virtual void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw)
+        public virtual void Broadcast(IReadOnlyCollection<NetworkClientID> targets, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             var collection = GetClientsFrom(targets);
 
-            Broadcast(collection, raw);
+            Broadcast(collection, raw, channel);
         }
 
-        public virtual void Broadcast(IReadOnlyCollection<TClient> targets, byte[] raw)
+        public virtual void Broadcast(IReadOnlyCollection<TClient> targets, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             foreach (var target in targets)
             {
                 if (target == null) continue;
 
-                Send(target, raw);
+                Send(target, raw, channel);
             }
         }
         #endregion
@@ -417,7 +416,7 @@ namespace MNet
 
     #region Delegates
     public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
-    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw);
+    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw, DeliveryChannel channel);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
     #endregion
 }

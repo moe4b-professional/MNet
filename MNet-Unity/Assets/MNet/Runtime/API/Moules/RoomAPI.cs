@@ -119,7 +119,7 @@ namespace MNet
 
             static NetworkClient CreateClient(NetworkClientInfo info)
             {
-                if (Client.Instance?.ID == info.ID) return Client.Instance;
+                if (Client.Self?.ID == info.ID) return Client.Self;
 
                 return new NetworkClient(info);
             }
@@ -297,7 +297,7 @@ namespace MNet
                 IsApplyingMessageBuffer = true;
 
                 for (int i = 0; i < list.Count; i++)
-                    MessageCallback(list[i]);
+                    MessageCallback(list[i], DeliveryChannel.Reliable);
 
                 IsApplyingMessageBuffer = false;
 
@@ -305,7 +305,7 @@ namespace MNet
             }
             #endregion
 
-            static void MessageCallback(NetworkMessage message)
+            static void MessageCallback(NetworkMessage message, DeliveryChannel channel)
             {
                 if (Client.IsReady)
                 {

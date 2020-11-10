@@ -37,7 +37,7 @@ namespace MNet
             if (isProcessing) return;
 
             isProcessing = true;
-            RPC(Click, NetworkAPI.Client.Instance, Payload, Time.time);
+            RPC(Click, NetworkAPI.Client.Self, Payload, Time.time);
         }
 
         [NetworkRPC]

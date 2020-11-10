@@ -178,13 +178,13 @@ namespace MNet
 
         bool RPC(RpcBind bind, RpcRequest request)
         {
-            if(ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
+            if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
             {
                 Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
                 return false;
             }
 
-            return Send(request);
+            return Send(request, bind.Channel);
         }
         #endregion
 
@@ -330,7 +330,7 @@ namespace MNet
                 return false;
             }
 
-            return Send(request);
+            return Send(request, bind.Channel);
         }
         #endregion
 
@@ -400,7 +400,7 @@ namespace MNet
             return false;
         }
 
-        protected virtual bool Send<T>(T payload)
+        protected virtual bool Send<T>(T payload, DeliveryChannel channel = DeliveryChannel.Reliable)
         {
             if (IsReady == false)
             {
@@ -408,13 +408,7 @@ namespace MNet
                 return false;
             }
 
-            if (NetworkAPI.Client.IsConnected == false)
-            {
-                Debug.LogWarning($"Cannot Send Payload '{payload}' When Network Client Isn't Connected");
-                return false;
-            }
-
-            return NetworkAPI.Client.Send(payload);
+            return NetworkAPI.Client.Send(payload, channel);
         }
 
         public NetworkBehaviour()
