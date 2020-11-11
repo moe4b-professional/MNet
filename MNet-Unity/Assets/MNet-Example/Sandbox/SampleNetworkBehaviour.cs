@@ -21,10 +21,10 @@ namespace MNet.Example
 {
     public class SampleNetworkBehaviour : NetworkBehaviour
     {
-        [SyncVar(RemoteAutority.Master)]
+        [SyncVar(RemoteAuthority.Master)]
         public string text;
 
-        [NetworkRPC(RemoteAutority.Master)]
+        [NetworkRPC(RemoteAuthority.Master)]
         void Call(RpcInfo info)
         {
             transform.position += Vector3.one * 4;

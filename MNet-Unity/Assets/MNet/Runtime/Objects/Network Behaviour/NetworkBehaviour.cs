@@ -378,20 +378,20 @@ namespace MNet
         }
         #endregion
 
-        public bool ValidateAuthority(NetworkClientID sender, RemoteAutority authority)
+        public bool ValidateAuthority(NetworkClientID sender, RemoteAuthority authority)
         {
             //instantly validate every buffered message
             if (NetworkAPI.Room.IsApplyingMessageBuffer) return true;
 
-            if (authority.HasFlag(RemoteAutority.Any)) return true;
+            if (authority.HasFlag(RemoteAuthority.Any)) return true;
 
-            if (authority.HasFlag(RemoteAutority.Owner))
+            if (authority.HasFlag(RemoteAuthority.Owner))
             {
                 if (sender == Owner?.ID)
                     return true;
             }
 
-            if (authority.HasFlag(RemoteAutority.Master))
+            if (authority.HasFlag(RemoteAuthority.Master))
             {
                 if (sender == NetworkAPI.Room.Master?.ID)
                     return true;

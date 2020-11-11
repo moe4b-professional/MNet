@@ -27,7 +27,7 @@ namespace MNet
         public NetworkEntity Entity => Behaviour.Entity;
 
         public SyncVarAttribute Attribute { get; protected set; }
-        public RemoteAutority Authority => Attribute.Authority;
+        public RemoteAuthority Authority => Attribute.Authority;
         public DeliveryChannel Channel => Attribute.Channel;
 
         public FieldInfo FieldInfo { get; protected set; }
@@ -116,15 +116,16 @@ namespace MNet
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class SyncVarAttribute : Attribute
     {
-        public RemoteAutority Authority { get; private set; }
+        public RemoteAuthority Authority { get; private set; }
         public DeliveryChannel Channel { get; private set; }
 
-        public SyncVarAttribute(RemoteAutority authotity = RemoteAutority.Any, DeliveryChannel channel = DeliveryChannel.Reliable)
+        public SyncVarAttribute(RemoteAuthority authority, DeliveryChannel channel)
         {
-            this.Authority = authotity;
+            this.Authority = authority;
             this.Channel = channel;
         }
-        public SyncVarAttribute(RemoteAutority authority) : this(authority, DeliveryChannel.Reliable) { }
-        public SyncVarAttribute(DeliveryChannel channel) : this(RemoteAutority.Any, channel) { }
+        public SyncVarAttribute() : this(RemoteAuthority.Any, DeliveryChannel.Reliable) { }
+        public SyncVarAttribute(RemoteAuthority authority) : this(authority, DeliveryChannel.Reliable) { }
+        public SyncVarAttribute(DeliveryChannel channel) : this(RemoteAuthority.Any, channel) { }
     }
 }

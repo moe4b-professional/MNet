@@ -22,7 +22,7 @@ using System.Reflection;
 namespace MNet
 {
     [Flags]
-    public enum RemoteAutority : byte
+    public enum RemoteAuthority : byte
     {
         /// <summary>
         /// As the name implies, any client will be able to the remote action
@@ -47,7 +47,7 @@ namespace MNet
         public NetworkEntity Entity => Behaviour.Entity;
 
         public NetworkRPCAttribute Attribute { get; protected set; }
-        public RemoteAutority Authority => Attribute.Authority;
+        public RemoteAuthority Authority => Attribute.Authority;
         public DeliveryChannel Channel => Attribute.Channel;
 
         public MethodInfo MethodInfo { get; protected set; }
@@ -137,17 +137,17 @@ namespace MNet
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
-        public RemoteAutority Authority { get; private set; }
-
+        public RemoteAuthority Authority { get; private set; }
         public DeliveryChannel Channel { get; private set; }
 
-        public NetworkRPCAttribute(RemoteAutority authority = RemoteAutority.Any, DeliveryChannel channel = DeliveryChannel.Reliable)
+        public NetworkRPCAttribute(RemoteAuthority authority, DeliveryChannel channel)
         {
             this.Authority = authority;
             this.Channel = channel;
         }
-        public NetworkRPCAttribute(RemoteAutority authority) : this(authority, DeliveryChannel.Reliable) { }
-        public NetworkRPCAttribute(DeliveryChannel channel) : this(RemoteAutority.Any, channel) { }
+        public NetworkRPCAttribute() : this(RemoteAuthority.Any, DeliveryChannel.Reliable) { }
+        public NetworkRPCAttribute(RemoteAuthority authority) : this(authority, DeliveryChannel.Reliable) { }
+        public NetworkRPCAttribute(DeliveryChannel channel) : this(RemoteAuthority.Any, channel) { }
     }
 
     public delegate void RpcMethod(RpcInfo info);

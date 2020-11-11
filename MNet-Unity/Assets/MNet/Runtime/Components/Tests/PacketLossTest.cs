@@ -52,12 +52,12 @@ namespace Game
             }
         }
 
-		[NetworkRPC(DeliveryChannel.Unreliable)]
-		void Call(RpcInfo info)
+        [NetworkRPC(DeliveryChannel.Unreliable)]
+        void Call(RpcInfo info)
         {
             recieved += 1;
 
             loss = sent - recieved;
         }
-	}
+    }
 }

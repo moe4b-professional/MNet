@@ -24,7 +24,7 @@ namespace MNet
     {
         [SerializeField]
         string field;
-        [SyncVar(RemoteAutority.Owner | RemoteAutority.Master)]
+        [SyncVar(RemoteAuthority.Owner | RemoteAuthority.Master)]
         public string Field
         {
             get => field;
