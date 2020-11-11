@@ -20,6 +20,8 @@ using Random = UnityEngine.Random;
 using System.Threading;
 using System.Collections.Concurrent;
 
+using Utility = MNet.NetworkTransportUtility;
+
 namespace MNet
 {
     public abstract class NetworkTransport

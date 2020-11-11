@@ -12,38 +12,35 @@ using Utility = MNet.NetworkTransportUtility.LiteNetLib;
 
 namespace MNet
 {
-    class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
+    class LiteNetLibTransport : DistributedNetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
     {
+        public NetManager Manager { get; protected set; }
+
+        public static ushort Port => Constants.Server.Game.Realtime.Port;
+
         public override void Start()
         {
 
         }
 
-        protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
-
-        public LiteNetLibTransport()
+        void Run()
         {
-
+            while (true) Tick();
         }
-    }
 
-    class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
-    {
-        public NetManager Manager { get; protected set; }
-
-        public ushort Port { get; protected set; }
-
-        public override void Poll()
+        void Tick()
         {
-            Manager.PollEvents();
+            if (Manager == null) return;
+            if (Manager.IsRunning == false) return;
 
-            base.Poll();
+            Manager.PollEvents();
+            Thread.Sleep(10);
         }
 
         #region Callbacks
-        public void OnPeerConnected(NetPeer peer) => RegisterClient(peer);
+        public void OnPeerConnected(NetPeer peer) => MarkUnregisteredConnection(peer);
 
-        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => UnregisterClient(peer);
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => RemoveConnection(peer);
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
 
@@ -55,7 +52,7 @@ namespace MNet
 
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            RegisterMessage(peer, raw, mode);
+            ProcessMessage(peer, raw, mode);
         }
 
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
@@ -65,6 +62,31 @@ namespace MNet
         public void OnConnectionRequest(ConnectionRequest request) => request.Accept();
         #endregion
 
+        protected override int GetIID(NetPeer connection) => connection.Id;
+
+        protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
+
+        protected override void Send(NetPeer connection, params byte[] raw) => connection.Send(raw, DeliveryMethod.ReliableOrdered);
+
+        public override void Disconnect(NetPeer connection, DisconnectCode code)
+        {
+            var binary = Utility.Disconnect.CodeToBinary(code);
+
+            connection.Disconnect(binary);
+        }
+
+        public LiteNetLibTransport()
+        {
+            Manager = new NetManager(this);
+            Manager.Start(Port);
+
+            var thread = new Thread(Run);
+            thread.Start();
+        }
+    }
+
+    class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
+    {
         public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryMode mode)
         {
             var method = Utility.Delivery.Glossary[mode];
@@ -72,42 +94,19 @@ namespace MNet
             client.Peer.Send(raw, method);
         }
 
-        public override void Broadcast(byte[] raw, DeliveryMode mode)
-        {
-            var method = Utility.Delivery.Glossary[mode];
-
-            Manager.SendToAll(raw, method);
-        }
-
         public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code)
         {
-            var binary = Utility.Disconnect.CodeToBinary(code);
-
-            Manager.DisconnectPeer(client.Peer, binary);
-        }
-
-        public override void Close()
-        {
-            base.Close();
-
-            Manager.Stop(true);
+            Transport.Disconnect(client.Peer, code);
         }
 
         protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
         {
-            var client = new LiteNetLibTransportClient(this, clientID, connection);
-
-            return client;
+            return new LiteNetLibTransportClient(this, clientID, connection);
         }
 
         public LiteNetLibTransportContext(LiteNetLibTransport transport, uint id) : base(transport, id)
         {
-            Manager = new NetManager(this);
 
-            Port = NetworkTransportUtility.Port.From(id);
-            Log.Info($"LiteNetLib Context {id} Port: {Port}");
-
-            Manager.Start(Port);
         }
     }
 

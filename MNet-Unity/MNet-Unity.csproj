@@ -116,6 +116,7 @@
      <Compile Include="Assets\MNet\Runtime\Remote Calls\RPX.cs" />
      <Compile Include="Assets\MNet\Runtime\Remote Calls\SyncVar.cs" />
      <Compile Include="Assets\MNet\Runtime\Serialization\UnitTypesNetworkSerialization.cs" />
+     <Compile Include="Assets\MNet\Runtime\Transport\DistributedNetworkTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Transport\NetworkTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Transport\Variants\LiteNetLibTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Transport\Variants\WebSocketTransport.cs" />

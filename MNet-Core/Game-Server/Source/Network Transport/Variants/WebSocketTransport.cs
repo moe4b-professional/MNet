@@ -15,6 +15,8 @@ namespace MNet
     {
         public WebSocketServer Server { get; protected set; }
 
+        public static ushort Port => Constants.Server.Game.Realtime.Port;
+
         public override void Start()
         {
             Server.Start();
@@ -27,9 +29,9 @@ namespace MNet
             return context;
         }
 
-        public WebSocketTransport(int port) : base()
+        public WebSocketTransport() : base()
         {
-            Server = new WebSocketServer(IPAddress.Any, port);
+            Server = new WebSocketServer(IPAddress.Any, Port);
 
             Server.KeepClean = false;
         }

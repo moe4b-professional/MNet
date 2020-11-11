@@ -62,5 +62,10 @@ namespace MNet
             public static ushort From(RoomID id) => From(id.Value);
             public static ushort From(uint value) => (ushort)(value + Offset);
         }
+
+        public static partial class Registeration
+        {
+            public const byte Success = 200;
+        }
     }
 }

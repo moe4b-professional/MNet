@@ -27,16 +27,20 @@ using System.Net.Sockets;
 
 namespace MNet
 {
-    public class LiteNetLibTransport : NetworkTransport, INetEventListener
+    public class LiteNetLibTransport : DistributedNetworkTransport, INetEventListener
     {
         public NetManager Client { get; protected set; }
 
         public NetPeer Peer { get; protected set; }
 
+        public static ushort Port => Constants.Server.Game.Realtime.Port;
+
         public override bool IsConnected
         {
             get
             {
+                if (IsRegistered == false) return false;
+
                 if (Peer == null) return false;
 
                 return Peer.ConnectionState == ConnectionState.Connected;
@@ -45,9 +49,7 @@ namespace MNet
 
         public override void Connect(GameServerID serverID, RoomID roomID)
         {
-            var port = NetworkTransportUtility.Port.From(roomID);
-
-            Peer = Client.Connect(serverID.Address, port, "");
+            Peer = Client.Connect(serverID.Address, Port, string.Empty);
         }
 
         void Update()
@@ -58,7 +60,7 @@ namespace MNet
         }
 
         #region Callbacks
-        public void OnPeerConnected(NetPeer peer) => QueueConnect();
+        public void OnPeerConnected(NetPeer peer) => RequestRegisteration();
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
@@ -79,9 +81,7 @@ namespace MNet
 
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            var message = NetworkMessage.Read(raw);
-
-            QueueRecievedMessage(message, mode);
+            ProcessMessage(raw, mode);
         }
 
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
@@ -98,12 +98,19 @@ namespace MNet
 
         public override void Close() => Peer.Disconnect();
 
+        void ApplicationQuitCallback()
+        {
+            NetworkAPI.OnUpdate -= Update;
+        }
+
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
             Client.Start();
 
             NetworkAPI.OnUpdate += Update;
+
+            Application.quitting += ApplicationQuitCallback;
         }
     }
 }

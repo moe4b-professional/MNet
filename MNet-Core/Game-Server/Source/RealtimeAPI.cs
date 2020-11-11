@@ -28,7 +28,7 @@ namespace MNet
             switch (type)
             {
                 case NetworkTransportType.WebSocketSharp:
-                    Transport = new WebSocketTransport(Port);
+                    Transport = new WebSocketTransport();
                     break;
 
                 case NetworkTransportType.LiteNetLib:
