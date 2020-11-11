@@ -37,11 +37,11 @@ namespace MNet
             if (isProcessing) return;
 
             isProcessing = true;
-            RPC(Click, NetworkAPI.Client.Self, Payload, Time.time);
+            RPC(Call, NetworkAPI.Client.Self, Payload, Time.time);
         }
 
         [NetworkRPC]
-        void Click(string payload, float time, RpcInfo info)
+        void Call(string payload, float time, RpcInfo info)
         {
             var elapsed = (Time.time - time) * 1000;
 

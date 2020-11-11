@@ -18,6 +18,9 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using WebSocketSharp;
+
+using Utility = MNet.NetworkTransportUtility.WebSocket;
+
 using System.Net;
 
 namespace MNet
@@ -25,6 +28,8 @@ namespace MNet
     public class WebSocketTransport : NetworkTransport
     {
         public WebSocket Socket { get; protected set; }
+
+        public const int Port = Constants.Server.Game.Realtime.Port;
 
         public override bool IsConnected
         {
@@ -59,18 +64,18 @@ namespace MNet
         {
             var message = NetworkMessage.Read(args.RawData);
 
-            QueueRecievedMessage(message, DeliveryChannel.Reliable);
+            QueueRecievedMessage(message, DeliveryMode.Reliable);
         }
 
         void CloseCallback(object sender, CloseEventArgs args)
         {
-            var code = ValueToDisconnectCode(args.Code);
+            var code = Utility.Disconnect.ValueToCode(args.Code);
 
             QueueDisconnect(code);
         }
         #endregion
 
-        public override void Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
+        public override void Send(byte[] raw, DeliveryMode mode)
         {
             Socket.Send(raw);
         }
@@ -84,28 +89,5 @@ namespace MNet
         {
 
         }
-
-        public static DisconnectCode ValueToDisconnectCode(ushort value)
-        {
-            if (value < Constants.NetworkTransport.WebSocket.DisconnectCodeOffset)
-            {
-                var code = (CloseStatusCode)value;
-
-                switch (code)
-                {
-                    case CloseStatusCode.Normal:
-                        return DisconnectCode.Normal;
-
-                    case CloseStatusCode.InvalidData:
-                        return DisconnectCode.InvalidData;
-                }
-
-                return DisconnectCode.Unknown;
-            }
-
-            value -= Constants.NetworkTransport.WebSocket.DisconnectCodeOffset;
-
-            return (DisconnectCode)value;
-        }
-	}
+    }
 }

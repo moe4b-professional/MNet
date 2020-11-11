@@ -62,7 +62,7 @@ namespace MNet
 
             static void ClientReadyCallback(ReadyClientResponse response) => Set(response.Time);
 
-            static void ClientMessageCallback(NetworkMessage message, DeliveryChannel channel)
+            static void ClientMessageCallback(NetworkMessage message, DeliveryMode mode)
             {
                 if(message.Is<RoomTimeResponse>())
                 {

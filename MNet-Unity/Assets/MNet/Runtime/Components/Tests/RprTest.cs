@@ -33,7 +33,7 @@ namespace MNet
             RPC(Call, NetworkAPI.Room.Master, Callback);
         }
 
-        [NetworkRPC(RemoteAuthority.Any)]
+        [NetworkRPC(Authority = RemoteAuthority.Any)]
         string Call(RpcInfo info) => Payload;
 
         void Callback(RprResult result, string value)

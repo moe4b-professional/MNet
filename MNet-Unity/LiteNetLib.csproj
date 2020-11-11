@@ -11,10 +11,10 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{06B80577-3407-2F92-B156-C0A0601F761A}</ProjectGuid>
+    <ProjectGuid>{1B4927FD-1A71-E482-79DE-F153996F9CDF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <AssemblyName>MNet-Unity-Third-Party</AssemblyName>
+    <AssemblyName>LiteNetLib</AssemblyName>
     <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <BaseDirectory>.</BaseDirectory>
@@ -55,35 +55,34 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\BaseChannel.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\ConnectionRequest.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\INetEventListener.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Layers\Crc32cLayer.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Layers\PacketLayerBase.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Layers\XorEncryptLayer.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NatPunchModule.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetConstants.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetDebug.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetManager.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetPacket.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetPacketPool.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetPeer.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetSocket.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetStatistics.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\NetUtils.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\ReliableChannel.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\SequencedChannel.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\CRC32C.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\FastBitConverter.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\INetSerializable.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\NetDataReader.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\NetDataWriter.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\NetPacketProcessor.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\NetSerializer.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\NtpPacket.cs" />
-     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Utils\NtpRequest.cs" />
-     <None Include="Assets\MNet\Third Party\Web Socket Sharp\websocket-sharp.xml" />
-     <None Include="Assets\MNet\Third Party\MNet-Unity-Third-Party.asmdef" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\BaseChannel.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\ConnectionRequest.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\INetEventListener.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Layers\Crc32cLayer.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Layers\PacketLayerBase.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Layers\XorEncryptLayer.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NatPunchModule.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetConstants.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetDebug.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetManager.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetPacket.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetPacketPool.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetPeer.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetSocket.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetStatistics.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\NetUtils.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\ReliableChannel.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\SequencedChannel.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\CRC32C.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\FastBitConverter.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\INetSerializable.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\NetDataReader.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\NetDataWriter.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\NetPacketProcessor.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\NetSerializer.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\NtpPacket.cs" />
+     <Compile Include="Assets\MNet\Third Party\LiteNetLib\Plugins\Utils\NtpRequest.cs" />
+     <None Include="Assets\MNet\Third Party\LiteNetLib\LiteNetLib.asmdef" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>

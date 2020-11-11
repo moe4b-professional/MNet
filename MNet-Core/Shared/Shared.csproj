@@ -38,6 +38,9 @@
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LiteNetLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiteNetLib.0.9.3.2\lib\net35\LiteNetLib.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -65,12 +68,14 @@
     <Compile Include="Source\Network Serialization\NetworkSerializationResolver.cs" />
     <Compile Include="Source\Network Serialization\NetworkSerializer.cs" />
     <Compile Include="Source\Network Serialization\NetworkStream.cs" />
+    <Compile Include="Source\Network Transport\Variants\LiteNetLib.cs" />
+    <Compile Include="Source\Network Transport\Variants\WebSocket.cs" />
     <Compile Include="Source\NetworkClient.cs" />
     <Compile Include="Source\NetworkEntity.cs" />
     <Compile Include="Source\NetworkGenericDictionary.cs" />
     <Compile Include="Source\NetworkMessage.cs" />
     <Compile Include="Source\NetworkPayload.cs" />
-    <Compile Include="Source\NetworkTransport.cs" />
+    <Compile Include="Source\Network Transport\NetworkTransport.cs" />
     <Compile Include="Source\Preserve.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Source\REST.cs" />

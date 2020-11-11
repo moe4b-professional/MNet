@@ -32,7 +32,7 @@ namespace MNet
                     break;
 
                 case NetworkTransportType.LiteNetLib:
-                    Transport = new LiteNetLibTransport(Port);
+                    Transport = new LiteNetLibTransport();
                     break;
             }
         }

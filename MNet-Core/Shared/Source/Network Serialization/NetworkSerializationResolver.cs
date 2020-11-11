@@ -691,16 +691,16 @@ namespace MNet
         public class Context
         {
             public NetworkWriter Writer { get; protected set; }
-            public bool IsWritingBinary => Writer != null;
+            public bool IsSerializing => Writer != null;
 
             public NetworkReader Reader { get; protected set; }
-            public bool IsReadingBinary => Reader != null;
+            public bool IsDeserializing => Reader != null;
 
             public void Select<T>(ref T value)
             {
-                if (IsWritingBinary) Writer.Write(value);
+                if (IsSerializing) Writer.Write(value);
 
-                if (IsReadingBinary) Reader.Read(out value);
+                if (IsDeserializing) Reader.Read(out value);
             }
 
             public Context(NetworkWriter writer)

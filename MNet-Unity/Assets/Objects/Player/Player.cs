@@ -63,7 +63,7 @@ namespace Game
         #region Familiar
         void RequestFamiliar() => RPC(SpawnFamiliar, NetworkAPI.Room.Master, FamiliarRequestCallback);
 
-        [NetworkRPC(RemoteAuthority.Owner)]
+        [NetworkRPC(Authority = RemoteAuthority.Owner)]
         bool SpawnFamiliar(RpcInfo info)
         {
             NetworkAPI.Client.SpawnEntity("Familiar", null, info.Sender.ID);
@@ -97,7 +97,7 @@ namespace Game
             }
         }
 
-        [NetworkRPC(RemoteAuthority.Owner)]
+        [NetworkRPC(Authority = RemoteAuthority.Owner)]
         void RequestMove(Vector2 input, RpcInfo info)
         {
             input = Vector2.ClampMagnitude(input, 1f);
@@ -112,7 +112,7 @@ namespace Game
             RPC(SetCoordinates, RpcBufferMode.Last, position, rotation);
         }
 
-        [NetworkRPC(RemoteAuthority.Master)]
+        [NetworkRPC(Authority = RemoteAuthority.Master)]
         void SetCoordinates(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             transform.position = position;

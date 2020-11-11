@@ -606,9 +606,9 @@
       <Project>{BE1C6F00-BF17-A24A-7C74-DA0167650178}</Project>
       <Name>MNet-Unity</Name>
     </ProjectReference>
-    <ProjectReference Include="MNet-Unity-Third-Party.csproj">
-      <Project>{06B80577-3407-2F92-B156-C0A0601F761A}</Project>
-      <Name>MNet-Unity-Third-Party</Name>
+    <ProjectReference Include="LiteNetLib.csproj">
+      <Project>{1B4927FD-1A71-E482-79DE-F153996F9CDF}</Project>
+      <Name>LiteNetLib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

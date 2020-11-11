@@ -48,7 +48,7 @@ namespace MNet
 
         public NetworkRPCAttribute Attribute { get; protected set; }
         public RemoteAuthority Authority => Attribute.Authority;
-        public DeliveryChannel Channel => Attribute.Channel;
+        public DeliveryMode DeliveryMode => Attribute.Delivery;
 
         public MethodInfo MethodInfo { get; protected set; }
 
@@ -137,17 +137,10 @@ namespace MNet
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public sealed class NetworkRPCAttribute : Attribute
     {
-        public RemoteAuthority Authority { get; private set; }
-        public DeliveryChannel Channel { get; private set; }
+        public RemoteAuthority Authority { get; set; } = RemoteAuthority.Any;
+        public DeliveryMode Delivery { get; set; } = DeliveryMode.Reliable;
 
-        public NetworkRPCAttribute(RemoteAuthority authority, DeliveryChannel channel)
-        {
-            this.Authority = authority;
-            this.Channel = channel;
-        }
-        public NetworkRPCAttribute() : this(RemoteAuthority.Any, DeliveryChannel.Reliable) { }
-        public NetworkRPCAttribute(RemoteAuthority authority) : this(authority, DeliveryChannel.Reliable) { }
-        public NetworkRPCAttribute(DeliveryChannel channel) : this(RemoteAuthority.Any, channel) { }
+        public NetworkRPCAttribute() { }
     }
 
     public delegate void RpcMethod(RpcInfo info);

@@ -297,7 +297,7 @@ namespace MNet
                 IsApplyingMessageBuffer = true;
 
                 for (int i = 0; i < list.Count; i++)
-                    MessageCallback(list[i], DeliveryChannel.Reliable);
+                    MessageCallback(list[i], DeliveryMode.Reliable);
 
                 IsApplyingMessageBuffer = false;
 
@@ -305,7 +305,7 @@ namespace MNet
             }
             #endregion
 
-            static void MessageCallback(NetworkMessage message, DeliveryChannel channel)
+            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
             {
                 if (Client.IsReady)
                 {

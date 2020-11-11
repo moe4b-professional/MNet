@@ -184,7 +184,7 @@ namespace MNet
                 return false;
             }
 
-            return Send(request, bind.Channel);
+            return Send(request, bind.DeliveryMode);
         }
         #endregion
 
@@ -330,7 +330,7 @@ namespace MNet
                 return false;
             }
 
-            return Send(request, bind.Channel);
+            return Send(request, bind.DeliveryMode);
         }
         #endregion
 
@@ -400,7 +400,7 @@ namespace MNet
             return false;
         }
 
-        protected virtual bool Send<T>(T payload, DeliveryChannel channel = DeliveryChannel.Reliable)
+        protected virtual bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
         {
             if (IsReady == false)
             {
@@ -408,7 +408,7 @@ namespace MNet
                 return false;
             }
 
-            return NetworkAPI.Client.Send(payload, channel);
+            return NetworkAPI.Client.Send(payload, mode);
         }
 
         public NetworkBehaviour()

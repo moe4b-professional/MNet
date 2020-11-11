@@ -54,7 +54,7 @@ namespace MNet
             return false;
         }
 
-        [NetworkRPC(RemoteAuthority.Master)]
+        [NetworkRPC(Authority = RemoteAuthority.Master)]
         void Sync(Vector3 position, Quaternion rotation, RpcInfo info)
         {
             if (NetworkAPI.Client.IsMaster)

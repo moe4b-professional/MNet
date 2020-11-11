@@ -47,7 +47,7 @@ namespace MNet
 
             }
 
-            public static bool Send<T>(T payload, DeliveryChannel channel = DeliveryChannel.Reliable)
+            public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
             {
                 if (IsConnected == false)
                 {
@@ -58,7 +58,7 @@ namespace MNet
                 var message = NetworkMessage.Write(payload);
                 var raw = NetworkSerializer.Serialize(message);
 
-                return Realtime.Send(raw, channel);
+                return Realtime.Send(raw, mode);
             }
 
             public delegate void ConnectDelegate();
@@ -72,9 +72,9 @@ namespace MNet
                 OnConnect?.Invoke();
             }
 
-            public delegate void MessageDelegate(NetworkMessage message, DeliveryChannel channel);
+            public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(NetworkMessage message, DeliveryChannel channel)
+            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
             {
                 if (message.Is<RegisterClientResponse>())
                 {
@@ -89,7 +89,7 @@ namespace MNet
                     ReadyCallback(response);
                 }
 
-                OnMessage?.Invoke(message, channel);
+                OnMessage?.Invoke(message, mode);
             }
 
             #region Register

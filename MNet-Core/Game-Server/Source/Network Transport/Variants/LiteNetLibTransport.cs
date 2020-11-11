@@ -1,42 +1,49 @@
 ﻿using System;
-using System.Net;
 using System.Text;
 using System.Threading;
-using System.Net.Sockets;
 using System.Collections.Generic;
+
+using System.Net;
+using System.Net.Sockets;
 
 using LiteNetLib;
 
+using Utility = MNet.NetworkTransportUtility.LiteNetLib;
+
 namespace MNet
 {
-    class LiteNetLibTransport : AutoDistributedNetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
+    class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
     {
-        public NetManager Server { get; protected set; }
-
-        public int Port { get; protected set; }
-
         public override void Start()
         {
-            Server.Start(Port);
-        }
 
-        protected override int GetIID(NetPeer connection) => connection.Id;
+        }
 
         protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
 
-        protected override void Tick()
+        public LiteNetLibTransport()
         {
-            if (Server == null) return;
-            if (Server.IsRunning == false) return;
 
-            Server.PollEvents();
-            Thread.Sleep(15);
+        }
+    }
+
+    class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
+    {
+        public NetManager Manager { get; protected set; }
+
+        public ushort Port { get; protected set; }
+
+        public override void Poll()
+        {
+            Manager.PollEvents();
+
+            base.Poll();
         }
 
         #region Callbacks
-        public void OnPeerConnected(NetPeer peer) => MarkUnregisteredConnection(peer);
+        public void OnPeerConnected(NetPeer peer) => RegisterClient(peer);
 
-        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => RemoveConnection(peer);
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => UnregisterClient(peer);
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
 
@@ -44,10 +51,11 @@ namespace MNet
         {
             var raw = new byte[reader.AvailableBytes];
             Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
+            reader.Recycle();
 
-            var channel = DeliveryGlossary[deliveryMethod];
+            var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            ProcessMessage(peer, raw, channel);
+            RegisterMessage(peer, raw, mode);
         }
 
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
@@ -57,54 +65,33 @@ namespace MNet
         public void OnConnectionRequest(ConnectionRequest request) => request.Accept();
         #endregion
 
-        protected override void Send(NetPeer connection, byte[] raw) => connection.Send(raw, DeliveryMethod.ReliableOrdered);
-
-        public override void Disconnect(NetPeer connection, DisconnectCode code)
+        public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryMode mode)
         {
-            var binary = DisconnectCodeToBinary(code);
-
-            connection.Disconnect(binary);
-        }
-
-        public LiteNetLibTransport(int port)
-        {
-            this.Port = port;
-
-            Server = new NetManager(this);
-        }
-
-        public static byte[] DisconnectCodeToBinary(DisconnectCode code)
-        {
-            var value = Convert.ToByte(code);
-
-            return new byte[] { value };
-        }
-
-        //Static Utility
-
-        public static Glossary<DeliveryChannel, DeliveryMethod> DeliveryGlossary { get; private set; }
-
-        static LiteNetLibTransport()
-        {
-            DeliveryGlossary = new Glossary<DeliveryChannel, DeliveryMethod>();
-
-            DeliveryGlossary.Add(DeliveryChannel.Reliable, DeliveryMethod.ReliableOrdered);
-            DeliveryGlossary.Add(DeliveryChannel.Unreliable, DeliveryMethod.Unreliable);
-        }
-    }
-
-    class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
-    {
-        public NetManager Server => Transport.Server;
-
-        public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
-        {
-            var method = LiteNetLibTransport.DeliveryGlossary[channel];
+            var method = Utility.Delivery.Glossary[mode];
 
             client.Peer.Send(raw, method);
         }
 
-        public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code = DisconnectCode.Normal) => Transport.Disconnect(client.Peer, code);
+        public override void Broadcast(byte[] raw, DeliveryMode mode)
+        {
+            var method = Utility.Delivery.Glossary[mode];
+
+            Manager.SendToAll(raw, method);
+        }
+
+        public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code)
+        {
+            var binary = Utility.Disconnect.CodeToBinary(code);
+
+            Manager.DisconnectPeer(client.Peer, binary);
+        }
+
+        public override void Close()
+        {
+            base.Close();
+
+            Manager.Stop(true);
+        }
 
         protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
         {
@@ -115,7 +102,12 @@ namespace MNet
 
         public LiteNetLibTransportContext(LiteNetLibTransport transport, uint id) : base(transport, id)
         {
+            Manager = new NetManager(this);
 
+            Port = NetworkTransportUtility.Port.From(id);
+            Log.Info($"LiteNetLib Context {id} Port: {Port}");
+
+            Manager.Start(Port);
         }
     }
 

@@ -22,11 +22,9 @@ using System.Collections.Concurrent;
 
 namespace MNet
 {
-	public abstract class NetworkTransport
-	{
+    public abstract class NetworkTransport
+    {
         public abstract bool IsConnected { get; }
-
-        public const int Port = Constants.Server.Game.Realtime.Port;
 
         public abstract void Connect(GameServerID server, RoomID room);
 
@@ -49,18 +47,18 @@ namespace MNet
         #endregion
 
         #region Message
-        public delegate void MessageDelegate(NetworkMessage message, DeliveryChannel channel);
+        public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
         public event MessageDelegate OnRecievedMessage;
-        void InvokeRecievedMessage(NetworkMessage message, DeliveryChannel channel)
+        void InvokeRecievedMessage(NetworkMessage message, DeliveryMode mode)
         {
-            OnRecievedMessage?.Invoke(message, channel);
+            OnRecievedMessage?.Invoke(message, mode);
         }
 
-        protected virtual void QueueRecievedMessage(NetworkMessage message, DeliveryChannel channel)
+        protected virtual void QueueRecievedMessage(NetworkMessage message, DeliveryMode mode)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeRecievedMessage(message, channel);
+            void Action() => InvokeRecievedMessage(message, mode);
         }
         #endregion
 
@@ -80,87 +78,13 @@ namespace MNet
         }
         #endregion
 
-        public abstract void Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable);
+        public abstract void Send(byte[] raw, DeliveryMode mode);
 
         public abstract void Close();
 
         public NetworkTransport()
         {
             InputQueue = new ConcurrentQueue<Action>();
-        }
-    }
-
-    public abstract class AutoDistributedNetworkTransport : NetworkTransport
-    {
-        public bool IsRegistered { get; protected set; }
-
-        public RoomID Room { get; protected set; }
-
-        public override void Connect(GameServerID server, RoomID room)
-        {
-            this.Room = room;
-
-            IsRegistered = false;
-        }
-
-        Thread thread;
-        void Run()
-        {
-            isRunning = true;
-
-            while (isRunning) Tick();
-        }
-        bool isRunning;
-
-        protected abstract void Tick();
-
-        protected virtual void Stop()
-        {
-            isRunning = false;
-        }
-
-        protected virtual void RequestRegister()
-        {
-            var raw = BitConverter.GetBytes(Room.Value);
-
-            Send(raw, DeliveryChannel.Reliable);
-        }
-        protected virtual void RegisterCallback(byte[] raw)
-        {
-            var code = raw[0];
-
-            IsRegistered = code == 200;
-
-            if (IsRegistered) QueueConnect();
-        }
-
-        protected virtual void ProcessMessage(byte[] raw, DeliveryChannel channel)
-        {
-            if (IsRegistered)
-            {
-                var message = NetworkMessage.Read(raw);
-
-                QueueRecievedMessage(message, channel);
-            }
-            else
-            {
-                RegisterCallback(raw);
-            }
-        }
-
-        void ApplicationQuitCallback()
-        {
-            Application.quitting -= ApplicationQuitCallback;
-
-            Stop();
-        }
-
-        public AutoDistributedNetworkTransport() : base()
-        {
-            thread = new Thread(Run);
-            thread.Start();
-
-            Application.quitting += ApplicationQuitCallback;
         }
     }
 }

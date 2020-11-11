@@ -50,7 +50,7 @@ namespace MNet
                 Transport.Connect(serverID, roomID);
             }
 
-            public static bool Send(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
+            public static bool Send(byte[] raw, DeliveryMode mode)
             {
                 if (IsConnected == false)
                 {
@@ -66,7 +66,7 @@ namespace MNet
                     return false;
                 }
 
-                Transport.Send(raw, channel);
+                Transport.Send(raw, mode);
                 return true;
             }
 
@@ -97,11 +97,11 @@ namespace MNet
                 OnConnect?.Invoke();
             }
 
-            public delegate void MessageDelegate(NetworkMessage message, DeliveryChannel channel);
+            public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(NetworkMessage message, DeliveryChannel channel)
+            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
             {
-                OnMessage?.Invoke(message, channel);
+                OnMessage?.Invoke(message, mode);
             }
 
             public delegate void DisconnectDelegate(DisconnectCode code);

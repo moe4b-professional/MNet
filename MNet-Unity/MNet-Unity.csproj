@@ -123,6 +123,7 @@
      <None Include="Assets\MNet-Example\MNet-Unity.asmref" />
      <None Include="Assets\MNet-Project-Utility\MNet-Unity.asmref" />
      <None Include="Assets\MNet\MNet-Unity.asmdef" />
+     <None Include="Assets\MNet\Third Party\Web Socket Sharp\websocket-sharp.xml" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>
@@ -680,9 +681,9 @@
  </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="MNet-Unity-Third-Party.csproj">
-      <Project>{06B80577-3407-2F92-B156-C0A0601F761A}</Project>
-      <Name>MNet-Unity-Third-Party</Name>
+    <ProjectReference Include="LiteNetLib.csproj">
+      <Project>{1B4927FD-1A71-E482-79DE-F153996F9CDF}</Project>
+      <Name>LiteNetLib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -110,30 +110,29 @@ namespace MNet
         #endregion
 
         #region Communication
-        NetworkMessage SendTo<T>(NetworkClient target, T payload, DeliveryChannel channel = DeliveryChannel.Reliable)
+        NetworkMessage SendTo<T>(NetworkClient target, T payload, DeliveryMode mode = DeliveryMode.Reliable)
         {
-            return SendTo(target.ID, payload, channel);
+            return SendTo(target.ID, payload, mode);
         }
 
-        NetworkMessage SendTo<T>(NetworkClientID target, T payload, DeliveryChannel channel = DeliveryChannel.Reliable)
+        NetworkMessage SendTo<T>(NetworkClientID target, T payload, DeliveryMode mode =DeliveryMode.Reliable)
         {
             var message = NetworkMessage.Write(payload);
 
             var raw = NetworkSerializer.Serialize(message);
 
-            TransportContext.Send(target, raw, channel);
+            TransportContext.Send(target, raw, mode);
 
             return message;
         }
 
-        NetworkMessage Broadcast<T>(T payload) => Broadcast(payload, DeliveryChannel.Reliable);
-        NetworkMessage Broadcast<T>(T payload, DeliveryChannel channel)
+        NetworkMessage Broadcast<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
         {
             var message = NetworkMessage.Write(payload);
 
             var raw = NetworkSerializer.Serialize(message);
 
-            TransportContext.Broadcast(raw);
+            TransportContext.Broadcast(raw, mode);
 
             return message;
         }
@@ -162,8 +161,6 @@ namespace MNet
         public event Action OnTick;
         void Tick()
         {
-            Log.Info($"Time: {Time.Seconds}");
-
             Time = NetworkTimeSpan.Calculate(Timestamp);
 
             TransportContext.Poll();
@@ -171,7 +168,7 @@ namespace MNet
             OnTick?.Invoke();
         }
 
-        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, ArraySegment<byte> raw, DeliveryChannel channel)
+        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, ArraySegment<byte> raw, DeliveryMode mode)
         {
             //Log.Info($"{message.Type} Binary Size: {raw.Count}");
 
@@ -181,7 +178,7 @@ namespace MNet
                 {
                     var request = message.Read<RpcRequest>();
 
-                    InvokeRPC(client, request, channel);
+                    InvokeRPC(client, request, mode);
                 }
                 else if (message.Is<SpawnEntityRequest>())
                 {
@@ -205,7 +202,7 @@ namespace MNet
                 {
                     var request = message.Read<SyncVarRequest>();
 
-                    InvokeSyncVar(client, request, channel);
+                    InvokeSyncVar(client, request, mode);
                 }
                 else if (message.Is<ReadyClientRequest>())
                 {
@@ -287,7 +284,7 @@ namespace MNet
         }
 
         #region RPC
-        void InvokeRPC(NetworkClient sender, RpcRequest request, DeliveryChannel channel)
+        void InvokeRPC(NetworkClient sender, RpcRequest request, DeliveryMode mode)
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
@@ -301,26 +298,26 @@ namespace MNet
             switch (request.Type)
             {
                 case RpcType.Broadcast:
-                    InvokeBroadcastRPC(sender, request, entity, channel);
+                    InvokeBroadcastRPC(sender, request, entity, mode);
                     break;
 
                 case RpcType.Target:
                 case RpcType.Return:
-                    InvokeTargetedRPC(sender, request, entity, channel);
+                    InvokeTargetedRPC(sender, request, entity, mode);
                     break;
             }
         }
 
-        void InvokeBroadcastRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryChannel channel)
+        void InvokeBroadcastRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
         {
             var command = RpcCommand.Write(sender.ID, request, Time);
 
-            var message = Broadcast(command, channel);
+            var message = Broadcast(command, mode);
 
             entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
         }
 
-        void InvokeTargetedRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryChannel channel)
+        void InvokeTargetedRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
         {
             var command = RpcCommand.Write(sender.ID, request, Time);
 
@@ -335,7 +332,7 @@ namespace MNet
 
             if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender, target);
 
-            SendTo(target, command, channel);
+            SendTo(target, command, mode);
         }
         #endregion
 
@@ -390,7 +387,7 @@ namespace MNet
         #endregion
 
         #region SyncVar
-        void InvokeSyncVar(NetworkClient sender, SyncVarRequest request, DeliveryChannel channel)
+        void InvokeSyncVar(NetworkClient sender, SyncVarRequest request, DeliveryMode mode)
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
@@ -400,7 +397,7 @@ namespace MNet
 
             var command = SyncVarCommand.Write(sender.ID, request);
 
-            var message = Broadcast(command, channel);
+            var message = Broadcast(command, mode);
 
             entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }

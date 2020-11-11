@@ -1,12 +1,13 @@
 ﻿using System;
-using System.Net;
 using System.Text;
 using System.Collections.Generic;
 
-using System.Diagnostics;
+using System.Net;
 
 using WebSocketSharp;
 using WebSocketSharp.Server;
+
+using Utility = MNet.NetworkTransportUtility.WebSocket;
 
 namespace MNet
 {
@@ -65,7 +66,7 @@ namespace MNet
             {
                 base.OnMessage(args);
 
-                TransportContext.RegisterMessage(Client, args.RawData, DeliveryChannel.Reliable);
+                TransportContext.RegisterMessage(Client, args.RawData, DeliveryMode.Reliable);
             }
 
             protected override void OnClose(CloseEventArgs args)
@@ -84,21 +85,21 @@ namespace MNet
             return client;
         }
 
-        public override void Send(WebSocketTransportClient client, byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
+        public override void Send(WebSocketTransportClient client, byte[] raw, DeliveryMode mode)
         {
             if (client.IsOpen == false) return;
 
             Sessions.SendTo(raw, client.InternalID);
         }
 
-        public override void Broadcast(byte[] raw, DeliveryChannel channel = DeliveryChannel.Reliable)
+        public override void Broadcast(byte[] raw, DeliveryMode mode)
         {
             Sessions.Broadcast(raw);
         }
 
         public override void Disconnect(WebSocketTransportClient client, DisconnectCode code = DisconnectCode.Normal)
         {
-            var value = DisconnectCodeToValue(code);
+            var value = Utility.Disconnect.CodeToValue(code);
 
             Sessions.CloseSession(client.InternalID, value, null);
         }
@@ -119,15 +120,6 @@ namespace MNet
             Server.AddWebSocketService<Behaviour>(Path, InitBehaviour);
 
             Host = Server.WebSocketServices[Path];
-        }
-
-        public static ushort DisconnectCodeToValue(DisconnectCode code)
-        {
-            var value = Convert.ToUInt16(code);
-
-            value += Constants.NetworkTransport.WebSocket.DisconnectCodeOffset;
-
-            return value;
         }
     }
 
