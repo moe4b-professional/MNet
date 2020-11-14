@@ -124,5 +124,17 @@ namespace MNet
         public static bool operator !=(RoomID a, RoomID b) => !a.Equals(b);
 
         public static RoomID Increment(RoomID id) => new RoomID(id.value + 1);
+
+        public static bool TryParse(string text, out RoomID id)
+        {
+            if(uint.TryParse(text, out var value) == false)
+            {
+                id = default;
+                return false;
+            }
+
+            id = new RoomID(value);
+            return true;
+        }
     }
 }

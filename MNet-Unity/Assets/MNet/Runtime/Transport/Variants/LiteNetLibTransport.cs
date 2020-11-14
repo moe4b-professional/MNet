@@ -27,7 +27,7 @@ using System.Net.Sockets;
 
 namespace MNet
 {
-    public class LiteNetLibTransport : DistributedNetworkTransport, INetEventListener
+    public class LiteNetLibTransport : NetworkTransport, INetEventListener
     {
         public NetManager Client { get; protected set; }
 
@@ -39,17 +39,17 @@ namespace MNet
         {
             get
             {
-                if (IsRegistered == false) return false;
-
                 if (Peer == null) return false;
 
                 return Peer.ConnectionState == ConnectionState.Connected;
             }
         }
 
-        public override void Connect(GameServerID serverID, RoomID roomID)
+        public override void Connect(GameServerID server, RoomID room)
         {
-            Peer = Client.Connect(serverID.Address, Port, string.Empty);
+            var key = $"{room}";
+
+            Peer = Client.Connect(server.Address, Port, key);
         }
 
         void Update()
@@ -60,7 +60,19 @@ namespace MNet
         }
 
         #region Callbacks
-        public void OnPeerConnected(NetPeer peer) => RequestRegisteration();
+        public void OnPeerConnected(NetPeer peer) => QueueConnect();
+
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        {
+            var raw = reader.GetRemainingBytes();
+            reader.Recycle();
+
+            var message = NetworkMessage.Read(raw);
+
+            var mode = Utility.Delivery.Glossary[deliveryMethod];
+
+            QueueRecievedMessage(message, mode);
+        }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
@@ -72,18 +84,6 @@ namespace MNet
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
-
-        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
-        {
-            var raw = new byte[reader.AvailableBytes];
-            Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
-            reader.Recycle();
-
-            var mode = Utility.Delivery.Glossary[deliveryMethod];
-
-            ProcessMessage(raw, mode);
-        }
-
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
         public void OnConnectionRequest(ConnectionRequest request) { }

@@ -10,17 +10,21 @@ using LiteNetLib;
 
 using Utility = MNet.NetworkTransportUtility.LiteNetLib;
 
+using System.Collections.Concurrent;
+
 namespace MNet
 {
-    class LiteNetLibTransport : DistributedNetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
+    class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
     {
         public NetManager Manager { get; protected set; }
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
 
+        public ConcurrentDictionary<int, LiteNetLibTransportContext> Routes { get; protected set; }
+
         public override void Start()
         {
-
+            Manager.Start(Port);
         }
 
         void Run()
@@ -38,50 +42,86 @@ namespace MNet
         }
 
         #region Callbacks
-        public void OnPeerConnected(NetPeer peer) => MarkUnregisteredConnection(peer);
+        public void OnConnectionRequest(ConnectionRequest request)
+        {
+            var key = request.Data.GetString();
 
-        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo) => RemoveConnection(peer);
+            if (RoomID.TryParse(key, out var room) == false)
+            {
+                Reject(request, DisconnectCode.InvalidContext);
+                return;
+            }
 
-        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
+            if (Contexts.TryGetValue(room.Value, out var context) == false)
+            {
+                Reject(request, DisconnectCode.InvalidContext);
+                return;
+            }
+
+            var peer = request.Accept();
+
+            Routes[peer.Id] = context;
+        }
+
+        public void OnPeerConnected(NetPeer peer)
+        {
+            if(Routes.TryGetValue(peer.Id, out var context) == false)
+            {
+                Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
+                return;
+            }
+
+            context.RegisterClient(peer);
+        }
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            var raw = new byte[reader.AvailableBytes];
-            Buffer.BlockCopy(reader.RawData, reader.Position, raw, 0, reader.AvailableBytes);
+            if (Routes.TryGetValue(peer.Id, out var context) == false)
+            {
+                Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
+                return;
+            }
+
+            var raw = reader.GetRemainingBytes();
             reader.Recycle();
 
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            ProcessMessage(peer, raw, mode);
+            context.RegisterMessage(peer, raw, mode);
         }
 
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+        {
+            if (Routes.TryGetValue(peer.Id, out var context) == false)
+            {
+                Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
+                return;
+            }
+
+            context.UnregisterClient(peer);
+        }
+
+        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
         public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
-
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
-
-        public void OnConnectionRequest(ConnectionRequest request) => request.Accept();
         #endregion
 
-        protected override int GetIID(NetPeer connection) => connection.Id;
+        public void Reject(ConnectionRequest request, DisconnectCode code)
+        {
+            var binary = Utility.Disconnect.CodeToBinary(DisconnectCode.InvalidContext);
+
+            request.Reject(binary);
+        }
 
         protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
-
-        protected override void Send(NetPeer connection, params byte[] raw) => connection.Send(raw, DeliveryMethod.ReliableOrdered);
-
-        public override void Disconnect(NetPeer connection, DisconnectCode code)
-        {
-            var binary = Utility.Disconnect.CodeToBinary(code);
-
-            connection.Disconnect(binary);
-        }
 
         public LiteNetLibTransport()
         {
             Manager = new NetManager(this);
-            Manager.Start(Port);
 
-            var thread = new Thread(Run);
-            thread.Start();
+            Routes = new ConcurrentDictionary<int, LiteNetLibTransportContext>();
+
+            new Thread(Run).Start();
         }
     }
 
@@ -96,7 +136,9 @@ namespace MNet
 
         public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code)
         {
-            Transport.Disconnect(client.Peer, code);
+            var binary = Utility.Disconnect.CodeToBinary(code);
+
+            client.Peer.Disconnect(binary);
         }
 
         protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)

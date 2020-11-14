@@ -23,7 +23,7 @@ namespace MNet
 
                 public static DisconnectCode InfoToCode(DisconnectInfo info)
                 {
-                    if (info.Reason == DisconnectReason.RemoteConnectionClose)
+                    if (info.Reason == DisconnectReason.RemoteConnectionClose || info.Reason == DisconnectReason.ConnectionRejected)
                     {
                         try
                         {

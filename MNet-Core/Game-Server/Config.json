@@ -2,7 +2,7 @@
   "Name": "Server #1",
   "MasterAddress": "localhost",
   "PublicAddress": null,
-  "Region": "Local",
+  "Region": "Europe",
   "RestScheme": "HTTP",
   "NetworkTransport": "LiteNetLib"
 }
