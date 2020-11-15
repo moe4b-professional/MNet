@@ -123,7 +123,7 @@ namespace MNet
 
             public static void Ready()
             {
-                var request = new ReadyClientRequest();
+                var request = ReadyClientRequest.Write();
 
                 Send(request);
             }

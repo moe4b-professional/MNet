@@ -115,6 +115,14 @@ namespace MNet
             
         }
 
+        class A
+        {
+            public A()
+            {
+
+            }
+        }
+
         static void NullableTupleSerialization()
         {
             Tuple<DateTime?, Guid?, int?> tuple = new Tuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);

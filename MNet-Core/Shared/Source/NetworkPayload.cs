@@ -220,7 +220,7 @@ namespace MNet
             context.Select(ref attributes);
         }
 
-        public CreateRoomRequest() { }
+        CreateRoomRequest() { }
         public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             this.appID = appID;
@@ -256,12 +256,10 @@ namespace MNet
             context.Select(ref gameVersion);
         }
 
-        public MasterServerInfoRequest()
-        {
-            apiVersion = Constants.ApiVersion;
-        }
+        MasterServerInfoRequest() { }
         public MasterServerInfoRequest(AppID appID, Version gameVersion) : this()
         {
+            apiVersion = Constants.ApiVersion;
             this.appID = appID;
             this.gameVersion = gameVersion;
         }
@@ -283,7 +281,7 @@ namespace MNet
             context.Select(ref servers);
         }
 
-        public MasterServerInfoResponse() { }
+        MasterServerInfoResponse() { }
         public MasterServerInfoResponse(GameServerInfo[] servers)
         {
             this.servers = servers;
@@ -307,7 +305,7 @@ namespace MNet
             context.Select(ref version);
         }
 
-        public GetLobbyInfoRequest() { }
+        GetLobbyInfoRequest() { }
         public GetLobbyInfoRequest(AppID appID, Version version)
         {
             this.appID = appID;
@@ -330,7 +328,7 @@ namespace MNet
             context.Select(ref profile);
         }
 
-        public RegisterClientRequest() { }
+        RegisterClientRequest() { }
         public RegisterClientRequest(NetworkClientProfile profile)
         {
             this.profile = profile;
@@ -353,7 +351,7 @@ namespace MNet
             context.Select(ref room);
         }
 
-        public RegisterClientResponse() { }
+        RegisterClientResponse() { }
         public RegisterClientResponse(NetworkClientID id, RoomInfo room)
         {
             this.id = id;
@@ -372,13 +370,16 @@ namespace MNet
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-
+            context.Select(ref timestamp);
         }
 
-        public ReadyClientRequest()
+        ReadyClientRequest() { }
+        ReadyClientRequest(DateTime timestamp)
         {
-            timestamp = DateTime.UtcNow;
+            this.timestamp = timestamp;
         }
+
+        public static ReadyClientRequest Write() => new ReadyClientRequest(DateTime.UtcNow);
     }
 
     [Preserve]
@@ -405,7 +406,7 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public ReadyClientResponse() { }
+        ReadyClientResponse() { }
         public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, List<NetworkMessage> buffer, RoomTimeResponse time)
         {
             this.clients = clients;
@@ -458,7 +459,7 @@ namespace MNet
             }
         }
 
-        public SpawnEntityRequest() { }
+        SpawnEntityRequest() { }
 
         public static SpawnEntityRequest Write(string resource, AttributesCollection attributes, NetworkClientID? owner = null)
         {
@@ -532,7 +533,7 @@ namespace MNet
             }
         }
 
-        public SpawnEntityCommand() { }
+        SpawnEntityCommand() { }
 
         public static SpawnEntityCommand Write(NetworkClientID owner, NetworkEntityID id, SpawnEntityRequest request)
         {
@@ -565,7 +566,7 @@ namespace MNet
             context.Select(ref id);
         }
 
-        public DestroyEntityRequest() { }
+        DestroyEntityRequest() { }
         public DestroyEntityRequest(NetworkEntityID id)
         {
             this.id = id;
@@ -584,7 +585,7 @@ namespace MNet
             context.Select(ref id);
         }
 
-        public DestroyEntityCommand() { }
+        DestroyEntityCommand() { }
         public DestroyEntityCommand(NetworkEntityID id)
         {
             this.id = id;
@@ -609,7 +610,7 @@ namespace MNet
             context.Select(ref info);
         }
 
-        public ClientConnectedPayload() { }
+        ClientConnectedPayload() { }
         public ClientConnectedPayload(NetworkClientInfo info)
         {
             this.info = info;
@@ -628,7 +629,7 @@ namespace MNet
             context.Select(ref id);
         }
 
-        public ClientDisconnectPayload() { }
+        ClientDisconnectPayload() { }
         public ClientDisconnectPayload(NetworkClientID id)
         {
             this.id = id;
@@ -648,7 +649,7 @@ namespace MNet
             context.Select(ref id);
         }
 
-        public ChangeMasterCommand() { }
+        ChangeMasterCommand() { }
         public ChangeMasterCommand(NetworkClientID id)
         {
             this.id = id;
@@ -668,10 +669,13 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        public RoomTimeRequest()
+        RoomTimeRequest() { }
+        RoomTimeRequest(DateTime timestamp)
         {
-            timestamp = DateTime.UtcNow;
+            this.timestamp = timestamp;
         }
+
+        public static RoomTimeRequest Write() => new RoomTimeRequest(DateTime.UtcNow);
     }
 
     [Preserve]
@@ -690,7 +694,8 @@ namespace MNet
             context.Select(ref requestTimestamp);
         }
 
-        public RoomTimeResponse() { }
+        RoomTimeResponse() { }
+
         public RoomTimeResponse(NetworkTimeSpan time, DateTime requestTimestamp)
         {
             this.time = time;
@@ -712,10 +717,13 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        public PingRequest()
+        PingRequest() { }
+        PingRequest(DateTime timestamp)
         {
-            timestamp = DateTime.UtcNow;
+            this.timestamp = timestamp;
         }
+
+        public static PingRequest Write() => new PingRequest(DateTime.UtcNow);
     }
 
     [Preserve]
@@ -730,6 +738,7 @@ namespace MNet
         public void Process()
         {
             TimeSpan = (DateTime.UtcNow - timestamp);
+            TimeSpan = (DateTime.UtcNow - timestamp);
         }
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -737,7 +746,7 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        public PingResponse() { }
+        PingResponse() { }
         public PingResponse(DateTime timestamp)
         {
             this.timestamp = timestamp;

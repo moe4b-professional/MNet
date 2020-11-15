@@ -407,9 +407,7 @@ namespace MNet
         {
             var response = new RoomTimeResponse(Time, request.Timestamp);
 
-            var message = SendTo(sender, response);
-
-            Log.Info(message.Code);
+            SendTo(sender, response);
         }
 
         void ProcessPing(NetworkClient sender, PingRequest request)

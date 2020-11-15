@@ -2,7 +2,7 @@
   "Name": "Server #1",
   "MasterAddress": "localhost",
   "PublicAddress": null,
-  "Region": "Europe",
+  "Region": "Local",
   "RestScheme": "HTTP",
-  "NetworkTransport": "LiteNetLib"
+  "NetworkTransport": "WebSocketSharp"
 }

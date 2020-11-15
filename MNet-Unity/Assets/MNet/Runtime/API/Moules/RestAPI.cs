@@ -159,7 +159,6 @@ namespace MNet
         }
 
         public static void Parse<T>(UnityWebRequest request, out T payload, out RestError error)
-            where T : new()
         {
             if (request.isHttpError || request.isNetworkError)
             {

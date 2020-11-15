@@ -19,14 +19,22 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-	public static partial class NetworkAPI
+    public static partial class NetworkAPI
     {
-		public static class Time
-		{
+        public static class Time
+        {
             public static NetworkTimeSpan Span { get; private set; }
+
+            public static NetworkTimeSpan Delta { get; private set; }
 
             public static float Milliseconds => Span.Millisecond;
             public static float Seconds => Span.Seconds;
+
+            public static bool IsBroken { get; private set; } = false;
+
+            const float DeltaBreakingThreshold = 0.5f;
+
+            static bool ValidateDelta(NetworkTimeSpan span) => span.Ticks >= 0 && Delta.Seconds < DeltaBreakingThreshold;
 
             /// <summary>
             /// UTC Timestamp in client time of when the client last recieved a RoomTime message
@@ -42,13 +50,30 @@ namespace MNet
             static void Set(NetworkTimeSpan value, TimeSpan rtt)
             {
                 stamp = DateTime.UtcNow;
-
                 offset = value.Ticks + (rtt.Ticks / 2);
 
-                Calculate();
+                Span = NetworkTimeSpan.Calculate(stamp, offset);
+                Delta = default;
+
+                if (IsBroken) UnBreak();
             }
 
-            static void Calculate() => Span = NetworkTimeSpan.Calculate(stamp, offset);
+            static void Calculate()
+            {
+                if (IsBroken) return;
+
+                var value = NetworkTimeSpan.Calculate(stamp, offset);
+
+                Delta = new NetworkTimeSpan(value.Ticks - Span.Ticks);
+
+                if (ValidateDelta(Delta) == false)
+                {
+                    Break();
+                    return;
+                }
+
+                Span = value;
+            }
 
             public static void Configure()
             {
@@ -60,11 +85,43 @@ namespace MNet
                 if (Client.IsReady) Calculate();
             }
 
+            public static void Request()
+            {
+                var payload = RoomTimeRequest.Write();
+
+                Client.Send(payload, DeliveryMode.Reliable);
+            }
+
+            static void Break()
+            {
+                IsBroken = true;
+
+                Delta = default;
+
+                Debug.LogWarning($"Network Time Broken, Delta: {Delta.Seconds}, Requesting New");
+
+                Request();
+            }
+
+            static void UnBreak()
+            {
+                IsBroken = false;
+            }
+
+            static void Clear()
+            {
+                Span = default;
+                Delta = default;
+
+                IsBroken = false;
+            }
+
+            #region Callbacks
             static void ClientReadyCallback(ReadyClientResponse response) => Set(response.Time);
 
             static void ClientMessageCallback(NetworkMessage message, DeliveryMode mode)
             {
-                if(message.Is<RoomTimeResponse>())
+                if (message.Is<RoomTimeResponse>())
                 {
                     var response = message.Read<RoomTimeResponse>();
 
@@ -73,11 +130,7 @@ namespace MNet
             }
 
             static void DisconnectCallback(DisconnectCode code) => Clear();
-
-            static void Clear()
-            {
-                Span = default;
-            }
+            #endregion
 
             static Time()
             {
@@ -90,5 +143,5 @@ namespace MNet
                 OnUpdate += Update;
             }
         }
-	}
+    }
 }

@@ -32,7 +32,6 @@ namespace MNet
         /// <param name="timestamp"></param>
         /// <returns></returns>
         public static NetworkTimeSpan Calculate(DateTime timestamp) => Calculate(timestamp, 0);
-
         /// <summary>
         /// Calculates a NetworkTimeSpawn from a UTC timestamp and a tick offset
         /// </summary>

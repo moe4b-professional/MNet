@@ -376,16 +376,16 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, DateTime value)
         {
-            long exchange = value.ToBinary();
+            long binary = value.ToBinary();
 
-            writer.Write(exchange);
+            writer.Write(binary);
         }
 
         public override DateTime Deserialize(NetworkReader reader)
         {
-            reader.Read(out long exchange);
+            reader.Read(out long binary);
 
-            return DateTime.FromBinary(exchange);
+            return DateTime.FromBinary(binary);
         }
     }
 
@@ -677,7 +677,7 @@ namespace MNet
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var value = Activator.CreateInstance(type) as INetworkSerializable;
+            var value = Activator.CreateInstance(type, true) as INetworkSerializable;
 
             var context = new Context(reader);
 

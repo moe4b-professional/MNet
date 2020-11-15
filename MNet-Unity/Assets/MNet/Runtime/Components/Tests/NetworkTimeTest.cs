@@ -23,9 +23,13 @@ namespace MNet
 	{
 		public float time;
 
+		public float delta;
+
 		void Update()
         {
 			time = NetworkAPI.Time.Seconds;
+
+			delta = NetworkAPI.Time.Delta.Seconds;
         }
 	}
 }
