@@ -55,7 +55,7 @@ namespace StressClient
             }
 
             {
-                var request = new ReadyClientRequest();
+                var request = ReadyClientRequest.Write();
 
                 var message = NetworkMessage.Write(request);
 
