@@ -87,7 +87,7 @@ namespace MNet
 
             var context = client.Context;
 
-            context.RegisterMessage(client, raw, mode);
+            context.RegisterMessages(client, raw, mode);
         }
 
         protected virtual void RemoveConnection(TConnection connection)

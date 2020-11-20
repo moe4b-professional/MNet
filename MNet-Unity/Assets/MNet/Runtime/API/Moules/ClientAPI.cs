@@ -42,9 +42,16 @@ namespace MNet
 
             public static IReadOnlyList<NetworkEntity> Entities => Self?.Entities;
 
+            public static MessageSendQueue SendQueue { get; private set; }
+
             public static void Configure()
             {
 
+            }
+
+            static void Update()
+            {
+                SendQueue.Resolve(Realtime.Send);
             }
 
             public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -56,9 +63,10 @@ namespace MNet
                 }
 
                 var message = NetworkMessage.Write(payload);
-                var raw = NetworkSerializer.Serialize(message);
 
-                return Realtime.Send(raw, mode);
+                SendQueue.Add(message, mode);
+
+                return true;
             }
 
             public delegate void ConnectDelegate();
@@ -215,6 +223,10 @@ namespace MNet
 
             static Client()
             {
+                IsReady = false;
+
+                SendQueue = new MessageSendQueue();
+
                 Realtime.OnConnect += ConnectCallback;
                 Realtime.OnMessage += MessageCallback;
                 Realtime.OnDisconnect += DisconnectedCallback;
@@ -222,7 +234,7 @@ namespace MNet
                 Room.OnSpawnEntity += SpawnEntityCallback;
                 Room.OnDestroyEntity += DestroyEntityCallback;
 
-                IsReady = false;
+                NetworkAPI.OnUpdate += Update;
             }
         }
     }

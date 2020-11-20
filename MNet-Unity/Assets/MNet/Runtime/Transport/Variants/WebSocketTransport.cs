@@ -60,12 +60,7 @@ namespace MNet
             QueueConnect();
         }
 
-        void RecievedMessageCallback(object sender, MessageEventArgs args)
-        {
-            var message = NetworkMessage.Read(args.RawData);
-
-            QueueRecievedMessage(message, DeliveryMode.Reliable);
-        }
+        void RecievedMessageCallback(object sender, MessageEventArgs args) => RegisterMessages(args.RawData, DeliveryMode.Reliable);
 
         void CloseCallback(object sender, CloseEventArgs args)
         {

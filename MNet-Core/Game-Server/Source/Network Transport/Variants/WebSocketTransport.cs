@@ -68,7 +68,7 @@ namespace MNet
             {
                 base.OnMessage(args);
 
-                TransportContext.RegisterMessage(Client, args.RawData, DeliveryMode.Reliable);
+                TransportContext.RegisterMessages(Client, args.RawData, DeliveryMode.Reliable);
             }
 
             protected override void OnClose(CloseEventArgs args)
@@ -92,11 +92,6 @@ namespace MNet
             if (client.IsOpen == false) return;
 
             Sessions.SendTo(raw, client.InternalID);
-        }
-
-        public override void Broadcast(byte[] raw, DeliveryMode mode)
-        {
-            Sessions.Broadcast(raw);
         }
 
         public override void Disconnect(WebSocketTransportClient client, DisconnectCode code = DisconnectCode.Normal)

@@ -20,11 +20,11 @@ namespace MNet
         Thread thread;
         Stopwatch stopwatch;
 
-        bool run = true;
+        public bool Running { get; protected set; } = true;
 
         public void Start()
         {
-            run = true;
+            Running = true;
 
             thread.Start();
         }
@@ -33,7 +33,7 @@ namespace MNet
         {
             stopwatch = new Stopwatch();
 
-            while (run) Tick();
+            while (Running) Tick();
         }
 
         public delegate void Delegate();
@@ -59,7 +59,7 @@ namespace MNet
 
         public void Stop()
         {
-            run = false;
+            Running = false;
         }
 
         public Scheduler(long interval, Delegate callback)

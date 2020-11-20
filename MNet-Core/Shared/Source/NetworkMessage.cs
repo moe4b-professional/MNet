@@ -84,10 +84,7 @@ namespace MNet
 
         public NetworkMessage() { }
 
-        public static NetworkMessage Read(byte[] data)
-        {
-            return NetworkSerializer.Deserialize<NetworkMessage>(data);
-        }
+        public static NetworkMessage Read(byte[] data) => NetworkSerializer.Deserialize<NetworkMessage>(data);
 
         public static NetworkMessage Write<T>(T payload)
         {

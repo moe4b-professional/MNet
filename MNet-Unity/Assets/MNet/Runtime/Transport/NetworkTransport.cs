@@ -82,6 +82,13 @@ namespace MNet
 
         public abstract void Send(byte[] raw, DeliveryMode mode);
 
+        protected void RegisterMessages(byte[] raw, DeliveryMode mode)
+        {
+            var messages = NetworkSerializer.Deserialize<NetworkMessage[]>(raw);
+
+            for (int i = 0; i < messages.Length; i++) QueueRecievedMessage(messages[i], mode);
+        }
+
         public abstract void Close();
 
         public NetworkTransport()

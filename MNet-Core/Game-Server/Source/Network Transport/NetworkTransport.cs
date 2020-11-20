@@ -78,9 +78,6 @@ namespace MNet
 
         void Send(NetworkClientID target, byte[] raw, DeliveryMode mode);
 
-        void Broadcast(ICollection<NetworkClientID> targets, byte[] raw, DeliveryMode mode);
-        void Broadcast(byte[] raw, DeliveryMode mode);
-
         void Disconnect(NetworkClientID clientID, DisconnectCode code);
     }
 
@@ -206,8 +203,8 @@ namespace MNet
         }
         #endregion
 
-        #region RegisterMessage
-        public virtual void RegisterMessage(TConnection connection, byte[] raw, DeliveryMode mode)
+        #region Register Message
+        public virtual void RegisterMessages(TConnection connection, byte[] raw, DeliveryMode mode)
         {
             if (Connections.TryGetValue(connection, out var client) == false)
             {
@@ -215,14 +212,14 @@ namespace MNet
                 return;
             }
 
-            RegisterMessage(client, raw, mode);
+            RegisterMessages(client, raw, mode);
         }
 
-        public virtual void RegisterMessage(TClient sender, byte[] raw, DeliveryMode mode)
+        public virtual void RegisterMessages(TClient sender, byte[] raw, DeliveryMode mode)
         {
-            var message = NetworkMessage.Read(raw);
+            var messages = NetworkSerializer.Deserialize<NetworkMessage[]>(raw);
 
-            QueueMessage(sender, message, raw, mode);
+            for (int i = 0; i < messages.Length; i++) QueueMessage(sender, messages[i], raw, mode);
         }
         #endregion
 
@@ -243,44 +240,6 @@ namespace MNet
 
         public abstract void Send(TClient target, byte[] raw, DeliveryMode mode);
         #endregion
-
-        #region Broadcast
-        public virtual void Broadcast(byte[] raw, DeliveryMode mode) => Broadcast(Clients.Values, raw, mode);
-
-        public virtual void Broadcast(ICollection<NetworkClientID> targets, byte[] raw, DeliveryMode mode)
-        {
-            var collection = GetClientsFrom(targets);
-
-            Broadcast(collection, raw, mode);
-        }
-
-        public virtual void Broadcast(ICollection<TClient> targets, byte[] raw, DeliveryMode mode)
-        {
-            foreach (var target in targets)
-            {
-                if (target == null) continue;
-
-                Send(target, raw, mode);
-            }
-        }
-        #endregion
-
-        public TClient[] GetClientsFrom(ICollection<NetworkClientID> targets)
-        {
-            var collection = new TClient[targets.Count];
-
-            var index = 0;
-
-            foreach (var target in targets)
-            {
-                if (Clients.TryGetValue(target, out collection[index]) == false)
-                    Log.Warning($"No Transport Client Registered With ID: {target}");
-
-                index += 1;
-            }
-
-            return collection;
-        }
 
         #region Disconnect
         public virtual void Disconnect(TClient client) => Disconnect(client, DisconnectCode.Normal);

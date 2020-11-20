@@ -67,11 +67,9 @@ namespace MNet
             var raw = reader.GetRemainingBytes();
             reader.Recycle();
 
-            var message = NetworkMessage.Read(raw);
-
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            QueueRecievedMessage(message, mode);
+            RegisterMessages(raw, mode);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)

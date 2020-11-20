@@ -63,6 +63,7 @@
     <Compile Include="Source\HelperExtensions.cs" />
     <Compile Include="Source\Lobby.cs" />
     <Compile Include="Source\Log.cs" />
+    <Compile Include="Source\MessageSendQueue.cs" />
     <Compile Include="Source\NetTuple.cs" />
     <Compile Include="Source\Network Serialization\NetworkSerializationHelper.cs" />
     <Compile Include="Source\Network Serialization\NetworkSerializationResolver.cs" />

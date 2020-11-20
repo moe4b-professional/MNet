@@ -87,7 +87,7 @@ namespace MNet
 
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            context.RegisterMessage(peer, raw, mode);
+            context.RegisterMessages(peer, raw, mode);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

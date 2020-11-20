@@ -31,6 +31,8 @@ namespace MNet
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
         public static NetworkClientInfo ReadInfo(NetworkClient client) => client.ReadInfo();
 
+        public MessageSendQueue SendQueue { get; protected set; }
+
         public override string ToString() => ID.ToString();
 
         public NetworkClient(NetworkClientInfo info)
@@ -38,6 +40,8 @@ namespace MNet
             this.Info = info;
 
             Entities = new List<NetworkEntity>();
+
+            SendQueue = new MessageSendQueue();
         }
     }
 }
