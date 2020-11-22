@@ -22,7 +22,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class RpcRequest : INetworkSerializable
+    public struct RpcRequest : INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -36,13 +36,13 @@ namespace MNet
         byte[] raw;
         public byte[] Raw { get { return raw; } }
 
-        protected RpcType type;
+        RpcType type;
         public RpcType Type => type;
 
         RpcBufferMode bufferMode;
         public RpcBufferMode BufferMode => bufferMode;
 
-        protected NetworkClientID target;
+        NetworkClientID target;
         public NetworkClientID Target => target;
 
         ushort callback;
@@ -65,7 +65,7 @@ namespace MNet
             }
         }
 
-        public virtual void Select(INetworkSerializableResolver.Context context)
+        public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref entity);
             context.Select(ref behaviour);
@@ -92,8 +92,6 @@ namespace MNet
         }
 
         public override string ToString() => $"RPC Request: {method}";
-
-        public RpcRequest() { }
 
         public static byte[] Serialize(params object[] arguments)
         {
@@ -163,7 +161,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class RpcCommand : INetworkSerializable
+    public struct RpcCommand : INetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
@@ -177,7 +175,7 @@ namespace MNet
         string method;
         public string Method { get { return method; } }
 
-        NetworkTimeSpan time = default;
+        NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
 
         byte[] raw;
@@ -232,8 +230,6 @@ namespace MNet
             }
         }
 
-        public RpcCommand() { }
-
         public static RpcCommand Write(NetworkClientID sender, RpcRequest request, NetworkTimeSpan time)
         {
             var command = new RpcCommand()
@@ -269,7 +265,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class RprRequest : INetworkSerializable
+    public struct RprRequest : INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
@@ -299,11 +295,6 @@ namespace MNet
         }
 
         public override string ToString() => $"RPR Request: {id}";
-
-        public RprRequest()
-        {
-
-        }
 
         public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort id, RprResult result)
         {
@@ -336,7 +327,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class RprCommand : INetworkSerializable
+    public struct RprCommand : INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
@@ -365,11 +356,6 @@ namespace MNet
             context.Select(ref result);
 
             if(result == RprResult.Success) context.Select(ref raw);
-        }
-
-        public RprCommand()
-        {
-
         }
 
         public static RprCommand Write(NetworkEntityID entity, RprRequest request) => Write(entity, request.ID, request.Result, request.Raw);

@@ -50,17 +50,17 @@ namespace MNet
 
         #region Message
         public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
-        public event MessageDelegate OnRecievedMessage;
-        void InvokeRecievedMessage(NetworkMessage message, DeliveryMode mode)
+        public event MessageDelegate OnMessage;
+        void InvokeMessage(NetworkMessage message, DeliveryMode mode)
         {
-            OnRecievedMessage?.Invoke(message, mode);
+            OnMessage?.Invoke(message, mode);
         }
 
-        protected virtual void QueueRecievedMessage(NetworkMessage message, DeliveryMode mode)
+        protected virtual void QueueMessage(NetworkMessage message, DeliveryMode mode)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeRecievedMessage(message, mode);
+            void Action() => InvokeMessage(message, mode);
         }
         #endregion
 
@@ -86,7 +86,7 @@ namespace MNet
         {
             var messages = NetworkSerializer.Deserialize<NetworkMessage[]>(raw);
 
-            for (int i = 0; i < messages.Length; i++) QueueRecievedMessage(messages[i], mode);
+            for (int i = 0; i < messages.Length; i++) QueueMessage(messages[i], mode);
         }
 
         public abstract void Close();

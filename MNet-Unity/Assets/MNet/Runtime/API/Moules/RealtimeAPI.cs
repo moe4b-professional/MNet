@@ -30,10 +30,22 @@ namespace MNet
 
             public static void Configure()
             {
-                Transport = CreateTransport(Config.Transport);
+                Server.Master.OnInfo += MasterServerInfoCallback;
+            }
+
+            static void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
+            {
+                Server.Master.OnInfo -= MasterServerInfoCallback;
+
+                Initialize(info.RemoteConfig);
+            }
+
+            static void Initialize(RemoteConfig config)
+            {
+                Transport = CreateTransport(config.Transport);
 
                 Transport.OnConnect += ConnectCallback;
-                Transport.OnRecievedMessage += MessageCallback;
+                Transport.OnMessage += MessageCallback;
                 Transport.OnDisconnect += DisconnectCallback;
             }
 

@@ -61,7 +61,7 @@ namespace MNet
             {
                 var message = NetworkMessage.Read(raw);
 
-                QueueRecievedMessage(message, mode);
+                QueueMessage(message, mode);
             }
             else
             {

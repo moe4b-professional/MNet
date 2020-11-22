@@ -36,6 +36,8 @@ namespace MNet
 
                             public static string Remove { get; private set; } = Path + nameof(Remove);
                         }
+
+                        public static string RemoteConfig { get; private set; } = Path + nameof(RemoteConfig);
                     }
                 }
             }

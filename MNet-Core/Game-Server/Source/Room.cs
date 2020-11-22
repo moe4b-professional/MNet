@@ -54,6 +54,8 @@ namespace MNet
 
         public Scheduler Scheduler { get; protected set; }
 
+        public const long DefaultTickInterval = 50;
+
         public DateTime Timestamp { get; protected set; }
 
         public NetworkTimeSpan Time { get; protected set; }
@@ -116,12 +118,12 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            SendTo(target, message, mode);
+            Send(message, target, mode);
 
             return message;
         }
 
-        void SendTo(NetworkClient target, NetworkMessage message, DeliveryMode mode = DeliveryMode.Reliable)
+        void Send(NetworkMessage message, NetworkClient target, DeliveryMode mode = DeliveryMode.Reliable)
         {
             target.SendQueue.Add(message, mode);
         }
@@ -150,7 +152,7 @@ namespace MNet
             {
                 if (condition(client) == false) continue;
 
-                SendTo(client, message, mode);
+                Send(message, client, mode);
             }
 
             return message;
@@ -163,7 +165,9 @@ namespace MNet
             {
                 foreach (var delivery in client.SendQueue.Deliveries)
                 {
-                    var binary = delivery.Read();
+                    if (delivery.Empty) continue;
+
+                    var binary = delivery.Serialize();
 
                     TransportContext.Send(client.ID, binary, delivery.Mode);
                 }
@@ -175,13 +179,13 @@ namespace MNet
         {
             Log.Info($"Starting Room {ID}");
 
+            Timestamp = DateTime.UtcNow;
+
             TransportContext = GameServer.Realtime.Register(ID.Value);
 
             TransportContext.OnConnect += ClientConnected;
             TransportContext.OnMessage += MessageRecievedCallback;
             TransportContext.OnDisconnect += ClientDisconnected;
-
-            Timestamp = DateTime.UtcNow;
 
             Scheduler.Start();
         }
@@ -596,7 +600,7 @@ namespace MNet
 
             SceneObjects = new List<NetworkEntity>();
 
-            Scheduler = new Scheduler(50, Tick);
+            Scheduler = new Scheduler(DefaultTickInterval, Tick);
         }
     }
 }

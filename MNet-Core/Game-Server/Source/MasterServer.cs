@@ -26,52 +26,53 @@ namespace MNet
 
         public static HttpClient Client { get; private set; }
 
-        public static RegisterGameServerResult Register(GameServerInfo info, string key)
+        public static bool Register(GameServerInfo info, string key, out RegisterGameServerResponse response)
         {
-            var request = new RegisterGameServerRequest(info, key);
-            var content = RestAPI.WriteContent(request);
+            var payload = new RegisterGameServerRequest(info, key);
 
-            HttpResponseMessage response;
+            if (PUT(payload, Constants.Server.Master.Rest.Requests.Server.Register, out response) == false)
+                return false;
 
-            try
-            {
-                response = Client.PutAsync(URL + Constants.Server.Master.Rest.Requests.Server.Register, content).Result;
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"{ex.Message}");
-                return null;
-            }
-
-            var result = RestAPI.Read<RegisterGameServerResult>(response);
-
-            Log.Info($"Register Server: {result.Success}");
-
-            return result;
+            return true;
         }
 
-        public static RemoveGameServerResult Remove(GameServerID id, string key)
+        public static bool Remove(GameServerID id, string key)
         {
-            var request = new RemoveGameServerRequest(id, key);
-            var content = RestAPI.WriteContent(request);
+            var payload = new RemoveGameServerRequest(id, key);
+
+            return PUT(payload, Constants.Server.Master.Rest.Requests.Server.Remove, out RemoveGameServerResponse response);
+        }
+
+        static bool PUT<TPayload, TResult>(TPayload payload, string path, out TResult result)
+        {
+            var content = RestAPI.WriteContent(payload);
 
             HttpResponseMessage response;
 
             try
             {
-                response = Client.PostAsync(URL + Constants.Server.Master.Rest.Requests.Server.Remove, content).Result;
+                response = Client.PutAsync(URL + path, content).Result;
             }
             catch (Exception ex)
             {
-                Log.Error($"{ex.Message}");
-                return null;
+                Log.Error($"{path}: {ex.Message}");
+
+                result = default;
+                return false;
             }
 
-            var result = RestAPI.Read<RemoveGameServerResult>(response);
+            if (response.IsSuccessStatusCode == false)
+            {
+                var code = (RestStatusCode)response.StatusCode;
 
-            Log.Info($"Remove Server: {result.Success}");
+                Log.Error($"{path}: {code}");
 
-            return result;
+                result = default;
+                return false;
+            }
+
+            result = RestAPI.Read<TResult>(response);
+            return true;
         }
 
         static MasterServer()

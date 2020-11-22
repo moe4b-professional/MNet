@@ -13,7 +13,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public sealed class NetworkMessage : INetworkSerializable
+    public struct NetworkMessage : INetworkSerializable
     {
         ushort code;
         public ushort Code { get { return code; } }
@@ -81,8 +81,6 @@ namespace MNet
             context.Select(ref code);
             context.Select(ref raw);
         }
-
-        public NetworkMessage() { }
 
         public static NetworkMessage Read(byte[] data) => NetworkSerializer.Deserialize<NetworkMessage>(data);
 

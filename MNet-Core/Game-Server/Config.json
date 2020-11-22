@@ -3,6 +3,5 @@
   "MasterAddress": "localhost",
   "PublicAddress": null,
   "Region": "Local",
-  "RestScheme": "HTTP",
-  "NetworkTransport": "WebSocketSharp"
+  "RestScheme": "HTTP"
 }

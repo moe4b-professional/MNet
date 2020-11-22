@@ -41,6 +41,8 @@ namespace MNet
             {
                 throw;
             }
+
+            while (true) Console.ReadLine();
         }
 
         static void Procedure()
@@ -60,20 +62,19 @@ namespace MNet
             Log.Info($"Server Region: {Region}");
 
             MasterServer.Configure(Config.MasterAddress);
-            MasterServer.Register(GetInfo(), ApiKey.Token);
 
+            if (Register() == false) return;
+            
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
 
-            Realtime = new RealtimeAPI(Config.NetworkTransport);
+            Realtime = new RealtimeAPI(Config.Transport);
             Realtime.Start();
 
             Lobby = new Lobby();
             Lobby.Configure();
 
             Sandbox.Run();
-
-            while (true) Console.ReadLine();
         }
 
         static void ResolveAddress()
@@ -104,6 +105,21 @@ namespace MNet
 
                 Log.Error($"Public IP Retrieval Exception: {ex}");
             }
+        }
+
+        static bool Register()
+        {
+            if (MasterServer.Register(GetInfo(), ApiKey.Token, out var response) == false)
+            {
+                Log.Error("Server Registeration Failed");
+                return false;
+            }
+
+            Log.Info("Server Registeration Success");
+
+            Config.Append(response.RemoteConfig);
+
+            return true;
         }
     }
 

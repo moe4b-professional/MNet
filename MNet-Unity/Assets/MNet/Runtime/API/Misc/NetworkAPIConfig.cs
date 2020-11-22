@@ -49,10 +49,6 @@ namespace MNet
         public RestScheme RestScheme => restScheme;
 
         [SerializeField]
-        protected NetworkTransportType transport;
-        public NetworkTransportType Transport => transport;
-
-        [SerializeField]
         protected VersionProperty version = new VersionProperty("0.0.1");
         public Version Version { get; protected set; }
 

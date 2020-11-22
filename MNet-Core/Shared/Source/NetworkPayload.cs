@@ -194,7 +194,7 @@ namespace MNet
     #region REST
     [Preserve]
     [Serializable]
-    public sealed class CreateRoomRequest : INetworkSerializable
+    public struct CreateRoomRequest : INetworkSerializable
     {
         AppID appID;
         public AppID AppID => appID;
@@ -220,7 +220,6 @@ namespace MNet
             context.Select(ref attributes);
         }
 
-        CreateRoomRequest() { }
         public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             this.appID = appID;
@@ -234,7 +233,7 @@ namespace MNet
     #region Master Server
     [Preserve]
     [Serializable]
-    public class MasterServerInfoRequest : INetworkSerializable
+    public struct MasterServerInfoRequest : INetworkSerializable
     {
         Version apiVersion;
         public Version ApiVersion => apiVersion;
@@ -256,7 +255,6 @@ namespace MNet
             context.Select(ref gameVersion);
         }
 
-        MasterServerInfoRequest() { }
         public MasterServerInfoRequest(AppID appID, Version gameVersion) : this()
         {
             apiVersion = Constants.ApiVersion;
@@ -267,7 +265,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class MasterServerInfoResponse : INetworkSerializable
+    public struct MasterServerInfoResponse : INetworkSerializable
     {
         GameServerInfo[] servers;
         public GameServerInfo[] Servers => servers;
@@ -276,22 +274,26 @@ namespace MNet
 
         public GameServerInfo this[int index] => servers[index];
 
+        RemoteConfig remoteConfig;
+        public RemoteConfig RemoteConfig => remoteConfig;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref servers);
+            context.Select(ref remoteConfig);
         }
 
-        MasterServerInfoResponse() { }
-        public MasterServerInfoResponse(GameServerInfo[] servers)
+        public MasterServerInfoResponse(GameServerInfo[] servers, RemoteConfig remoteConfig)
         {
             this.servers = servers;
+            this.remoteConfig = remoteConfig;
         }
     }
     #endregion
 
     [Preserve]
     [Serializable]
-    public sealed class GetLobbyInfoRequest : INetworkSerializable
+    public struct GetLobbyInfoRequest : INetworkSerializable
     {
         AppID appID;
         public AppID AppID => appID;
@@ -305,7 +307,6 @@ namespace MNet
             context.Select(ref version);
         }
 
-        GetLobbyInfoRequest() { }
         public GetLobbyInfoRequest(AppID appID, Version version)
         {
             this.appID = appID;
@@ -318,7 +319,7 @@ namespace MNet
     #region Register Client
     [Preserve]
     [Serializable]
-    public sealed class RegisterClientRequest : INetworkSerializable
+    public struct RegisterClientRequest : INetworkSerializable
     {
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
@@ -328,7 +329,6 @@ namespace MNet
             context.Select(ref profile);
         }
 
-        RegisterClientRequest() { }
         public RegisterClientRequest(NetworkClientProfile profile)
         {
             this.profile = profile;
@@ -337,7 +337,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class RegisterClientResponse : INetworkSerializable
+    public struct RegisterClientResponse : INetworkSerializable
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
@@ -351,7 +351,6 @@ namespace MNet
             context.Select(ref room);
         }
 
-        RegisterClientResponse() { }
         public RegisterClientResponse(NetworkClientID id, RoomInfo room)
         {
             this.id = id;
@@ -363,9 +362,9 @@ namespace MNet
     #region Ready Client
     [Preserve]
     [Serializable]
-    public sealed class ReadyClientRequest : INetworkSerializable
+    public struct ReadyClientRequest : INetworkSerializable
     {
-        DateTime timestamp = default;
+        DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -373,7 +372,6 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        ReadyClientRequest() { }
         ReadyClientRequest(DateTime timestamp)
         {
             this.timestamp = timestamp;
@@ -384,7 +382,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class ReadyClientResponse : INetworkSerializable
+    public struct ReadyClientResponse : INetworkSerializable
     {
         NetworkClientInfo[] clients;
         public NetworkClientInfo[] Clients => clients;
@@ -395,7 +393,7 @@ namespace MNet
         List<NetworkMessage> buffer;
         public List<NetworkMessage> Buffer => buffer;
 
-        RoomTimeResponse time = default;
+        RoomTimeResponse time;
         public RoomTimeResponse Time => time;
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -406,7 +404,6 @@ namespace MNet
             context.Select(ref time);
         }
 
-        ReadyClientResponse() { }
         public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, List<NetworkMessage> buffer, RoomTimeResponse time)
         {
             this.clients = clients;
@@ -420,7 +417,7 @@ namespace MNet
     #region Spawn Entity
     [Preserve]
     [Serializable]
-    public sealed class SpawnEntityRequest : INetworkSerializable
+    public struct SpawnEntityRequest : INetworkSerializable
     {
         NetworkEntityType type;
         public NetworkEntityType Type => type;
@@ -459,8 +456,6 @@ namespace MNet
             }
         }
 
-        SpawnEntityRequest() { }
-
         public static SpawnEntityRequest Write(string resource, AttributesCollection attributes, NetworkClientID? owner = null)
         {
             var request = new SpawnEntityRequest()
@@ -489,7 +484,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class SpawnEntityCommand : INetworkSerializable
+    public struct SpawnEntityCommand : INetworkSerializable
     {
         NetworkClientID owner;
         public NetworkClientID Owner { get { return owner; } }
@@ -533,8 +528,6 @@ namespace MNet
             }
         }
 
-        SpawnEntityCommand() { }
-
         public static SpawnEntityCommand Write(NetworkClientID owner, NetworkEntityID id, SpawnEntityRequest request)
         {
             var command = new SpawnEntityCommand()
@@ -556,7 +549,7 @@ namespace MNet
     #region Destroy Entity
     [Preserve]
     [Serializable]
-    public sealed class DestroyEntityRequest : INetworkSerializable
+    public struct DestroyEntityRequest : INetworkSerializable
     {
         NetworkEntityID id;
         public NetworkEntityID ID => id;
@@ -566,7 +559,6 @@ namespace MNet
             context.Select(ref id);
         }
 
-        DestroyEntityRequest() { }
         public DestroyEntityRequest(NetworkEntityID id)
         {
             this.id = id;
@@ -575,7 +567,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class DestroyEntityCommand : INetworkSerializable
+    public struct DestroyEntityCommand : INetworkSerializable
     {
         NetworkEntityID id;
         public NetworkEntityID ID => id;
@@ -585,7 +577,6 @@ namespace MNet
             context.Select(ref id);
         }
 
-        DestroyEntityCommand() { }
         public DestroyEntityCommand(NetworkEntityID id)
         {
             this.id = id;
@@ -596,7 +587,7 @@ namespace MNet
     #region Connection
     [Preserve]
     [Serializable]
-    public sealed class ClientConnectedPayload : INetworkSerializable
+    public struct ClientConnectedPayload : INetworkSerializable
     {
         NetworkClientInfo info;
         public NetworkClientInfo Info => info;
@@ -610,7 +601,6 @@ namespace MNet
             context.Select(ref info);
         }
 
-        ClientConnectedPayload() { }
         public ClientConnectedPayload(NetworkClientInfo info)
         {
             this.info = info;
@@ -619,7 +609,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class ClientDisconnectPayload : INetworkSerializable
+    public struct ClientDisconnectPayload : INetworkSerializable
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
@@ -629,7 +619,6 @@ namespace MNet
             context.Select(ref id);
         }
 
-        ClientDisconnectPayload() { }
         public ClientDisconnectPayload(NetworkClientID id)
         {
             this.id = id;
@@ -639,7 +628,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class ChangeMasterCommand : INetworkSerializable
+    public struct ChangeMasterCommand : INetworkSerializable
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
@@ -649,7 +638,6 @@ namespace MNet
             context.Select(ref id);
         }
 
-        ChangeMasterCommand() { }
         public ChangeMasterCommand(NetworkClientID id)
         {
             this.id = id;
@@ -659,9 +647,9 @@ namespace MNet
     #region Time
     [Preserve]
     [Serializable]
-    public sealed class RoomTimeRequest : INetworkSerializable
+    public struct RoomTimeRequest : INetworkSerializable
     {
-        DateTime timestamp = default;
+        DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -669,7 +657,6 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        RoomTimeRequest() { }
         RoomTimeRequest(DateTime timestamp)
         {
             this.timestamp = timestamp;
@@ -680,12 +667,12 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class RoomTimeResponse : INetworkSerializable
+    public struct RoomTimeResponse : INetworkSerializable
     {
-        NetworkTimeSpan time = default;
+        NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
 
-        DateTime requestTimestamp = default;
+        DateTime requestTimestamp;
         public DateTime RequestTimestamp => requestTimestamp;
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -693,8 +680,6 @@ namespace MNet
             context.Select(ref time);
             context.Select(ref requestTimestamp);
         }
-
-        RoomTimeResponse() { }
 
         public RoomTimeResponse(NetworkTimeSpan time, DateTime requestTimestamp)
         {
@@ -707,9 +692,9 @@ namespace MNet
     #region Ping
     [Preserve]
     [Serializable]
-    public sealed class PingRequest : INetworkSerializable
+    public struct PingRequest : INetworkSerializable
     {
-        DateTime timestamp = default;
+        DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
         public void Select(INetworkSerializableResolver.Context context)
@@ -717,7 +702,6 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        PingRequest() { }
         PingRequest(DateTime timestamp)
         {
             this.timestamp = timestamp;
@@ -728,25 +712,18 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public sealed class PingResponse : INetworkSerializable
+    public struct PingResponse : INetworkSerializable
     {
-        DateTime timestamp = default;
+        DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
-        public TimeSpan TimeSpan { get; private set; }
-
-        public void Process()
-        {
-            TimeSpan = (DateTime.UtcNow - timestamp);
-            TimeSpan = (DateTime.UtcNow - timestamp);
-        }
+        public TimeSpan GetTimeSpan() => DateTime.UtcNow - timestamp;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref timestamp);
         }
 
-        PingResponse() { }
         public PingResponse(DateTime timestamp)
         {
             this.timestamp = timestamp;

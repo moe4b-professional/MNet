@@ -57,6 +57,8 @@ namespace MNet
         #region Callbacks
         void OpenCallback(object sender, EventArgs args)
         {
+            Socket.DisableNagleAlgorithm();
+
             QueueConnect();
         }
 

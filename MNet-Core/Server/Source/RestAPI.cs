@@ -56,6 +56,7 @@ namespace MNet
 
         //Static Utility
         #region Write
+        public static void Write(SharpHttpResponse response, RestStatusCode code) => Write(response, code, code.ToString());
         public static void Write(SharpHttpResponse response, RestStatusCode code, string message)
         {
             var data = Encoding.UTF8.GetBytes(message);
@@ -111,7 +112,6 @@ namespace MNet
             }
         }
         public static TPayload Read<TPayload>(HttpResponseMessage response)
-            where TPayload : new()
         {
             var binary = response.Content.ReadAsByteArrayAsync().Result;
 

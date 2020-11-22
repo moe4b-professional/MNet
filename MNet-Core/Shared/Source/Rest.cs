@@ -17,6 +17,7 @@ namespace MNet
         InvalidPayload = 601,
         InvalidAppID = 603,
         VersionNotSupported = 604,
+        InvalidApiKey = 605,
         #endregion
 
         #region Default

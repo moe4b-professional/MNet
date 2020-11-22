@@ -7,7 +7,7 @@ namespace MNet
     #region Register
     [Preserve]
     [Serializable]
-    public class RegisterGameServerRequest : INetworkSerializable
+    public struct RegisterGameServerRequest : INetworkSerializable
     {
         GameServerInfo info;
         public GameServerInfo Info => info;
@@ -25,7 +25,6 @@ namespace MNet
             context.Select(ref key);
         }
 
-        public RegisterGameServerRequest() { }
         public RegisterGameServerRequest(GameServerInfo info, string key)
         {
             this.info = info;
@@ -35,20 +34,19 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class RegisterGameServerResult : INetworkSerializable
+    public struct RegisterGameServerResponse : INetworkSerializable
     {
-        bool success;
-        public bool Success => success;
+        RemoteConfig remoteConfig;
+        public RemoteConfig RemoteConfig => remoteConfig;
 
         public void Select(INetworkSerializableResolver.Context context)
         {
-            context.Select(ref success);
+            context.Select(ref remoteConfig);
         }
 
-        public RegisterGameServerResult() { }
-        public RegisterGameServerResult(bool success)
+        public RegisterGameServerResponse(RemoteConfig remoteConfig)
         {
-            this.success = success;
+            this.remoteConfig = remoteConfig;
         }
     }
     #endregion
@@ -56,7 +54,7 @@ namespace MNet
     #region Remove
     [Preserve]
     [Serializable]
-    public class RemoveGameServerRequest : INetworkSerializable
+    public struct RemoveGameServerRequest : INetworkSerializable
     {
         GameServerID id;
         public GameServerID ID => id;
@@ -70,7 +68,6 @@ namespace MNet
             context.Select(ref key);
         }
 
-        public RemoveGameServerRequest() { }
         public RemoveGameServerRequest(GameServerID id, string key)
         {
             this.id = id;
@@ -80,7 +77,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class RemoveGameServerResult : INetworkSerializable
+    public struct RemoveGameServerResponse : INetworkSerializable
     {
         bool success;
         public bool Success => success;
@@ -90,8 +87,7 @@ namespace MNet
             context.Select(ref success);
         }
 
-        public RemoveGameServerResult() { }
-        public RemoveGameServerResult(bool success)
+        public RemoveGameServerResponse(bool success)
         {
             this.success = success;
         }

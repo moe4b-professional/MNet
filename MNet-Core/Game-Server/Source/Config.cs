@@ -26,8 +26,7 @@ namespace MNet
         [JsonProperty]
         public RestScheme RestScheme { get; protected set; }
 
-        [JsonProperty]
-        public NetworkTransportType NetworkTransport { get; protected set; }
+        public NetworkTransportType Transport { get; protected set; }
 
         protected override void WriteDefaults()
         {
@@ -41,8 +40,11 @@ namespace MNet
             Region = GameServerRegion.Local;
 
             RestScheme = RestScheme.HTTP;
+        }
 
-            NetworkTransport = NetworkTransportType.WebSocketSharp;
+        public virtual void Append(RemoteConfig remote)
+        {
+            Transport = remote.Transport;
         }
 
         public Config() { }

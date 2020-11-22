@@ -128,8 +128,6 @@ namespace MNet
 
         public void InvokeRPR(RprCommand command)
         {
-            if (command == null) throw new ArgumentNullException(nameof(command), "RPC Callback Payload is Null");
-
             if (RPRs.TryGetValue(command.ID, out var bind) == false)
             {
                 Debug.LogError($"Couldn't Find RPR with Code {command.ID} to Invoke On Entity {name}");

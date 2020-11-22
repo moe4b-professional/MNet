@@ -14,6 +14,8 @@ namespace MNet
     {
         public static Config Config { get; private set; }
 
+        public static RemoteConfig RemoteConfig { get; private set; }
+
         public static Dictionary<AppID, AppConfiguration> Apps { get; private set; }
 
         public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
@@ -32,6 +34,8 @@ namespace MNet
             {
                 throw;
             }
+
+            while (true) Console.ReadLine();
         }
 
         static void Procedure()
@@ -44,6 +48,8 @@ namespace MNet
 
             Config = Config.Read();
 
+            RemoteConfig = new RemoteConfig(Config.Transport);
+
             Apps = Config.Apps.ToDictionary(AppConfiguration.SelectID);
 
             Log.Info("Registered Apps:");
@@ -55,8 +61,6 @@ namespace MNet
             Rest.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
             Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
             Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
-
-            while (true) Console.ReadLine();
         }
 
         static GameServerInfo[] Query()
@@ -105,7 +109,7 @@ namespace MNet
 
             var list = Query();
 
-            var info = new MasterServerInfoResponse(list);
+            var info = new MasterServerInfoResponse(list, RemoteConfig);
 
             RestAPI.Write(response, info);
         }
@@ -124,20 +128,16 @@ namespace MNet
                 return;
             }
 
-            var result = RegisterServer(payload);
-            RestAPI.Write(response, result);
-        }
-
-        static RegisterGameServerResult RegisterServer(RegisterGameServerRequest request)
-        {
-            if (request.Key != ApiKey.Token)
+            if (payload.Key != ApiKey.Token)
             {
-                Log.Info($"Server {request.ID} Trying to Register With Invalid API Key");
-                return new RegisterGameServerResult(false);
+                RestAPI.Write(response, RestStatusCode.InvalidApiKey);
+                return;
             }
 
-            RegisterServer(request.Info);
-            return new RegisterGameServerResult(true);
+            RegisterServer(payload.Info);
+
+            var result = new RegisterGameServerResponse(RemoteConfig);
+            RestAPI.Write(response, result);
         }
 
         static GameServer RegisterServer(GameServerInfo info)
@@ -168,7 +168,7 @@ namespace MNet
 
             RemoveServer(payload.ID);
 
-            var result = new RemoveGameServerResult(true);
+            var result = new RemoveGameServerResponse(true);
             RestAPI.Write(response, result);
         }
 
