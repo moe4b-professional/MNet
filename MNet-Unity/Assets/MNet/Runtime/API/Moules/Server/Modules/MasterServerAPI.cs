@@ -53,10 +53,22 @@ namespace MNet
                     {
                         RestAPI.Parse(request, out MasterServerInfoResponse info, out var error);
 
-                        if (error == null) Register(info.Servers);
+                        if (error == null)
+                        {
+                            Register(info.Servers);
+
+                            ConfigRemote(info.RemoteConfig);
+                        }
 
                         OnInfo?.Invoke(info, error);
                     }
+                }
+
+                public delegate void RemoteConfigDelegate(RemoteConfig config);
+                public static event RemoteConfigDelegate OnRemoteConfig;
+                static void ConfigRemote(RemoteConfig config)
+                {
+                    OnRemoteConfig?.Invoke(config);
                 }
 
                 static void Register(IList<GameServerInfo> list)

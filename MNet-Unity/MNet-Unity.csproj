@@ -68,6 +68,9 @@
      <Compile Include="Assets\MNet-Example\Objects\Level\LevelData.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\UI\LevelUI.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\UI\Menu\PauseMenu.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Level\UI\Panel\RoomChatInputPanel.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Level\UI\Panel\RoomLogPanel.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Level\UI\Template\Room Log\RoomLogUITemplate.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Main Menu\MainMenu.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Menu\UIMenu.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Menu\Variants\CreateRoomMenu.cs" />

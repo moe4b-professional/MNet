@@ -19,7 +19,7 @@ namespace MNet
         {
             public DeliveryMode Mode { get; protected set; }
 
-            public Queue<NetworkMessage> Collection { get; protected set; }
+            public List<NetworkMessage> Collection { get; protected set; }
 
             public int Count => Collection.Count;
 
@@ -27,16 +27,16 @@ namespace MNet
 
             public void Add(NetworkMessage message)
             {
-                Collection.Enqueue(message);
+                Collection.Add(message);
             }
 
             public byte[] Serialize()
             {
                 var array = Collection.ToArray();
 
-                Collection.Clear();
-
                 var binary = NetworkSerializer.Serialize(array);
+
+                Collection.Clear();
 
                 return binary;
             }
@@ -45,7 +45,7 @@ namespace MNet
             {
                 this.Mode = mode;
 
-                Collection = new Queue<NetworkMessage>();
+                Collection = new List<NetworkMessage>();
             }
         }
 

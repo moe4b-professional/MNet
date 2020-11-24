@@ -30,18 +30,13 @@ namespace MNet
 
             public static void Configure()
             {
-                Server.Master.OnInfo += MasterServerInfoCallback;
-            }
-
-            static void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
-            {
-                Server.Master.OnInfo -= MasterServerInfoCallback;
-
-                Initialize(info.RemoteConfig);
+                Server.Master.OnRemoteConfig += Initialize;
             }
 
             static void Initialize(RemoteConfig config)
             {
+                Server.Master.OnRemoteConfig -= Initialize;
+
                 Transport = CreateTransport(config.Transport);
 
                 Transport.OnConnect += ConnectCallback;
@@ -49,7 +44,7 @@ namespace MNet
                 Transport.OnDisconnect += DisconnectCallback;
             }
 
-            public static void Connect(GameServerID serverID, RoomID roomID)
+            public static void Connect(GameServerID server, RoomID room)
             {
                 if (IsConnected)
                 {
@@ -59,7 +54,7 @@ namespace MNet
 
                 //Socket.OnError += ErrorCallback; //TODO Implement Transport Error Handling
 
-                Transport.Connect(serverID, roomID);
+                Transport.Connect(server, room);
             }
 
             public static bool Send(byte[] raw, DeliveryMode mode)

@@ -63,18 +63,26 @@ namespace MNet.Example
             {
                 var data = selector(item);
 
-                var instance = Instantiate(prefab);
+                var instance = Create(prefab, data);
 
-                var script = instance.GetComponent<TSelf>();
-                script.SetData(data);
-                action(script, index);
+                action(instance, index);
 
-                templates.Add(script);
+                templates.Add(instance);
 
                 index += 1;
             }
 
             return templates;
+        }
+
+        public static TSelf Create(GameObject prefab, TData data)
+        {
+            var gameObject = Instantiate(prefab);
+
+            var script = gameObject.GetComponent<TSelf>();
+            script.SetData(data);
+
+            return script;
         }
 
         public static void Destroy(TSelf self) => Destroy(self.gameObject);

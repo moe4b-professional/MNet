@@ -64,7 +64,7 @@ namespace MNet
             MasterServer.Configure(Config.MasterAddress);
 
             if (Register() == false) return;
-            
+
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
 
@@ -128,7 +128,7 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-            
+
         }
 
         static void NullableTupleSerialization()
