@@ -29,10 +29,5 @@ namespace MNet.Example
         {
 			
         }
-
-        void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.Escape)) pause.Toggle();
-        }
 	}
 }

@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class RoomLogUITemplate : UITemplate<RoomLogUITemplate, RoomLog>
+	public class RoomLogUITemplate : UITemplate<RoomLogUITemplate, RoomLog.Entry>
 	{
         [SerializeField]
         Text label = default;
@@ -46,19 +46,5 @@ namespace MNet.Example
             label.text = Data.Text;
             background.color = Data.Color;
         }
-    }
-
-    public struct RoomLog
-    {
-        public string Text { get; private set; }
-
-        public Color Color { get; private set; }
-
-        public RoomLog(string text, Color color)
-        {
-            this.Text = text;
-            this.Color = color;
-        }
-        public RoomLog(string text) : this(text, Color.white) { }
     }
 }

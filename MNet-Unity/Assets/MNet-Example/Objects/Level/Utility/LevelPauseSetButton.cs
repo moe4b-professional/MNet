@@ -19,29 +19,26 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class RoomChatInputPanel : UIPanel
+	[RequireComponent(typeof(Button))]
+	public class LevelPauseSetButton : MonoBehaviour
 	{
 		[SerializeField]
-		InputField input = default;
+		LevelPauseMode mode = LevelPauseMode.None;
 
-		[SerializeField]
-		Button send = default;
+		Button button;
 
-		[SerializeField]
-		RoomLogPanel log = default;
+		Level Level => Level.Instance;
 
 		void Start()
         {
-			send.onClick.AddListener(Action);
+			button = GetComponent<Button>();
+
+			button.onClick.AddListener(Action);
         }
 
 		void Action()
         {
-			if (string.IsNullOrEmpty(input.text)) return;
-
-			log.SendChat(input.text);
-
-			input.text = string.Empty;
+			Level.Pause.Set(mode);
         }
 	}
 }

@@ -32,7 +32,7 @@ namespace MNet
 
             public static bool IsBroken { get; private set; } = false;
 
-            const float DeltaBreakingThreshold = 0.5f;
+            const float DeltaBreakingThreshold = 4.0f;
 
             static bool ValidateDelta(NetworkTimeSpan span) => span.Ticks >= 0 && Delta.Seconds < DeltaBreakingThreshold;
 
@@ -46,7 +46,12 @@ namespace MNet
             /// </summary>
             static long offset;
 
-            static void Set(RoomTimeResponse response) => Set(response.Time, DateTime.UtcNow - response.RequestTimestamp);
+            static void Set(RoomTimeResponse response)
+            {
+                var rtt = DateTime.UtcNow - response.RequestTimestamp;
+
+                Set(response.Time, rtt);
+            }
             static void Set(NetworkTimeSpan value, TimeSpan rtt)
             {
                 stamp = DateTime.UtcNow;
@@ -94,11 +99,11 @@ namespace MNet
 
             static void Break()
             {
+                Debug.LogWarning($"Network Time Broken, Delta: {Delta.Seconds}, Requesting New");
+
                 IsBroken = true;
 
                 Delta = default;
-
-                Debug.LogWarning($"Network Time Broken, Delta: {Delta.Seconds}, Requesting New");
 
                 Request();
             }

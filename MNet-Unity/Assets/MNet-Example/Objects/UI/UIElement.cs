@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using UnityEngine.EventSystems;
+
 namespace MNet.Example
 {
 	public class UIElement : MonoBehaviour, IInitialize
@@ -55,5 +57,14 @@ namespace MNet.Example
 		}
 
 		public virtual void Toggle() => Visible = !Visible;
+
+		//Static Utility
+		public static EventSystem EventSystem => EventSystem.current;
+
+		public static GameObject Selection
+		{
+			get => EventSystem.currentSelectedGameObject;
+			set => EventSystem.SetSelectedGameObject(value);
+		}
 	}
 }

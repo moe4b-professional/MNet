@@ -63,16 +63,6 @@ namespace MNet
             Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
         }
 
-        static GameServerInfo[] Query()
-        {
-            lock (SyncLock)
-            {
-                var list = Servers.ToArray(GameServer.GetInfo);
-
-                return list;
-            }
-        }
-
         static void GetInfo(SharpHttpRequest request, SharpHttpResponse response)
         {
             MasterServerInfoRequest payload;
@@ -112,6 +102,16 @@ namespace MNet
             var info = new MasterServerInfoResponse(list, RemoteConfig);
 
             RestAPI.Write(response, info);
+        }
+
+        static GameServerInfo[] Query()
+        {
+            lock (SyncLock)
+            {
+                var list = Servers.ToArray(GameServer.GetInfo);
+
+                return list;
+            }
         }
 
         #region Register Server

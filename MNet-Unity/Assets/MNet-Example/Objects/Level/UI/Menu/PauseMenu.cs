@@ -21,6 +21,18 @@ namespace MNet.Example
 {
 	public class PauseMenu : UIMenu
 	{
-		
-	}
+        Level Level => Level.Instance;
+
+        public override void Init()
+        {
+            base.Init();
+
+            Level.Pause.OnSet += LevelPauseCallback;
+        }
+
+        void LevelPauseCallback(LevelPauseMode mode)
+        {
+            Visible = mode == LevelPauseMode.Hard;
+        }
+    }
 }

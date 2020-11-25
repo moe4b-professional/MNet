@@ -24,7 +24,7 @@ namespace MNet
     {
         public static class Room
         {
-            public static RoomBasicInfo BasicInfo { get; private set; }
+            public static RoomInfo Info { get; private set; }
 
             #region Master
             public static NetworkClient Master { get; private set; }
@@ -89,6 +89,11 @@ namespace MNet
 
             #region Self Callbacks
             static void SelfConnectCallback() => Setup();
+
+            static void SelfRegisterCallback(RegisterClientResponse response)
+            {
+                Info = response.Room;
+            }
 
             static void SelfReadyCallback(ReadyClientResponse response) => Ready(response);
 
@@ -271,9 +276,7 @@ namespace MNet
             static void Setup()
             {
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
-
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-
                 SceneObjects = new List<NetworkEntity>();
             }
 
@@ -437,7 +440,9 @@ namespace MNet
                     entity.Despawn();
                 }
 
-                Master = null;
+                Info = default;
+
+                Master = default;
 
                 IsApplyingMessageBuffer = false;
 
@@ -455,6 +460,8 @@ namespace MNet
                 Client.OnDisconnect += SelfDisconnectCallback;
 
                 Client.OnMessage += MessageCallback;
+
+                Client.OnRegister += SelfRegisterCallback;
             }
         }
     }

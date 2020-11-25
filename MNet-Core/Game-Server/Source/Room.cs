@@ -35,7 +35,7 @@ namespace MNet
         public RoomBasicInfo GetBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
         public static RoomBasicInfo GetBasicInfo(Room room) => room.GetBasicInfo();
 
-        public RoomInnerInfo GetInnerInfo() => new RoomInnerInfo();
+        public RoomInnerInfo GetInnerInfo() => new RoomInnerInfo(TickRate);
         public static RoomInnerInfo GetInnerInfo(Room room) => room.GetInnerInfo();
 
         public RoomInfo GetInfo()
@@ -54,7 +54,7 @@ namespace MNet
 
         public Scheduler Scheduler { get; protected set; }
 
-        public const long DefaultTickInterval = 50;
+        public byte TickRate { get; protected set; }
 
         public DateTime Timestamp { get; protected set; }
 
@@ -597,10 +597,10 @@ namespace MNet
 
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
-
             SceneObjects = new List<NetworkEntity>();
 
-            Scheduler = new Scheduler(DefaultTickInterval, Tick);
+            TickRate = 50;
+            Scheduler = new Scheduler(TickRate, Tick);
         }
     }
 }

@@ -28,21 +28,27 @@ namespace MNet.Example
 		public static Level Instance { get; protected set; }
 
 		public LevelUI UI { get; protected set; }
+		public LevelPause Pause { get; protected set; }
+
+		public RoomLog RoomLog { get; protected set; }
 
 		static Core Core => Core.Instance;
 		PopupPanel Popup => Core.UI.Popup;
 
 		void Awake()
 		{
+			Instance = this;
+
+			UI = FindObjectOfType<LevelUI>();
+			Pause = GetComponentInChildren<LevelPause>();
+
+			RoomLog = GetComponentInChildren<RoomLog>();
+
 			if (NetworkAPI.Client.IsConnected == false)
 			{
 				Core.Scenes.LoadMainMenu();
 				return;
 			}
-
-			Instance = this;
-
-			UI = FindObjectOfType<LevelUI>();
 		}
 
 		IEnumerator Start()

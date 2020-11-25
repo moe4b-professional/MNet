@@ -61,9 +61,17 @@ namespace MNet
     [Serializable]
     public struct RoomInnerInfo : INetworkSerializable
     {
+        byte tickRate;
+        public byte TickRate => tickRate;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
+            context.Select(ref tickRate);
+        }
 
+        public RoomInnerInfo(byte tickRate)
+        {
+            this.tickRate = tickRate;
         }
     }
 
