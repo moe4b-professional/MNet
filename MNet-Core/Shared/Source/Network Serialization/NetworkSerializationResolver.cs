@@ -714,6 +714,57 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    public sealed class IManualNetworkSerializableResolver : NetworkSerializationImplicitResolver
+    {
+        public Type Interface => typeof(IManualNetworkSerializable);
+
+        public override bool CanResolve(Type target) => Interface.IsAssignableFrom(target);
+
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
+        {
+            var value = instance as IManualNetworkSerializable;
+
+            value.Serialize(writer);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            var value = Activator.CreateInstance(type, true) as IManualNetworkSerializable;
+
+            value.Deserialize(reader);
+
+            return value;
+        }
+
+        public IManualNetworkSerializableResolver() { }
+
+        public class Context
+        {
+            public NetworkWriter Writer { get; protected set; }
+            public bool IsSerializing => Writer != null;
+
+            public NetworkReader Reader { get; protected set; }
+            public bool IsDeserializing => Reader != null;
+
+            public void Select<T>(ref T value)
+            {
+                if (IsSerializing) Writer.Write(value);
+
+                if (IsDeserializing) Reader.Read(out value);
+            }
+
+            public Context(NetworkWriter writer)
+            {
+                this.Writer = writer;
+            }
+            public Context(NetworkReader reader)
+            {
+                this.Reader = reader;
+            }
+        }
+    }
+
     #region Collection
     [Preserve]
     public sealed class ArrayNetworkSerializationResolver : NetworkSerializationImplicitResolver

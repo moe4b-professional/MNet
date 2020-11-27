@@ -51,6 +51,7 @@ namespace MNet
         public DeliveryMode DeliveryMode => Attribute.Delivery;
 
         public MethodInfo MethodInfo { get; protected set; }
+        public RpxMethodID MethodID { get; protected set; }
 
         public string Name { get; protected set; }
 
@@ -62,19 +63,19 @@ namespace MNet
 
         public RpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, bufferMode, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, MethodID, bufferMode, arguments);
 
             return request;
         }
         public RpcRequest CreateRequest(NetworkClientID target, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, target, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, MethodID, target, arguments);
 
             return request;
         }
         public RpcRequest CreateRequest(NetworkClientID target, ushort callback, params object[] arguments)
         {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, Name, target, callback, arguments);
+            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, MethodID, target, callback, arguments);
 
             return request;
         }
@@ -110,6 +111,7 @@ namespace MNet
 
             MethodInfo = method;
             Name = MethodInfo.Name;
+            MethodID = new RpxMethodID(Name);
 
             ParametersInfo = method.GetParameters();
 

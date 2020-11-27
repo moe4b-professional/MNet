@@ -125,6 +125,7 @@ namespace MNet
             }
         }
 
+        bool FindRPC(RpxMethodID method, out RpcBind bind) => FindRPC(method.Value, out bind);
         bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
         #region Methods

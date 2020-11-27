@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Net.Http;
 using System.Threading;
 
+using System.Text;
+
 namespace MNet
 {
     static class GameServer
@@ -128,7 +130,7 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-
+            
         }
 
         static void NullableTupleSerialization()

@@ -30,8 +30,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        string method;
-        public string Method { get { return method; } }
+        RpxMethodID method;
+        public RpxMethodID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -108,7 +108,7 @@ namespace MNet
             return raw;
         }
 
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string method, RpcBufferMode bufferMode, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RpcBufferMode bufferMode, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -124,7 +124,7 @@ namespace MNet
 
             return request;
         }
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string method, NetworkClientID target, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -140,7 +140,7 @@ namespace MNet
 
             return request;
         }
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string method, NetworkClientID target, ushort callback, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, ushort callback, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -172,8 +172,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        string method;
-        public string Method { get { return method; } }
+        RpxMethodID method;
+        public RpxMethodID Method { get { return method; } }
 
         NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
@@ -384,4 +384,41 @@ namespace MNet
         }
     }
     #endregion
+
+    [Preserve]
+    [Serializable]
+    public struct RpxMethodID : INetworkSerializable
+    {
+        string value;
+        public string Value { get { return value; } }
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref value);
+        }
+
+        public RpxMethodID(string value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == typeof(RpxMethodID))
+            {
+                var target = (RpxMethodID)obj;
+
+                return target.value == this.value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(RpxMethodID a, RpxMethodID b) => a.Equals(b);
+        public static bool operator !=(RpxMethodID a, RpxMethodID b) => !a.Equals(b);
+    }
 }

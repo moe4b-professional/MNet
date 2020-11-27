@@ -69,4 +69,11 @@ namespace MNet
     {
         void Select(INetworkSerializableResolver.Context context);
     }
+
+    public interface IManualNetworkSerializable
+    {
+        void Serialize(NetworkWriter writer);
+
+        void Deserialize(NetworkReader reader);
+    }
 }

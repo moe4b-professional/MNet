@@ -9,7 +9,7 @@ namespace MNet
 {
     class RpcBuffer
     {
-        public Dictionary<(NetworkBehaviourID behaviour, string method), NetworkMessageCollection> Dictionary { get; protected set; }
+        public Dictionary<(NetworkBehaviourID behaviour, RpxMethodID method), NetworkMessageCollection> Dictionary { get; protected set; }
 
         public HashSet<NetworkMessage> Hash { get; protected set; }
 
@@ -59,7 +59,7 @@ namespace MNet
 
         public RpcBuffer()
         {
-            Dictionary = new Dictionary<(NetworkBehaviourID, string), NetworkMessageCollection>();
+            Dictionary = new Dictionary<(NetworkBehaviourID, RpxMethodID), NetworkMessageCollection>();
 
             Hash = new HashSet<NetworkMessage>();
         }
