@@ -22,10 +22,10 @@ namespace MNet
 
         public List<NetworkEntity> Entities { get; protected set; }
 
-        public bool IsReady { get; protected set; }
-        public void Ready()
+        public bool Ready { get; protected set; }
+        public void SetReady()
         {
-            IsReady = true;
+            Ready = true;
         }
 
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
@@ -43,5 +43,8 @@ namespace MNet
 
             SendQueue = new MessageSendQueue();
         }
+
+        //Static Utility
+        public static bool IsReady(NetworkClient client) => client.Ready;
     }
 }

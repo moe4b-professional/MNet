@@ -44,6 +44,8 @@ namespace MNet
                 throw;
             }
 
+            Sandbox.Run();
+
             while (true) Console.ReadLine();
         }
 
@@ -75,8 +77,6 @@ namespace MNet
 
             Lobby = new Lobby();
             Lobby.Configure();
-
-            Sandbox.Run();
         }
 
         static void ResolveAddress()
@@ -130,7 +130,23 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-            
+            HashSetSerialization();
+        }
+
+        static void HashSetSerialization()
+        {
+            var hash = new HashSet<int>();
+
+            hash.Add(42);
+            hash.Add(24);
+            hash.Add(120);
+            hash.Add(420);
+
+            var binary = NetworkSerializer.Serialize(hash);
+
+            var instance = NetworkSerializer.Deserialize<HashSet<int>>(binary);
+
+            foreach (var item in instance) Log.Info(item);
         }
 
         static void NullableTupleSerialization()

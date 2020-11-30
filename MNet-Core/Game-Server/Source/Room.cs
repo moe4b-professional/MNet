@@ -83,7 +83,7 @@ namespace MNet
 
             var command = new ChangeMasterCommand(Master.ID);
 
-            BroadcastToReady(command);
+            Broadcast(command, DeliveryMode.Reliable, NetworkClient.IsReady);
         }
 
         void ChangeMaster()
@@ -114,49 +114,46 @@ namespace MNet
         #region Communication
 
         #region Send
-        NetworkMessage SendTo<T>(NetworkClient target, T payload, DeliveryMode mode = DeliveryMode.Reliable)
+        NetworkMessage Send<T>(T payload, NetworkClient target, DeliveryMode mode)
         {
             var message = NetworkMessage.Write(payload);
 
-            Send(message, target, mode);
+            QueueMessage(message, target, mode);
 
             return message;
         }
 
-        void Send(NetworkMessage message, NetworkClient target, DeliveryMode mode = DeliveryMode.Reliable)
+        void QueueMessage(NetworkMessage message, NetworkClient target, DeliveryMode mode)
         {
             target.SendQueue.Add(message, mode);
         }
         #endregion
 
         #region Broadcast
-        NetworkMessage BroadcastToAll<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
-        {
-            return BroadcastTo(payload, Condition, mode);
-
-            bool Condition(NetworkClient client) => true;
-        }
-
-        NetworkMessage BroadcastToReady<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
-        {
-            return BroadcastTo(payload, Condition, mode);
-
-            bool Condition(NetworkClient client) => client.IsReady;
-        }
-
-        NetworkMessage BroadcastTo<T>(T payload, Predicate<NetworkClient> condition, DeliveryMode mode = DeliveryMode.Reliable)
+        NetworkMessage Broadcast<T>(T payload, DeliveryMode mode, params BroadcastCondition[] predicates)
         {
             var message = NetworkMessage.Write(payload);
 
             foreach (var client in Clients.Values)
             {
-                if (condition(client) == false) continue;
+                if (EvaluateBroadcastConditions(predicates, client) == false) continue;
 
-                Send(message, client, mode);
+                QueueMessage(message, client, mode);
             }
 
             return message;
         }
+
+        bool EvaluateBroadcastConditions(BroadcastCondition[] predicates, NetworkClient client)
+        {
+            for (int i = 0; i < predicates.Length; i++)
+                if (predicates[i](client) == false)
+                    return false;
+
+            return true;
+        }
+
+        public delegate bool BroadcastCondition(NetworkClient client);
         #endregion
 
         void ResolveSendQueues()
@@ -304,22 +301,22 @@ namespace MNet
 
             var room = GetInfo();
             var response = new RegisterClientResponse(id, room);
-            SendTo(client, response);
+            Send(response, client, DeliveryMode.Reliable);
 
             var payload = new ClientConnectedPayload(info);
-            BroadcastToReady(payload);
+            Broadcast(payload, DeliveryMode.Reliable, NetworkClient.IsReady);
         }
         #endregion
 
         void ReadyClient(NetworkClient client, ReadyClientRequest request)
         {
-            client.Ready();
+            client.SetReady();
 
             var time = new RoomTimeResponse(Time, request.Timestamp);
 
             var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, MessageBuffer.List, time);
 
-            SendTo(client, response);
+            Send(response, client, DeliveryMode.Reliable);
 
             Log.Info($"Room {this.ID}: Client {client.ID} Set Ready");
         }
@@ -353,7 +350,7 @@ namespace MNet
         {
             var command = RpcCommand.Write(sender.ID, request, Time);
 
-            var message = BroadcastToReady(command, mode);
+            var message = Broadcast(command, mode, NetworkClient.IsReady);
 
             entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
         }
@@ -373,7 +370,7 @@ namespace MNet
 
             if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender, target);
 
-            SendTo(target, command, mode);
+            Send(command, target, mode);
         }
         #endregion
 
@@ -409,7 +406,7 @@ namespace MNet
 
             var command = RprCommand.Write(entity.ID, request);
 
-            SendTo(target, command);
+            Send(command, target, DeliveryMode.Reliable);
         }
 
         void ResolveRpr(NetworkClient target, RpcRequest request, RprResult result) => ResolveRpr(target, request.Entity, request.Callback, result);
@@ -417,7 +414,7 @@ namespace MNet
         {
             var command = RprCommand.Write(entity, id, result);
 
-            SendTo(target, command);
+            Send(command, target, DeliveryMode.Reliable);
         }
 
         void ResolveRprCache(NetworkEntity entity, RprResult result)
@@ -438,7 +435,7 @@ namespace MNet
 
             var command = SyncVarCommand.Write(sender.ID, request);
 
-            var message = BroadcastToReady(command, mode);
+            var message = Broadcast(command, mode, NetworkClient.IsReady);
 
             entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }
@@ -448,14 +445,14 @@ namespace MNet
         {
             var response = new RoomTimeResponse(Time, request.Timestamp);
 
-            SendTo(sender, response);
+            Send(response, sender, DeliveryMode.Reliable);
         }
 
         void ProcessPing(NetworkClient sender, PingRequest request)
         {
             var response = new PingResponse(request);
 
-            SendTo(sender, response);
+            Send(response, sender, DeliveryMode.Reliable);
         }
 
         NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
@@ -496,7 +493,7 @@ namespace MNet
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
 
-            var message = BroadcastToReady(command);
+            var message = Broadcast(command, DeliveryMode.Reliable, NetworkClient.IsReady);
 
             entity.SpawnMessage = message;
             BufferMessage(message);
@@ -537,7 +534,7 @@ namespace MNet
 
             var command = new DestroyEntityCommand(entity.ID);
 
-            BroadcastToReady(command);
+            Broadcast(command, DeliveryMode.Reliable, NetworkClient.IsReady);
         }
         #endregion
 
@@ -564,7 +561,7 @@ namespace MNet
             if (client == Master) ChangeMaster();
 
             var payload = new ClientDisconnectPayload(client.ID);
-            BroadcastToReady(payload);
+            Broadcast(payload, DeliveryMode.Reliable, NetworkClient.IsReady);
         }
 
         public delegate void StopDelegate(Room room);

@@ -1,6 +1,9 @@
 ﻿using System;
+
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -44,17 +47,17 @@ namespace MNet
 
         public static class Length
         {
-            public static void Write(int source, NetworkWriter writer)
+            public static void Write(NetworkWriter writer, int value)
             {
-                if (source > ushort.MaxValue)
-                    throw new Exception($"Cannot Serialize {source} as a ushort Code, It's Value is Above the Maximum Value of {ushort.MaxValue}");
+                if (value > ushort.MaxValue)
+                    throw new Exception($"Cannot Serialize {value} as a ushort Code, It's Value is Above the Maximum Value of {ushort.MaxValue}");
 
-                var length = (ushort)source;
+                var length = (ushort)value;
 
                 writer.Write(length);
             }
 
-            public static void Read(out ushort length, NetworkReader reader) => reader.Read(out length);
+            public static void Read(NetworkReader reader, out ushort length) => reader.Read(out length);
         }
 
         public static class GenericArguments
@@ -141,6 +144,31 @@ namespace MNet
             static GenericArguments()
             {
                 Dictionary = new ConcurrentDictionary<Type, Type[]>();
+            }
+        }
+
+        public static class List
+        {
+            public static Type GenericDefinition => typeof(List<>);
+
+            public static Type Construct(Type argument) => GenericDefinition.MakeGenericType(argument);
+
+            public static IList Instantiate(Type argument, int size)
+            {
+                var type = Construct(argument);
+
+                var instance = Activator.CreateInstance(type, size) as IList;
+
+                return instance;
+            }
+
+            public static IList ReadFrom(NetworkReader reader, Type argument)
+            {
+                var type = Construct(argument);
+
+                var list = reader.Read(type) as IList;
+
+                return list;
             }
         }
     }

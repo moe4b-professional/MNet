@@ -45,6 +45,14 @@ namespace MNet
         NetworkClientID target;
         public NetworkClientID Target => target;
 
+        HashSet<NetworkClientID> exceptions;
+        public HashSet<NetworkClientID> Exceptions => exceptions;
+
+        public void Except(params NetworkClientID[] clients)
+        {
+            exceptions = new HashSet<NetworkClientID>(clients);
+        }
+
         ushort callback;
         public ushort Callback => callback;
 
@@ -78,6 +86,7 @@ namespace MNet
             {
                 case RpcType.Broadcast:
                     context.Select(ref bufferMode);
+                    context.Select(ref exceptions);
                     break;
 
                 case RpcType.Target:
@@ -92,6 +101,8 @@ namespace MNet
         }
 
         public override string ToString() => $"RPC Request: {method}";
+
+        //Static Utility
 
         public static byte[] Serialize(params object[] arguments)
         {

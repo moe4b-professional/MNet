@@ -52,9 +52,9 @@ namespace MNet
             {
                 return (T)Payload;
             }
-            catch(InvalidCastException)
+            catch(InvalidCastException ex)
             {
-                throw new InvalidCastException($"Trying to read {Type} as {typeof(T).Name}");
+                throw new InvalidCastException($"Trying to read {Type} as {typeof(T)}\nInternal Exception: {ex}");
             }
             catch (Exception)
             {
