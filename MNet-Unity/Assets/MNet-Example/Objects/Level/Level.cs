@@ -51,17 +51,9 @@ namespace MNet.Example
 			}
 		}
 
-		IEnumerator Start()
+		void Start()
 		{
-			yield return new WaitForSecondsRealtime(2f);
-
-			RPC(Call);
-		}
-
-		[NetworkRPC]
-		void Call(RpcInfo info)
-		{
-			Debug.Log($"Level Call Time: {info.Time.Seconds}");
+			NetworkAPI.Client.SpawnEntity("Sample");
 		}
 
 		public void Quit()

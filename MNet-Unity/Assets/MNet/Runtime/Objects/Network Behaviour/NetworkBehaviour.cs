@@ -129,8 +129,7 @@ namespace MNet
         bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
         #region Methods
-        protected bool RPC(string method, params object[] arguments) => RPC(method, RpcBufferMode.None, arguments);
-        protected bool RPC(string method, RpcBufferMode bufferMode, params object[] arguments)
+        protected bool BroadcastRPC(string method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -138,12 +137,14 @@ namespace MNet
                 return false;
             }
 
-            var payload = bind.CreateRequest(bufferMode, arguments);
+            var payload = bind.CreateRequest(buffer, arguments);
 
-            return RPC(bind, payload);
+            if (exception.HasValue) payload.Except(exception.Value);
+
+            return SendRPC(bind, payload);
         }
 
-        protected bool RPC(string method, NetworkClient target, params object[] arguments)
+        protected bool TargetRPC(string method, NetworkClient target, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -153,10 +154,10 @@ namespace MNet
 
             var payload = bind.CreateRequest(target.ID, arguments);
 
-            return RPC(bind, payload);
+            return SendRPC(bind, payload);
         }
 
-        protected bool RPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
+        protected bool ReturnRPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
         {
             if (FindRPC(method, out var bind) == false)
             {
@@ -174,10 +175,10 @@ namespace MNet
 
             var payload = bind.CreateRequest(target.ID, rpr.ID, arguments);
 
-            return RPC(bind, payload);
+            return SendRPC(bind, payload);
         }
 
-        bool RPC(RpcBind bind, RpcRequest request)
+        bool SendRPC(RpcBind bind, RpcRequest request)
         {
             if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
             {

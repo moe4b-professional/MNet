@@ -28,7 +28,7 @@ namespace MNet
         {
 			if (IsMine == false) return;
 
-			RPC(Rpc, Entity, this, Color.red);
+			BroadcastRPC(Rpc, Entity, this, Color.red);
 		}
 
         [NetworkRPC]

@@ -52,7 +52,10 @@ namespace MNet.Example
         {
             if (error == null)
             {
-                if (Visible) Popup.Show($"Retrieved {lobby.Size} Rooms", "Okay");
+                if (Visible && lobby.Size == 0)
+                    Popup.Show($"Found {lobby.Size} Rooms", "Okay");
+                else
+                    Popup.Hide();
 
                 Populate(lobby.Rooms);
             }

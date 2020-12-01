@@ -52,7 +52,7 @@ namespace MNet.Example
         #endregion
 
         #region Chat
-        public void Broadcast(string text) => RPC(Recieve, text);
+        public void Broadcast(string text) => BroadcastRPC(Recieve, text);
 
         [NetworkRPC]
         void Recieve(string text, RpcInfo info)

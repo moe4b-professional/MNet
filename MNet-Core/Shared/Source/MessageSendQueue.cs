@@ -13,7 +13,7 @@ namespace MNet
     {
         public Dictionary<DeliveryMode, Delivery> Dictionary { get; protected set; }
 
-        public IReadOnlyCollection<Delivery> Deliveries => Dictionary.Values;
+        public List<Delivery> Deliveries { get; protected set; }
 
         public class Delivery
         {
@@ -51,45 +51,48 @@ namespace MNet
 
         public void Add(NetworkMessage message, DeliveryMode mode)
         {
-            if (Dictionary.TryGetValue(mode, out var collection) == false)
+            if (Dictionary.TryGetValue(mode, out var delivery) == false)
             {
-                collection = new Delivery(mode);
+                delivery = new Delivery(mode);
 
-                Dictionary.Add(mode, collection);
+                Dictionary.Add(mode, delivery);
+                Deliveries.Add(delivery);
             }
 
-            collection.Add(message);
+            delivery.Add(message);
         }
 
         public delegate void SimpleResolveDelegate(byte[] raw, DeliveryMode mode);
         public void Resolve(SimpleResolveDelegate method)
         {
-            foreach (var delivery in Deliveries)
+            for (int i = 0; i < Deliveries.Count; i++)
             {
-                if (delivery.Count == 0) continue;
+                if (Deliveries[i].Count == 0) continue;
 
-                var binary = delivery.Serialize();
+                var binary = Deliveries[i].Serialize();
 
-                method(binary, delivery.Mode);
+                method(binary, Deliveries[i].Mode);
             }
         }
 
         public delegate bool ReturnResolveDelegate(byte[] raw, DeliveryMode mode);
         public void Resolve(ReturnResolveDelegate method)
         {
-            foreach (var delivery in Deliveries)
+            for (int i = 0; i < Deliveries.Count; i++)
             {
-                if (delivery.Count == 0) continue;
+                if (Deliveries[i].Count == 0) continue;
 
-                var binary = delivery.Serialize();
+                var binary = Deliveries[i].Serialize();
 
-                method(binary, delivery.Mode);
+                method(binary, Deliveries[i].Mode);
             }
         }
 
         public MessageSendQueue()
         {
             Dictionary = new Dictionary<DeliveryMode, Delivery>();
+
+            Deliveries = new List<Delivery>();
         }
     }
 }

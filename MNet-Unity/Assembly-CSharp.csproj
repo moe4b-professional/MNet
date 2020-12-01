@@ -56,10 +56,6 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\General\Scripts\ReadOnly.cs" />
-     <Compile Include="Assets\Objects\Familiar\Familiar.cs" />
-     <Compile Include="Assets\Objects\Player\Player.cs" />
-     <Compile Include="Assets\Sandbox\SampleBehaviour.cs" />
-     <Compile Include="Assets\Sandbox\Sandbox.cs" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>

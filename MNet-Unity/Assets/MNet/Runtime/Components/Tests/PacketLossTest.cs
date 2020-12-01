@@ -45,7 +45,7 @@ namespace Game
 
                 if(IsReady)
                 {
-                    RPC(Call, NetworkAPI.Client.Self);
+                    TargetRPC(Call, NetworkAPI.Client.Self);
 
                     sent += 1;
                 }

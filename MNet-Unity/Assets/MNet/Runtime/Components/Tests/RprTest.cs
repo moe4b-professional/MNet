@@ -30,7 +30,7 @@ namespace MNet
         {
             base.OnSpawn();
 
-            RPC(Call, NetworkAPI.Room.Master, Callback);
+            ReturnRPC(Call, NetworkAPI.Room.Master, Callback);
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Any)]

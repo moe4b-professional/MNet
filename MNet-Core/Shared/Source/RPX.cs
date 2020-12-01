@@ -45,12 +45,12 @@ namespace MNet
         NetworkClientID target;
         public NetworkClientID Target => target;
 
-        HashSet<NetworkClientID> exceptions;
-        public HashSet<NetworkClientID> Exceptions => exceptions;
+        NetworkClientID? exception;
+        public NetworkClientID? Exception => exception;
 
-        public void Except(params NetworkClientID[] clients)
+        public void Except(NetworkClientID client)
         {
-            exceptions = new HashSet<NetworkClientID>(clients);
+            exception = client;
         }
 
         ushort callback;
@@ -86,7 +86,7 @@ namespace MNet
             {
                 case RpcType.Broadcast:
                     context.Select(ref bufferMode);
-                    context.Select(ref exceptions);
+                    context.Select(ref exception);
                     break;
 
                 case RpcType.Target:
@@ -366,7 +366,7 @@ namespace MNet
             context.Select(ref id);
             context.Select(ref result);
 
-            if(result == RprResult.Success) context.Select(ref raw);
+            if (result == RprResult.Success) context.Select(ref raw);
         }
 
         public static RprCommand Write(NetworkEntityID entity, RprRequest request) => Write(entity, request.ID, request.Result, request.Raw);

@@ -34,13 +34,13 @@ namespace MNet
 
             for (int i = 0; i < Count; i++) results.Add(false);
 
-            RPC(Call0);
-            RPC(Call1, 0);
-            RPC(Call2, 0, 1);
-            RPC(Call3, 0, 1, 2);
-            RPC(Call4, 0, 1, 2, 3);
-            RPC(Call5, 0, 1, 2, 3, 4);
-            RPC(Call6, 0, 1, 2, 3, 4, 5);
+            BroadcastRPC(Call0);
+            BroadcastRPC(Call1, 0);
+            BroadcastRPC(Call2, 0, 1);
+            BroadcastRPC(Call3, 0, 1, 2);
+            BroadcastRPC(Call4, 0, 1, 2, 3);
+            BroadcastRPC(Call5, 0, 1, 2, 3, 4);
+            BroadcastRPC(Call6, 0, 1, 2, 3, 4, 5);
         }
 
         [NetworkRPC] void Call0(RpcInfo info) => Call();

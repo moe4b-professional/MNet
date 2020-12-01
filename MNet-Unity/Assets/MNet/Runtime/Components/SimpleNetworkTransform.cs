@@ -39,7 +39,7 @@ namespace MNet
                 lastPosition = transform.position;
                 lastRotation = transform.rotation;
 
-                RPC(Sync, RpcBufferMode.Last, lastPosition, lastRotation);
+                BroadcastRPC(Sync, lastPosition, lastRotation, buffer: RpcBufferMode.Last);
             }
         }
 

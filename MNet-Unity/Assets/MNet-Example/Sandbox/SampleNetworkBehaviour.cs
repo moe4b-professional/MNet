@@ -21,20 +21,25 @@ namespace MNet.Example
 {
     public class SampleNetworkBehaviour : NetworkBehaviour
     {
-        [SyncVar(Authority = RemoteAuthority.Master)]
-        public string text;
+        public float delay = 0.05f;
 
-        [NetworkRPC(Authority = RemoteAuthority.Master)]
-        void Call(RpcInfo info)
+        public int pakcets = 0;
+
+        float timer = 0f;
+
+        void Update()
         {
-            transform.position += Vector3.one * 4;
+            timer = Mathf.MoveTowards(timer, delay, Time.deltaTime);
+
+            if (Mathf.Approximately(timer, delay)) Request();
         }
 
-        void Start()
-        {
-            SyncVar("text", "Hello World");
+        void Request() => BroadcastRPC(Call, transform.position, transform.rotation);
 
-            RPC(Call, RpcBufferMode.All);
+        [NetworkRPC(Delivery = DeliveryMode.Unreliable)]
+        void Call(Vector3 position, Quaternion rotation, RpcInfo info)
+        {
+            pakcets += 1;
         }
     }
 }

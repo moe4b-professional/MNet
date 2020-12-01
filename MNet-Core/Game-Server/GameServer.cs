@@ -130,7 +130,7 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-            HashSetSerialization();
+            
         }
 
         static void HashSetSerialization()
