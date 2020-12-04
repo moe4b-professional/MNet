@@ -1,5 +1,6 @@
 {
   "Transport": "WebSocketSharp",
+  "Pool Messages" :  true,
   "Apps": [
     {
       "ID": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",

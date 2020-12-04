@@ -41,6 +41,8 @@ namespace MNet
             }
         }
 
+        public override int MTU => Utility.MTU;
+
         public override void Connect(GameServerID server, RoomID room)
         {
             var url = $"ws://{server}:{Port}/{room}";

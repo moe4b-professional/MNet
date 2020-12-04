@@ -15,7 +15,7 @@ MonoBehaviour:
   address: 127.0.0.1
   appID: AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA
   restScheme: 0
-  transport: 0
   version:
     value: 0.0.1
     infer: 1
+  poolMessages: 1

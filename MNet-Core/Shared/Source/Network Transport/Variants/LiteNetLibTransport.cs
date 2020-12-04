@@ -12,6 +12,8 @@ namespace MNet
     {
         public static class LiteNetLib
         {
+            public const int MTU = 400;
+
             public static class Disconnect
             {
                 public static byte[] CodeToBinary(DisconnectCode code)

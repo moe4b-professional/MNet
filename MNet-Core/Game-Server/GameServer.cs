@@ -72,7 +72,7 @@ namespace MNet
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
 
-            Realtime = new RealtimeAPI(Config.Transport);
+            Realtime = new RealtimeAPI(Config.Remote.Transport);
             Realtime.Start();
 
             Lobby = new Lobby();
@@ -119,7 +119,7 @@ namespace MNet
 
             Log.Info("Server Registeration Success");
 
-            Config.Append(response.RemoteConfig);
+            Config.Set(response.RemoteConfig);
 
             return true;
         }

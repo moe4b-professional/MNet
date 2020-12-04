@@ -11,7 +11,9 @@ namespace MNet
         protected byte[] data;
         public byte[] Data { get { return data; } }
 
-        public int Size => data.Length;
+        public int Capacity => data.Length;
+
+        public int Size => Position;
 
         int position;
         public int Position
@@ -19,14 +21,14 @@ namespace MNet
             get => position;
             set
             {
-                if (value < 0 || value > Size)
+                if (value < 0 || value > Capacity)
                     throw new IndexOutOfRangeException();
 
                 position = value;
             }
         }
 
-        public int Remaining => Size - position;
+        public int Remaining => Capacity - position;
 
         public const uint DefaultResizeLength = 512;
 
@@ -37,7 +39,7 @@ namespace MNet
 
         protected void Resize(uint extra)
         {
-            var value = new byte[Size + extra];
+            var value = new byte[Capacity + extra];
 
             Buffer.BlockCopy(data, 0, value, 0, position);
 
@@ -55,6 +57,19 @@ namespace MNet
             Resize(extra);
         }
 
+        public void ShiftToStart(int start) => Shift(start, Position);
+        public void Shift(int start, int end)
+        {
+            for (int i = start; i < end; i++) data[i - start] = data[i];
+
+            Position = end - start;
+        }
+
+        public void Clear()
+        {
+            position = 0;
+        }
+
         public NetworkStream(byte[] data)
         {
             this.data = data;
@@ -65,13 +80,24 @@ namespace MNet
 
     public class NetworkWriter : NetworkStream
     {
-        public byte[] ToArray()
+        public byte[] ToArray() => ToArray(Position);
+        public byte[] ToArray(int end) => ToArray(0, end);
+        public byte[] ToArray(int start, int end)
         {
-            var result = new byte[Position];
+            var result = new byte[end - start];
 
-            Buffer.BlockCopy(data, 0, result, 0, Position);
+            Buffer.BlockCopy(data, start, result, 0, result.Length);
 
             return result;
+        }
+
+        public byte[] Flush()
+        {
+            var binary = ToArray();
+
+            Clear();
+
+            return binary;
         }
 
         public void Insert(byte[] source)
@@ -84,19 +110,17 @@ namespace MNet
 
             Position += count;
         }
+
+        public void Replace(byte[] source, int position)
+        {
+            Buffer.BlockCopy(source, 0, data, position, source.Length);
+        }
+
         public void Insert(byte value)
         {
             if (Remaining == 0) Resize(DefaultResizeLength);
 
-            try
-            {
-                data[Position] = value;
-            }
-            catch (Exception)
-            {
-                Log.Info(Remaining);
-                throw;
-            }
+            data[Position] = value;
 
             Position += 1;
         }

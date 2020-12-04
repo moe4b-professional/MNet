@@ -26,7 +26,10 @@ namespace MNet
         [JsonProperty]
         public RestScheme RestScheme { get; protected set; }
 
-        public NetworkTransportType Transport { get; protected set; }
+        [JsonProperty]
+        public bool PoolMessages { get; protected set; }
+
+        public RemoteConfig Remote { get; protected set; }
 
         protected override void WriteDefaults()
         {
@@ -40,12 +43,11 @@ namespace MNet
             Region = GameServerRegion.Local;
 
             RestScheme = RestScheme.HTTP;
+
+            PoolMessages = true;
         }
 
-        public virtual void Append(RemoteConfig remote)
-        {
-            Transport = remote.Transport;
-        }
+        public virtual void Set(RemoteConfig instance) => Remote = instance;
 
         public Config() { }
     }

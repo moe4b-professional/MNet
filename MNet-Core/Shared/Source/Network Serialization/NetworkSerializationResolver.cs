@@ -829,6 +829,49 @@ namespace MNet
     }
 
     [Preserve]
+    public sealed class ArraySegmentNetworkSerializationResolver : NetworkSerializationImplicitResolver
+    {
+        public override bool CanResolve(Type target)
+        {
+            if (target.IsGenericType == false) return false;
+
+            return target.GetGenericTypeDefinition() == typeof(ArraySegment<>);
+        }
+
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
+        {
+            var value = instance as IEnumerable;
+
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+
+            //TODO find a way to get the count to optimize this surrogate creation
+            var list = NetworkSerializationHelper.List.Instantiate(argument, 0);
+
+            foreach (var item in value) list.Add(item);
+
+            NetworkSerializationHelper.Length.Write(writer, list.Count);
+
+            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            NetworkSerializationHelper.Length.Read(reader, out var count);
+
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+
+            var array = Array.CreateInstance(argument, count) as IList;
+
+            for (int i = 0; i < count; i++)
+                array[i] = reader.Read(argument);
+
+            var segment = Activator.CreateInstance(type, array);
+
+            return segment;
+        }
+    }
+
+    [Preserve]
     public sealed class HashSetNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type target)

@@ -12,6 +12,8 @@ namespace MNet
 
         public const int Port = Constants.Server.Game.Realtime.Port;
 
+        public bool PoolMessages => GameServer.Config.PoolMessages;
+
         public virtual void Start()
         {
             Log.Info($"Starting {Transport.GetType().Name}");

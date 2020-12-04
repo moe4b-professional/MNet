@@ -49,8 +49,16 @@ namespace MNet
         public RestScheme RestScheme => restScheme;
 
         [SerializeField]
-        protected VersionProperty version = new VersionProperty("0.0.1");
+        protected VersionProperty version = new VersionProperty("0.1");
         public Version Version { get; protected set; }
+
+        [SerializeField]
+        bool poolMessages = true;
+        public bool PoolMessages => poolMessages;
+
+        public RemoteConfig Remote { get; protected set; }
+
+        public void Set(RemoteConfig instance) => Remote = instance;
 
         void Configure()
         {

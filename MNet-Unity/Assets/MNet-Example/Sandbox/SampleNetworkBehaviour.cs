@@ -27,8 +27,16 @@ namespace MNet.Example
 
         float timer = 0f;
 
+        void Start()
+        {
+            transform.position = new Vector3(40, 40, 40);
+            transform.rotation = Quaternion.Euler(20, 20, 20);
+        }
+
         void Update()
         {
+            if (IsMine == false) return;
+
             timer = Mathf.MoveTowards(timer, delay, Time.deltaTime);
 
             if (Mathf.Approximately(timer, delay)) Request();

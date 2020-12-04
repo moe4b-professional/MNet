@@ -12,6 +12,8 @@ namespace MNet
     {
         public static class WebSocket
         {
+            public const int MTU = 1024;
+
             public static class Disconnect
             {
                 public const ushort CodeOffset = 2000;

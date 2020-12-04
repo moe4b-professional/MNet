@@ -45,6 +45,8 @@ namespace MNet
             }
         }
 
+        public override int MTU => Utility.MTU;
+
         public override void Connect(GameServerID server, RoomID room)
         {
             var key = $"{room}";
@@ -52,11 +54,20 @@ namespace MNet
             Peer = Client.Connect(server.Address, Port, key);
         }
 
-        void Update()
+        bool STOP = false;
+
+        void Run()
+        {
+            while (STOP == false) Tick();
+        }
+
+        void Tick()
         {
             if (Client == null) return;
 
             Client.PollEvents();
+
+            Thread.Sleep(1);
         }
 
         #region Callbacks
@@ -98,7 +109,7 @@ namespace MNet
 
         void ApplicationQuitCallback()
         {
-            NetworkAPI.OnUpdate -= Update;
+            STOP = true;
         }
 
         public LiteNetLibTransport()
@@ -106,9 +117,9 @@ namespace MNet
             Client = new NetManager(this);
             Client.Start();
 
-            NetworkAPI.OnUpdate += Update;
-
             Application.quitting += ApplicationQuitCallback;
+
+            new Thread(Run).Start();
         }
     }
 }

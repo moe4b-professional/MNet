@@ -5,41 +5,55 @@ using System.Collections.Generic;
 
 using System.Diagnostics;
 
+using MNet;
+
 namespace Sandbox
 {
     class Program
     {
-        static List<string> list = new List<string>();
-
         static void Main()
         {
-            for (int i = 0; i < 10000; i++) list.Add("Hello World");
+            Procedure();
 
-            Measure(Foreach);
-            Measure(Foreach);
-            Measure(For);
-            Measure(For);
-
-            Console.ReadKey();
+            while (true) Console.ReadKey();
         }
 
-        static void Foreach()
+        static void Procedure()
         {
-            var text = "";
+            DeliverySegments();
+        }
 
-            foreach (var item in list)
+        static void DeliverySegments()
+        {
+            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable);
+
+            for (byte i = 1; i <= 20; i++)
             {
-                text += item;
+                var payload = RpcRequest.Write(new NetworkEntityID(i), new NetworkBehaviourID(i), new RpxMethodID("Method"), RpcBufferMode.All, new byte[50]);
+
+                var message = NetworkMessage.Write(payload);
+
+                delivery.Add(message);
             }
-        }
 
-        static void For()
-        {
-            var text = "";
+            Log.Info("Delivery Size: " + delivery.Count);
 
-            for (int i = 0; i < list.Count; i++)
+            int counter = 1;
+
+            foreach (var segment in delivery.Serialize(500))
             {
-                text += list[i];
+                Log.Info(segment.Length);
+
+                var messages = NetworkMessage.ReadAll(segment);
+
+                foreach (var instance in messages)
+                {
+                    var payload = instance.Read<RpcRequest>();
+
+                    Log.Info(payload.Entity + " " + counter); ;
+
+                    counter += 1;
+                }
             }
         }
 

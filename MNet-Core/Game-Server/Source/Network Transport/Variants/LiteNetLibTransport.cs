@@ -16,6 +16,8 @@ namespace MNet
 {
     class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
     {
+        public override int MTU => Utility.MTU;
+
         public NetManager Manager { get; protected set; }
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
@@ -38,7 +40,7 @@ namespace MNet
             if (Manager.IsRunning == false) return;
 
             Manager.PollEvents();
-            Thread.Sleep(10);
+            Thread.Sleep(1);
         }
 
         #region Callbacks

@@ -50,6 +50,8 @@ namespace MNet
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
         #endregion
 
+        public RealtimeAPI Realtime => GameServer.Realtime;
+
         public INetworkTransportContext TransportContext { get; protected set; }
 
         public Scheduler Scheduler { get; protected set; }
@@ -118,7 +120,16 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            QueueMessage(message, target, mode);
+            if (Realtime.PoolMessages)
+            {
+                QueueMessage(message, target, mode);
+            }
+            else
+            {
+                var binary = NetworkSerializer.Serialize(message);
+
+                TransportContext.Send(target.ID, binary, mode);
+            }
 
             return message;
         }
@@ -131,13 +142,29 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            foreach (var client in Clients.Values)
+            if (Realtime.PoolMessages)
             {
-                if (exception != null && exception == client.ID) continue;
+                foreach (var client in Clients.Values)
+                {
+                    if (exception != null && exception == client.ID) continue;
 
-                if (condition != null && condition(client) == false) continue;
+                    if (condition != null && condition(client) == false) continue;
 
-                QueueMessage(message, client, mode);
+                    QueueMessage(message, client, mode);
+                }
+            }
+            else
+            {
+                var binary = NetworkSerializer.Serialize(message);
+
+                foreach (var client in Clients.Values)
+                {
+                    if (exception != null && exception == client.ID) continue;
+
+                    if (condition != null && condition(client) == false) continue;
+
+                    TransportContext.Send(client.ID, binary, mode);
+                }
             }
 
             return message;
@@ -154,9 +181,8 @@ namespace MNet
                 {
                     if (delivery.Empty) continue;
 
-                    var binary = delivery.Serialize();
-
-                    TransportContext.Send(client.ID, binary, delivery.Mode);
+                    foreach (var binary in delivery.Serialize(Realtime.Transport.MTU))
+                        TransportContext.Send(client.ID, binary, delivery.Mode);
                 }
             }
         }
@@ -168,7 +194,7 @@ namespace MNet
 
             Timestamp = DateTime.UtcNow;
 
-            TransportContext = GameServer.Realtime.Register(ID.Value);
+            TransportContext = Realtime.Register(ID.Value);
 
             TransportContext.OnConnect += ClientConnected;
             TransportContext.OnMessage += MessageRecievedCallback;
@@ -193,10 +219,10 @@ namespace MNet
 
             if (Scheduler.Running == false) return;
 
-            ResolveSendQueues();
+            if (Realtime.PoolMessages) ResolveSendQueues();
         }
 
-        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, ArraySegment<byte> raw, DeliveryMode mode)
+        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
         {
             //Log.Info($"{message.Type} Binary Size: {raw.Count}");
 
@@ -586,7 +612,7 @@ namespace MNet
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
             SceneObjects = new List<NetworkEntity>();
 
-            TickRate = 50;
+            TickRate = 1;
             Scheduler = new Scheduler(TickRate, Tick);
         }
     }

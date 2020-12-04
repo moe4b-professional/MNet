@@ -51,7 +51,12 @@ namespace MNet
 
             static void Update()
             {
-                SendQueue.Resolve(Realtime.Send);
+                if (IsConnected) Process();
+            }
+
+            static void Process()
+            {
+                if (Config.PoolMessages) SendQueue.Resolve(Realtime.Send, Realtime.Transport.MTU);
             }
 
             public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -64,7 +69,16 @@ namespace MNet
 
                 var message = NetworkMessage.Write(payload);
 
-                SendQueue.Add(message, mode);
+                if (Config.PoolMessages)
+                {
+                    SendQueue.Add(message, mode);
+                }
+                else
+                {
+                    var binary = NetworkSerializer.Serialize(message);
+
+                    Realtime.Send(binary, mode);
+                }
 
                 return true;
             }

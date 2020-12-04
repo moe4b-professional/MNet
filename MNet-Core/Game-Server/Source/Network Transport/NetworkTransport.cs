@@ -13,6 +13,8 @@ namespace MNet
     #region Transport
     public interface INetworkTransport
     {
+        public int MTU { get; }
+
         void Start();
 
         INetworkTransportContext Register(uint id);
@@ -24,6 +26,8 @@ namespace MNet
         where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
         where TClient : NetworkTransportClient<TContext, TConnection, TIID>
     {
+        public abstract int MTU { get; }
+
         public ConcurrentDictionary<uint, TContext> Contexts { get; protected set; }
 
         public TContext this[uint code] => Contexts[code];
@@ -122,16 +126,16 @@ namespace MNet
 
         #region Message
         public event NetworkTransportMessageDelegate OnMessage;
-        void InvokeMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw, DeliveryMode mode)
+        void InvokeMessage(TClient client, NetworkMessage message, DeliveryMode mode)
         {
-            OnMessage?.Invoke(client.ClientID, message, raw, mode);
+            OnMessage?.Invoke(client.ClientID, message, mode);
         }
 
-        protected virtual void QueueMessage(TClient client, NetworkMessage message, ArraySegment<byte> raw, DeliveryMode mode)
+        protected virtual void QueueMessage(TClient client, NetworkMessage message, DeliveryMode mode)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeMessage(client, message, raw, mode);
+            void Action() => InvokeMessage(client, message, mode);
         }
         #endregion
 
@@ -154,8 +158,19 @@ namespace MNet
 
         public virtual void Poll()
         {
-            while (InputQueue.TryDequeue(out var action))
-                action();
+            var count = InputQueue.Count;
+
+            while (true)
+            {
+                if (InputQueue.TryDequeue(out var action))
+                    action();
+                else
+                    break;
+
+                count -= 1;
+
+                if (count <= 0) break;
+            }
         }
 
         #region Register & Add Client
@@ -203,7 +218,7 @@ namespace MNet
         }
         #endregion
 
-        #region Register Message
+        #region Register Messages
         public virtual void RegisterMessages(TConnection connection, byte[] raw, DeliveryMode mode)
         {
             if (Connections.TryGetValue(connection, out var client) == false)
@@ -217,9 +232,16 @@ namespace MNet
 
         public virtual void RegisterMessages(TClient sender, byte[] raw, DeliveryMode mode)
         {
-            var messages = NetworkSerializer.Deserialize<NetworkMessage[]>(raw);
-
-            for (int i = 0; i < messages.Length; i++) QueueMessage(sender, messages[i], raw, mode);
+            try
+            {
+                foreach (var message in NetworkMessage.ReadAll(raw))
+                    QueueMessage(sender, message, mode);
+            }
+            catch (Exception)
+            {
+                Log.Error($"Invalid Network Messages Recieved from {sender.ClientID}");
+                Disconnect(sender, DisconnectCode.InvalidData);
+            }
         }
         #endregion
 
@@ -298,7 +320,7 @@ namespace MNet
 
     #region Delegates
     public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
-    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, ArraySegment<byte> raw, DeliveryMode mode);
+    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, DeliveryMode mode);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
     #endregion
 }

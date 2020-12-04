@@ -66,9 +66,11 @@ namespace MNet
 
                 public delegate void RemoteConfigDelegate(RemoteConfig config);
                 public static event RemoteConfigDelegate OnRemoteConfig;
-                static void ConfigRemote(RemoteConfig config)
+                static void ConfigRemote(RemoteConfig instance)
                 {
-                    OnRemoteConfig?.Invoke(config);
+                    NetworkAPI.Config.Set(instance);
+
+                    OnRemoteConfig?.Invoke(instance);
                 }
 
                 static void Register(IList<GameServerInfo> list)

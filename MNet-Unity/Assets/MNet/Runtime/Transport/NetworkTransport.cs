@@ -32,6 +32,8 @@ namespace MNet
 
         public ConcurrentQueue<Action> InputQueue { get; protected set; }
 
+        public abstract int MTU { get; }
+
         #region Connect
         public delegate void ConnectDelegate();
         public event ConnectDelegate OnConnect;
@@ -84,9 +86,8 @@ namespace MNet
 
         protected void RegisterMessages(byte[] raw, DeliveryMode mode)
         {
-            var messages = NetworkSerializer.Deserialize<NetworkMessage[]>(raw);
-
-            for (int i = 0; i < messages.Length; i++) QueueMessage(messages[i], mode);
+            foreach (var message in NetworkMessage.ReadAll(raw))
+                QueueMessage(message, mode);
         }
 
         public abstract void Close();

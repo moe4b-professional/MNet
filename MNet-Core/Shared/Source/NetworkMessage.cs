@@ -76,13 +76,15 @@ namespace MNet
             }
         }
 
+        public const int HeaderSize = sizeof(ushort);
+
+        public int BinarySize => raw.Length + HeaderSize;
+
         public void Select(INetworkSerializableResolver.Context context)
         {
             context.Select(ref code);
             context.Select(ref raw);
         }
-
-        public static NetworkMessage Read(byte[] data) => NetworkSerializer.Deserialize<NetworkMessage>(data);
 
         public static NetworkMessage Write<T>(T payload)
         {
@@ -96,6 +98,20 @@ namespace MNet
             };
 
             return message;
+        }
+
+        public static NetworkMessage Read(byte[] data) => NetworkSerializer.Deserialize<NetworkMessage>(data);
+
+        public static IEnumerable<NetworkMessage> ReadAll(byte[] data)
+        {
+            var reader = new NetworkReader(data);
+
+            while (reader.Remaining > 0)
+            {
+                var message = reader.Read<NetworkMessage>();
+
+                yield return message;
+            }
         }
     }
 }
