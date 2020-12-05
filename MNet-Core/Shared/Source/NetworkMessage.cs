@@ -13,89 +13,68 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct NetworkMessage : INetworkSerializable
+    public struct NetworkMessage : IManualNetworkSerializable
     {
-        ushort code;
-        public ushort Code { get { return code; } }
+        object payload;
+        public object Payload => payload;
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        public Type Type => payload.GetType();
 
-        Type _type;
-        public Type Type
+        public bool Is<TType>()
         {
-            get
-            {
-                if (_type == null) NetworkPayload.TryGetType(code, out _type);
+            var type = typeof(TType);
 
-                return _type;
-            }
+            return Is(type);
         }
-
-        object _payload;
-        public object Payload
+        public bool Is(Type target)
         {
-            get
-            {
-                if (_payload == null) _payload = NetworkSerializer.Deserialize(raw, Type);
-
-                return _payload;
-            }
+            return target == Type;
         }
-
-        public bool Is<TType>() => Is(typeof(TType));
-        public bool Is(Type target) => target.IsAssignableFrom(Type);
 
         public T Read<T>()
         {
-            try
-            {
-                return (T)Payload;
-            }
-            catch(InvalidCastException ex)
-            {
-                throw new InvalidCastException($"Trying to read {Type} as {typeof(T)}\nInternal Exception: {ex}");
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            if (payload is T result)
+                return result;
+            else
+                throw new InvalidCastException($"Trying to read {Type} as {typeof(T)}");
         }
-        public bool TryRead<T>(out T payload)
+        public bool TryRead<T>(out T output)
             where T : new()
         {
-            if (Is<T>())
+            if (payload is T result)
             {
-                payload = Read<T>();
+                output = result;
                 return true;
             }
             else
             {
-                payload = default(T);
+                output = default;
                 return false;
             }
         }
 
-        public const int HeaderSize = sizeof(ushort);
-
-        public int BinarySize => raw.Length + HeaderSize;
-
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Serialize(NetworkWriter writer)
         {
-            context.Select(ref code);
-            context.Select(ref raw);
+            writer.Write(Type);
+            writer.Write(payload);
         }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out Type type);
+            payload = reader.Read(type);
+        }
+
+        NetworkMessage(object payload)
+        {
+            this.payload = payload;
+        }
+
+        //Static Utility
 
         public static NetworkMessage Write<T>(T payload)
         {
-            var code = NetworkPayload.GetCode<T>();
-            var raw = NetworkSerializer.Serialize(payload);
-
-            var message = new NetworkMessage()
-            {
-                code = code,
-                raw = raw,
-            };
+            var message = new NetworkMessage(payload);
 
             return message;
         }

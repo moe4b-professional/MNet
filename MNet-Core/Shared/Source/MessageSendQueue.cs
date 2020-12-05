@@ -25,6 +25,8 @@ namespace MNet
 
             public bool Empty => Collection.Count == 0;
 
+            NetworkWriter writer;
+
             public void Add(NetworkMessage message)
             {
                 Collection.Add(message);
@@ -32,30 +34,37 @@ namespace MNet
 
             public IEnumerable<byte[]> Serialize(int mtu)
             {
-                var writer = new NetworkWriter(mtu * 2);
+                int position = 0;
 
                 for (int i = 0; i < Count; i++)
                 {
-                    if (writer.Size + Collection[i].BinarySize > mtu)
+                    writer.Write(Collection[i]);
+
+                    if (writer.Size > mtu)
                     {
-                        var segment = writer.Flush();
+                        if (writer.Size - position > mtu) //Check the size of the current Network Message
+                            throw new Exception($"Network Message with Payload of '{Collection[i].Type}' is Too Big to Fit in an MTU of {mtu}");
+
+                        var segment = writer.ToArray(position); //Read all the way to the previous Network Message and make a segment out of that
+
+                        writer.Shift(position); //Shift the bytes of the current Network Message to the start of the stream
 
                         yield return segment;
                     }
 
-                    writer.Write(Collection[i]);
+                    position = writer.Position;
                 }
 
                 if (writer.Size > 0)
                 {
-                    var segment = writer.Flush();
+                    var segment = writer.ToArray();
 
                     yield return segment;
                 }
 
-                writer.Clear();
-
                 Collection.Clear();
+
+                writer.Clear();
             }
 
             public Delivery(DeliveryMode mode)
@@ -63,6 +72,8 @@ namespace MNet
                 this.Mode = mode;
 
                 Collection = new List<NetworkMessage>();
+
+                writer = new NetworkWriter(1024);
             }
         }
 

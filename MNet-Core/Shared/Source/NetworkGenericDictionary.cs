@@ -32,11 +32,11 @@ namespace MNet
 
         public void Set<T>(TKey key, T value)
         {
-            ushort code = NetworkPayload.GetCode<T>();
+            var type = typeof(T);
 
             using (var writer = new NetworkWriter(DefaultValueBufferSize))
             {
-                writer.Write(code);
+                writer.Write(type);
                 writer.Write(value);
 
                 var raw = writer.ToArray();
@@ -63,9 +63,7 @@ namespace MNet
             {
                 using (var reader = new NetworkReader(binary))
                 {
-                    reader.Read(out ushort code);
-
-                    var type = NetworkPayload.GetType(code);
+                    reader.Read(out Type type);
 
                     value = reader.Read(type);
 

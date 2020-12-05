@@ -63,6 +63,15 @@ namespace MNet
             }
         }
         #endregion
+
+        public static T Copy<T>(T original)
+        {
+            var binary = Serialize(original);
+
+            var instance = Deserialize<T>(binary);
+
+            return instance;
+        }
     }
 
     public interface INetworkSerializable

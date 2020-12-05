@@ -57,7 +57,7 @@ namespace MNet
             Resize(extra);
         }
 
-        public void ShiftToStart(int start) => Shift(start, Position);
+        public void Shift(int start) => Shift(start, Position);
         public void Shift(int start, int end)
         {
             for (int i = start; i < end; i++) data[i - start] = data[i];
@@ -89,15 +89,6 @@ namespace MNet
             Buffer.BlockCopy(data, start, result, 0, result.Length);
 
             return result;
-        }
-
-        public byte[] Flush()
-        {
-            var binary = ToArray();
-
-            Clear();
-
-            return binary;
         }
 
         public void Insert(byte[] source)

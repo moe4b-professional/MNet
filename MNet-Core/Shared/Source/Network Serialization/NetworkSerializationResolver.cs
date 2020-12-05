@@ -348,6 +348,26 @@ namespace MNet
     }
     #endregion
 
+    [Preserve]
+    public class TypeNetworkSerializationResolver : NetworkSerializationExplicitResolver<Type>
+    {
+        public override void Serialize(NetworkWriter writer, Type value)
+        {
+            var code = NetworkPayload.GetCode(value);
+
+            writer.Write(code);
+        }
+
+        public override Type Deserialize(NetworkReader reader)
+        {
+            reader.Read(out ushort code);
+
+            var value = NetworkPayload.GetType(code);
+
+            return value;
+        }
+    }
+
     #region POCO
     [Preserve]
     public class GuidNetworkSerializationResolver : NetworkSerializationExplicitResolver<Guid>
@@ -461,13 +481,13 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, object[] value)
         {
-            writer.Write(value.Length);
+            NetworkSerializationHelper.Length.Write(writer, value.Length);
 
             for (int i = 0; i < value.Length; i++)
             {
-                ushort code = NetworkPayload.GetCode(value[i]);
+                var type = value[i].GetType();
 
-                writer.Write(code);
+                writer.Write(type);
 
                 writer.Write(value[i]);
             }
@@ -475,15 +495,13 @@ namespace MNet
 
         public override object[] Deserialize(NetworkReader reader)
         {
-            reader.Read(out int length);
+            NetworkSerializationHelper.Length.Read(reader, out var length);
 
             var value = new object[length];
 
             for (int i = 0; i < length; i++)
             {
-                reader.Read(out ushort code);
-
-                var type = NetworkPayload.GetType(code);
+                reader.Read(out Type type);
 
                 value[i] = reader.Read(type);
             }
@@ -500,13 +518,13 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, List<object> value)
         {
-            writer.Write(value.Count);
+            NetworkSerializationHelper.Length.Write(writer, value.Count);
 
             for (int i = 0; i < value.Count; i++)
             {
-                ushort code = NetworkPayload.GetCode(value[i]);
+                var type = value[i].GetType();
 
-                writer.Write(code);
+                writer.Write(type);
 
                 writer.Write(value[i]);
             }
@@ -514,15 +532,13 @@ namespace MNet
 
         public override List<object> Deserialize(NetworkReader reader)
         {
-            reader.Read(out int count);
+            NetworkSerializationHelper.Length.Read(reader, out var count);
 
             var value = new List<object>(count);
 
             for (int i = 0; i < count; i++)
             {
-                reader.Read(out ushort code);
-
-                var type = NetworkPayload.GetType(code);
+                reader.Read(out Type type);
 
                 var instance = reader.Read(type);
 

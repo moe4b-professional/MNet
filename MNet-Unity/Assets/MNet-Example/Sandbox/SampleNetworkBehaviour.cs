@@ -25,21 +25,22 @@ namespace MNet.Example
 
         public int pakcets = 0;
 
-        float timer = 0f;
-
         void Start()
         {
             transform.position = new Vector3(40, 40, 40);
             transform.rotation = Quaternion.Euler(20, 20, 20);
+
+            StartCoroutine(Procedure());
         }
 
-        void Update()
+        IEnumerator Procedure()
         {
-            if (IsMine == false) return;
+            while(true)
+            {
+                Request();
 
-            timer = Mathf.MoveTowards(timer, delay, Time.deltaTime);
-
-            if (Mathf.Approximately(timer, delay)) Request();
+                yield return new WaitForSeconds(delay);
+            }
         }
 
         void Request() => BroadcastRPC(Call, transform.position, transform.rotation);

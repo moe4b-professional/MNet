@@ -130,7 +130,58 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-            
+            DeliverySegmentation();
+        }
+
+        static void DeliverySegmentation()
+        {
+            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable);
+
+            for (byte i = 1; i <= 40; i++)
+            {
+                var entity = new NetworkEntityID(i);
+                var behaviour = new NetworkBehaviourID(i);
+                var method = new RpxMethodID("Method");
+                var buffer = RpcBufferMode.None;
+                var parameters = new byte[50];
+
+                var payload = RpcRequest.Write(entity, behaviour, method, buffer, parameters);
+
+                var message = NetworkMessage.Write(payload);
+
+                delivery.Add(message);
+            }
+
+            int counter = 1;
+
+            foreach (var segment in delivery.Serialize(500))
+            {
+                Log.Info($"Segment Size: {segment.Length}");
+
+                foreach (var message in NetworkMessage.ReadAll(segment))
+                {
+                    var payload = message.Read<RpcRequest>();
+
+                    Log.Info($"{payload.Entity} : {counter}");
+
+                    counter += 1;
+                }
+            }
+        }
+
+        static void AttributesCollectionSerializtion()
+        {
+            var attributes = new AttributesCollection();
+
+            attributes.Set(0, "Hello World");
+            attributes.Set(1, DateTime.Now);
+            attributes.Set(2, Guid.NewGuid());
+            attributes.Set(3, 40f);
+
+            var copy = NetworkSerializer.Copy(attributes);
+
+            foreach (var key in copy.Keys)
+                Log.Info(attributes[key]);
         }
 
         static void HashSetSerialization()
