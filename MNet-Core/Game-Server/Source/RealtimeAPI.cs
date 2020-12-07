@@ -12,7 +12,7 @@ namespace MNet
 
         public const int Port = Constants.Server.Game.Realtime.Port;
 
-        public bool PoolMessages => GameServer.Config.PoolMessages;
+        public bool QueueMessages => GameServer.Config.QueueMessages;
 
         public virtual void Start()
         {

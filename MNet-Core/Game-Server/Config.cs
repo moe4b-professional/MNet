@@ -27,7 +27,7 @@ namespace MNet
         public RestScheme RestScheme { get; protected set; }
 
         [JsonProperty]
-        public bool PoolMessages { get; protected set; }
+        public bool QueueMessages { get; protected set; }
 
         public RemoteConfig Remote { get; protected set; }
 
@@ -44,7 +44,7 @@ namespace MNet
 
             RestScheme = RestScheme.HTTP;
 
-            PoolMessages = true;
+            QueueMessages = true;
         }
 
         public virtual void Set(RemoteConfig instance) => Remote = instance;

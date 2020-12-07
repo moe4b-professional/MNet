@@ -53,8 +53,8 @@ namespace MNet
         public Version Version { get; protected set; }
 
         [SerializeField]
-        bool poolMessages = true;
-        public bool PoolMessages => poolMessages;
+        bool queueMessages = true;
+        public bool QueueMessages => queueMessages;
 
         public RemoteConfig Remote { get; protected set; }
 

@@ -39,7 +39,7 @@ namespace MNet
             {
                 Procedure();
             }
-            catch
+            catch (Exception ex)
             {
                 throw;
             }

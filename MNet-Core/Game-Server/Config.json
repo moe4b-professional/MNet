@@ -4,5 +4,5 @@
   "PublicAddress": null,
   "Region": "Local",
   "RestScheme": "HTTP",
-  "PoolMessages": true
+  "QueueMessages": true
 }

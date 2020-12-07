@@ -120,7 +120,7 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (Realtime.PoolMessages)
+            if (Realtime.QueueMessages)
             {
                 QueueMessage(message, target, mode);
             }
@@ -142,7 +142,7 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (Realtime.PoolMessages)
+            if (Realtime.QueueMessages)
             {
                 foreach (var client in Clients.Values)
                 {
@@ -219,7 +219,7 @@ namespace MNet
 
             if (Scheduler.Running == false) return;
 
-            if (Realtime.PoolMessages) ResolveSendQueues();
+            if (Realtime.QueueMessages) ResolveSendQueues();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)

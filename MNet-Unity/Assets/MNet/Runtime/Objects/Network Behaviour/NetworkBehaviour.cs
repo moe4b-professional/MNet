@@ -180,6 +180,12 @@ namespace MNet
 
         bool SendRPC(RpcBind bind, RpcRequest request)
         {
+            if(NetworkAPI.Client.IsConnected == false)
+            {
+                Debug.LogWarning($"Attempting to Send RPC {request} when Client is not Connected, Ignoring");
+                return false;
+            }
+
             if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
             {
                 Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
@@ -261,7 +267,7 @@ namespace MNet
         {
             var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, value);
 
-            NetworkAPI.Client.Send(payload);
+            Send(payload);
         }
         #endregion
 
@@ -321,11 +327,17 @@ namespace MNet
 
             var request = bind.CreateRequest(value);
 
-            return SyncVar(bind, request);
+            return SendSyncVar(bind, request);
         }
 
-        bool SyncVar(SyncVarBind bind, SyncVarRequest request)
+        bool SendSyncVar(SyncVarBind bind, SyncVarRequest request)
         {
+            if (NetworkAPI.Client.IsConnected == false)
+            {
+                Debug.LogWarning($"Attempting to Send SyncVar {request} when Client is not Connected, Ignoring");
+                return false;
+            }
+
             if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
             {
                 Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
