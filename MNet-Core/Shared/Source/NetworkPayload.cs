@@ -36,7 +36,7 @@ namespace MNet
         }
         public static ushort GetCode(object instance)
         {
-            if (instance == null) throw new ArgumentNullException();
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
 
             var type = instance.GetType();
 
@@ -47,7 +47,7 @@ namespace MNet
             if (TryGetCode(type, out var code))
                 return code;
             else
-                throw new Exception($"Type {type} Not Registered as NetworkPayload");
+                throw new Exception($"Type {type} Not Registered as a NetworkPayload");
         }
 
         public static bool TryGetCode(Type type, out ushort code)
@@ -69,7 +69,7 @@ namespace MNet
                 if (Implicits[i].IsAssignableFrom(target))
                     return TryGetCode(Implicits[i], out code);
 
-            code = 0;
+            code = default;
             return false;
         }
         #endregion
@@ -83,6 +83,7 @@ namespace MNet
             Register(code, type, useForChildern);
         }
 
+        public static void Register(ushort code, Type type) => Register(code, type, false);
         public static void Register(ushort code, Type type, bool useForChildern)
         {
             Validate(code, type);

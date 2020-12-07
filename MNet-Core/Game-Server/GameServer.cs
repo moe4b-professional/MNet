@@ -130,7 +130,7 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-            DeliverySegmentation();
+
         }
 
         static void DeliverySegmentation()
@@ -263,14 +263,14 @@ namespace MNet
             Log.Info(value.ToPrettyString());
         }
 
-        static void NetTupleSerialization()
+        static void TupleSerialization()
         {
-            var tuple = NetTuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());
+            var tuple = Tuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());
             var type = tuple.GetType();
             var binary = NetworkSerializer.Serialize(tuple);
 
-            var payload = NetworkSerializer.Deserialize(binary, type) as INetTuple;
-            foreach (var item in payload) Log.Info(item);
+            var payload = NetworkSerializer.Deserialize(binary, type) as ITuple;
+            for (int i = 0; i < payload.Length; i++) Log.Info(payload[i]);
         }
 
         static void ObjectArraySerialization()

@@ -610,38 +610,6 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class NetTupleNetworkSerializationImplicitResolver : NetworkSerializationImplicitResolver
-    {
-        public static Type Interface => typeof(INetTuple);
-
-        public override bool CanResolve(Type target) => Interface.IsAssignableFrom(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            var value = instance as INetTuple;
-
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
-
-            for (int i = 0; i < value.Length; i++)
-                writer.Write(value[i], arguments[i]);
-        }
-
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
-
-            var items = new object[arguments.Length];
-
-            for (int i = 0; i < arguments.Length; i++)
-                items[i] = reader.Read(arguments[i]);
-
-            var value = NetTuple.Create(type, items);
-
-            return value;
-        }
-    }
-
-    [Preserve]
     public sealed class NullableNetworkSerializationImplicitResolver : NetworkSerializationImplicitResolver
     {
         public override bool CanResolve(Type target)

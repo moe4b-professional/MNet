@@ -53,7 +53,17 @@ namespace MNet.Example
 
 		void Start()
 		{
-			NetworkAPI.Client.SpawnEntity("Sample");
+			Spawn();
+		}
+
+		void Spawn()
+        {
+			var attributes = new AttributesCollection();
+
+			attributes.Set(0, Vector3.forward * 40);
+			attributes.Set(1, Quaternion.Euler(0, 180, 0));
+
+			NetworkAPI.Client.SpawnEntity("Sample", attributes: attributes);
 		}
 
 		public void Quit()

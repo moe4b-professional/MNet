@@ -204,9 +204,9 @@ namespace MNet
     [Preserve]
     public class NetworkEntityNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public static Type Type { get; protected set; } = typeof(NetworkEntity);
+        public static Type Class { get; protected set; } = typeof(NetworkEntity);
 
-        public override bool CanResolve(Type target) => Type.IsAssignableFrom(target);
+        public override bool CanResolve(Type target) => Class.IsAssignableFrom(target);
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
@@ -261,9 +261,9 @@ namespace MNet
     [Preserve]
     public class NetworkBehaviourNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public static Type Type { get; protected set; } = typeof(NetworkBehaviour);
+        public static Type Class { get; protected set; } = typeof(NetworkBehaviour);
 
-        public override bool CanResolve(Type target) => Type.IsAssignableFrom(target);
+        public override bool CanResolve(Type target) => Class.IsAssignableFrom(target);
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {

@@ -25,10 +25,18 @@ namespace MNet.Example
 
         public int pakcets = 0;
 
+        void ReadAttributes(out Vector3 position, out Quaternion rotation)
+        {
+            Attributes.TryGetValue(0, out position);
+            Attributes.TryGetValue(1, out rotation);
+        }
+
         void Start()
         {
-            transform.position = new Vector3(40, 40, 40);
-            transform.rotation = Quaternion.Euler(20, 20, 20);
+            ReadAttributes(out var position, out var rotation);
+
+            transform.position = position;
+            transform.rotation = rotation;
 
             StartCoroutine(Procedure());
         }

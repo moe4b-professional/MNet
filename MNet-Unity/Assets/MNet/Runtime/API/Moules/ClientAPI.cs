@@ -161,8 +161,7 @@ namespace MNet
             #endregion
 
             #region Spawn Entity
-            public static void SpawnEntity(string resource, NetworkClientID? owner = null) => SpawnEntity(resource, null, owner);
-            public static void SpawnEntity(string resource, AttributesCollection attributes, NetworkClientID? owner = null)
+            public static void SpawnEntity(string resource, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
                 var request = SpawnEntityRequest.Write(resource, attributes, owner);
 
