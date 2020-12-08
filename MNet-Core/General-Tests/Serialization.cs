@@ -1,0 +1,154 @@
+using NUnit.Framework;
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+using System.Runtime.CompilerServices;
+
+namespace MNet
+{
+    public class Serialization
+    {
+        [SetUp]
+        public void Setup()
+        {
+            
+        }
+
+        [Test]
+        public void DeliverySegmentation()
+        {
+            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable);
+
+            for (byte i = 1; i <= 40; i++)
+            {
+                var payload = "XOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXO";
+
+                var message = NetworkMessage.Write(payload);
+
+                delivery.Add(message);
+            }
+
+            var original = new List<NetworkMessage>(delivery.Collection);
+
+            var copy = new List<NetworkMessage>(original.Count);
+
+            foreach (var segment in delivery.Serialize(500))
+            {
+                foreach (var message in NetworkMessage.ReadAll(segment))
+                {
+                    copy.Add(message);
+                }
+            }
+
+            Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void AttributesCollection()
+        {
+            var original = new AttributesCollection();
+
+            original.Set(0, "Hello World");
+            original.Set(1, DateTime.Now);
+            original.Set(2, Guid.NewGuid());
+            original.Set(3, 40f);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            foreach (var key in original.Keys)
+            {
+                if (Equals(original[key], copy[key]) == false)
+                    Assert.Fail($"Mistmatched Data on Key {key}");
+            }
+        }
+
+        [Test]
+        public void HashSet()
+        {
+            var original = new HashSet<int>();
+
+            original.Add(42);
+            original.Add(24);
+            original.Add(120);
+            original.Add(420);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void NullableTuple()
+        {
+            var original = new Tuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Nullable()
+        {
+            NetworkClientID? original = new NetworkClientID(20);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, copy);
+        }
+
+        [Test]
+        public void NullableList()
+        {
+            var original = new List<int?>() { 42, null, 12, 420, null, 69 };
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Tuple()
+        {
+            var original = ("Hello World", 4, DateTime.Now, Guid.NewGuid());
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void ObjectArray()
+        {
+            var original = new object[]
+            {
+                "Hello World",
+                42,
+                Guid.NewGuid(),
+                DateTime.Now,
+            };
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void ObjectListSerialization()
+        {
+            var original = new List<object>
+            {
+                "Hello World",
+                20,
+                Guid.NewGuid(),
+                DateTime.Now,
+            };
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Utility.Compare(original, copy);
+        }
+    }
+}

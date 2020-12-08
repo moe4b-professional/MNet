@@ -64,7 +64,7 @@ namespace MNet
         }
         #endregion
 
-        public static T Copy<T>(T original)
+        public static T Clone<T>(T original)
         {
             var binary = Serialize(original);
 

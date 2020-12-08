@@ -9,6 +9,7 @@ using System.Threading;
 
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 
 namespace MNet
 {
@@ -133,185 +134,48 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-
+            
         }
 
-        static void DeliverySegmentation()
+        static void Serialize()
         {
-            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable);
-
-            for (byte i = 1; i <= 40; i++)
+            var data = new Data()
             {
-                var entity = new NetworkEntityID(i);
-                var behaviour = new NetworkBehaviourID(i);
-                var method = new RpxMethodID("Method");
-                var buffer = RpcBufferMode.None;
-                var parameters = new byte[50];
+                number = 42,
+                text = "Hello World",
+                date = DateTime.Now,
+                guid = Guid.NewGuid(),
+            };
 
-                var payload = RpcRequest.Write(entity, behaviour, method, buffer, parameters);
+            var binary = NetworkSerializer.Serialize(data);
 
-                var message = NetworkMessage.Write(payload);
+            var stopwatch = Stopwatch.StartNew();
 
-                delivery.Add(message);
+            for (int i = 0; i < 10_000; i++)
+            {
+                //NetworkSerializer.Deserialize<Data>(binary);
+                NetworkSerializer.Serialize(data);
             }
 
-            int counter = 1;
+            stopwatch.Stop();
 
-            foreach (var segment in delivery.Serialize(500))
+            Log.Info($"Elapsed: {stopwatch.ElapsedMilliseconds}");
+        }
+
+        struct Data : INetworkSerializable
+        {
+            public int number;
+            public string text;
+            public DateTime date;
+            public Guid guid;
+
+            public void Select(INetworkSerializableResolver.Context context)
             {
-                Log.Info($"Segment Size: {segment.Length}");
-
-                foreach (var message in NetworkMessage.ReadAll(segment))
-                {
-                    var payload = message.Read<RpcRequest>();
-
-                    Log.Info($"{payload.Entity} : {counter}");
-
-                    counter += 1;
-                }
+                context.Select(ref number);
+                context.Select(ref text);
+                context.Select(ref date);
+                context.Select(ref guid);
             }
-        }
-
-        static void AttributesCollectionSerializtion()
-        {
-            var attributes = new AttributesCollection();
-
-            attributes.Set(0, "Hello World");
-            attributes.Set(1, DateTime.Now);
-            attributes.Set(2, Guid.NewGuid());
-            attributes.Set(3, 40f);
-
-            var copy = NetworkSerializer.Copy(attributes);
-
-            foreach (var key in copy.Keys)
-                Log.Info(attributes[key]);
-        }
-
-        static void HashSetSerialization()
-        {
-            var hash = new HashSet<int>();
-
-            hash.Add(42);
-            hash.Add(24);
-            hash.Add(120);
-            hash.Add(420);
-
-            var binary = NetworkSerializer.Serialize(hash);
-
-            var instance = NetworkSerializer.Deserialize<HashSet<int>>(binary);
-
-            foreach (var item in instance) Log.Info(item);
-        }
-
-        static void NullableTupleSerialization()
-        {
-            Tuple<DateTime?, Guid?, int?> tuple = new Tuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);
-
-            var type = tuple.GetType();
-
-            var binary = NetworkSerializer.Serialize(tuple);
-
-            var value = NetworkSerializer.Deserialize(binary, type) as ITuple;
-
-            for (int i = 0; i < value.Length; i++) Log.Info(value[i]);
-        }
-
-        static void CreateRooms()
-        {
-            var app = AppID.Parse("AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA");
-
-            var version = Version.Create(0, 1);
-
-            var attributes = new AttributesCollection();
-            attributes.Set(0, "Level 1");
-
-            GameServer.Lobby.CreateRoom(app, version, "Game Room #1", 4, attributes);
-            GameServer.Lobby.CreateRoom(app, version, "Game Room #2", 8, attributes);
-        }
-
-        static void NullableSerialization()
-
-        {
-            NetworkClientID? value = new NetworkClientID(20);
-
-            var binary = NetworkSerializer.Serialize(value);
-
-            Log.Info(binary.ToPrettyString());
-
-            var instance = NetworkSerializer.Deserialize<NetworkClientID?>(binary);
-
-            Log.Info(instance);
-        }
-
-        static void NullableListSerialization()
-        {
-            var list = new List<int?>()
-            {
-                42,
-                null,
-                12,
-                420,
-                null,
-                69
-            };
-
-            var type = list.GetType();
-
-            var binary = NetworkSerializer.Serialize(list);
-
-            Log.Info(binary.ToPrettyString());
-
-            var value = NetworkSerializer.Deserialize(binary, type) as IList;
-
-            Log.Info(value.ToPrettyString());
-        }
-
-        static void TupleSerialization()
-        {
-            var tuple = Tuple.Create("Hello World", 4, DateTime.Now, Guid.NewGuid());
-            var type = tuple.GetType();
-            var binary = NetworkSerializer.Serialize(tuple);
-
-            var payload = NetworkSerializer.Deserialize(binary, type) as ITuple;
-            for (int i = 0; i < payload.Length; i++) Log.Info(payload[i]);
-        }
-
-        static void ObjectArraySerialization()
-        {
-            var array = new object[]
-            {
-                "Hello World",
-                20,
-                Guid.NewGuid(),
-                DateTime.Now,
-            };
-
-            var type = array.GetType();
-
-            var binary = NetworkSerializer.Serialize(array);
-
-            var value = NetworkSerializer.Deserialize(binary, type) as Array;
-
-            foreach (var item in value) Log.Info(item);
-        }
-
-        static void ObjectListSerialization()
-        {
-            var list = new List<object>
-            {
-                "Hello World",
-                20,
-                Guid.NewGuid(),
-                DateTime.Now,
-            };
-
-            var type = list.GetType();
-
-            var binary = NetworkSerializer.Serialize(list);
-
-            var value = NetworkSerializer.Deserialize(binary, type) as IList;
-
-            foreach (var item in value) Log.Info(item);
         }
 #pragma warning restore IDE0051
     }

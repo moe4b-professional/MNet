@@ -179,6 +179,8 @@ namespace MNet
 
             Register<PingRequest>(44);
             Register<PingResponse>(45);
+
+            Register<byte[]>(46);
         }
 
         static NetworkPayload()
