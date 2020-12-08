@@ -18,4 +18,4 @@ MonoBehaviour:
   version:
     value: 0.0.1
     infer: 1
-  poolMessages: 1
+  queueMessages: 1

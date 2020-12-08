@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using SharpHttpRequest = WebSocketSharp.Net.HttpListenerRequest;
 using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
 
-using System.Linq;
 using System.Threading;
+using System.Linq;
+using System.IO;
 
 namespace MNet
 {
@@ -26,6 +27,8 @@ namespace MNet
 
         static void Main()
         {
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
             try
             {
                 Procedure();
@@ -41,6 +44,8 @@ namespace MNet
         static void Procedure()
         {
             Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
+
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");
 

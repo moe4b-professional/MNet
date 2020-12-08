@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 
 using System.Text;
+using System.IO;
 
 namespace MNet
 {
@@ -39,7 +40,7 @@ namespace MNet
             {
                 Procedure();
             }
-            catch (Exception ex)
+            catch
             {
                 throw;
             }
@@ -52,6 +53,8 @@ namespace MNet
         static void Procedure()
         {
             Console.Title = $"Game Sever | Network API v{Constants.ApiVersion}";
+
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");
 
@@ -67,7 +70,7 @@ namespace MNet
 
             MasterServer.Configure(Config.MasterAddress);
 
-            if (Register() == false) return;
+            if (RegisterOnMaster() == false) return;
 
             Rest = new RestAPI(Constants.Server.Game.Rest.Port);
             Rest.Start();
@@ -109,7 +112,7 @@ namespace MNet
             }
         }
 
-        static bool Register()
+        static bool RegisterOnMaster()
         {
             if (MasterServer.Register(GetInfo(), ApiKey.Token, out var response) == false)
             {

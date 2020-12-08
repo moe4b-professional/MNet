@@ -174,13 +174,13 @@ namespace MNet
             return component;
         }
 
-        public static NetworkScene Get(int sceneIndex)
+        public static NetworkScene Find(int sceneIndex)
         {
             var scene = SceneManager.GetSceneByBuildIndex(sceneIndex);
 
-            return Get(scene);
+            return Find(scene);
         }
-        public static NetworkScene Get(Scene scene)
+        public static NetworkScene Find(Scene scene)
         {
             NetworkScene component;
 
@@ -196,7 +196,7 @@ namespace MNet
 
         public static void Register(NetworkEntity entity)
         {
-            var component = Get(entity.Scene);
+            var component = Find(entity.Scene);
 
             if (component == null) component = Create(entity.Scene);
 
@@ -204,14 +204,12 @@ namespace MNet
         }
         public static void Unregister(NetworkEntity entity)
         {
-            var component = Get(entity.Scene);
+            var scene = Find(entity.Scene);
 
-            if (entity.Scene.isLoaded == false) return;
-
-            if (component == null)
-                component = Create(entity.Scene);
+            if (scene == null)
+                Create(entity.Scene);
             else
-                component.Remove(entity);
+                scene.Remove(entity);
         }
 
         static NetworkScene()

@@ -219,7 +219,7 @@ namespace MNet
 
                 if (command.Type == NetworkEntityType.SceneObject)
                 {
-                    var scene = NetworkScene.Get(command.Scene);
+                    var scene = NetworkScene.Find(command.Scene);
 
                     if (scene == null) throw new Exception($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Index}");
 
