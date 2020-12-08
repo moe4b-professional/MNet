@@ -50,8 +50,6 @@ namespace MNet
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
         #endregion
 
-        public RealtimeAPI Realtime => GameServer.Realtime;
-
         public INetworkTransportContext TransportContext { get; protected set; }
 
         public Scheduler Scheduler { get; protected set; }
@@ -120,7 +118,7 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (Realtime.QueueMessages)
+            if (RealtimeAPI.QueueMessages)
             {
                 QueueMessage(message, target, mode);
             }
@@ -142,7 +140,7 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (Realtime.QueueMessages)
+            if (RealtimeAPI.QueueMessages)
             {
                 foreach (var client in Clients.Values)
                 {
@@ -181,7 +179,7 @@ namespace MNet
                 {
                     if (delivery.Empty) continue;
 
-                    foreach (var binary in delivery.Serialize(Realtime.Transport.MTU))
+                    foreach (var binary in delivery.Serialize(RealtimeAPI.Transport.MTU))
                         TransportContext.Send(client.ID, binary, delivery.Mode);
                 }
             }
@@ -194,7 +192,7 @@ namespace MNet
 
             Timestamp = DateTime.UtcNow;
 
-            TransportContext = Realtime.Register(ID.Value);
+            TransportContext = RealtimeAPI.Register(ID.Value);
 
             TransportContext.OnConnect += ClientConnected;
             TransportContext.OnMessage += MessageRecievedCallback;
@@ -219,7 +217,7 @@ namespace MNet
 
             if (Scheduler.Running == false) return;
 
-            if (Realtime.QueueMessages) ResolveSendQueues();
+            if (RealtimeAPI.QueueMessages) ResolveSendQueues();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
@@ -588,7 +586,7 @@ namespace MNet
 
             Scheduler.Stop();
 
-            GameServer.Realtime.Unregister(ID.Value);
+            RealtimeAPI.Unregister(ID.Value);
 
             OnStop?.Invoke(this);
         }

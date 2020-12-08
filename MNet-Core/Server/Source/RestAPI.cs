@@ -17,30 +17,13 @@ using System.Net.Http;
 
 namespace MNet
 {
-    public class RestAPI
+    public static class RestAPI
     {
-        public HttpServer Server { get; protected set; }
+        public static HttpServer Server { get; private set; }
 
-        public RestAPIRouter Router { get; protected set; }
+        public static RestAPIRouter Router { get; private set; }
 
-        public void Start()
-        {
-            Log.Info($"Starting {nameof(RestAPI)}");
-
-            Server.Start();
-        }
-
-        void RequestCallback(object sender, HttpRequestEventArgs args)
-        {
-            var request = args.Request;
-            var response = args.Response;
-
-            Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
-
-            if (Router.Process(request, response) == false) Write(response, RestStatusCode.NotFound, "Error 404");
-        }
-
-        public RestAPI(int port)
+        public static void Configure(ushort port)
         {
             Log.Info($"Configuring {nameof(RestAPI)} on Port:{port}");
 
@@ -52,6 +35,23 @@ namespace MNet
             Server.OnPut += RequestCallback;
 
             Router = new RestAPIRouter();
+        }
+
+        public static void Start()
+        {
+            Log.Info($"Starting {nameof(RestAPI)}");
+
+            Server.Start();
+        }
+
+        static void RequestCallback(object sender, HttpRequestEventArgs args)
+        {
+            var request = args.Request;
+            var response = args.Response;
+
+            Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
+
+            if (Router.Process(request, response) == false) Write(response, RestStatusCode.NotFound, "Error 404");
         }
 
         //Static Utility

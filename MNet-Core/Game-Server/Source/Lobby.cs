@@ -12,21 +12,21 @@ using WebSocketSharp.Net;
 
 namespace MNet
 {
-    class Lobby
+    static class Lobby
     {
-        public RoomCollection Rooms { get; protected set; }
+        public static RoomCollection Rooms { get; private set; }
 
-        public RestAPI Rest => GameServer.Rest;
+        static readonly object SyncLock = new object();
 
-        readonly object SyncLock = new object();
-
-        public void Configure()
+        public static void Configure()
         {
-            Rest.Router.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
-            Rest.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, CreateRoom);
+            Rooms = new RoomCollection();
+
+            RestAPI.Router.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
+            RestAPI.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, CreateRoom);
         }
 
-        public void GetInfo(HttpListenerRequest request, HttpListenerResponse response)
+        public static void GetInfo(HttpListenerRequest request, HttpListenerResponse response)
         {
             GetLobbyInfoRequest payload;
             try
@@ -46,7 +46,7 @@ namespace MNet
             RestAPI.Write(response, info);
         }
 
-        public List<RoomBasicInfo> Query(AppID appID, Version version)
+        public static List<RoomBasicInfo> Query(AppID appID, Version version)
         {
             var targets = Rooms.Query(appID, version);
 
@@ -54,7 +54,7 @@ namespace MNet
         }
 
         #region Create Room
-        public void CreateRoom(HttpListenerRequest request, HttpListenerResponse response)
+        public static void CreateRoom(HttpListenerRequest request, HttpListenerResponse response)
         {
             CreateRoomRequest payload;
             try
@@ -73,7 +73,7 @@ namespace MNet
             RestAPI.Write(response, info);
         }
 
-        public Room CreateRoom(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
+        public static Room CreateRoom(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             Log.Info($"Creating Room '{name}'");
 
@@ -96,16 +96,11 @@ namespace MNet
         }
         #endregion
 
-        void RoomStopCallback(Room room) => RemoveRoom(room);
+        static void RoomStopCallback(Room room) => RemoveRoom(room);
 
-        public bool RemoveRoom(Room room)
+        public static bool RemoveRoom(Room room)
         {
             lock (SyncLock) return Rooms.Remove(room);
-        }
-
-        public Lobby()
-        {
-            Rooms = new RoomCollection();
         }
     }
 }

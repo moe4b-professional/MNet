@@ -19,7 +19,7 @@ namespace MNet
         /// <summary>
         /// Numerical Value to Describe the Version, used for Comparison & Hashing
         /// </summary>
-        public int Value => (patch) + (minor * 1000) + (major * 1000000);
+        public int Value => (patch) + (minor * 1_000) + (major * 1_000_000);
 
         public const char Splitter = '.';
 

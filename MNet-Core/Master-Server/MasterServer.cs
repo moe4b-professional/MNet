@@ -21,8 +21,6 @@ namespace MNet
 
         public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
 
-        public static RestAPI Rest { get; private set; }
-
         static readonly object SyncLock = new object();
 
         static void Main()
@@ -60,12 +58,12 @@ namespace MNet
             Log.Info("Registered Apps:");
             foreach (var app in Apps.Values) Log.Info(app);
 
-            Rest = new RestAPI(Constants.Server.Master.Rest.Port);
-            Rest.Start();
+            RestAPI.Configure(Constants.Server.Master.Rest.Port);
+            RestAPI.Start();
 
-            Rest.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
-            Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
-            Rest.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
+            RestAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
+            RestAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
+            RestAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
         }
 
         static void GetInfo(SharpHttpRequest request, SharpHttpResponse response)

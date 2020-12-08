@@ -30,11 +30,6 @@ namespace MNet
 
         public static GameServerInfo GetInfo() => new GameServerInfo(ID, Name, Region);
 
-        public static RestAPI Rest { get; private set; }
-        public static RealtimeAPI Realtime { get; private set; }
-
-        public static Lobby Lobby { get; private set; }
-
         static void Main()
         {
             try
@@ -73,13 +68,12 @@ namespace MNet
 
             if (RegisterOnMaster() == false) return;
 
-            Rest = new RestAPI(Constants.Server.Game.Rest.Port);
-            Rest.Start();
+            RestAPI.Configure(Constants.Server.Game.Rest.Port);
+            RestAPI.Start();
 
-            Realtime = new RealtimeAPI(Config.Remote.Transport);
-            Realtime.Start();
+            RealtimeAPI.Configure(Config.Remote.Transport);
+            RealtimeAPI.Start();
 
-            Lobby = new Lobby();
             Lobby.Configure();
         }
 
@@ -134,7 +128,7 @@ namespace MNet
 #pragma warning disable IDE0051
         public static void Run()
         {
-            
+
         }
 
         static void Serialize()
@@ -166,8 +160,8 @@ namespace MNet
         {
             public int number;
             public string text;
-            public DateTime date;
-            public Guid guid;
+            public DateTime? date;
+            public Guid? guid;
 
             public void Select(INetworkSerializableResolver.Context context)
             {

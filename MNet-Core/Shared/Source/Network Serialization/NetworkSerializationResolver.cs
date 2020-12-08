@@ -626,7 +626,7 @@ namespace MNet
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var underlying = Nullable.GetUnderlyingType(type);
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type underlying);
 
             var value = reader.Read(underlying);
 

@@ -6,26 +6,15 @@ using System.Net;
 
 namespace MNet
 {
-    class RealtimeAPI
+    static class RealtimeAPI
     {
-        public INetworkTransport Transport { get; protected set; }
+        public static INetworkTransport Transport { get; private set; }
 
         public const int Port = Constants.Server.Game.Realtime.Port;
 
-        public bool QueueMessages => GameServer.Config.QueueMessages;
+        public static bool QueueMessages => GameServer.Config.QueueMessages;
 
-        public virtual void Start()
-        {
-            Log.Info($"Starting {Transport.GetType().Name}");
-
-            Transport.Start();
-        }
-
-        public virtual INetworkTransportContext Register(uint code) => Transport.Register(code);
-
-        public virtual void Unregister(uint code) => Transport.Unregister(code);
-
-        public RealtimeAPI(NetworkTransportType type)
+        public static void Configure(NetworkTransportType type)
         {
             switch (type)
             {
@@ -38,5 +27,16 @@ namespace MNet
                     break;
             }
         }
+
+        public static void Start()
+        {
+            Log.Info($"Starting {Transport.GetType().Name}");
+
+            Transport.Start();
+        }
+
+        public static INetworkTransportContext Register(uint code) => Transport.Register(code);
+
+        public static void Unregister(uint code) => Transport.Unregister(code);
     }
 }
