@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.30503.244
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csproj", "{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stress-Test", "Stress-Client\Stress-Test.csproj", "{6185A9D5-C34F-46FF-A929-DA3B6B41F452}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Game-Server", "Game-Server\Game-Server.csproj", "{C06A8B62-0279-4523-8AB8-BB1E48143808}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Master-Server", "Master-Server\Master-Server.csproj", "{CC706A1B-0DF3-4C33-89BA-66A1F9F51F1E}"
@@ -33,10 +31,6 @@ Global
 		{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6185A9D5-C34F-46FF-A929-DA3B6B41F452}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C06A8B62-0279-4523-8AB8-BB1E48143808}.Release|Any CPU.ActiveCfg = Release|Any CPU

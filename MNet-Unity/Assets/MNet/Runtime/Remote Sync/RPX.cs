@@ -21,25 +21,6 @@ using System.Reflection;
 
 namespace MNet
 {
-    [Flags]
-    public enum RemoteAuthority : byte
-    {
-        /// <summary>
-        /// As the name implies, any client will be able to the remote action
-        /// </summary>
-        Any = 1 << 0,
-
-        /// <summary>
-        /// Only the owner of this entity may invoke this this remote action
-        /// </summary>
-        Owner = 1 << 1,
-
-        /// <summary>
-        /// Only the master client may invoke this remote action
-        /// </summary>
-        Master = 1 << 2,
-    }
-
     #region Call
     public class RpcBind
     {
@@ -51,7 +32,7 @@ namespace MNet
         public DeliveryMode DeliveryMode => Attribute.Delivery;
 
         public MethodInfo MethodInfo { get; protected set; }
-        public RpxMethodID MethodID { get; protected set; }
+        public RpcMethodID MethodID { get; protected set; }
 
         public string Name { get; protected set; }
 
@@ -111,7 +92,7 @@ namespace MNet
 
             MethodInfo = method;
             Name = MethodInfo.Name;
-            MethodID = new RpxMethodID(Name);
+            MethodID = new RpcMethodID(Name);
 
             ParametersInfo = method.GetParameters();
 

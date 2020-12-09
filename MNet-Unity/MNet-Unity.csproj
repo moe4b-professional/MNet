@@ -118,8 +118,8 @@
      <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviourGRPCs.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkClient.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkEntity.cs" />
-     <Compile Include="Assets\MNet\Runtime\Remote Calls\RPX.cs" />
-     <Compile Include="Assets\MNet\Runtime\Remote Calls\SyncVar.cs" />
+     <Compile Include="Assets\MNet\Runtime\Remote Sync\RPX.cs" />
+     <Compile Include="Assets\MNet\Runtime\Remote Sync\SyncVar.cs" />
      <Compile Include="Assets\MNet\Runtime\Serialization\UnitTypesNetworkSerialization.cs" />
      <Compile Include="Assets\MNet\Runtime\Transport\DistributedNetworkTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Transport\NetworkTransport.cs" />

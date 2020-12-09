@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
-    #region Call
+    #region RPC
     public enum RpcType : byte
     {
         Broadcast, Target, Return
@@ -22,6 +22,43 @@ namespace MNet
 
     [Preserve]
     [Serializable]
+    public struct RpcMethodID : INetworkSerializable
+    {
+        string value;
+        public string Value { get { return value; } }
+
+        public void Select(INetworkSerializableResolver.Context context)
+        {
+            context.Select(ref value);
+        }
+
+        public RpcMethodID(string value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() == typeof(RpcMethodID))
+            {
+                var target = (RpcMethodID)obj;
+
+                return target.value == this.value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(RpcMethodID a, RpcMethodID b) => a.Equals(b);
+        public static bool operator !=(RpcMethodID a, RpcMethodID b) => !a.Equals(b);
+    }
+
+    [Preserve]
+    [Serializable]
     public struct RpcRequest : INetworkSerializable
     {
         NetworkEntityID entity;
@@ -30,8 +67,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpxMethodID method;
-        public RpxMethodID Method { get { return method; } }
+        RpcMethodID method;
+        public RpcMethodID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -119,7 +156,7 @@ namespace MNet
             return raw;
         }
 
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RpcBufferMode bufferMode, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RpcBufferMode bufferMode, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -135,7 +172,7 @@ namespace MNet
 
             return request;
         }
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -151,7 +188,7 @@ namespace MNet
 
             return request;
         }
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, ushort callback, params object[] arguments)
+        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, ushort callback, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -183,8 +220,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpxMethodID method;
-        public RpxMethodID Method { get { return method; } }
+        RpcMethodID method;
+        public RpcMethodID Method { get { return method; } }
 
         NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
@@ -260,7 +297,7 @@ namespace MNet
     }
     #endregion
 
-    #region Return
+    #region RPR
     public enum RprResult : byte
     {
         Success,
@@ -395,41 +432,4 @@ namespace MNet
         }
     }
     #endregion
-
-    [Preserve]
-    [Serializable]
-    public struct RpxMethodID : INetworkSerializable
-    {
-        string value;
-        public string Value { get { return value; } }
-
-        public void Select(INetworkSerializableResolver.Context context)
-        {
-            context.Select(ref value);
-        }
-
-        public RpxMethodID(string value)
-        {
-            this.value = value;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj.GetType() == typeof(RpxMethodID))
-            {
-                var target = (RpxMethodID)obj;
-
-                return target.value == this.value;
-            }
-
-            return false;
-        }
-
-        public override int GetHashCode() => value.GetHashCode();
-
-        public override string ToString() => value.ToString();
-
-        public static bool operator ==(RpxMethodID a, RpxMethodID b) => a.Equals(b);
-        public static bool operator !=(RpxMethodID a, RpxMethodID b) => !a.Equals(b);
-    }
 }

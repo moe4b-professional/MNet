@@ -14,12 +14,14 @@ namespace MNet
 
         public static void Info(object target) => Add(target, Level.Info);
 
+        public static string TimeStamp => DateTime.Now.ToString("hh:mm:ss");
+
         public delegate void OutputDelegate(object target, Level level);
         public static OutputDelegate Output { get; set; }
         static void Add(object target, Level level)
         {
             if (Output == null)
-                Console.WriteLine($"{level}: {target}");
+                Console.WriteLine($"[{TimeStamp}] {level}: {target}");
             else
                 Output(target, level);
         }
