@@ -57,7 +57,7 @@ namespace MNet.Example
 		}
 
 		void Spawn()
-        {
+		{
 			var attributes = new AttributesCollection();
 
 			attributes.Set(0, Vector3.forward * 40);

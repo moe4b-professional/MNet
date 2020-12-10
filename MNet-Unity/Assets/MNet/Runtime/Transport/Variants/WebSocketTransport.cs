@@ -29,7 +29,7 @@ namespace MNet
     {
         public WebSocket Socket { get; protected set; }
 
-        public const int Port = Constants.Server.Game.Realtime.Port;
+        public override NetworkTransportType Type => NetworkTransportType.WebSocketSharp;
 
         public override bool IsConnected
         {
@@ -41,7 +41,9 @@ namespace MNet
             }
         }
 
-        public override int MTU => Utility.MTU;
+        public const int Port = Constants.Server.Game.Realtime.Port;
+
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         public override void Connect(GameServerID server, RoomID room)
         {

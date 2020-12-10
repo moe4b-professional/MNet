@@ -179,7 +179,7 @@ namespace MNet
                 {
                     if (delivery.Empty) continue;
 
-                    foreach (var binary in delivery.Serialize(RealtimeAPI.Transport.MTU))
+                    foreach (var binary in delivery.Serialize())
                         TransportContext.Send(client.ID, binary, delivery.Mode);
                 }
             }

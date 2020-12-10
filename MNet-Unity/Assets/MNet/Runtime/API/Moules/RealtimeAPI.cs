@@ -33,6 +33,8 @@ namespace MNet
                 Server.Master.OnRemoteConfig += Initialize;
             }
 
+            public delegate void InitializeDelegate(NetworkTransport transport);
+            public static event InitializeDelegate OnInitialize;
             static void Initialize(RemoteConfig config)
             {
                 Server.Master.OnRemoteConfig -= Initialize;
@@ -42,6 +44,8 @@ namespace MNet
                 Transport.OnConnect += ConnectCallback;
                 Transport.OnMessage += MessageCallback;
                 Transport.OnDisconnect += DisconnectCallback;
+
+                OnInitialize?.Invoke(Transport);
             }
 
             public static void Connect(GameServerID server, RoomID room)

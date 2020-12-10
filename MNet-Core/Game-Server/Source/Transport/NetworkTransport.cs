@@ -13,9 +13,9 @@ namespace MNet
     #region Transport
     public interface INetworkTransport
     {
-        public int MTU { get; }
-
         void Start();
+
+        int CheckMTU(DeliveryMode mode);
 
         INetworkTransportContext Register(uint id);
         void Unregister(uint id);
@@ -26,13 +26,13 @@ namespace MNet
         where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
         where TClient : NetworkTransportClient<TContext, TConnection, TIID>
     {
-        public abstract int MTU { get; }
-
         public ConcurrentDictionary<uint, TContext> Contexts { get; protected set; }
 
         public TContext this[uint code] => Contexts[code];
 
         public abstract void Start();
+
+        public abstract int CheckMTU(DeliveryMode mode);
 
         public virtual TContext Register(uint id)
         {

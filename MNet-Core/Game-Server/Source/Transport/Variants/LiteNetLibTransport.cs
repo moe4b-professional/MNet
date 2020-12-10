@@ -16,8 +16,6 @@ namespace MNet
 {
     class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
     {
-        public override int MTU => Utility.MTU;
-
         public NetManager Manager { get; protected set; }
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
@@ -28,6 +26,8 @@ namespace MNet
         {
             Manager.Start(Port);
         }
+
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         void Run()
         {

@@ -12,7 +12,17 @@ namespace MNet
     {
         public static class LiteNetLib
         {
-            public const int MTU = 400;
+            public static int CheckMTU(DeliveryMode mode)
+            {
+                switch (mode)
+                {
+                    case DeliveryMode.Reliable:
+                        return int.MaxValue;
+
+                    default:
+                        return 400;
+                }
+            }
 
             public static class Disconnect
             {
@@ -79,9 +89,6 @@ namespace MNet
 
                     Glossary.Add(DeliveryMode.Reliable, DeliveryMethod.ReliableOrdered);
                     Glossary.Add(DeliveryMode.Unreliable, DeliveryMethod.Unreliable);
-                    Glossary.Add(DeliveryMode.ReliableSequenced, DeliveryMethod.ReliableSequenced);
-                    Glossary.Add(DeliveryMode.UnreliableSequenced, DeliveryMethod.Sequenced);
-                    Glossary.Add(DeliveryMode.ReliableUnordered, DeliveryMethod.ReliableUnordered);
                 }
             }
         }

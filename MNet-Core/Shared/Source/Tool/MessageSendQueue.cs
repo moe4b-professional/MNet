@@ -13,6 +13,9 @@ namespace MNet
     {
         public Dictionary<DeliveryMode, Delivery> Dictionary { get; protected set; }
 
+        public CheckMTUDelegate CheckMTU { get; protected set; }
+        public delegate int CheckMTUDelegate(DeliveryMode mode);
+
         public List<Delivery> Deliveries { get; protected set; }
 
         public class Delivery
@@ -25,6 +28,8 @@ namespace MNet
 
             public bool Empty => Collection.Count == 0;
 
+            public int MTU { get; protected set; }
+
             NetworkWriter writer;
 
             public void Add(NetworkMessage message)
@@ -32,7 +37,7 @@ namespace MNet
                 Collection.Add(message);
             }
 
-            public IEnumerable<byte[]> Serialize(int mtu)
+            public IEnumerable<byte[]> Serialize()
             {
                 int position = 0;
 
@@ -40,10 +45,10 @@ namespace MNet
                 {
                     writer.Write(Collection[i]);
 
-                    if (writer.Size > mtu)
+                    if (writer.Size > MTU)
                     {
-                        if (writer.Size - position > mtu) //Check the size of the current Network Message
-                            throw new Exception($"Network Message with Payload of '{Collection[i].Type}' is Too Big to Fit in an MTU of {mtu}");
+                        if (writer.Size - position > MTU) //Check the size of the current Network Message
+                            throw new Exception($"Network Message with Payload of '{Collection[i].Type}' is Too Big to Fit in an MTU of {MTU}");
 
                         var segment = writer.ToArray(position); //Read all the way to the previous Network Message and make a segment out of that
 
@@ -62,16 +67,23 @@ namespace MNet
                     yield return segment;
                 }
 
+                Clear();
+            }
+
+            public void Clear()
+            {
                 Collection.Clear();
 
                 writer.Clear();
             }
 
-            public Delivery(DeliveryMode mode)
+            public Delivery(DeliveryMode mode, int mtu)
             {
                 this.Mode = mode;
 
                 Collection = new List<NetworkMessage>();
+
+                this.MTU = mtu;
 
                 writer = new NetworkWriter(1024);
             }
@@ -81,7 +93,9 @@ namespace MNet
         {
             if (Dictionary.TryGetValue(mode, out var delivery) == false)
             {
-                delivery = new Delivery(mode);
+                var mtu = CheckMTU(mode);
+
+                delivery = new Delivery(mode, mtu);
 
                 Dictionary.Add(mode, delivery);
                 Deliveries.Add(delivery);
@@ -91,32 +105,40 @@ namespace MNet
         }
 
         public delegate void SimpleResolveDelegate(byte[] raw, DeliveryMode mode);
-        public void Resolve(SimpleResolveDelegate method, int mtu)
+        public void Resolve(SimpleResolveDelegate method)
         {
             for (int i = 0; i < Deliveries.Count; i++)
             {
                 if (Deliveries[i].Count == 0) continue;
 
-                foreach (var binary in Deliveries[i].Serialize(mtu))
+                foreach (var binary in Deliveries[i].Serialize())
                     method(binary, Deliveries[i].Mode);
             }
         }
 
         public delegate bool ReturnResolveDelegate(byte[] raw, DeliveryMode mode);
-        public void Resolve(ReturnResolveDelegate method, int mtu)
+        public void Resolve(ReturnResolveDelegate method)
         {
             for (int i = 0; i < Deliveries.Count; i++)
             {
                 if (Deliveries[i].Count == 0) continue;
 
-                foreach (var binary in Deliveries[i].Serialize(mtu))
+                foreach (var binary in Deliveries[i].Serialize())
                     method(binary, Deliveries[i].Mode);
             }
         }
 
-        public MessageSendQueue()
+        public void Clear()
+        {
+            for (int i = 0; i < Deliveries.Count; i++)
+                Deliveries[i].Clear();
+        }
+
+        public MessageSendQueue(CheckMTUDelegate checkMTU)
         {
             Dictionary = new Dictionary<DeliveryMode, Delivery>();
+
+            this.CheckMTU = checkMTU;
 
             Deliveries = new List<Delivery>();
         }

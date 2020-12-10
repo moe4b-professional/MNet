@@ -12,7 +12,7 @@ namespace MNet
     {
         public static class WebSocket
         {
-            public const int MTU = 1024;
+            public static int CheckMTU(DeliveryMode mode) => int.MaxValue;
 
             public static class Disconnect
             {

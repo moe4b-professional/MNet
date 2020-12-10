@@ -19,7 +19,7 @@ namespace MNet
         [Test]
         public void DeliverySegmentation()
         {
-            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable);
+            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable, 500);
 
             for (byte i = 1; i <= 40; i++)
             {
@@ -34,7 +34,7 @@ namespace MNet
 
             var copy = new List<NetworkMessage>(original.Count);
 
-            foreach (var segment in delivery.Serialize(500))
+            foreach (var segment in delivery.Serialize())
             {
                 foreach (var message in NetworkMessage.ReadAll(segment))
                 {

@@ -49,6 +49,11 @@ namespace MNet
 
             }
 
+            static void RealtimeInitializeCallback(NetworkTransport transport)
+            {
+                SendQueue = new MessageSendQueue(transport.CheckMTU);
+            }
+
             static void Update()
             {
                 if (IsConnected) Process();
@@ -56,7 +61,7 @@ namespace MNet
 
             static void Process()
             {
-                if (Config.QueueMessages) SendQueue.Resolve(Realtime.Send, Realtime.Transport.MTU);
+                if (Config.QueueMessages) SendQueue.Resolve(Realtime.Send);
             }
 
             public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -232,17 +237,18 @@ namespace MNet
                 Self = null;
 
                 IsReady = false;
+
+                SendQueue.Clear();
             }
 
             static Client()
             {
                 IsReady = false;
 
-                SendQueue = new MessageSendQueue();
-
                 Realtime.OnConnect += ConnectCallback;
                 Realtime.OnMessage += MessageCallback;
                 Realtime.OnDisconnect += DisconnectedCallback;
+                Realtime.OnInitialize += RealtimeInitializeCallback;
 
                 Room.OnSpawnEntity += SpawnEntityCallback;
                 Room.OnDestroyEntity += DestroyEntityCallback;

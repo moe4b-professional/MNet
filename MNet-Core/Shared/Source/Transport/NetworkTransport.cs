@@ -35,22 +35,6 @@ namespace MNet
         /// Unreliable. Packets can be dropped, can be duplicated, can arrive without order.
         /// </summary>
         Unreliable = 4,
-
-        /// <summary>
-        /// Reliable. Packets won't be dropped, won't be duplicated, can arrive without order.
-        /// </summary>
-        ReliableUnordered = 0,
-
-        /// <summary>
-        /// Reliable only last packet. Packets can be dropped (except the last one), won't
-        ///     be duplicated, will arrive in order.
-        /// </summary>
-        ReliableSequenced = 3,
-
-        /// <summary>
-        /// Unreliable. Packets can be dropped, won't be duplicated, will arrive in order.
-        /// </summary>
-        UnreliableSequenced = 1,
     }
 
     public static partial class NetworkTransportUtility

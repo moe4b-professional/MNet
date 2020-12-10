@@ -33,7 +33,7 @@ namespace MNet
 
         public NetPeer Peer { get; protected set; }
 
-        public static ushort Port => Constants.Server.Game.Realtime.Port;
+        public override NetworkTransportType Type => NetworkTransportType.LiteNetLib;
 
         public override bool IsConnected
         {
@@ -45,7 +45,9 @@ namespace MNet
             }
         }
 
-        public override int MTU => Utility.MTU;
+        public static ushort Port => Constants.Server.Game.Realtime.Port;
+
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         public override void Connect(GameServerID server, RoomID room)
         {

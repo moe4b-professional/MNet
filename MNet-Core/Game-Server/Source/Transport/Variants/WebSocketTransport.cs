@@ -13,8 +13,6 @@ namespace MNet
 {
     class WebSocketTransport : NetworkTransport<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, IWebSocketSession, string>
     {
-        public override int MTU => Utility.MTU;
-
         public WebSocketServer Server { get; protected set; }
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
@@ -23,6 +21,8 @@ namespace MNet
         {
             Server.Start();
         }
+
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         protected override WebSocketTransportContext Create(uint id)
         {
