@@ -51,6 +51,7 @@ namespace MNet
         public Scene Scene => gameObject.scene;
         bool IsInSameScene(NetworkEntity entity) => entity.Scene == this.Scene;
 
+#if UNITY_EDITOR
         void FindAll()
         {
             list.Clear();
@@ -58,7 +59,10 @@ namespace MNet
             var targets = FindObjectsOfType<NetworkEntity>().Where(IsInSameScene);
 
             list.AddRange(targets);
+
+            EditorUtility.SetDirty(this);
         }
+#endif
 
         void Reset()
         {

@@ -21,42 +21,102 @@ namespace MNet.Example
 {
     public class SampleNetworkBehaviour : NetworkBehaviour
     {
+        public int area;
+
+        public float maxRange = 1f;
+
         public float delay = 0.05f;
 
         public int pakcets = 0;
 
-        void ReadAttributes(out Vector3 position, out Quaternion rotation)
+        void ReadAttributes(out Vector3 position, out float angle, out int area)
         {
             Attributes.TryGetValue(0, out position);
-            Attributes.TryGetValue(1, out rotation);
+            Attributes.TryGetValue(1, out angle);
+            Attributes.TryGetValue(2, out area);
         }
 
         void Start()
         {
-            ReadAttributes(out var position, out var rotation);
+            name = $"Sample {Entity.ID}";
 
-            transform.position = position;
-            transform.rotation = rotation;
+            ReadAttributes(out var position, out var angle, out area);
 
-            StartCoroutine(Procedure());
+            Apply(position, angle);
+
+            if (IsMine) StartCoroutine(Procedure());
         }
 
         IEnumerator Procedure()
         {
             while(true)
             {
-                Request();
+                var position = transform.position + CalculateRandomOffset(1f, 0f, 1f);
+
+                var angle = transform.eulerAngles.y + Random.Range(0, 40);
+
+                BroadcastRPC(Call, position, angle);
 
                 yield return new WaitForSeconds(delay);
             }
         }
 
-        void Request() => BroadcastRPC(Call, transform.position, transform.rotation);
-
         [NetworkRPC(Delivery = DeliveryMode.Unreliable)]
-        void Call(Vector3 position, Quaternion rotation, RpcInfo info)
+        void Call(Vector3 position, float angle, RpcInfo info)
         {
+            Apply(position, angle);
+
             pakcets += 1;
+        }
+
+        void Apply(Vector3 position, float angle)
+        {
+            StartCoroutine(Procedure(position, angle));
+
+            IEnumerator Procedure(Vector3 targetPosition, float targetAngle)
+            {
+                var targetRotation = Quaternion.Euler(0f, targetAngle, 0f);
+
+                var initialPosition = transform.position;
+                var initialRotation = transform.rotation;
+
+                var timer = 0f;
+
+                while(timer < delay)
+                {
+                    timer = Mathf.MoveTowards(timer, delay, Time.deltaTime);
+
+                    var rate = timer / delay;
+
+                    transform.position = Vector3.Lerp(initialPosition, targetPosition, rate);
+                    transform.rotation = Quaternion.Lerp(initialRotation, targetRotation, rate);
+
+                    yield return new WaitForEndOfFrame();
+                }
+            }
+        }
+
+        //Static Utility
+        public static void CalculateRandomCoords(int area, out Vector3 position, out float angle)
+        {
+            position = new Vector3()
+            {
+                x = Random.Range(-area, area),
+                y = 0,
+                z = Random.Range(-area, area)
+            };
+
+            angle = Random.Range(0, 360);
+        }
+
+        public static Vector3 CalculateRandomOffset(float x, float y, float z)
+        {
+            return new Vector3()
+            {
+                x = x * Random.Range(-1f, 1f),
+                y = y * Random.Range(-1f, 1f),
+                z = z * Random.Range(-1f, 1f),
+            };
         }
     }
 }
