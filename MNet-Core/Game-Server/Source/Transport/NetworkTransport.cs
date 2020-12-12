@@ -162,11 +162,9 @@ namespace MNet
 
             while (true)
             {
-                if (InputQueue.TryDequeue(out var action))
-                    action();
-                else
-                    break;
+                if (InputQueue.TryDequeue(out var action) == false) break;
 
+                action();
                 count -= 1;
 
                 if (count <= 0) break;

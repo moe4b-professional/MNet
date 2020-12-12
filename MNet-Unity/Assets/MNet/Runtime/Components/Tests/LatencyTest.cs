@@ -22,13 +22,13 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Tests/" + "Latency Test")]
     public class LatencyTest : NetworkBehaviour
     {
-        const string Payload = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-
         public int maxSamples = 20;
 
         public List<float> samples = new List<float>();
 
         public float average = 0f;
+        public float min = 0f;
+        public float max = 0f;
 
         bool isProcessing = false;
 
@@ -37,11 +37,11 @@ namespace MNet
             if (isProcessing) return;
 
             isProcessing = true;
-            TargetRPC(Call, NetworkAPI.Client.Self, Payload, Time.time);
+            TargetRPC(Call, NetworkAPI.Client.Self, Time.time);
         }
 
         [NetworkRPC]
-        void Call(string payload, float time, RpcInfo info)
+        void Call(float time, RpcInfo info)
         {
             var elapsed = (Time.time - time) * 1000;
 
@@ -57,6 +57,8 @@ namespace MNet
             if (samples.Count > maxSamples) samples.RemoveRange(0, samples.Count - maxSamples);
 
             average = samples.Sum() / samples.Count;
+            min = samples.Min();
+            max = samples.Max();
         }
     }
 }

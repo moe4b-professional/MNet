@@ -29,6 +29,9 @@ namespace MNet
         [JsonProperty]
         public bool QueueMessages { get; protected set; }
 
+        [JsonProperty]
+        public byte TickDelay { get; protected set; }
+
         public RemoteConfig Remote { get; protected set; }
 
         protected override void WriteDefaults()
@@ -45,6 +48,8 @@ namespace MNet
             RestScheme = RestScheme.HTTP;
 
             QueueMessages = true;
+
+            TickDelay = 20;
         }
 
         public virtual void Set(RemoteConfig instance) => Remote = instance;

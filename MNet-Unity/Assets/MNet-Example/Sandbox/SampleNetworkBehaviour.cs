@@ -51,14 +51,19 @@ namespace MNet.Example
         {
             while(true)
             {
-                var position = transform.position + CalculateRandomOffset(1f, 0f, 1f);
-
-                var angle = transform.eulerAngles.y + Random.Range(0, 40);
-
-                BroadcastRPC(Call, position, angle);
+                Broadcast();
 
                 yield return new WaitForSeconds(delay);
             }
+        }
+
+        void Broadcast()
+        {
+            var position = transform.position + CalculateRandomOffset(1f, 0f, 1f);
+
+            var angle = transform.eulerAngles.y + Random.Range(0, 40);
+
+            BroadcastRPC(Call, position, angle);
         }
 
         [NetworkRPC(Delivery = DeliveryMode.Unreliable)]
@@ -71,29 +76,8 @@ namespace MNet.Example
 
         void Apply(Vector3 position, float angle)
         {
-            StartCoroutine(Procedure(position, angle));
-
-            IEnumerator Procedure(Vector3 targetPosition, float targetAngle)
-            {
-                var targetRotation = Quaternion.Euler(0f, targetAngle, 0f);
-
-                var initialPosition = transform.position;
-                var initialRotation = transform.rotation;
-
-                var timer = 0f;
-
-                while(timer < delay)
-                {
-                    timer = Mathf.MoveTowards(timer, delay, Time.deltaTime);
-
-                    var rate = timer / delay;
-
-                    transform.position = Vector3.Lerp(initialPosition, targetPosition, rate);
-                    transform.rotation = Quaternion.Lerp(initialRotation, targetRotation, rate);
-
-                    yield return new WaitForEndOfFrame();
-                }
-            }
+            transform.position = position;
+            transform.rotation = Quaternion.Euler(0f, angle, 0f);
         }
 
         //Static Utility

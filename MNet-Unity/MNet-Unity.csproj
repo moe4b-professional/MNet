@@ -89,6 +89,7 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\NetworkTestSpawner.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\SampleNetworkBehaviour.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
      <Compile Include="Assets\MNet-Example\Utility\GameServerSelectionLabel.cs" />
      <Compile Include="Assets\MNet-Example\Utility\LobbyRefreshButton.cs" />
      <Compile Include="Assets\MNet-Example\Utility\PlayerNameInputField.cs" />

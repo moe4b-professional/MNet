@@ -63,6 +63,7 @@ namespace MNet
             Log.Info($"Server ID: {ID}");
             Log.Info($"Server Name: {Name}");
             Log.Info($"Server Region: {Region}");
+            Log.Info($"Tick Delay: {Config.TickDelay}");
 
             MasterServer.Configure(Config.MasterAddress);
 

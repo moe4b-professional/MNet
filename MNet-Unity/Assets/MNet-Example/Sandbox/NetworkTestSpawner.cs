@@ -25,13 +25,20 @@ namespace MNet.Example
 
 		public int area = 200;
 
+		public float delay = 0.005f;
+
 		public string resource = "Sample";
 
-		void Start()
+		IEnumerator Start()
 		{
-			if (NetworkAPI.Client.IsMaster == false) return;
+			if (NetworkAPI.Client.IsMaster == false) yield break;
 
-			for (int i = 0; i < count; i++) Spawn();
+			for (int i = 0; i < count; i++)
+            {
+				yield return new WaitForSeconds(delay);
+
+				Spawn();
+			}
 		}
 
 		void Spawn()

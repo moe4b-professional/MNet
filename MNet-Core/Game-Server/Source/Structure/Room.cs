@@ -610,7 +610,7 @@ namespace MNet
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
             SceneObjects = new List<NetworkEntity>();
 
-            TickLatency = 30;
+            TickLatency = GameServer.Config.TickDelay;
             Scheduler = new Scheduler(TickLatency, Tick);
         }
     }

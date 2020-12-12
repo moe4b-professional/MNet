@@ -4,5 +4,6 @@
   "PublicAddress": null,
   "Region": "Local",
   "RestScheme": "HTTP",
-  "QueueMessages": true
+  "QueueMessages": true,
+  "TickDelay": 20
 }

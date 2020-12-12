@@ -90,6 +90,10 @@ namespace MNet
 
             static void Process()
             {
+                if (Pause) return;
+
+                var count = Transport.InputQueue.Count;
+
                 while(true)
                 {
                     if (Pause) break;
@@ -97,6 +101,9 @@ namespace MNet
                     if (Transport.InputQueue.TryDequeue(out var action) == false) break;
 
                     action();
+                    count -= 1;
+
+                    if (count <= 0) break;
                 }
             }
 

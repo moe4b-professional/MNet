@@ -582,6 +582,8 @@ MonoBehaviour:
   maxSamples: 20
   samples: []
   average: 0
+  min: 0
+  max: 0
 --- !u!114 &358559476
 MonoBehaviour:
   m_ObjectHideFlags: 0
