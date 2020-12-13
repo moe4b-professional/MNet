@@ -19,11 +19,9 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-    public class SampleNetworkBehaviour : NetworkBehaviour
+    public class NetworkStressBehaviour : NetworkBehaviour
     {
         public int area;
-
-        public float maxRange = 1f;
 
         public float delay = 0.05f;
 
@@ -49,7 +47,7 @@ namespace MNet.Example
 
         IEnumerator Procedure()
         {
-            while(IsConnected)
+            while (IsConnected)
             {
                 Broadcast();
 

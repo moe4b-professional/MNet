@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 92370369000106699}
   - component: {fileID: 92370369000106696}
   m_Layer: 0
-  m_Name: Sample
+  m_Name: Stress Entity
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

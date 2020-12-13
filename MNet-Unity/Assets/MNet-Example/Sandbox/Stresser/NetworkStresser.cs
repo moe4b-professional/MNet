@@ -19,13 +19,11 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class NetworkTestSpawner : NetworkBehaviour
+	public class NetworkStresser : NetworkBehaviour
 	{
 		public int count = 2000;
 
-		public int area = 200;
-
-		public string resource = "Sample";
+		public int area = 50;
 
 		IEnumerator Start()
 		{
@@ -43,13 +41,13 @@ namespace MNet.Example
 		{
 			var attributes = new AttributesCollection();
 
-			SampleNetworkBehaviour.CalculateRandomCoords(area, out Vector3 position, out float angle);
+			NetworkStressBehaviour.CalculateRandomCoords(area, out Vector3 position, out float angle);
 
 			attributes.Set(0, position);
 			attributes.Set(1, angle);
 			attributes.Set(2, area);
 
-			NetworkAPI.Client.SpawnEntity(resource, attributes: attributes);
+			NetworkAPI.Client.SpawnEntity("Stress Entity", attributes: attributes);
 		}
 	}
 }

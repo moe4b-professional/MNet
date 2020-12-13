@@ -178,7 +178,7 @@ namespace MNet
 
         public void InvokeRPC(RpcCommand command)
         {
-            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
+            if (TryGetBehaviour(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to Invoke RPC");
 
@@ -192,7 +192,7 @@ namespace MNet
 
         public void InvokeSyncVar(SyncVarCommand command)
         {
-            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
+            if (TryGetBehaviour(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
                 return;
