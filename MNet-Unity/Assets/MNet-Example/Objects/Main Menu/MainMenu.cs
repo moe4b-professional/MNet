@@ -32,7 +32,7 @@ namespace MNet.Example
             NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
             NetworkAPI.Client.OnDisconnect += ClientDisconnectCallback;
 
-            if (NetworkAPI.Server.Game.HasSelection == false) GetMasterServerInfo();
+            if (NetworkAPI.Server.Game.Selection == null) GetMasterServerInfo();
         }
 
         void GetMasterServerInfo()
@@ -48,7 +48,7 @@ namespace MNet.Example
 
                 if (error == null)
                 {
-                    if (info.Size > 0)
+                    if (info.Servers.Length > 0)
                         Popup.Hide();
                     else
                         Popup.Show("No Game Servers Found on Master", "Retry", GetMasterServerInfo);
@@ -67,11 +67,9 @@ namespace MNet.Example
 
         void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
         {
-            if (error == null)
-            {
-                if (NetworkAPI.Server.Game.HasSelection == false)
-                    serverSelector.Show();
-            }
+            if (error != null) return;
+
+            if (NetworkAPI.Server.Game.Selection == null) serverSelector.Show();
         }
 
         void OnDestroy()

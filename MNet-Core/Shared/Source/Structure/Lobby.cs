@@ -20,7 +20,7 @@ namespace MNet
 
         public RoomBasicInfo this[int index] => rooms[index];
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref server);
             context.Select(ref rooms);

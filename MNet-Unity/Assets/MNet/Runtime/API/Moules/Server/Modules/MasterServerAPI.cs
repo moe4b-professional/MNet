@@ -31,14 +31,10 @@ namespace MNet
 
                 public static RestAPI Rest { get; private set; }
 
-                public static Dictionary<GameServerID, GameServerInfo> Servers { get; private set; }
-
                 public static void Configure()
                 {
                     Rest = new RestAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
                     Rest.SetIP(Address);
-
-                    Servers = new Dictionary<GameServerID, GameServerInfo>();
                 }
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
@@ -53,31 +49,19 @@ namespace MNet
                     {
                         RestAPI.Parse(request, out MasterServerInfoResponse info, out var error);
 
-                        if (error == null)
-                        {
-                            Register(info.Servers);
-
-                            ConfigRemote(info.RemoteConfig);
-                        }
+                        if (error == null) Initialize(info.App, info.RemoteConfig, info.Servers);
 
                         OnInfo?.Invoke(info, error);
                     }
                 }
 
-                public delegate void RemoteConfigDelegate(RemoteConfig config);
-                public static event RemoteConfigDelegate OnRemoteConfig;
-                static void ConfigRemote(RemoteConfig instance)
+                static void Initialize(AppConfig app, RemoteConfig remoteConfig, IList<GameServerInfo> servers)
                 {
-                    NetworkAPI.Config.Set(instance);
+                    AppAPI.Set(app);
 
-                    OnRemoteConfig?.Invoke(instance);
-                }
+                    Server.SetRemoteConfig(remoteConfig);
 
-                static void Register(IList<GameServerInfo> list)
-                {
-                    Servers.Clear();
-
-                    for (int i = 0; i < list.Count; i++) Servers.Add(list[i].ID, list[i]);
+                    Server.Game.Register(servers);
                 }
             }
         }

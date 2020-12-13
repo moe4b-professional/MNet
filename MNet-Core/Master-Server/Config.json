@@ -3,7 +3,9 @@
   "Apps": [
     {
       "ID": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
-      "MinimumVersion": "0.0.0"
+      "MinimumVersion": "0.0.0",
+      "TickDelay": 20,
+      "QueueMessages": true
     }
   ]
 }

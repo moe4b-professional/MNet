@@ -16,7 +16,6 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
-using MNet;
 
 namespace MNet
 {
@@ -51,14 +50,6 @@ namespace MNet
         [SerializeField]
         protected VersionProperty version = new VersionProperty("0.1");
         public Version Version { get; protected set; }
-
-        [SerializeField]
-        bool queueMessages = true;
-        public bool QueueMessages => queueMessages;
-
-        public RemoteConfig Remote { get; protected set; }
-
-        public void Set(RemoteConfig instance) => Remote = instance;
 
         void Configure()
         {

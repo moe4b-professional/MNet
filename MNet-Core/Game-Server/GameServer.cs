@@ -60,14 +60,13 @@ namespace MNet
 
             ResolveAddress();
 
-            Log.Info($"Server ID: {ID}");
-            Log.Info($"Server Name: {Name}");
-            Log.Info($"Server Region: {Region}");
-            Log.Info($"Tick Delay: {Config.TickDelay}");
-
             MasterServer.Configure(Config.MasterAddress);
 
             if (RegisterOnMaster() == false) return;
+
+            Log.Info($"Server ID: {ID}");
+            Log.Info($"Server Name: {Name}");
+            Log.Info($"Server Region: {Region}");
 
             RestAPI.Configure(Constants.Server.Game.Rest.Port);
             RestAPI.Start();
@@ -120,6 +119,8 @@ namespace MNet
 
             Config.Set(response.RemoteConfig);
 
+            AppsAPI.Set(response.Apps);
+
             return true;
         }
     }
@@ -164,7 +165,7 @@ namespace MNet
             public DateTime? date;
             public Guid? guid;
 
-            public void Select(INetworkSerializableResolver.Context context)
+            public void Select(ref INetworkSerializableResolver.Context context)
             {
                 context.Select(ref number);
                 context.Select(ref text);

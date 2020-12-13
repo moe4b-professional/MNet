@@ -23,10 +23,21 @@ namespace MNet
     {
         public static partial class Server
         {
+            public static RemoteConfig RemoteConfig { get; private set; }
+
             public static void Configure()
             {
                 Master.Configure();
                 Game.Configure();
+            }
+
+            public delegate void RemoteConfigDelegate(RemoteConfig config);
+            public static event RemoteConfigDelegate OnRemoteConfig;
+            public static void SetRemoteConfig(RemoteConfig instance)
+            {
+                RemoteConfig = instance;
+
+                OnRemoteConfig?.Invoke(instance);
             }
         }
     }

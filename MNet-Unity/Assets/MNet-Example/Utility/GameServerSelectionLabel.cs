@@ -37,10 +37,10 @@ namespace MNet.Example
 
 		void UpdateState()
         {
-			if (NetworkAPI.Server.Game.HasSelection)
-				label.text = $"{NetworkAPI.Server.Game.Info.Name}";
-			else
+			if (NetworkAPI.Server.Game.Selection == null)
 				label.text = $"None";
+			else
+				label.text = $"{NetworkAPI.Server.Game.Info.Name}";
 		}
 
 		void OnDestroy()

@@ -30,14 +30,14 @@ namespace MNet
 
             public static void Configure()
             {
-                Server.Master.OnRemoteConfig += Initialize;
+                Server.OnRemoteConfig += Initialize;
             }
 
             public delegate void InitializeDelegate(NetworkTransport transport);
             public static event InitializeDelegate OnInitialize;
             static void Initialize(RemoteConfig config)
             {
-                Server.Master.OnRemoteConfig -= Initialize;
+                Server.OnRemoteConfig -= Initialize;
 
                 Transport = CreateTransport(config.Transport);
 

@@ -26,12 +26,6 @@ namespace MNet
         [JsonProperty]
         public RestScheme RestScheme { get; protected set; }
 
-        [JsonProperty]
-        public bool QueueMessages { get; protected set; }
-
-        [JsonProperty]
-        public byte TickDelay { get; protected set; }
-
         public RemoteConfig Remote { get; protected set; }
 
         protected override void WriteDefaults()
@@ -46,10 +40,6 @@ namespace MNet
             Region = GameServerRegion.Local;
 
             RestScheme = RestScheme.HTTP;
-
-            QueueMessages = true;
-
-            TickDelay = 20;
         }
 
         public virtual void Set(RemoteConfig instance) => Remote = instance;

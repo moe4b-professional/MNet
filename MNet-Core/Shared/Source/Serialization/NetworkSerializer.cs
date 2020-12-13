@@ -76,7 +76,7 @@ namespace MNet
 
     public interface INetworkSerializable
     {
-        void Select(INetworkSerializableResolver.Context context);
+        void Select(ref INetworkSerializableResolver.Context context);
     }
 
     public interface IManualNetworkSerializable

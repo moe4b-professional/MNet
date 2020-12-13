@@ -13,7 +13,7 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref value);
         }

@@ -647,7 +647,7 @@ namespace MNet
 
             var context = new Context(writer);
 
-            value.Select(context);
+            value.Select(ref context);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
@@ -656,17 +656,17 @@ namespace MNet
 
             var context = new Context(reader);
 
-            value.Select(context);
+            value.Select(ref context);
 
             return value;
         }
 
-        public class Context
+        public struct Context
         {
-            public NetworkWriter Writer { get; protected set; }
+            public NetworkWriter Writer { get; private set; }
             public bool IsSerializing => Writer != null;
 
-            public NetworkReader Reader { get; protected set; }
+            public NetworkReader Reader { get; private set; }
             public bool IsDeserializing => Reader != null;
 
             public void Select<T>(ref T value)
@@ -676,14 +676,14 @@ namespace MNet
                 if (IsDeserializing) Reader.Read(out value);
             }
 
-            public Context(NetworkWriter writer)
+            Context(NetworkWriter writer, NetworkReader reader)
             {
                 this.Writer = writer;
-            }
-            public Context(NetworkReader reader)
-            {
                 this.Reader = reader;
             }
+
+            public Context(NetworkWriter writer) : this(writer, null) { }
+            public Context(NetworkReader reader) : this(null, reader) { }
         }
     }
 

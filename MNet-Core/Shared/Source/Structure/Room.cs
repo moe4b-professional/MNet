@@ -26,7 +26,7 @@ namespace MNet
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
             context.Select(ref name);
@@ -61,17 +61,17 @@ namespace MNet
     [Serializable]
     public struct RoomInnerInfo : INetworkSerializable
     {
-        byte tickLatency;
-        public byte TickLatency => tickLatency;
+        byte tickDelay;
+        public byte TickDelay => tickDelay;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
-            context.Select(ref tickLatency);
+            context.Select(ref tickDelay);
         }
 
-        public RoomInnerInfo(byte tickRate)
+        public RoomInnerInfo(byte tickDelay)
         {
-            this.tickLatency = tickRate;
+            this.tickDelay = tickDelay;
         }
     }
 
@@ -84,7 +84,7 @@ namespace MNet
         RoomInnerInfo inner;
         public RoomInnerInfo Inner => inner;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref basic);
             context.Select(ref inner);
@@ -102,7 +102,7 @@ namespace MNet
         uint value;
         public uint Value { get { return value; } }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref value);
         }

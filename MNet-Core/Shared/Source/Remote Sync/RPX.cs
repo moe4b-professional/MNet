@@ -27,7 +27,7 @@ namespace MNet
         string value;
         public string Value { get { return value; } }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref value);
         }
@@ -110,7 +110,7 @@ namespace MNet
             }
         }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref entity);
             context.Select(ref behaviour);
@@ -252,7 +252,7 @@ namespace MNet
             }
         }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref sender);
             context.Select(ref entity);
@@ -330,7 +330,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw => raw;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref entity);
             context.Select(ref target);
@@ -396,7 +396,7 @@ namespace MNet
             return result;
         }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref entity);
 

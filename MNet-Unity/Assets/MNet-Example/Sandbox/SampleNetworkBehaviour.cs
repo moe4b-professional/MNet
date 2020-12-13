@@ -49,7 +49,7 @@ namespace MNet.Example
 
         IEnumerator Procedure()
         {
-            while(true)
+            while(IsConnected)
             {
                 Broadcast();
 

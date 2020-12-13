@@ -61,7 +61,7 @@ namespace MNet
 
             static void Process()
             {
-                if (Config.QueueMessages) SendQueue.Resolve(Realtime.Send);
+                if (AppAPI.Config.QueueMessages) SendQueue.Resolve(Realtime.Send);
             }
 
             public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -74,7 +74,7 @@ namespace MNet
 
                 var message = NetworkMessage.Write(payload);
 
-                if (Config.QueueMessages)
+                if (AppAPI.Config.QueueMessages)
                 {
                     SendQueue.Add(message, mode);
                 }

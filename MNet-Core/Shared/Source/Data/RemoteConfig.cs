@@ -8,10 +8,10 @@ namespace MNet
 {
     public class RemoteConfig : INetworkSerializable
     {
-        NetworkTransportType transport = default;
+        NetworkTransportType transport;
         public NetworkTransportType Transport => transport;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref transport);
         }

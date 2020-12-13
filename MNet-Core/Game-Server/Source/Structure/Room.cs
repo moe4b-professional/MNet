@@ -18,7 +18,7 @@ namespace MNet
     {
         public RoomID ID { get; protected set; }
 
-        public AppID AppID { get; protected set; }
+        public AppConfig App { get; protected set; }
 
         public Version Version { get; protected set; }
 
@@ -35,7 +35,7 @@ namespace MNet
         public RoomBasicInfo GetBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
         public static RoomBasicInfo GetBasicInfo(Room room) => room.GetBasicInfo();
 
-        public RoomInnerInfo GetInnerInfo() => new RoomInnerInfo(TickLatency);
+        public RoomInnerInfo GetInnerInfo() => new RoomInnerInfo(TickDelay);
         public static RoomInnerInfo GetInnerInfo(Room room) => room.GetInnerInfo();
 
         public RoomInfo GetInfo()
@@ -50,11 +50,13 @@ namespace MNet
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
         #endregion
 
+        public bool QueueMessages => App.QueueMessages;
+
         public INetworkTransportContext TransportContext { get; protected set; }
 
         public Scheduler Scheduler { get; protected set; }
 
-        public byte TickLatency { get; protected set; }
+        public byte TickDelay => App.TickDelay;
 
         public DateTime Timestamp { get; protected set; }
 
@@ -118,7 +120,7 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (RealtimeAPI.QueueMessages)
+            if (QueueMessages)
             {
                 QueueMessage(message, target, mode);
             }
@@ -140,7 +142,7 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (RealtimeAPI.QueueMessages)
+            if (QueueMessages)
             {
                 foreach (var client in Clients.Values)
                 {
@@ -217,7 +219,7 @@ namespace MNet
 
             if (Scheduler.Running == false) return;
 
-            if (RealtimeAPI.QueueMessages) ResolveSendQueues();
+            if (QueueMessages) ResolveSendQueues();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
@@ -591,12 +593,12 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
+        public Room(RoomID id, AppConfig app, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             this.ID = id;
 
             this.Version = version;
-            this.AppID = appID;
+            this.App = app;
 
             this.Name = name;
 
@@ -610,8 +612,7 @@ namespace MNet
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
             SceneObjects = new List<NetworkEntity>();
 
-            TickLatency = GameServer.Config.TickDelay;
-            Scheduler = new Scheduler(TickLatency, Tick);
+            Scheduler = new Scheduler(TickDelay, Tick);
         }
     }
 }

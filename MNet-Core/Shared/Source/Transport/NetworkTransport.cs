@@ -5,7 +5,7 @@ using WebSocketSharp;
 
 namespace MNet
 {
-    public enum NetworkTransportType
+    public enum NetworkTransportType : byte
     {
         WebSocketSharp, LiteNetLib
     }

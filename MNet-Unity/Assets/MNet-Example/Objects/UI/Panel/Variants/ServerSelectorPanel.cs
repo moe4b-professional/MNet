@@ -40,7 +40,7 @@ namespace MNet.Example
         {
             base.Init();
 
-            Populate(NetworkAPI.Server.Master.Servers.Values);
+            Populate(NetworkAPI.Server.Game.Collection.Values);
         }
 
         void MasterInfoCallback(MasterServerInfoResponse info, RestError error)

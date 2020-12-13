@@ -44,6 +44,8 @@ namespace MNet
 
         public bool IsReady { get; protected set; } = false;
 
+        public bool IsConnected => NetworkAPI.Client.IsConnected;
+
         public NetworkEntityType Type { get; protected set; }
 
         public Scene Scene => gameObject.scene;

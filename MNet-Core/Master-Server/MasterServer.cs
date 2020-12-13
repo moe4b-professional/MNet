@@ -17,7 +17,7 @@ namespace MNet
 
         public static RemoteConfig RemoteConfig { get; private set; }
 
-        public static Dictionary<AppID, AppConfiguration> Apps { get; private set; }
+        public static Dictionary<AppID, AppConfig> Apps { get; private set; }
 
         public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
 
@@ -53,7 +53,7 @@ namespace MNet
 
             RemoteConfig = new RemoteConfig(Config.Transport);
 
-            Apps = Config.Apps.ToDictionary(AppConfiguration.SelectID);
+            Apps = Config.Apps.ToDictionary(AppConfig.SelectID);
 
             Log.Info("Registered Apps:");
             foreach (var app in Apps.Values) Log.Info(app);
@@ -102,7 +102,7 @@ namespace MNet
 
             var list = Query();
 
-            var info = new MasterServerInfoResponse(list, RemoteConfig);
+            var info = new MasterServerInfoResponse(app, list, RemoteConfig);
 
             RestAPI.Write(response, info);
         }
@@ -139,7 +139,9 @@ namespace MNet
 
             RegisterServer(payload.Info);
 
-            var result = new RegisterGameServerResponse(RemoteConfig);
+            var apps = Apps.Values.ToArray();
+
+            var result = new RegisterGameServerResponse(apps, RemoteConfig);
             RestAPI.Write(response, result);
         }
 

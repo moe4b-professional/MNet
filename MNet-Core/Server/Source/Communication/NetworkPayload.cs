@@ -19,7 +19,7 @@ namespace MNet
         string key;
         public string Key => key;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref info);
             context.Select(ref key);
@@ -36,16 +36,21 @@ namespace MNet
     [Serializable]
     public struct RegisterGameServerResponse : INetworkSerializable
     {
+        AppConfig[] apps;
+        public AppConfig[] Apps => apps;
+
         RemoteConfig remoteConfig;
         public RemoteConfig RemoteConfig => remoteConfig;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
+            context.Select(ref apps);
             context.Select(ref remoteConfig);
         }
 
-        public RegisterGameServerResponse(RemoteConfig remoteConfig)
+        public RegisterGameServerResponse(AppConfig[] apps, RemoteConfig remoteConfig)
         {
+            this.apps = apps;
             this.remoteConfig = remoteConfig;
         }
     }
@@ -62,7 +67,7 @@ namespace MNet
         string key;
         public string Key => key;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
             context.Select(ref key);
@@ -82,7 +87,7 @@ namespace MNet
         bool success;
         public bool Success => success;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref success);
         }

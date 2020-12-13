@@ -29,6 +29,7 @@ namespace MNet
 
         public bool IsMine => Entity == null ? false : Entity.IsMine;
         public bool IsReady => Entity == null ? false : Entity.IsReady;
+        public bool IsConnected => Entity == null ? false : Entity.IsConnected;
 
         public NetworkClient Owner => Entity?.Owner;
         public AttributesCollection Attributes => Entity?.Attributes;

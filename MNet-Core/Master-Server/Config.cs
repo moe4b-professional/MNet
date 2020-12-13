@@ -16,7 +16,7 @@ namespace MNet
         public NetworkTransportType Transport { get; protected set; }
 
         [JsonProperty]
-        public AppConfiguration[] Apps { get; protected set; }
+        public AppConfig[] Apps { get; protected set; }
 
         protected override void WriteDefaults()
         {
@@ -24,7 +24,7 @@ namespace MNet
 
             Transport = NetworkTransportType.WebSocketSharp;
 
-            Apps = new AppConfiguration[] { };
+            Apps = new AppConfig[] { };
         }
 
         public Config() { }

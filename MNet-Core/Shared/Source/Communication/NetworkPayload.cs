@@ -214,7 +214,7 @@ namespace MNet
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref appID);
             context.Select(ref version);
@@ -247,7 +247,7 @@ namespace MNet
         Version gameVersion;
         public Version GameVersion => gameVersion;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             //Note to Self
             //Always Keep these in the same order to ensure backwards compatibility
@@ -270,24 +270,25 @@ namespace MNet
     [Serializable]
     public struct MasterServerInfoResponse : INetworkSerializable
     {
-        GameServerInfo[] servers;
-        public GameServerInfo[] Servers => servers;
-
-        public int Size => servers.Length;
-
-        public GameServerInfo this[int index] => servers[index];
+        AppConfig app;
+        public AppConfig App => app;
 
         RemoteConfig remoteConfig;
         public RemoteConfig RemoteConfig => remoteConfig;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        GameServerInfo[] servers;
+        public GameServerInfo[] Servers => servers;
+
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
-            context.Select(ref servers);
+            context.Select(ref app);
             context.Select(ref remoteConfig);
+            context.Select(ref servers);
         }
 
-        public MasterServerInfoResponse(GameServerInfo[] servers, RemoteConfig remoteConfig)
+        public MasterServerInfoResponse(AppConfig app, GameServerInfo[] servers, RemoteConfig remoteConfig)
         {
+            this.app = app;
             this.servers = servers;
             this.remoteConfig = remoteConfig;
         }
@@ -304,7 +305,7 @@ namespace MNet
         Version version;
         public Version Version => version;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref appID);
             context.Select(ref version);
@@ -327,7 +328,7 @@ namespace MNet
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref profile);
         }
@@ -348,7 +349,7 @@ namespace MNet
         RoomInfo room;
         public RoomInfo Room => room;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
             context.Select(ref room);
@@ -370,7 +371,7 @@ namespace MNet
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref timestamp);
         }
@@ -399,7 +400,7 @@ namespace MNet
         RoomTimeResponse time;
         public RoomTimeResponse Time => time;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref clients);
             context.Select(ref buffer);
@@ -440,7 +441,7 @@ namespace MNet
         ushort index;
         public ushort Index => index;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref type);
 
@@ -510,7 +511,7 @@ namespace MNet
         int index;
         public int Index => index;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref owner);
             context.Select(ref id);
@@ -557,7 +558,7 @@ namespace MNet
         NetworkEntityID id;
         public NetworkEntityID ID => id;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
         }
@@ -575,7 +576,7 @@ namespace MNet
         NetworkEntityID id;
         public NetworkEntityID ID => id;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
         }
@@ -599,7 +600,7 @@ namespace MNet
 
         public NetworkClientProfile Profile => info.Profile;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref info);
         }
@@ -617,7 +618,7 @@ namespace MNet
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
         }
@@ -636,7 +637,7 @@ namespace MNet
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref id);
         }
@@ -655,7 +656,7 @@ namespace MNet
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref timestamp);
         }
@@ -678,7 +679,7 @@ namespace MNet
         DateTime requestTimestamp;
         public DateTime RequestTimestamp => requestTimestamp;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref time);
             context.Select(ref requestTimestamp);
@@ -700,7 +701,7 @@ namespace MNet
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref timestamp);
         }
@@ -722,7 +723,7 @@ namespace MNet
 
         public TimeSpan GetTimeSpan() => DateTime.UtcNow - timestamp;
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref timestamp);
         }

@@ -67,13 +67,19 @@ namespace MNet
                 return;
             }
 
-            var room = CreateRoom(payload.AppID, payload.Version, payload.Name, payload.Capacity, payload.Attributes);
+            if(AppsAPI.TryGet(payload.AppID, out var app) == false)
+            {
+                RestAPI.Write(response, RestStatusCode.InvalidAppID, $"Invalid App ID");
+                return;
+            }
+
+            var room = CreateRoom(app, payload.Version, payload.Name, payload.Capacity, payload.Attributes);
             var info = room.GetBasicInfo();
 
             RestAPI.Write(response, info);
         }
 
-        public static Room CreateRoom(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
+        public static Room CreateRoom(AppConfig app, Version version, string name, byte capacity, AttributesCollection attributes)
         {
             Log.Info($"Creating Room '{name}'");
 
@@ -83,7 +89,7 @@ namespace MNet
             {
                 var id = Rooms.Reserve();
 
-                room = new Room(id, appID, version, name, capacity, attributes);
+                room = new Room(id, app, version, name, capacity, attributes);
 
                 Rooms.Add(room);
             }
@@ -142,11 +148,11 @@ namespace MNet
 
         public void Add(Room room)
         {
-            if (Dictionary.TryGetValue(room.AppID, out var collection) == false)
+            if (Dictionary.TryGetValue(room.App.ID, out var collection) == false)
             {
                 collection = new RoomVersionCollection();
 
-                Dictionary.Add(room.AppID, collection);
+                Dictionary.Add(room.App.ID, collection);
             }
 
             collection.Add(room);
@@ -154,7 +160,7 @@ namespace MNet
 
         public bool Remove(Room room)
         {
-            if (Dictionary.TryGetValue(room.AppID, out var collection) == false)
+            if (Dictionary.TryGetValue(room.App.ID, out var collection) == false)
                 return false;
 
             return collection.Remove(room);

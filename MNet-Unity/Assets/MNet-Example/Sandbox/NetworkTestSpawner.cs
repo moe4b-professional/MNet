@@ -25,8 +25,6 @@ namespace MNet.Example
 
 		public int area = 200;
 
-		public float delay = 0.005f;
-
 		public string resource = "Sample";
 
 		IEnumerator Start()
@@ -35,9 +33,9 @@ namespace MNet.Example
 
 			for (int i = 0; i < count; i++)
             {
-				yield return new WaitForSeconds(delay);
-
 				Spawn();
+
+				if (i % 20 == 0) yield return new WaitForEndOfFrame();
 			}
 		}
 

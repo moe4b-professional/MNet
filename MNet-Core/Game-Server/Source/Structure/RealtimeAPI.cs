@@ -12,8 +12,6 @@ namespace MNet
 
         public const int Port = Constants.Server.Game.Realtime.Port;
 
-        public static bool QueueMessages => GameServer.Config.QueueMessages;
-
         public static void Configure(NetworkTransportType type)
         {
             switch (type)

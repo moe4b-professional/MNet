@@ -97,6 +97,7 @@
      <Compile Include="Assets\MNet-Project-Utility\MNetProjectUtility.cs" />
      <Compile Include="Assets\MNet\Editor\MNetEditor.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Misc\NetworkAPIConfig.cs" />
+     <Compile Include="Assets\MNet\Runtime\API\Moules\AppAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\ClientAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\LobbyAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RealtimeAPI.cs" />
@@ -130,6 +131,7 @@
      <Compile Include="Assets\MNet\Runtime\Utility\Dependancy.cs" />
      <None Include="Assets\MNet-Example\MNet-Unity.asmref" />
      <None Include="Assets\MNet-Project-Utility\MNet-Unity.asmref" />
+     <None Include="Assets\MNet\Third Party\JsonDotNet\link.xml" />
      <None Include="Assets\MNet\MNet-Unity.asmdef" />
      <None Include="Assets\MNet\Third Party\Web Socket Sharp\websocket-sharp.xml" />
  <Reference Include="UnityEngine">
@@ -335,6 +337,9 @@
  </Reference>
  <Reference Include="websocket-sharp">
  <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/Web Socket Sharp/websocket-sharp.dll</HintPath>
+ </Reference>
+ <Reference Include="Newtonsoft.Json">
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/JsonDotNet/Assemblies/Standalone/Newtonsoft.Json.dll</HintPath>
  </Reference>
  <Reference Include="netstandard">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>

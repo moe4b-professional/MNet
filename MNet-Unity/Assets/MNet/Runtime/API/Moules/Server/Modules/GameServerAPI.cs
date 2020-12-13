@@ -28,9 +28,9 @@ namespace MNet
         {
             public static partial class Game
             {
-                public static GameServerID? Selection { get; private set; }
+                public static Dictionary<GameServerID, GameServerInfo> Collection { get; private set; }
 
-                public static bool HasSelection => Selection.HasValue;
+                public static GameServerID? Selection { get; private set; }
 
                 public static GameServerID ID
                 {
@@ -43,13 +43,26 @@ namespace MNet
                     }
                 }
 
-                public static GameServerInfo Info => Master.Servers[ID];
+                public static GameServerInfo Info => Collection[ID];
 
                 public static RestAPI Rest { get; private set; }
 
                 public static void Configure()
                 {
                     Rest = new RestAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
+
+                    Collection = new Dictionary<GameServerID, GameServerInfo>();
+                }
+
+                public delegate void RegisterDelegate();
+                public static event RegisterDelegate OnRegister;
+                public static void Register(IList<GameServerInfo> list)
+                {
+                    Collection.Clear();
+
+                    for (int i = 0; i < list.Count; i++) Collection.Add(list[i].ID, list[i]);
+
+                    OnRegister?.Invoke();
                 }
 
                 public delegate void SelectDelegate(GameServerID id);

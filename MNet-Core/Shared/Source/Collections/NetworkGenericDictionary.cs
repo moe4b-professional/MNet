@@ -90,7 +90,7 @@ namespace MNet
             return false;
         }
 
-        public void Select(INetworkSerializableResolver.Context context)
+        public void Select(ref INetworkSerializableResolver.Context context)
         {
             context.Select(ref payload);
         }
