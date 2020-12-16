@@ -40,7 +40,7 @@ namespace MNet
 
                 public const string Folder = "MNet-Core";
                 public const string Release = "Debug";
-                public const string Variant = "netcoreapp3.1";
+                public const string Variant = "net5.0";
 
                 public static string ParsePath(string name) => $"../{Folder}/{name}/bin/{Release}/{Variant}/{name}.exe";
 

@@ -19,8 +19,8 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class RoomBrowser : UIMenu
-	{
+    public class RoomBrowser : UIMenu
+    {
         [SerializeField]
         GameObject template = null;
 
@@ -73,8 +73,6 @@ namespace MNet.Example
 
             var entries = RoomBasicUITemplate.CreateAll(template, list, InitTemplate);
             templates.AddRange(entries);
-
-            if(list.Count > 0) NetworkAPI.Room.Join(list[0]);
         }
 
         void InitTemplate(RoomBasicUITemplate template, int index)

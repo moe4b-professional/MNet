@@ -32,18 +32,16 @@ namespace MNet
         {
             var type = typeof(T);
 
-            using (var writer = NetworkWriter.Pool.Any)
-            {
-                writer.Write(type);
-                writer.Write(value);
+            var writer = NetworkWriter.Pool.Any;
 
-                var raw = writer.ToArray();
+            writer.Write(type);
+            writer.Write(value);
 
-                NetworkWriter.Pool.Return(writer);
+            var raw = writer.ToArray();
 
-                payload[key] = raw;
-            }
+            NetworkWriter.Pool.Return(writer);
 
+            payload[key] = raw;
             objects[key] = value;
         }
 
@@ -62,14 +60,13 @@ namespace MNet
 
             if (payload.TryGetValue(key, out byte[] binary))
             {
-                using (var reader = new NetworkReader(binary))
-                {
-                    reader.Read(out Type type);
+                var reader = new NetworkReader(binary);
 
-                    value = reader.Read(type);
+                reader.Read(out Type type);
 
-                    objects[key] = value;
-                }
+                value = reader.Read(type);
+
+                objects[key] = value;
 
                 return true;
             }

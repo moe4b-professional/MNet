@@ -394,8 +394,8 @@ namespace MNet
         NetworkClientID master;
         public NetworkClientID Master => master;
 
-        List<NetworkMessage> buffer;
-        public List<NetworkMessage> Buffer => buffer;
+        NetworkMessage[] buffer;
+        public NetworkMessage[] Buffer => buffer;
 
         RoomTimeResponse time;
         public RoomTimeResponse Time => time;
@@ -408,7 +408,7 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, List<NetworkMessage> buffer, RoomTimeResponse time)
+        public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, RoomTimeResponse time)
         {
             this.clients = clients;
             this.master = master;
@@ -505,11 +505,11 @@ namespace MNet
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        int scene;
-        public int Scene => scene;
+        byte scene;
+        public byte Scene => scene;
 
-        int index;
-        public int Index => index;
+        ushort index;
+        public ushort Index => index;
 
         public void Select(ref NetworkSerializationContext context)
         {

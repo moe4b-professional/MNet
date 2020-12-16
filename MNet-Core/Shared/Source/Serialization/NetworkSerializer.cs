@@ -17,16 +17,15 @@ namespace MNet
         #region Serialize
         public static byte[] Serialize<T>(T instance)
         {
-            using (var writer = NetworkWriter.Pool.Any)
-            {
-                writer.Write(instance);
+            var writer = NetworkWriter.Pool.Any;
 
-                var result = writer.ToArray();
+            writer.Write(instance);
 
-                NetworkWriter.Pool.Return(writer);
+            var result = writer.ToArray();
 
-                return result;
-            }
+            NetworkWriter.Pool.Return(writer);
+
+            return result;
         }
 
         public static byte[] Serialize(object instance)
@@ -37,38 +36,35 @@ namespace MNet
         }
         public static byte[] Serialize(object instance, Type type)
         {
-            using (var writer = NetworkWriter.Pool.Any)
-            {
-                writer.Write(instance, type);
+            var writer = NetworkWriter.Pool.Any;
 
-                var result = writer.ToArray();
+            writer.Write(instance, type);
 
-                NetworkWriter.Pool.Return(writer);
+            var result = writer.ToArray();
 
-                return result;
-            }
+            NetworkWriter.Pool.Return(writer);
+
+            return result;
         }
         #endregion
 
         #region Deserialize
         public static T Deserialize<T>(byte[] data)
         {
-            using (var reader = new NetworkReader(data))
-            {
-                reader.Read(out T result);
+            var reader = new NetworkReader(data);
 
-                return result;
-            }
+            reader.Read(out T result);
+
+            return result;
         }
 
         public static object Deserialize(byte[] data, Type type)
         {
-            using (var reader = new NetworkReader(data))
-            {
-                var result = reader.Read(type);
+            var reader = new NetworkReader(data);
 
-                return result;
-            }
+            var result = reader.Read(type);
+
+            return result;
         }
         #endregion
 

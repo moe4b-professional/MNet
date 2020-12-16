@@ -32,9 +32,9 @@ namespace MNet
 
         public int Count => list.Count;
 
-        public NetworkEntity this[int index] => list[index];
+        public NetworkEntity this[ushort index] => list[index];
 
-        public bool Find(int index, out NetworkEntity entity)
+        public bool Find(ushort index, out NetworkEntity entity)
         {
             if (index < 0 || index >= Count)
             {
@@ -79,7 +79,7 @@ namespace MNet
                 return;
             }
 
-            for (int i = 0; i < list.Count; i++)
+            for (ushort i = 0; i < list.Count; i++)
             {
                 if (list[i] == null) return;
 

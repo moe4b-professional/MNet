@@ -137,6 +137,8 @@ namespace MNet
             {
                 Self = new NetworkClient(response.ID, Profile);
 
+                Debug.Log("Client Registered");
+
                 if (AutoReady) Ready();
 
                 OnRegister?.Invoke(response);
@@ -160,6 +162,8 @@ namespace MNet
             static void ReadyCallback(ReadyClientResponse response)
             {
                 IsReady = true;
+
+                Debug.Log("Client Set Ready");
 
                 OnReady?.Invoke(response);
             }

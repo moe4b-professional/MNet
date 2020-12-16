@@ -24,11 +24,9 @@ namespace MNet
             private set => ID = new GameServerID(value);
         }
 
-        public static string Name => Config.Name;
-
         public static GameServerRegion Region => Config.Region;
 
-        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Name, Region);
+        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
 
         static void Main()
         {
@@ -65,7 +63,6 @@ namespace MNet
             if (RegisterOnMaster() == false) return;
 
             Log.Info($"Server ID: {ID}");
-            Log.Info($"Server Name: {Name}");
             Log.Info($"Server Region: {Region}");
 
             RestAPI.Configure(Constants.Server.Game.Rest.Port);

@@ -13,6 +13,9 @@ namespace MNet
         public CreateDelegate Create { get; protected set; }
         public delegate T CreateDelegate();
 
+        public ResetDelegate Reset { get; protected set; }
+        public delegate void ResetDelegate(T element);
+
         public T Any => Lease();
 
         public T Lease()
@@ -33,14 +36,17 @@ namespace MNet
 
         public void Return(T element)
         {
+            Reset(element);
+
             Add(element);
         }
 
-        public ObjectPooler(CreateDelegate creator)
+        public ObjectPooler(CreateDelegate create, ResetDelegate reset)
         {
             Queue = new ConcurrentQueue<T>();
 
-            this.Create = creator;
+            this.Create = create;
+            this.Reset = reset;
         }
     }
 }

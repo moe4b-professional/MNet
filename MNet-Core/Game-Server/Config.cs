@@ -12,9 +12,6 @@ namespace MNet
     public partial class Config : Config<Config>
     {
         [JsonProperty]
-        public string Name { get; protected set; }
-
-        [JsonProperty]
         public IPAddress PublicAddress { get; protected set; }
 
         [JsonProperty]
@@ -31,8 +28,6 @@ namespace MNet
         protected override void WriteDefaults()
         {
             base.WriteDefaults();
-
-            Name = "Game Server";
 
             PublicAddress = null;
             MasterAddress = null;

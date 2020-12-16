@@ -11,7 +11,6 @@ namespace MNet
         public GameServerInfo Info => info;
 
         public GameServerID ID => info.ID;
-        public string Name => info.Name;
         public GameServerRegion Region => info.Region;
 
         public static GameServerInfo GetInfo(GameServer server) => server.Info;

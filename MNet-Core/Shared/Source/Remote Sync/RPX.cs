@@ -91,19 +91,18 @@ namespace MNet
 
         public object[] Read(IList<ParameterInfo> parameters)
         {
-            using (var reader = new NetworkReader(raw))
+            var reader = new NetworkReader(raw);
+
+            var results = new object[parameters.Count];
+
+            for (int i = 0; i < parameters.Count; i++)
             {
-                var results = new object[parameters.Count];
+                var value = reader.Read(parameters[i].ParameterType);
 
-                for (int i = 0; i < parameters.Count; i++)
-                {
-                    var value = reader.Read(parameters[i].ParameterType);
-
-                    results[i] = value;
-                }
-
-                return results;
+                results[i] = value;
             }
+
+            return results;
         }
 
         public void Select(ref NetworkSerializationContext context)
@@ -139,17 +138,16 @@ namespace MNet
 
         public static byte[] Serialize(params object[] arguments)
         {
-            using (var writer = NetworkWriter.Pool.Any)
-            {
-                for (int i = 0; i < arguments.Length; i++)
-                    writer.Write(arguments[i]);
+            var writer = NetworkWriter.Pool.Any;
 
-                var raw = writer.ToArray();
+            for (int i = 0; i < arguments.Length; i++)
+                writer.Write(arguments[i]);
 
-                NetworkWriter.Pool.Return(writer);
+            var raw = writer.ToArray();
 
-                return raw;
-            }
+            NetworkWriter.Pool.Return(writer);
+
+            return raw;
         }
 
         public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RpcBufferMode bufferMode, params object[] arguments)
@@ -233,19 +231,18 @@ namespace MNet
 
         public object[] Read(IList<ParameterInfo> parameters, int optional)
         {
-            using (var reader = new NetworkReader(raw))
+            var reader = new NetworkReader(raw);
+
+            var results = new object[parameters.Count];
+
+            for (int i = 0; i < parameters.Count - optional; i++)
             {
-                var results = new object[parameters.Count];
+                var value = reader.Read(parameters[i].ParameterType);
 
-                for (int i = 0; i < parameters.Count - optional; i++)
-                {
-                    var value = reader.Read(parameters[i].ParameterType);
-
-                    results[i] = value;
-                }
-
-                return results;
+                results[i] = value;
             }
+
+            return results;
         }
 
         public void Select(ref NetworkSerializationContext context)

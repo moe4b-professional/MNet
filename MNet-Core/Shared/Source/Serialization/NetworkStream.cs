@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
-    public abstract class NetworkStream : IDisposable
+    public abstract class NetworkStream
     {
         protected byte[] data;
         public byte[] Data { get { return data; } }
@@ -62,8 +62,6 @@ namespace MNet
             Position = end - start;
         }
 
-        public virtual void Dispose() => Clear();
-
         public void Clear()
         {
             Position = 0;
@@ -74,6 +72,10 @@ namespace MNet
             this.data = data;
             Position = 0;
         }
+
+        //Static Utility
+
+        public static void Clear(NetworkStream stream) => stream.Clear();
 
         public static NotImplementedException FormatResolverException<T>()
         {
@@ -221,7 +223,7 @@ namespace MNet
 
         static NetworkWriter()
         {
-            Pool = new ObjectPooler<NetworkWriter>(Create);
+            Pool = new ObjectPooler<NetworkWriter>(Create, Clear);
         }
     }
 

@@ -87,18 +87,26 @@ namespace MNet
             }
             #endregion
 
-            #region Self Callbacks
-            static void SelfConnectCallback() => Setup();
+            static void Setup()
+            {
+                
+            }
 
-            static void SelfRegisterCallback(RegisterClientResponse response)
+            static void Register(RegisterClientResponse response)
             {
                 Info = response.Room;
             }
 
-            static void SelfReadyCallback(ReadyClientResponse response) => Ready(response);
+            public delegate void ReadyDelegate(ReadyClientResponse response);
+            public static event ReadyDelegate OnReady;
+            static void Ready(ReadyClientResponse response)
+            {
+                AddClients(response.Clients);
+                AssignMaster(response.Master);
+                ApplyMessageBuffer(response.Buffer);
 
-            static void SelfDisconnectCallback(DisconnectCode code) => Clear();
-            #endregion
+                OnReady?.Invoke(response);
+            }
 
             #region Clients
             public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
@@ -193,6 +201,7 @@ namespace MNet
                     owner.Entities.Add(entity);
 
                 entity.Spawn(owner, command.ID, command.Attributes, command.Type);
+
                 Entities.Add(entity.ID, entity);
 
                 if (command.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
@@ -262,7 +271,7 @@ namespace MNet
                 var owner = entity.Owner;
 
                 Entities.Remove(entity.ID);
-                SceneObjects.Remove(entity);
+                if (entity.Type == NetworkEntityType.SceneObject) SceneObjects.Remove(entity);
                 owner?.Entities.Remove(entity);
 
                 entity.Despawn();
@@ -273,28 +282,11 @@ namespace MNet
             }
             #endregion
 
-            static void Setup()
-            {
-                Clients = new Dictionary<NetworkClientID, NetworkClient>();
-                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-                SceneObjects = new List<NetworkEntity>();
-            }
-
-            public delegate void ReadyDelegate(ReadyClientResponse response);
-            public static event ReadyDelegate OnReady;
-            static void Ready(ReadyClientResponse response)
-            {
-                AddClients(response.Clients);
-                AssignMaster(response.Master);
-                ApplyMessageBuffer(response.Buffer);
-
-                OnReady?.Invoke(response);
-            }
-
             #region Message Buffer
             public static bool IsApplyingMessageBuffer { get; private set; }
 
-            public static event Action OnAppliedMessageBuffer;
+            public delegate void MessageBufferDelegate(IList<NetworkMessage> list);
+            public static event MessageBufferDelegate OnAppliedMessageBuffer;
             static void ApplyMessageBuffer(IList<NetworkMessage> list)
             {
                 IsApplyingMessageBuffer = true;
@@ -304,7 +296,7 @@ namespace MNet
 
                 IsApplyingMessageBuffer = false;
 
-                OnAppliedMessageBuffer?.Invoke();
+                OnAppliedMessageBuffer?.Invoke(list);
             }
             #endregion
 
@@ -363,6 +355,7 @@ namespace MNet
                 }
             }
 
+            #region RPX
             #region RPC
             static void InvokeRPC(RpcCommand command)
             {
@@ -428,8 +421,11 @@ namespace MNet
 
                 target.InvokeSyncVar(command);
             }
+            #endregion
 
             public static void Leave() => Client.Disconnect();
+
+            static void Disconnect(DisconnectCode code) => Clear();
 
             static void Clear()
             {
@@ -453,15 +449,15 @@ namespace MNet
 
             static Room()
             {
-                Setup();
+                Clients = new Dictionary<NetworkClientID, NetworkClient>();
+                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
+                SceneObjects = new List<NetworkEntity>();
 
-                Client.OnConnect += SelfConnectCallback;
-                Client.OnReady += SelfReadyCallback;
-                Client.OnDisconnect += SelfDisconnectCallback;
-
+                Client.OnConnect += Setup;
+                Client.OnRegister += Register;
+                Client.OnReady += Ready;
                 Client.OnMessage += MessageCallback;
-
-                Client.OnRegister += SelfRegisterCallback;
+                Client.OnDisconnect += Disconnect;
             }
         }
     }

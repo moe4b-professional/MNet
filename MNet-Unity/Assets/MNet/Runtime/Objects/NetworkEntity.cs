@@ -25,7 +25,7 @@ namespace MNet
     [DefaultExecutionOrder(ExecutionOrder)]
     public class NetworkEntity : MonoBehaviour
     {
-        public const int ExecutionOrder = -200;
+        public const int ExecutionOrder = -400;
 
         public NetworkEntityID ID { get; protected set; }
 

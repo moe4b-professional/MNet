@@ -330,7 +330,18 @@ namespace MNet
 
             var time = new RoomTimeResponse(Time, request.Timestamp);
 
-            var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, MessageBuffer.List, time);
+            ///DO NOT PASS the Message Buffer in as an argument for the ReadyClientResponse
+            ///You'll get what I can only describe as a very rare single-threaded race condition
+            ///In reality this is because the ReadyClientResponse will be serialized later on
+            ///And the MessageBuffer.List will get passed by reference
+            ///So if a ReadyClientResponse request is created for a certain client before any previous client spawns an entity
+            ///The message buffer will still include the new entity spawn
+            ///Because by the time the buffer list gets serialized, it would be the latest version in the room
+            ///And the client will still recieve the entity spawn command in real-time because they are now marked ready
+            ///And yeah ... don't ask me how I know :P
+            var buffer = MessageBuffer.List.ToArray();
+
+            var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, buffer, time);
 
             Send(response, client);
 
@@ -496,7 +507,7 @@ namespace MNet
 
             if (owner == null)
             {
-                Log.Warning($"No Owner Found For Spawn Request");
+                Log.Warning($"No Owner Found For Spawn Entity Request");
                 return null;
             }
 
@@ -504,6 +515,8 @@ namespace MNet
 
             owner.Entities.Add(entity);
             Entities.Assign(id, entity);
+
+            Log.Info($"Room {this.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
 
             if (request.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
 

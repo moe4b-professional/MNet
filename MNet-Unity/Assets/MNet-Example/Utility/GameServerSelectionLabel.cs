@@ -40,7 +40,7 @@ namespace MNet.Example
 			if (NetworkAPI.Server.Game.Selection == null)
 				label.text = $"None";
 			else
-				label.text = $"{NetworkAPI.Server.Game.Info.Name}";
+				label.text = $"{NetworkAPI.Server.Game.Info.Region}";
 		}
 
 		void OnDestroy()

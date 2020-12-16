@@ -86,12 +86,11 @@ namespace MNet.Example
 				IEnumerator Procedure()
 				{
 					var operation = SceneManager.LoadSceneAsync(level.Scene.name, LoadSceneMode.Single);
-					operation.allowSceneActivation = false;
-
-					bool IsLoad() => operation.progress == 0.9f;
-					yield return new WaitUntil(IsLoad);
 
 					operation.allowSceneActivation = true;
+
+					bool IsDone() => operation.isDone;
+					yield return new WaitUntil(IsDone);
 				}
 			}
 		}

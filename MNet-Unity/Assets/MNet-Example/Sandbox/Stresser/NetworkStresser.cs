@@ -33,7 +33,7 @@ namespace MNet.Example
             {
 				Spawn();
 
-				if (i % 20 == 0) yield return new WaitForEndOfFrame();
+				if (i % 100 == 0) yield return new WaitForEndOfFrame();
 			}
 		}
 

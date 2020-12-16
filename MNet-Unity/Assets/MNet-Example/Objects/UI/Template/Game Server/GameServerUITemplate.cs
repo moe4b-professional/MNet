@@ -54,14 +54,14 @@ namespace MNet.Example
         {
             base.SetData(data);
 
-            Rename($"{data.Name} | {data.ID}");
+            Rename($"{data.ID} | {data.ID}");
         }
 
         public override void UpdateState()
         {
             base.UpdateState();
 
-            info.text = $"{Data.Name} | {Data.Region}";
+            info.text = $"{Data.ID} @ {Data.Region}";
         }
     }
 }

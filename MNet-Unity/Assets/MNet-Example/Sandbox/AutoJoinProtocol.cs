@@ -19,9 +19,9 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class AutoJoinProtocol : MonoBehaviour
-	{
-		void Start()
+    public class AutoJoinProtocol : MonoBehaviour
+    {
+        void Start()
         {
             if (Application.isEditor == false) Begin();
         }
