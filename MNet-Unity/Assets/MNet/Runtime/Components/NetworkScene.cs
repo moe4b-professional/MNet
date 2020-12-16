@@ -66,7 +66,9 @@ namespace MNet
 
         void Reset()
         {
+#if UNITY_EDITOR
             FindAll();
+#endif
         }
 
         void Awake()

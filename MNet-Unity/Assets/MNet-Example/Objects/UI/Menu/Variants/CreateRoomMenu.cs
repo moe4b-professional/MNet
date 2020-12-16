@@ -42,6 +42,7 @@ namespace MNet.Example
 
 			capacity.ClearOptions();
 			capacity.AddOptions(Core.Network.Capacities);
+			capacity.value = Core.Network.Capacities.Length - 1;
 
 			level.ClearOptions();
 			level.AddOptions(Core.Levels.List);

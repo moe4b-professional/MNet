@@ -153,6 +153,9 @@ namespace MNet
             [MenuItem(Path + "Launch All Servers")]
             static void LaunchAllServers() => Launch.Server.All();
 
+            [MenuItem(Path + "Launch Master Server")]
+            static void LaunchMasterServer() => Launch.Server.Master();
+
             [MenuItem(Path + "Build Mono Client")]
             static void BuildMonoClient() => Build.Mono();
 

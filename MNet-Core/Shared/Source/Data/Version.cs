@@ -23,7 +23,7 @@ namespace MNet
 
         public const char Splitter = '.';
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref major);
             context.Select(ref minor);

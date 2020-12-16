@@ -104,13 +104,13 @@ namespace MNet
         #endregion
 
         #region Message Buffer
-        public NetworkMessageCollection MessageBuffer { get; protected set; }
+        public NetworkMessageBuffer MessageBuffer { get; protected set; }
 
         public void BufferMessage(NetworkMessage message) => MessageBuffer.Add(message);
 
         public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
 
-        public void UnbufferMessages(HashSet<NetworkMessage> collection) => MessageBuffer.RemoveAll(x => collection.Contains(x));
+        public void UnbufferMessages(HashSet<NetworkMessage> collection) => MessageBuffer.RemoveAll(collection.Contains);
         #endregion
 
         #region Communication
@@ -606,7 +606,7 @@ namespace MNet
 
             this.Attributes = attributes;
 
-            MessageBuffer = new NetworkMessageCollection();
+            MessageBuffer = new NetworkMessageBuffer();
 
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);

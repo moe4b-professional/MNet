@@ -27,7 +27,7 @@ namespace MNet
         string value;
         public string Value { get { return value; } }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }
@@ -39,15 +39,11 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(RpcMethodID))
-            {
-                var target = (RpcMethodID)obj;
-
-                return target.value == this.value;
-            }
+            if (obj is RpcMethodID target) return Equals(target);
 
             return false;
         }
+        public bool Equals(RpcMethodID target) => Equals(value, target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 
@@ -110,7 +106,7 @@ namespace MNet
             }
         }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref entity);
             context.Select(ref behaviour);
@@ -143,17 +139,17 @@ namespace MNet
 
         public static byte[] Serialize(params object[] arguments)
         {
-            Byte[] raw;
-
-            using (var writer = new NetworkWriter(1024))
+            using (var writer = NetworkWriter.Pool.Any)
             {
                 for (int i = 0; i < arguments.Length; i++)
                     writer.Write(arguments[i]);
 
-                raw = writer.ToArray();
-            }
+                var raw = writer.ToArray();
 
-            return raw;
+                NetworkWriter.Pool.Return(writer);
+
+                return raw;
+            }
         }
 
         public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RpcBufferMode bufferMode, params object[] arguments)
@@ -252,7 +248,7 @@ namespace MNet
             }
         }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref sender);
             context.Select(ref entity);
@@ -330,7 +326,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw => raw;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref entity);
             context.Select(ref target);
@@ -396,7 +392,7 @@ namespace MNet
             return result;
         }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref entity);
 

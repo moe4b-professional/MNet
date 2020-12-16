@@ -27,7 +27,7 @@ namespace MNet
             return value;
         }
 
-        public virtual void Select(ref INetworkSerializableResolver.Context context)
+        public virtual void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref entity);
             context.Select(ref behaviour);
@@ -68,7 +68,7 @@ namespace MNet
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
 
-        public override void Select(ref INetworkSerializableResolver.Context context)
+        public override void Select(ref NetworkSerializationContext context)
         {
             base.Select(ref context);
 

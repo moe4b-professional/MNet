@@ -18,7 +18,7 @@ namespace MNet
         ushort value;
         public ushort Value { get { return value; } }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }

@@ -20,7 +20,7 @@ namespace MNet
         {
             if (request.Type != RpcType.Broadcast)
             {
-                Log.Error($"RPC of Type {request.Type} isn't Supported for Buffering");
+                Log.Error($"RPC {request} of Type {request.Type} isn't Supported for Buffering");
                 return;
             }
 
@@ -39,8 +39,8 @@ namespace MNet
             {
                 unbuffer(collection.HashSet);
 
+                Hash.RemoveWhere(collection.Contains);
                 collection.Clear();
-                Hash.RemoveWhere(x => collection.Contains(x));
             }
 
             buffer(message);

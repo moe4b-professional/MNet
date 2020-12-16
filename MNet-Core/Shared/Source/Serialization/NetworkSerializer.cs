@@ -12,30 +12,38 @@ namespace MNet
 {
     public static class NetworkSerializer
     {
-        public const int DefaultBufferSize = 2048;
+        public const int DefaultBufferSize = 512;
 
         #region Serialize
-        public static byte[] Serialize<T>(T instance) => Serialize(instance, DefaultBufferSize);
-        public static byte[] Serialize<T>(T instance, int bufferSize)
+        public static byte[] Serialize<T>(T instance)
         {
-            using (var writer = new NetworkWriter(bufferSize))
+            using (var writer = NetworkWriter.Pool.Any)
             {
                 writer.Write(instance);
 
                 var result = writer.ToArray();
+
+                NetworkWriter.Pool.Return(writer);
 
                 return result;
             }
         }
 
-        public static byte[] Serialize(object instance) => Serialize(instance, DefaultBufferSize);
-        public static byte[] Serialize(object instance, int bufferSize)
+        public static byte[] Serialize(object instance)
         {
-            using (var writer = new NetworkWriter(bufferSize))
+            var type = instance == null ? null : instance.GetType();
+
+            return Serialize(instance, type);
+        }
+        public static byte[] Serialize(object instance, Type type)
+        {
+            using (var writer = NetworkWriter.Pool.Any)
             {
-                writer.Write(instance);
+                writer.Write(instance, type);
 
                 var result = writer.ToArray();
+
+                NetworkWriter.Pool.Return(writer);
 
                 return result;
             }
@@ -72,11 +80,20 @@ namespace MNet
 
             return instance;
         }
+
+        public static object Clone(object original, Type type)
+        {
+            var binary = Serialize(original, type);
+
+            var instance = Deserialize(binary, type);
+
+            return instance;
+        }
     }
 
     public interface INetworkSerializable
     {
-        void Select(ref INetworkSerializableResolver.Context context);
+        void Select(ref NetworkSerializationContext context);
     }
 
     public interface IManualNetworkSerializable

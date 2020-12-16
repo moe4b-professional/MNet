@@ -100,6 +100,30 @@ namespace MNet
         }
 
         [Test]
+        public void NullClass()
+        {
+            SampleClass original = null;
+
+            var copy = NetworkSerializer.Clone(original, typeof(SampleClass));
+
+            Assert.IsTrue(original == null);
+            Assert.IsTrue(copy == null);
+        }
+
+        class SampleClass : INetworkSerializable
+        {
+            public void Select(ref NetworkSerializationContext context)
+            {
+                
+            }
+
+            public SampleClass()
+            {
+
+            }
+        }
+
+        [Test]
         public void NullableList()
         {
             var original = new List<int?>() { 42, null, 12, 420, null, 69 };

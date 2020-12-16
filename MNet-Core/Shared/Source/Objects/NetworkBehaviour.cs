@@ -13,7 +13,7 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }
@@ -25,15 +25,11 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(NetworkBehaviourID))
-            {
-                var target = (NetworkBehaviourID)obj;
-
-                return target.value == this.value;
-            }
+            if (obj is NetworkBehaviourID target) return Equals(target);
 
             return false;
         }
+        public bool Equals(NetworkBehaviourID id) => Equals(value, id.value);
 
         public override int GetHashCode() => value.GetHashCode();
 

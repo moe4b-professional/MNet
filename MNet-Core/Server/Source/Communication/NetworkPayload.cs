@@ -19,7 +19,7 @@ namespace MNet
         string key;
         public string Key => key;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref info);
             context.Select(ref key);
@@ -42,7 +42,7 @@ namespace MNet
         RemoteConfig remoteConfig;
         public RemoteConfig RemoteConfig => remoteConfig;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref apps);
             context.Select(ref remoteConfig);
@@ -67,7 +67,7 @@ namespace MNet
         string key;
         public string Key => key;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref id);
             context.Select(ref key);
@@ -87,7 +87,7 @@ namespace MNet
         bool success;
         public bool Success => success;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref success);
         }

@@ -15,33 +15,30 @@ namespace MNet
 
         public int Size => Position;
 
-        int position;
+        int _position;
         public int Position
         {
-            get => position;
+            get => _position;
             set
             {
                 if (value < 0 || value > Capacity)
                     throw new IndexOutOfRangeException();
 
-                position = value;
+                _position = value;
+
+                Remaining = Capacity - _position;
             }
         }
 
-        public int Remaining => Capacity - position;
+        public int Remaining { get; protected set; }
 
         public const uint DefaultResizeLength = 512;
-
-        public virtual void Dispose()
-        {
-            data = null;
-        }
 
         protected void Resize(uint extra)
         {
             var value = new byte[Capacity + extra];
 
-            Buffer.BlockCopy(data, 0, value, 0, position);
+            Buffer.BlockCopy(data, 0, value, 0, Position);
 
             this.data = value;
         }
@@ -65,17 +62,29 @@ namespace MNet
             Position = end - start;
         }
 
+        public virtual void Dispose() => Clear();
+
         public void Clear()
         {
-            position = 0;
+            Position = 0;
         }
 
         public NetworkStream(byte[] data)
         {
             this.data = data;
+            Position = 0;
         }
 
-        public static bool IsNullable(Type type) => NetworkSerializationHelper.Nullable.Check(type);
+        public static NotImplementedException FormatResolverException<T>()
+        {
+            var type = typeof(T);
+
+            return FormatResolverException(type);
+        }
+        public static NotImplementedException FormatResolverException(Type type)
+        {
+            return new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+        }
     }
 
     public class NetworkWriter : NetworkStream
@@ -119,15 +128,13 @@ namespace MNet
         #region Write
         public void Write<T>(T value)
         {
-            var type = typeof(T);
+            if (ResolveNull(value)) return;
 
-            if (ResolveNull(value, type)) return;
+            if (ResolveExplicit(value)) return;
 
-            if (ResolveExplicit(value, type)) return;
+            if (ResolveImplicit(value)) return;
 
-            if (ResolveImplicit(value, type)) return;
-
-            throw FormatResolverException(type);
+            throw FormatResolverException<T>();
         }
 
         public void Write(object value)
@@ -147,6 +154,18 @@ namespace MNet
         #endregion
 
         #region Resolve
+        bool ResolveNull<T>(T value)
+        {
+            if (value == null)
+            {
+                Write(true); //Is Null Flag Value
+                return true;
+            }
+
+            if (NetworkSerializationHelper.Nullable.Generic<T>.Is) Write(false); //Is Not Null Flag
+
+            return false;
+        }
         bool ResolveNull(object value, Type type)
         {
             if (value == null)
@@ -155,12 +174,12 @@ namespace MNet
                 return true;
             }
 
-            if (IsNullable(type)) Write(false); //Is Not Null Flag
+            if (NetworkSerializationHelper.Nullable.Any.Check(type)) Write(false); //Is Not Null Flag
 
             return false;
         }
 
-        bool ResolveExplicit<T>(T value, Type type)
+        bool ResolveExplicit<T>(T value)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
@@ -170,9 +189,11 @@ namespace MNet
             return true;
         }
 
-        bool ResolveImplicit(object value, Type type)
+        bool ResolveImplicit(object value)
         {
-            var resolver = NetworkSerializationImplicitResolver.Retrive(type);
+            var type = value.GetType();
+
+            var resolver = NetworkSerializationResolver.Retrive(type);
 
             if (resolver == null) return false;
 
@@ -193,9 +214,14 @@ namespace MNet
 
         public NetworkWriter(int size) : base(new byte[size]) { }
 
-        public static NotImplementedException FormatResolverException(Type type)
+        //Static Utility
+        public static ObjectPooler<NetworkWriter> Pool { get; protected set; }
+
+        public static NetworkWriter Create() => new NetworkWriter(NetworkSerializer.DefaultBufferSize);
+
+        static NetworkWriter()
         {
-            return new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+            Pool = new ObjectPooler<NetworkWriter>(Create);
         }
     }
 
@@ -212,53 +238,57 @@ namespace MNet
             return destination;
         }
 
+        public void Set(byte[] data)
+        {
+            this.data = data;
+
+            Clear();
+        }
+
         #region Read
         public void Read<T>(out T value) => value = Read<T>();
         public T Read<T>()
         {
-            var type = typeof(T);
+            if (ResolveNull<T>()) return default;
 
             T value = default;
 
-            if (ResolveNull(type, ref value)) return value;
+            if (ResolveExplicit(ref value)) return value;
 
-            if (ResolveExplicit(type, ref value)) return value;
+            if (ResolveImplicit(ref value)) return value;
 
-            if (ResolveImplicit(type, ref value)) return value;
-
-            throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+            throw FormatResolverException<T>();
         }
         
         public object Read(Type type)
         {
-            object value = default;
+            if (ResolveNull(type)) return null;
 
-            if (ResolveNull(type, ref value)) return value;
+            if (ResolveAny(type, out var value)) return value;
 
-            if (ResolveAny(type, ref value)) return value;
-
-            throw new NotImplementedException($"Type {type.Name} isn't supported for Network Serialization");
+            throw FormatResolverException(type);
         }
         #endregion
 
         #region Resolve
-        bool ResolveNull<T>(Type type, ref T value)
+        bool ResolveNull<T>()
         {
-            if (IsNullable(type))
-            {
-                Read(out bool isNull);
+            if (NetworkSerializationHelper.Nullable.Generic<T>.Is == false) return false;
 
-                if (isNull)
-                {
-                    value = default;
-                    return true;
-                }
-            }
+            Read(out bool isNull);
 
-            return false;
+            return isNull;
+        }
+        bool ResolveNull(Type type)
+        {
+            if (NetworkSerializationHelper.Nullable.Any.Check(type) == false) return false;
+
+            Read(out bool isNull);
+
+            return isNull;
         }
 
-        bool ResolveExplicit<T>(Type type, ref T value)
+        bool ResolveExplicit<T>(ref T value)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
@@ -268,8 +298,10 @@ namespace MNet
             return true;
         }
 
-        bool ResolveImplicit<T>(Type type, ref T value)
+        bool ResolveImplicit<T>(ref T value)
         {
+            var type = typeof(T);
+
             object instance = null;
 
             if (ResolveImplicit(type, ref instance) == false) return false;
@@ -299,11 +331,15 @@ namespace MNet
             return true;
         }
 
-        bool ResolveAny(Type type, ref object value)
+        bool ResolveAny(Type type, out object value)
         {
             var resolver = NetworkSerializationResolver.Retrive(type);
 
-            if (resolver == null) return false;
+            if (resolver == null)
+            {
+                value = null;
+                return false;
+            }
 
             value = resolver.Deserialize(this, type);
             return true;

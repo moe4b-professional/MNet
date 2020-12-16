@@ -47,8 +47,8 @@ namespace MNet
 
                 bool CanResolve(NetworkSerializationResolver resolver) => resolver.CanResolve(type);
 
-                if (value == null) value = Explicit.FirstOrDefault(CanResolve);
                 if (value == null) value = Implicit.FirstOrDefault(CanResolve);
+                if (value == null) value = Explicit.FirstOrDefault(CanResolve);
 
                 if (value != null) Dictionary.Add(type, value);
 
@@ -368,6 +368,24 @@ namespace MNet
         }
     }
 
+    [Preserve]
+    public class NetworkMessageSerializationResolver : NetworkSerializationExplicitResolver<NetworkMessage>
+    {
+        public override void Serialize(NetworkWriter writer, NetworkMessage value)
+        {
+            value.Serialize(writer);
+        }
+
+        public override NetworkMessage Deserialize(NetworkReader reader)
+        {
+            var message = new NetworkMessage();
+
+            message.Deserialize(reader);
+
+            return message;
+        }
+    }
+
     #region POCO
     [Preserve]
     public class GuidNetworkSerializationResolver : NetworkSerializationExplicitResolver<Guid>
@@ -554,22 +572,6 @@ namespace MNet
     [Preserve]
     public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
     {
-        new public static NetworkSerializationResolver Retrive(Type target)
-        {
-            lock (SyncLock)
-            {
-                if (Dictionary.TryGetValue(target, out var value)) return value;
-
-                bool CanResolve(NetworkSerializationResolver resolver) => resolver.CanResolve(target);
-
-                if (value == null) value = Implicit.FirstOrDefault(CanResolve);
-
-                if (value != null) Dictionary.Add(target, value);
-
-                return value;
-            }
-        }
-
         static NetworkSerializationImplicitResolver()
         {
             //Explicitly Called to make sure that the base class's static constructor is called
@@ -645,7 +647,7 @@ namespace MNet
         {
             var value = instance as INetworkSerializable;
 
-            var context = new Context(writer);
+            var context = new NetworkSerializationContext(writer);
 
             value.Select(ref context);
         }
@@ -654,36 +656,11 @@ namespace MNet
         {
             var value = Activator.CreateInstance(type, true) as INetworkSerializable;
 
-            var context = new Context(reader);
+            var context = new NetworkSerializationContext(reader);
 
             value.Select(ref context);
 
             return value;
-        }
-
-        public struct Context
-        {
-            public NetworkWriter Writer { get; private set; }
-            public bool IsSerializing => Writer != null;
-
-            public NetworkReader Reader { get; private set; }
-            public bool IsDeserializing => Reader != null;
-
-            public void Select<T>(ref T value)
-            {
-                if (IsSerializing) Writer.Write(value);
-
-                if (IsDeserializing) Reader.Read(out value);
-            }
-
-            Context(NetworkWriter writer, NetworkReader reader)
-            {
-                this.Writer = writer;
-                this.Reader = reader;
-            }
-
-            public Context(NetworkWriter writer) : this(writer, null) { }
-            public Context(NetworkReader reader) : this(null, reader) { }
         }
     }
 
@@ -953,7 +930,7 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            var backing = Enum.GetUnderlyingType(type);
+            var backing = NetworkSerializationHelper.Enum.UnderlyingType.Retrieve(type);
 
             var value = Convert.ChangeType(instance, backing);
 
@@ -972,4 +949,29 @@ namespace MNet
         }
     }
     #endregion
+
+    public struct NetworkSerializationContext
+    {
+        public NetworkWriter Writer { get; private set; }
+        public bool IsSerializing => Writer != null;
+
+        public NetworkReader Reader { get; private set; }
+        public bool IsDeserializing => Reader != null;
+
+        public void Select<T>(ref T value)
+        {
+            if (IsSerializing) Writer.Write(value);
+
+            if (IsDeserializing) Reader.Read(out value);
+        }
+
+        NetworkSerializationContext(NetworkWriter writer, NetworkReader reader)
+        {
+            this.Writer = writer;
+            this.Reader = reader;
+        }
+
+        public NetworkSerializationContext(NetworkWriter writer) : this(writer, null) { }
+        public NetworkSerializationContext(NetworkReader reader) : this(null, reader) { }
+    }
 }

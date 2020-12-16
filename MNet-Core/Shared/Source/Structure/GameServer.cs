@@ -21,7 +21,7 @@ namespace MNet
 
         public string Address => ToString();
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }
@@ -73,7 +73,7 @@ namespace MNet
         GameServerRegion region;
         public GameServerRegion Region => region;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref id);
             context.Select(ref name);

@@ -13,7 +13,7 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }
@@ -62,7 +62,7 @@ namespace MNet
         AttributesCollection attributes;
         public AttributesCollection Attributes { get { return attributes; } }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref name);
             context.Select(ref attributes);
@@ -90,7 +90,7 @@ namespace MNet
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref id);
             context.Select(ref profile);

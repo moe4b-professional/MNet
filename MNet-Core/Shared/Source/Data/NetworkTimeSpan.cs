@@ -16,7 +16,7 @@ namespace MNet
         public float Millisecond => ticks / 1f / TimeSpan.TicksPerMillisecond;
         public float Seconds => ticks / 1f / TimeSpan.TicksPerSecond;
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref ticks);
         }

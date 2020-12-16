@@ -62,6 +62,7 @@
     <Compile Include="Source\Collections\CollectionPrettyPrint.cs" />
     <Compile Include="Source\Constants.cs" />
     <Compile Include="Source\Structure\GameServer.cs" />
+    <Compile Include="Source\Tool\ObjectPooler.cs" />
     <Compile Include="Source\Utility\GeneralExtensions.cs" />
     <Compile Include="Source\Structure\Lobby.cs" />
     <Compile Include="Source\Tool\Log.cs" />

@@ -235,8 +235,10 @@ namespace MNet
                 foreach (var message in NetworkMessage.ReadAll(raw))
                     QueueMessage(sender, message, mode);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Info(ex);
+
                 Log.Error($"Invalid Network Messages Recieved from {sender.ClientID}");
                 Disconnect(sender, DisconnectCode.InvalidData);
             }

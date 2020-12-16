@@ -71,6 +71,8 @@
      <Compile Include="Assets\MNet-Example\Objects\Level\UI\Menu\PauseMenu.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\Utility\LevelPauseSetButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Main Menu\MainMenu.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Player\Modules\PlayerMovement.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Player\Player.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Room Log\RoomLog.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Room Log\UI\RoomLogPanel.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Room Log\UI\Template\RoomLogUITemplate.cs" />
@@ -87,6 +89,7 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\HideUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\ShowUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\AutoJoinProtocol.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Stresser\Entity\NetworkStressBehaviour.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Stresser\NetworkStresser.cs" />
@@ -329,17 +332,20 @@
  <Reference Include="UnityEditor.WebGL.Extensions">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll</HintPath>
  </Reference>
+ <Reference Include="UnityEditor.LinuxStandalone.Extensions">
+ <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/LinuxStandaloneSupport/UnityEditor.LinuxStandalone.Extensions.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEditor.Android.Extensions">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll</HintPath>
  </Reference>
  <Reference Include="Shared">
  <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Shared.dll</HintPath>
  </Reference>
- <Reference Include="websocket-sharp">
- <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/Web Socket Sharp/websocket-sharp.dll</HintPath>
- </Reference>
  <Reference Include="Newtonsoft.Json">
  <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/JsonDotNet/Assemblies/Standalone/Newtonsoft.Json.dll</HintPath>
+ </Reference>
+ <Reference Include="websocket-sharp">
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/Web Socket Sharp/websocket-sharp.dll</HintPath>
  </Reference>
  <Reference Include="netstandard">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>

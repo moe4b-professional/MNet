@@ -17,8 +17,6 @@ namespace MNet
 
         public IReadOnlyCollection<TKey> Keys => payload.Keys;
 
-        public const int DefaultValueBufferSize = 256;
-
         public object this[TKey key]
         {
             get
@@ -34,12 +32,15 @@ namespace MNet
         {
             var type = typeof(T);
 
-            using (var writer = new NetworkWriter(DefaultValueBufferSize))
+            using (var writer = NetworkWriter.Pool.Any)
             {
                 writer.Write(type);
                 writer.Write(value);
 
                 var raw = writer.ToArray();
+
+                NetworkWriter.Pool.Return(writer);
+
                 payload[key] = raw;
             }
 
@@ -90,7 +91,7 @@ namespace MNet
             return false;
         }
 
-        public void Select(ref INetworkSerializableResolver.Context context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref payload);
         }
@@ -98,7 +99,6 @@ namespace MNet
         public NetworkGenericDictionary()
         {
             payload = new Dictionary<TKey, byte[]>();
-
             objects = new Dictionary<TKey, object>();
         }
     }

@@ -65,6 +65,17 @@ namespace MNet
             payload = reader.Read(type);
         }
 
+        public override bool Equals(object obj)
+        {
+            if (obj is NetworkMessage message) return Equals(payload, message.payload);
+
+            return false;
+        }
+
+        public override int GetHashCode() => payload.GetHashCode();
+
+        public override string ToString() => payload.ToString();
+
         NetworkMessage(object payload)
         {
             this.payload = payload;
@@ -91,18 +102,5 @@ namespace MNet
 
                 yield return message;
             }
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is NetworkMessage message)
-                return Equals(payload, message.payload);
-
-            return false;
-        }
-
-        public override int GetHashCode() => payload.GetHashCode();
-
-        public override string ToString() => payload.ToString();
-    }
+        }    }
 }

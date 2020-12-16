@@ -14,19 +14,53 @@ namespace MNet
     {
         public static class Nullable
         {
-            public static ConcurrentDictionary<Type, bool> Dictionary { get; private set; }
-
-            public static bool Check(Type type)
+            public static class Any
             {
-                if (Dictionary.TryGetValue(type, out var value)) return value;
+                public static ConcurrentDictionary<Type, bool> Dictionary { get; private set; }
 
-                value = Evaluate(type);
+                public static bool Check(Type type)
+                {
+                    if (Dictionary.TryGetValue(type, out var value)) return value;
 
-                Dictionary.TryAdd(type, value);
+                    value = Evaluate(type);
 
-                return value;
+                    Dictionary.TryAdd(type, value);
+
+                    return value;
+                }
+
+                static Any()
+                {
+                    Dictionary = new ConcurrentDictionary<Type, bool>();
+                }
             }
 
+            public static class Generic<T>
+            {
+                static bool value;
+
+                static bool hasValue = false;
+
+                public static bool Is
+                {
+                    get
+                    {
+                        if (hasValue) return value;
+
+                        value = Evaluate<T>();
+                        hasValue = true;
+
+                        return value;
+                    }
+                }
+            }
+
+            static bool Evaluate<T>()
+            {
+                var type = typeof(T);
+
+                return Evaluate(type);
+            }
             static bool Evaluate(Type type)
             {
                 if (type.IsValueType)
@@ -37,11 +71,6 @@ namespace MNet
                 }
 
                 return true;
-            }
-
-            static Nullable()
-            {
-                Dictionary = new ConcurrentDictionary<Type, bool>();
             }
         }
 
@@ -64,19 +93,19 @@ namespace MNet
         {
             public static ConcurrentDictionary<Type, Type[]> Dictionary { get; private set; }
 
-            public static void Retrieve(Type type, out Type element)
+            public static void Retrieve(Type type, out Type argument)
             {
                 if (Dictionary.TryGetValue(type, out var elements))
                 {
-                    element = elements[0];
+                    argument = elements[0];
 
                     return;
                 }
 
                 if (type.IsArray)
                 {
-                    element = type.GetElementType();
-                    elements = new Type[] { element };
+                    argument = type.GetElementType();
+                    elements = new Type[] { argument };
 
                     Dictionary.TryAdd(type, elements);
 
@@ -86,22 +115,22 @@ namespace MNet
                 if (type.IsGenericType)
                 {
                     elements = type.GetGenericArguments();
-                    element = elements[0];
+                    argument = elements[0];
 
                     Dictionary.TryAdd(type, elements);
 
                     return;
                 }
 
-                element = null;
+                argument = null;
             }
 
-            public static void Retrieve(Type type, out Type element1, out Type element2)
+            public static void Retrieve(Type type, out Type argument1, out Type argument2)
             {
                 if (Dictionary.TryGetValue(type, out var elements))
                 {
-                    element1 = elements[0];
-                    element2 = elements[1];
+                    argument1 = elements[0];
+                    argument2 = elements[1];
 
                     return;
                 }
@@ -112,8 +141,8 @@ namespace MNet
 
                     if (elements.Length >= 2)
                     {
-                        element1 = elements[0];
-                        element2 = elements[1];
+                        argument1 = elements[0];
+                        argument2 = elements[1];
 
                         Dictionary.TryAdd(type, elements);
 
@@ -121,24 +150,24 @@ namespace MNet
                     }
                 }
 
-                element1 = null;
-                element2 = null;
+                argument1 = null;
+                argument2 = null;
             }
 
-            public static void Retrieve(Type type, out Type[] elements)
+            public static void Retrieve(Type type, out Type[] arguments)
             {
-                if (Dictionary.TryGetValue(type, out elements)) return;
+                if (Dictionary.TryGetValue(type, out arguments)) return;
 
                 if (type.IsGenericType)
                 {
-                    elements = type.GetGenericArguments();
+                    arguments = type.GetGenericArguments();
 
-                    Dictionary.TryAdd(type, elements);
+                    Dictionary.TryAdd(type, arguments);
 
                     return;
                 }
 
-                elements = null;
+                arguments = null;
             }
 
             static GenericArguments()
@@ -169,6 +198,30 @@ namespace MNet
                 var list = reader.Read(type) as IList;
 
                 return list;
+            }
+        }
+
+        public static class Enum
+        {
+            public static class UnderlyingType
+            {
+                public static ConcurrentDictionary<Type, Type> Dictionary { get; private set; }
+
+                public static Type Retrieve(Type type)
+                {
+                    if (Dictionary.TryGetValue(type, out var underlying)) return underlying;
+
+                    underlying = System.Enum.GetUnderlyingType(type);
+
+                    Dictionary.TryAdd(type, underlying);
+
+                    return underlying;
+                }
+
+                static UnderlyingType()
+                {
+                    Dictionary = new ConcurrentDictionary<Type, Type>();
+                }
             }
         }
     }

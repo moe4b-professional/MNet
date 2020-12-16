@@ -133,45 +133,15 @@ namespace MNet
 
         }
 
-        static void Serialize()
+        static void Measure(Action action)
         {
-            var data = new Data()
-            {
-                number = 42,
-                text = "Hello World",
-                date = DateTime.Now,
-                guid = Guid.NewGuid(),
-            };
-
-            var binary = NetworkSerializer.Serialize(data);
-
             var stopwatch = Stopwatch.StartNew();
 
-            for (int i = 0; i < 10_000; i++)
-            {
-                //NetworkSerializer.Deserialize<Data>(binary);
-                NetworkSerializer.Serialize(data);
-            }
+            action();
 
             stopwatch.Stop();
 
-            Log.Info($"Elapsed: {stopwatch.ElapsedMilliseconds}");
-        }
-
-        struct Data : INetworkSerializable
-        {
-            public int number;
-            public string text;
-            public DateTime? date;
-            public Guid? guid;
-
-            public void Select(ref INetworkSerializableResolver.Context context)
-            {
-                context.Select(ref number);
-                context.Select(ref text);
-                context.Select(ref date);
-                context.Select(ref guid);
-            }
+            Log.Info($"{action.Method.Name} Toook {stopwatch.ElapsedMilliseconds.ToString("N")}");
         }
 #pragma warning restore IDE0051
     }

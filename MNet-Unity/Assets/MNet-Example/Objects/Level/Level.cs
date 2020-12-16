@@ -53,7 +53,14 @@ namespace MNet.Example
 
 		void Start()
 		{
-			
+			SpawnPlayer();
+		}
+
+		void SpawnPlayer()
+        {
+			var attributes = new AttributesCollection();
+
+			NetworkAPI.Client.SpawnEntity("Player", attributes);
 		}
 
 		public void Quit()
