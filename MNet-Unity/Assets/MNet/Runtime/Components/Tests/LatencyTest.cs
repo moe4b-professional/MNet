@@ -35,6 +35,7 @@ namespace MNet
         void Update()
         {
             if (isProcessing) return;
+            if (IsConnected == false) return;
 
             isProcessing = true;
             TargetRPC(Call, NetworkAPI.Client.Self, Time.time);

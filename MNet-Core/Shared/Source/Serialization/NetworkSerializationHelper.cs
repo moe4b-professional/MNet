@@ -37,21 +37,33 @@ namespace MNet
 
             public static class Generic<T>
             {
-                static bool value;
-
-                static bool hasValue = false;
+                static int value = -1;
 
                 public static bool Is
                 {
                     get
                     {
-                        if (hasValue) return value;
+                        switch (value)
+                        {
+                            case -1:
+                                return Set();
+                            case 0:
+                                return false;
+                            case 1:
+                                return true;
+                        }
 
-                        value = Evaluate<T>();
-                        hasValue = true;
-
-                        return value;
+                        return true;
                     }
+                }
+
+                static bool Set()
+                {
+                    var result = Evaluate<T>();
+
+                    value = result ? 1 : 0;
+
+                    return result;
                 }
             }
 

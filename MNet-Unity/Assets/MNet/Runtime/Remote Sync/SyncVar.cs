@@ -30,25 +30,15 @@ namespace MNet
         public RemoteAuthority Authority => Attribute.Authority;
         public DeliveryMode DeliveryMode => Attribute.Mode;
 
-        public FieldInfo FieldInfo { get; protected set; }
-        public bool IsField => FieldInfo != null;
-
         public PropertyInfo PropertyInfo { get; protected set; }
-        public bool IsProperty => PropertyInfo != null;
 
         public string Name { get; protected set; }
 
-        public Type Type
-        {
-            get
-            {
-                if (IsField) return FieldInfo.FieldType;
+        public Type Type => PropertyInfo.PropertyType;
 
-                if (IsProperty) return PropertyInfo.PropertyType;
+        public object Get() => PropertyInfo.GetValue(Behaviour);
 
-                throw new NotImplementedException();
-            }
-        }
+        public void Set(object value) => PropertyInfo.SetValue(Behaviour, value);
 
         public SyncVarRequest CreateRequest(object value)
         {
@@ -64,56 +54,35 @@ namespace MNet
             return value;
         }
 
-        public void Set(object value)
-        {
-            if (IsField)
-                FieldInfo.SetValue(Behaviour, value);
-            else if (IsProperty)
-                PropertyInfo.SetValue(Behaviour, value);
-            else
-                throw new NotImplementedException();
-        }
-
-        public object Get()
-        {
-            if (IsField) return FieldInfo.GetValue(Behaviour);
-
-            if (IsProperty) return PropertyInfo.GetValue(Behaviour);
-
-            throw new NotImplementedException();
-        }
-
         public override string ToString() => $"{Entity}->{Name}";
 
-        SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field, PropertyInfo property)
+        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property)
         {
             this.Behaviour = behaviour;
 
             this.Attribute = attribute;
 
-            this.FieldInfo = field;
             this.PropertyInfo = property;
 
-            if (IsField) Name = FieldInfo.Name;
-            if (IsProperty) Name = PropertyInfo.Name;
-        }
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, FieldInfo field) : this(behaviour, attribute, field, null)
-        {
+            Name = PropertyInfo.Name;
 
-        }
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property) : this(behaviour, attribute, null, property)
-        {
-            if (property.SetMethod == null || property.GetMethod == null)
-            {
-                var text = $"{behaviour.GetType().Name}'s '{Name}' Property Cannot be Used as a SyncVar, " +
-                    $"Please Ensure The Property Has Both a Setter & Getter";
+            if (property.SetMethod == null) throw FormatInvalidPropertyException(behaviour, property, "Setter");
 
-                throw new Exception(text);
-            }
+            if (property.GetMethod == null) throw FormatInvalidPropertyException(behaviour, property, "Getter");
+        }
+
+        //Static Utility
+
+        public static Exception FormatInvalidPropertyException<T>(T type, PropertyInfo property, string missing)
+        {
+            var text = $"{type.GetType().Name}->{property.Name}' Property Cannot be Used as a SyncVar " +
+                    $"as it does not have a {missing}";
+
+            throw new Exception(text);
         }
     }
 
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class SyncVarAttribute : Attribute
     {
         public RemoteAuthority Authority { get; set; } = RemoteAuthority.Any;

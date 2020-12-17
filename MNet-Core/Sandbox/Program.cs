@@ -13,10 +13,27 @@ namespace MNet
         {
             NetworkSerializer.Clone(data);
 
+            Measure(NormalSerialize);
             Measure(ResolveDeserialize);
             Measure(ResolvedSerialize);
 
             while (true) Console.ReadKey();
+        }
+
+        static void CheckNull()
+        {
+            for (int i = 0; i < Count * 100; i++)
+            {
+                var result = NetworkSerializationHelper.Nullable.Generic<int>.Is;
+            }
+        }
+
+        static void NormalSerialize()
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                var result = BitConverter.GetBytes(Count);
+            }
         }
 
         static void ResolveDeserialize()

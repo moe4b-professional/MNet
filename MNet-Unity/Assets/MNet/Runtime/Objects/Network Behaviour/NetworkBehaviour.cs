@@ -201,7 +201,7 @@ namespace MNet
         {
             if (FindRPC(command.Method, out var bind) == false)
             {
-                Debug.LogWarning($"Can't Invoke Non-Existant RPC '{command.Method}' On '{GetType()}'");
+                Debug.LogWarning($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
 
                 ResolveRPC(command, RprResult.MethodNotFound);
 
@@ -224,7 +224,7 @@ namespace MNet
             }
             catch (Exception e)
             {
-                var text = $"Error trying to Parse RPC Arguments of Method '{command.Method}' on '{this}', Invalid Data Sent Most Likely \n" +
+                var text = $"Error trying to Parse RPC Arguments of {bind}', Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
                     $"{e}";
 
@@ -247,7 +247,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                var text = $"Error Trying to Invoke RPC Method '{command.Method}' on '{this}', " +
+                var text = $"Error Trying to Invoke RPC {bind}', " +
                     $"Please Ensure Method is Implemented And Invoked Correctly";
 
                 Debug.LogWarning(text, this);
@@ -280,20 +280,6 @@ namespace MNet
             var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
             var type = GetType();
-
-            foreach (var field in type.GetFields(flags))
-            {
-                var attribute = field.GetCustomAttribute<SyncVarAttribute>();
-
-                if (attribute == null) continue;
-
-                var bind = new SyncVarBind(this, attribute, field);
-
-                if (SyncVars.ContainsKey(bind.Name))
-                    throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
-
-                SyncVars.Add(bind.Name, bind);
-            }
 
             foreach (var property in type.GetProperties(flags))
             {
@@ -353,7 +339,7 @@ namespace MNet
         {
             if (SyncVars.TryGetValue(command.Variable, out var bind) == false)
             {
-                Debug.LogWarning($"No SyncVar {command.Variable} Found to Invoke");
+                Debug.LogWarning($"No SyncVar '{GetType().Name}->{command.Variable}' Found on to Invoke");
                 return;
             }
 
@@ -370,7 +356,7 @@ namespace MNet
             }
             catch (Exception ex)
             {
-                var text = $"Error trying to Parse Value for SyncVar '{command.Variable}' on {this}, Invalid Data Sent Most Likely \n" +
+                var text = $"Error trying to Parse Value for SyncVar '{bind}', Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
                     $"{ex}";
 
@@ -384,7 +370,7 @@ namespace MNet
             }
             catch (Exception)
             {
-                var text = $"Error Trying to Set SyncVar '{command.Variable}' on '{this} With Value '{value}', " +
+                var text = $"Error Trying to Set SyncVar '{bind}' With Value '{value}', " +
                     $"Please Ensure SyncVar is Implemented Correctly";
 
                 Debug.LogWarning(text, this);

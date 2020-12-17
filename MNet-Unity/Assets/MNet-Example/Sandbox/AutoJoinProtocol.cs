@@ -29,7 +29,6 @@ namespace MNet.Example
         void Begin()
         {
             NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
-
             NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
         }
 
@@ -49,6 +48,12 @@ namespace MNet.Example
             if (lobby.Size == 0) return;
 
             NetworkAPI.Room.Join(lobby.Rooms.Last());
+        }
+
+        void OnDestroy()
+        {
+            NetworkAPI.Server.Master.OnInfo -= MasterServerInfoCallback;
+            NetworkAPI.Lobby.OnInfo -= LobbyInfoCallback;
         }
     }
 }

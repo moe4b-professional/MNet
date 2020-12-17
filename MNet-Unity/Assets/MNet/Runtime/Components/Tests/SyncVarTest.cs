@@ -30,8 +30,7 @@ namespace MNet
             get => field;
             private set
             {
-                Debug.Log($"Set Field, New Value: '{value}', Old Value: '{field}'");
-
+                //Do your things here, new value: value, old value: field
                 field = value;
             }
         }
