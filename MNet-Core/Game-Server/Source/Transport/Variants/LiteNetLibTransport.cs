@@ -16,17 +16,17 @@ namespace MNet
 {
     class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
     {
-        public NetManager Manager { get; protected set; }
+        public NetManager Server { get; protected set; }
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
 
-        public ConcurrentDictionary<int, LiteNetLibTransportContext> Routes { get; protected set; }
+        public Dictionary<int, LiteNetLibTransportContext> Routes { get; protected set; }
 
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         public override void Start()
         {
-            Manager.Start(Port);
+            Server.Start(Port);
         }
 
         void Run()
@@ -36,10 +36,10 @@ namespace MNet
 
         void Tick()
         {
-            if (Manager == null) return;
-            if (Manager.IsRunning == false) return;
+            if (Server == null) return;
+            if (Server.IsRunning == false) return;
 
-            Manager.PollEvents();
+            Server.PollEvents();
             Thread.Sleep(1);
         }
 
@@ -110,18 +110,19 @@ namespace MNet
 
         public void Reject(ConnectionRequest request, DisconnectCode code)
         {
-            var binary = Utility.Disconnect.CodeToBinary(DisconnectCode.InvalidContext);
+            var binary = Utility.Disconnect.CodeToBinary(code);
 
             request.Reject(binary);
         }
 
-        protected override LiteNetLibTransportContext Create(uint id) => new LiteNetLibTransportContext(this, id);
+        protected override LiteNetLibTransportContext CreateContext(uint id) => new LiteNetLibTransportContext(this, id);
 
         public LiteNetLibTransport()
         {
-            Manager = new NetManager(this);
+            Server = new NetManager(this);
+            Server.UpdateTime = 1;
 
-            Routes = new ConcurrentDictionary<int, LiteNetLibTransportContext>();
+            Routes = new Dictionary<int, LiteNetLibTransportContext>();
 
             new Thread(Run).Start();
         }

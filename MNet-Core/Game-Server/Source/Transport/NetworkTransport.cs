@@ -36,13 +36,13 @@ namespace MNet
 
         public virtual TContext Register(uint id)
         {
-            var context = Create(id);
+            var context = CreateContext(id);
 
             Contexts.TryAdd(id, context);
 
             return context;
         }
-        protected abstract TContext Create(uint id);
+        protected abstract TContext CreateContext(uint id);
 
         INetworkTransportContext INetworkTransport.Register(uint id) => Register(id);
         public virtual void Unregister(uint id)

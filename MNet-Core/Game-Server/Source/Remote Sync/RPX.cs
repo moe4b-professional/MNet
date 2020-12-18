@@ -77,7 +77,7 @@ namespace MNet
 
             var key = (sender.ID, request.Callback);
 
-            Dictionary.Add(key, callback);
+            Dictionary[key] = callback;
         }
 
         public bool TryGet(RprRequest request, out RprCallback callback) => TryGet(request.Target, request.ID, out callback);

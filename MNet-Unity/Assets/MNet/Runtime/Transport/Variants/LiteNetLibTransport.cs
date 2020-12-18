@@ -33,8 +33,6 @@ namespace MNet
 
         public NetPeer Peer { get; protected set; }
 
-        public override NetworkTransportType Type => NetworkTransportType.LiteNetLib;
-
         public override bool IsConnected
         {
             get
@@ -117,6 +115,7 @@ namespace MNet
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
+            Client.UpdateTime = 1;
             Client.Start();
 
             Application.quitting += ApplicationQuitCallback;

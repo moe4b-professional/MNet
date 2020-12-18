@@ -28,8 +28,6 @@ namespace MNet
     {
         public abstract bool IsConnected { get; }
 
-        public abstract NetworkTransportType Type { get; }
-
         public abstract void Connect(GameServerID server, RoomID room);
 
         public ConcurrentQueue<Action> InputQueue { get; protected set; }

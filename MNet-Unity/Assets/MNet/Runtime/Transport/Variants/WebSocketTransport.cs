@@ -29,8 +29,6 @@ namespace MNet
     {
         public WebSocket Socket { get; protected set; }
 
-        public override NetworkTransportType Type => NetworkTransportType.WebSocketSharp;
-
         public override bool IsConnected
         {
             get

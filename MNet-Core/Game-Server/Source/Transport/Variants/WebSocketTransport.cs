@@ -24,7 +24,7 @@ namespace MNet
             Server.Start();
         }
 
-        protected override WebSocketTransportContext Create(uint id)
+        protected override WebSocketTransportContext CreateContext(uint id)
         {
             var context = new WebSocketTransportContext(this, id);
 
