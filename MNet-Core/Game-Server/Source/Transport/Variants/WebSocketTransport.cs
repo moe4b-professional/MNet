@@ -17,12 +17,12 @@ namespace MNet
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
 
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
+
         public override void Start()
         {
             Server.Start();
         }
-
-        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         protected override WebSocketTransportContext Create(uint id)
         {

@@ -229,10 +229,41 @@ namespace MNet
 
                     return underlying;
                 }
+                public static Type Retrieve<T>()
+                {
+                    var type = typeof(T);
+
+                    return Retrieve(type);
+                }
 
                 static UnderlyingType()
                 {
                     Dictionary = new ConcurrentDictionary<Type, Type>();
+                }
+            }
+
+            public static class Value
+            {
+                public static ConcurrentDictionary<object, object> Dictionary { get; private set; }
+
+                public static object Retrieve(object element)
+                {
+                    if (Dictionary.TryGetValue(element, out var value)) return value;
+
+                    var type = element.GetType();
+
+                    var backing = UnderlyingType.Retrieve(type);
+
+                    value = Convert.ChangeType(element, backing);
+
+                    Dictionary.TryAdd(element, value);
+
+                    return value;
+                }
+
+                static Value()
+                {
+                    Dictionary = new ConcurrentDictionary<object, object>();
                 }
             }
         }

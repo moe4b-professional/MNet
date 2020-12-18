@@ -187,7 +187,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            resolver.Serialize(this, value);
+            resolver.SerializeExplicit(this, value);
             return true;
         }
 
@@ -199,7 +199,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            resolver.Serialize(this, value, type);
+            resolver.SerializeImplicit(this, value, type);
             return true;
         }
 
@@ -209,7 +209,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            resolver.Serialize(this, value, type);
+            resolver.SerializeImplicit(this, value, type);
             return true;
         }
         #endregion
@@ -296,7 +296,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            value = resolver.Deserialize(this);
+            value = resolver.DeserializeExplicit(this);
             return true;
         }
 
@@ -325,11 +325,11 @@ namespace MNet
         }
         bool ResolveImplicit(Type type, ref object value)
         {
-            var resolver = NetworkSerializationImplicitResolver.Retrive(type);
+            var resolver = NetworkSerializationResolver.Retrive(type);
 
             if (resolver == null) return false;
 
-            value = resolver.Deserialize(this, type);
+            value = resolver.DeserializeImplicit(this, type);
             return true;
         }
 
@@ -343,7 +343,7 @@ namespace MNet
                 return false;
             }
 
-            value = resolver.Deserialize(this, type);
+            value = resolver.DeserializeImplicit(this, type);
             return true;
         }
         #endregion

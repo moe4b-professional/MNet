@@ -13,9 +13,9 @@ namespace MNet
     #region Transport
     public interface INetworkTransport
     {
-        void Start();
-
         int CheckMTU(DeliveryMode mode);
+
+        void Start();
 
         INetworkTransportContext Register(uint id);
         void Unregister(uint id);
@@ -30,9 +30,9 @@ namespace MNet
 
         public TContext this[uint code] => Contexts[code];
 
-        public abstract void Start();
-
         public abstract int CheckMTU(DeliveryMode mode);
+
+        public abstract void Start();
 
         public virtual TContext Register(uint id)
         {

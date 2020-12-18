@@ -5,11 +5,13 @@ using WebSocketSharp;
 
 namespace MNet
 {
+    [Preserve]
     public enum NetworkTransportType : byte
     {
         WebSocketSharp, LiteNetLib
     }
 
+    [Preserve]
     public enum DisconnectCode : byte
     {
         Normal,
@@ -24,6 +26,7 @@ namespace MNet
         InvalidData
     }
 
+    [Preserve]
     public enum DeliveryMode : byte
     {
         /// <summary>

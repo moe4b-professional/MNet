@@ -17,10 +17,17 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-namespace Game
+using System.Reflection;
+using System.Reflection.Emit;
+
+namespace MNet.Example
 {
 	public class Sandbox : MonoBehaviour
 	{
-		
-	}
+        [RuntimeInitializeOnLoadMethod]
+        static void OnLoad()
+        {
+            
+        }
+    }
 }

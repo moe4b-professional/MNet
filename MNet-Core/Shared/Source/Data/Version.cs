@@ -4,6 +4,7 @@ using System.Text;
 
 namespace MNet
 {
+    [Preserve]
     [Serializable]
     public struct Version : INetworkSerializable
     {

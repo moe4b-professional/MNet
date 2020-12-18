@@ -22,21 +22,19 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Tests/" + "Serialization Test")]
 	public class SerializationTest : NetworkBehaviour
 	{
-		AttributesCollection attribute;
+		public bool success = false;
 
-        void Start()
-        {
+		void Start()
+		{
 			if (IsMine == false) return;
 
-			BroadcastRPC(Rpc, Entity, this, Color.red);
+			TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this);
 		}
 
-        [NetworkRPC]
-		void Rpc(NetworkEntity entity, SerializationTest behaviour, Color color, RpcInfo info)
-        {
-			Debug.Log($"Entity: {entity}");
-			Debug.Log($"Behaviour: {behaviour}");
-			Debug.Log($"Color: {color}");
+		[NetworkRPC]
+		void Rpc(NetworkEntity entity, SerializationTest behaviour, RpcInfo info)
+		{
+			success = this.Entity == entity && this == behaviour;
 		}
 	}
 }

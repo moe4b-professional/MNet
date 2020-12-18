@@ -28,6 +28,8 @@ namespace MNet
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
+            DynamicNetworkSerialization.Enabled = false;
+
             Config = NetworkAPIConfig.Load();
 
             if (Config == null)

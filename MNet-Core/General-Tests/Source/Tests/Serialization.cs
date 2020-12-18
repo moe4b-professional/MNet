@@ -109,7 +109,6 @@ namespace MNet
             Assert.IsTrue(original == null);
             Assert.IsTrue(copy == null);
         }
-
         class SampleClass : INetworkSerializable
         {
             public void Select(ref NetworkSerializationContext context)
@@ -160,7 +159,7 @@ namespace MNet
         }
 
         [Test]
-        public void ObjectListSerialization()
+        public void ObjectList()
         {
             var original = new List<object>
             {
@@ -173,6 +172,16 @@ namespace MNet
             var copy = NetworkSerializer.Clone(original);
 
             Utility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Enum()
+        {
+            var original = RemoteAuthority.Any;
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, copy);
         }
     }
 }

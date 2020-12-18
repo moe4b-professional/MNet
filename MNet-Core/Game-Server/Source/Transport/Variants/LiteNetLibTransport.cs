@@ -22,12 +22,12 @@ namespace MNet
 
         public ConcurrentDictionary<int, LiteNetLibTransportContext> Routes { get; protected set; }
 
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
+
         public override void Start()
         {
             Manager.Start(Port);
         }
-
-        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         void Run()
         {

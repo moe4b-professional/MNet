@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 
+using System.Collections.Generic;
+
 namespace MNet
 {
     class Program
@@ -13,27 +15,23 @@ namespace MNet
         {
             NetworkSerializer.Clone(data);
 
-            Measure(NormalSerialize);
+            DynamicNetworkSerialization.Enabled = false;
+
+            Measure(SerializeRPC);
             Measure(ResolveDeserialize);
             Measure(ResolvedSerialize);
 
             while (true) Console.ReadKey();
         }
 
-        static void CheckNull()
+        static void SerializeRPC()
         {
-            for (int i = 0; i < Count * 100; i++)
-            {
-                var result = NetworkSerializationHelper.Nullable.Generic<int>.Is;
-            }
-        }
+            var request = RpcRequest.Write(default, default, new RpcMethodID("Method"), default, 42, 42);
 
-        static void NormalSerialize()
-        {
-            for (int i = 0; i < Count; i++)
-            {
-                var result = BitConverter.GetBytes(Count);
-            }
+            var command = RpcCommand.Write(default, request, default);
+
+            for (int i = 0; i < 1_000_000; i++)
+                NetworkSerializer.Serialize(command);
         }
 
         static void ResolveDeserialize()

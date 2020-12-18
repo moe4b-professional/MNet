@@ -183,6 +183,7 @@ namespace MNet
             {
                 payload = default;
                 error = new RestError(0, $"Error Parsing {typeof(T).Name} From Server Response");
+                Debug.LogError(error);
             }
         }
     }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
+    [Preserve]
     public class RemoteConfig : INetworkSerializable
     {
         NetworkTransportType transport;

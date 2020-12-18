@@ -13,7 +13,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct NetworkMessage : IManualNetworkSerializable
+    public struct NetworkMessage
     {
         object payload;
         public object Payload => payload;
