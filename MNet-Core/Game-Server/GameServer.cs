@@ -65,8 +65,8 @@ namespace MNet
             Log.Info($"Server ID: {ID}");
             Log.Info($"Server Region: {Region}");
 
-            RestAPI.Configure(Constants.Server.Game.Rest.Port);
-            RestAPI.Start();
+            RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
+            RestServerAPI.Start();
 
             RealtimeAPI.Configure(Config.Remote.Transport);
             RealtimeAPI.Start();

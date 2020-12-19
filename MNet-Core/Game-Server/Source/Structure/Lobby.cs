@@ -1,14 +1,11 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 
-using WebSocketSharp;
-using WebSocketSharp.Net;
+using System.Collections.Generic;
+
+using Newtonsoft.Json;
+
+using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
+using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
 
 namespace MNet
 {
@@ -22,20 +19,20 @@ namespace MNet
         {
             Rooms = new RoomCollection();
 
-            RestAPI.Router.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
-            RestAPI.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, CreateRoom);
+            RestServerAPI.Router.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
+            RestServerAPI.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, CreateRoom);
         }
 
-        public static void GetInfo(HttpListenerRequest request, HttpListenerResponse response)
+        public static void GetInfo(RestRequest request, RestResponse response)
         {
             GetLobbyInfoRequest payload;
             try
             {
-                RestAPI.Read(request, out payload);
+                RestServerAPI.Read(request, out payload);
             }
             catch (Exception)
             {
-                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
+                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 
@@ -43,7 +40,7 @@ namespace MNet
 
             var info = new LobbyInfo(GameServer.ID, list);
 
-            RestAPI.Write(response, info);
+            RestServerAPI.Write(response, info);
         }
 
         public static List<RoomBasicInfo> Query(AppID appID, Version version)
@@ -54,29 +51,29 @@ namespace MNet
         }
 
         #region Create Room
-        public static void CreateRoom(HttpListenerRequest request, HttpListenerResponse response)
+        public static void CreateRoom(RestRequest request, RestResponse response)
         {
             CreateRoomRequest payload;
             try
             {
-                RestAPI.Read(request, out payload);
+                RestServerAPI.Read(request, out payload);
             }
             catch (Exception)
             {
-                RestAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
+                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
                 return;
             }
 
             if(AppsAPI.TryGet(payload.AppID, out var app) == false)
             {
-                RestAPI.Write(response, RestStatusCode.InvalidAppID, $"Invalid App ID");
+                RestServerAPI.Write(response, RestStatusCode.InvalidAppID, $"Invalid App ID");
                 return;
             }
 
             var room = CreateRoom(app, payload.Version, payload.Name, payload.Capacity, payload.Attributes);
             var info = room.GetBasicInfo();
 
-            RestAPI.Write(response, info);
+            RestServerAPI.Write(response, info);
         }
 
         public static Room CreateRoom(AppConfig app, Version version, string name, byte capacity, AttributesCollection attributes)

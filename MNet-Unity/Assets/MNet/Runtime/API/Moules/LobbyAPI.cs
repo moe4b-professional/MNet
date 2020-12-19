@@ -39,20 +39,18 @@ namespace MNet
             {
                 var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
-                Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, InfoCallback);
-
                 OnGetInfo?.Invoke();
+
+                Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, InfoCallback);
             }
 
             public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
             public static event InfoDelegate OnInfo;
-            static void InfoCallback(UnityWebRequest request)
+            static void InfoCallback(LobbyInfo info, RestError error)
             {
-                RestAPI.Parse(request, out LobbyInfo info, out var error);
-
                 Lobby.Info = info;
 
-                OnInfo(info, error);
+                OnInfo?.Invoke(info, error);
             }
             #endregion
 

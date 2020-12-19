@@ -29,11 +29,11 @@ namespace MNet
             {
                 public static string Address => NetworkAPI.Address;
 
-                public static RestAPI Rest { get; private set; }
+                public static RestClientAPI Rest { get; private set; }
 
                 public static void Configure()
                 {
-                    Rest = new RestAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
+                    Rest = new RestClientAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
                     Rest.SetIP(Address);
                 }
 
@@ -43,12 +43,10 @@ namespace MNet
                 {
                     var payload = new MasterServerInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
-                    Rest.POST(Constants.Server.Master.Rest.Requests.Info, payload, Callback);
+                    Rest.POST<MasterServerInfoRequest, MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload, Callback);
 
-                    void Callback(UnityWebRequest request)
+                    void Callback(MasterServerInfoResponse info, RestError error)
                     {
-                        RestAPI.Parse(request, out MasterServerInfoResponse info, out var error);
-
                         if (error == null) Initialize(info.App, info.RemoteConfig, info.Servers);
 
                         OnInfo?.Invoke(info, error);

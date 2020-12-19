@@ -64,6 +64,7 @@
     <Compile Include="Source\Collections\CollectionPrettyPrint.cs" />
     <Compile Include="Source\Constants.cs" />
     <Compile Include="Source\Structure\GameServer.cs" />
+    <Compile Include="Source\Structure\RestAPI.cs" />
     <Compile Include="Source\Tool\ObjectPooler.cs" />
     <Compile Include="Source\Utility\GeneralExtensions.cs" />
     <Compile Include="Source\Structure\Lobby.cs" />
@@ -86,7 +87,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Source\Remote Sync\RemoteAuthority.cs" />
     <Compile Include="Source\Data\RemoteConfig.cs" />
-    <Compile Include="Source\Structure\REST.cs" />
     <Compile Include="Source\Structure\Room.cs" />
     <Compile Include="Source\Remote Sync\RPX.cs" />
     <Compile Include="Source\Remote Sync\SyncVar.cs" />

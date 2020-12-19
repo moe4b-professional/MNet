@@ -23,7 +23,7 @@ MonoBehaviour:
         asset: {fileID: 102900000, guid: 7c9c581b1c1becb4180296dfcfbf9975, type: 3}
         _name: Level 1
   network:
-    capacities: 040608ff
+    capacities: 0406080a32
   _UI:
     prefab: {fileID: 4676521047626379673, guid: 16c5ce5c56810c141aab256e22c48131,
       type: 3}

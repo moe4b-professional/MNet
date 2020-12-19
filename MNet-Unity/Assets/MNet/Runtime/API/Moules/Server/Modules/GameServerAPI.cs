@@ -45,11 +45,11 @@ namespace MNet
 
                 public static GameServerInfo Info => Collection[ID];
 
-                public static RestAPI Rest { get; private set; }
+                public static RestClientAPI Rest { get; private set; }
 
                 public static void Configure()
                 {
-                    Rest = new RestAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
+                    Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
 
                     Collection = new Dictionary<GameServerID, GameServerInfo>();
                 }

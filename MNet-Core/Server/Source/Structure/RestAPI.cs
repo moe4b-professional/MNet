@@ -1,31 +1,61 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+
 using System.Threading.Tasks;
+
+using System.IO;
+
+using System.Net;
+using System.Net.Http;
 
 using WebSocketSharp;
 using WebSocketSharp.Server;
 
-using System.IO;
-using System.Net;
-
-using SharpHttpRequest = WebSocketSharp.Net.HttpListenerRequest;
-using SharpHttpResponse = WebSocketSharp.Net.HttpListenerResponse;
-
-using System.Net.Http;
+using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
+using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
 
 namespace MNet
 {
-    public static class RestAPI
+    public static class RestServerAPI
     {
         public static HttpServer Server { get; private set; }
 
-        public static RestAPIRouter Router { get; private set; }
+        public static class Router
+        {
+            public static Dictionary<string, ProcessDelegate> Dictionary { get; private set; }
+
+            public delegate void ProcessDelegate(RestRequest request, RestResponse response);
+
+            public static bool Process(RestRequest request, RestResponse response)
+            {
+                if (Dictionary.TryGetValue(request.RawUrl, out var callback) == false) return false;
+
+                callback(request, response);
+                return true;
+            }
+
+            public static void Register(string url, ProcessDelegate callback)
+            {
+                if (Dictionary.ContainsKey(url))
+                    throw new ArgumentException($"URL {url} Already Registerd For Rest API Routing");
+
+                Dictionary.Add(url, callback);
+            }
+
+            static Router()
+            {
+                Dictionary = new Dictionary<string, ProcessDelegate>();
+            }
+        }
 
         public static void Configure(ushort port)
         {
-            Log.Info($"Configuring {nameof(RestAPI)} on Port:{port}");
+            Log.Info($"Configuring {nameof(RestServerAPI)} on Port:{port}");
 
             Server = new HttpServer(IPAddress.Any, port);
 
@@ -33,13 +63,11 @@ namespace MNet
             Server.OnPost += RequestCallback;
             Server.OnDelete += RequestCallback;
             Server.OnPut += RequestCallback;
-
-            Router = new RestAPIRouter();
         }
 
         public static void Start()
         {
-            Log.Info($"Starting {nameof(RestAPI)}");
+            Log.Info($"Starting {nameof(RestServerAPI)}");
 
             Server.Start();
         }
@@ -49,15 +77,16 @@ namespace MNet
             var request = args.Request;
             var response = args.Response;
 
-            Log.Info($"{nameof(RestAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
+            Log.Info($"{nameof(RestServerAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
             if (Router.Process(request, response) == false) Write(response, RestStatusCode.NotFound, "Error 404");
         }
 
         //Static Utility
+
         #region Write
-        public static void Write(SharpHttpResponse response, RestStatusCode code) => Write(response, code, code.ToString());
-        public static void Write(SharpHttpResponse response, RestStatusCode code, string message)
+        public static void Write(RestResponse response, RestStatusCode code) => Write(response, code, code.ToString());
+        public static void Write(RestResponse response, RestStatusCode code, string message)
         {
             var data = Encoding.UTF8.GetBytes(message);
 
@@ -70,7 +99,7 @@ namespace MNet
             response.Close();
         }
 
-        public static void Write<TPayload>(SharpHttpResponse response, TPayload payload)
+        public static void Write<TPayload>(RestResponse response, TPayload payload)
         {
             var raw = NetworkSerializer.Serialize(payload);
 
@@ -78,20 +107,11 @@ namespace MNet
             response.WriteContent(raw);
             response.Close();
         }
-
-        public static ByteArrayContent WriteContent<TPayload>(TPayload payload)
-        {
-            var binary = NetworkSerializer.Serialize(payload);
-
-            var content = new ByteArrayContent(binary);
-
-            return content;
-        }
         #endregion
 
         #region Read
-        public static void Read<TPayload>(SharpHttpRequest request, out TPayload payload) => payload = Read<TPayload>(request);
-        public static TPayload Read<TPayload>(SharpHttpRequest request)
+        public static void Read<TPayload>(RestRequest request, out TPayload payload) => payload = Read<TPayload>(request);
+        public static TPayload Read<TPayload>(RestRequest request)
         {
             var binary = Read(request);
 
@@ -100,7 +120,7 @@ namespace MNet
             return value;
         }
 
-        public static byte[] Read(SharpHttpRequest request)
+        public static byte[] Read(RestRequest request)
         {
             using (var memory = new MemoryStream())
             {
@@ -111,42 +131,6 @@ namespace MNet
                 return binary;
             }
         }
-        public static TPayload Read<TPayload>(HttpResponseMessage response)
-        {
-            var binary = response.Content.ReadAsByteArrayAsync().Result;
-
-            var result = NetworkSerializer.Deserialize<TPayload>(binary);
-
-            return result;
-        }
         #endregion
-    }
-
-    public class RestAPIRouter
-    {
-        public Dictionary<string, ProcessDelegate> Dictionary { get; protected set; }
-
-        public delegate void ProcessDelegate(SharpHttpRequest request, SharpHttpResponse response);
-
-        public virtual bool Process(SharpHttpRequest request, SharpHttpResponse response)
-        {
-            if (Dictionary.TryGetValue(request.RawUrl, out var callback) == false) return false;
-
-            callback(request, response);
-            return true;
-        }
-
-        public virtual void Register(string url, ProcessDelegate callback)
-        {
-            if (Dictionary.ContainsKey(url))
-                throw new ArgumentException($"URL {url} Already Registerd For Rest API Routing");
-
-            Dictionary.Add(url, callback);
-        }
-
-        public RestAPIRouter()
-        {
-            Dictionary = new Dictionary<string, ProcessDelegate>();
-        }
     }
 }

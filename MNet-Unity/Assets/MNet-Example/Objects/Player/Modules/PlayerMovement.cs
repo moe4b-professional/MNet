@@ -30,16 +30,18 @@ namespace MNet.Example
 		public Player Player { get; protected set; }
 		public void Set(Player reference) => Player = reference;
 
-        protected override void OnSpawn()
-        {
-            base.OnSpawn();
+		public const float SyncDelay = 0.1f;
+
+		protected override void OnSpawn()
+		{
+			base.OnSpawn();
 
 			Player.rigidbody.isKinematic = IsMine == false;
 
 			if (IsMine) StartCoroutine(Broadcast());
-        }
+		}
 
-        void Update()
+		void Update()
 		{
 			if (IsMine == false) return;
 
@@ -59,19 +61,19 @@ namespace MNet.Example
 		}
 
 		IEnumerator Broadcast()
-        {
-			while(true)
-            {
+		{
+			while (true)
+			{
 				if (IsConnected) BroadcastRPC(SyncCoordinates, transform.position, buffer: RpcBufferMode.Last, exception: NetworkAPI.Client.ID);
 
-				yield return new WaitForSeconds(0.1f);
+				yield return new WaitForSeconds(SyncDelay);
 			}
 		}
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner, Delivery = DeliveryMode.Unreliable)]
 		void SyncCoordinates(Vector3 position, RpcInfo info)
-        {
+		{
 			Player.Position = position;
-        }
+		}
 	}
 }

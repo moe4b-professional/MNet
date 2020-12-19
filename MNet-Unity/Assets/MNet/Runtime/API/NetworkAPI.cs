@@ -25,7 +25,7 @@ namespace MNet
 
         public static Version Version => Config.Version;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
         {
             DynamicNetworkSerialization.Enabled = false;

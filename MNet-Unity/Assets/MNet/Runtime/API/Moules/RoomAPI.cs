@@ -76,12 +76,10 @@ namespace MNet
             {
                 var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, attributes);
 
-                Server.Game.Rest.POST(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
+                Server.Game.Rest.POST<CreateRoomRequest, RoomBasicInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
 
-                void Callback(UnityWebRequest request)
+                void Callback(RoomBasicInfo info, RestError error)
                 {
-                    RestAPI.Parse(request, out RoomBasicInfo info, out var error);
-
                     OnCreate(info, error);
                 }
             }

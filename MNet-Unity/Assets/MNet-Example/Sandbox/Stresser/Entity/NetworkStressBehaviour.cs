@@ -23,7 +23,7 @@ namespace MNet.Example
     {
         public int area;
 
-        public float delay = 0.05f;
+        public float delay = 0.2f;
 
         public int pakcets = 0;
 

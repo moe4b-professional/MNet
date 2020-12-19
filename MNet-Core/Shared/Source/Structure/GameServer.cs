@@ -76,7 +76,7 @@ namespace MNet
             context.Select(ref region);
         }
 
-        public override string ToString() => $"[ | {id} | {region} ]";
+        public override string ToString() => $"[ {id} | {region} ]";
 
         public GameServerInfo(GameServerID id, GameServerRegion region)
         {
