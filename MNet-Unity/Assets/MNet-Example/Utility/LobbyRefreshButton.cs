@@ -37,7 +37,7 @@ namespace MNet.Example
 
 		void Action()
 		{
-			NetworkAPI.Lobby.GetInfo();
+			NetworkAPI.Lobby.RequestInfo();
 
 			button.interactable = false;
 		}

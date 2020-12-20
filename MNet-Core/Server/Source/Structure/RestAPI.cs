@@ -55,7 +55,7 @@ namespace MNet
 
         public static void Configure(ushort port)
         {
-            Log.Info($"Configuring {nameof(RestServerAPI)} on Port:{port}");
+            Log.Info($"Configuring Rest API on Port:{port}");
 
             Server = new HttpServer(IPAddress.Any, port);
 
@@ -67,7 +67,7 @@ namespace MNet
 
         public static void Start()
         {
-            Log.Info($"Starting {nameof(RestServerAPI)}");
+            Log.Info($"Starting Rest API");
 
             Server.Start();
         }
@@ -77,7 +77,7 @@ namespace MNet
             var request = args.Request;
             var response = args.Response;
 
-            Log.Info($"{nameof(RestServerAPI)}: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
+            Log.Info($"Rest API: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
 
             if (Router.Process(request, response) == false) Write(response, RestStatusCode.NotFound, "Error 404");
         }

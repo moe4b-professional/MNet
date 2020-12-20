@@ -76,6 +76,18 @@ namespace MNet
                     OnSelect?.Invoke(id);
                 }
                 public static void Select(GameServerInfo info) => Select(info.ID);
+
+                static void ApplicationQuitCallback()
+                {
+                    Application.quitting -= ApplicationQuitCallback;
+
+                    Rest.CancelPendingRequests();
+                }
+
+                static Game()
+                {
+                    Application.quitting += ApplicationQuitCallback;
+                }
             }
         }
     }

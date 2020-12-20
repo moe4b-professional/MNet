@@ -28,7 +28,11 @@ namespace MNet
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
         {
+#if ENABLE_IL2CPP
             DynamicNetworkSerialization.Enabled = false;
+#else
+            DynamicNetworkSerialization.Enabled = true;
+#endif
 
             Config = NetworkAPIConfig.Load();
 

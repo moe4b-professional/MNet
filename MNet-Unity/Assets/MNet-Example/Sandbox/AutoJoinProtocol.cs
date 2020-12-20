@@ -38,7 +38,7 @@ namespace MNet.Example
 
             NetworkAPI.Server.Game.Select(info.Servers[0]);
 
-            NetworkAPI.Lobby.GetInfo();
+            NetworkAPI.Lobby.RequestInfo();
         }
 
         void LobbyInfoCallback(LobbyInfo lobby, RestError error)

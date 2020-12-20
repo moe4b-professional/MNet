@@ -24,21 +24,49 @@ namespace MNet
 
         public HttpClient Client { get; protected set; }
 
+        public int MaxRetryAttempts { get; set; } = 2;
+
         public delegate void ResponseDelegate<TResult>(TResult result, RestError error);
 
+        #region POST
         public async Task<TResult> POST<TPayload, TResult>(string path, TPayload payload)
         {
             var url = FormatURL(path);
 
             var content = WriteContent(payload);
 
-            var response = await Client.PostAsync(url, content);
-            EnsureSuccess(response);
+            for (int tries = 1; tries <= MaxRetryAttempts; tries++) //1 indexed loop!
+            {
+                try
+                {
+                    var response = await Client.PostAsync(url, content);
+                    EnsureSuccess(response);
 
-            var result = await ReadResult<TResult>(response);
+                    var result = await ReadResult<TResult>(response);
 
-            return result;
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    if (tries == MaxRetryAttempts || ex is TaskCanceledException)
+                        throw;
+                    else
+                        continue;
+                }
+            }
+
+            throw new Exception($"Rest API Max Retry Attempts is {MaxRetryAttempts}, Value must be Bigger than 0");
         }
+
+        /// <summary>
+        /// Callback won't be invoked if CancelPendingRequests is called, this is useful for usage in Unity
+        /// where we'd want to cancel all requests on Application Quit
+        /// </summary>
+        /// <typeparam name="TPayload"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="path"></param>
+        /// <param name="payload"></param>
+        /// <param name="callback"></param>
         public async void POST<TPayload, TResult>(string path, TPayload payload, ResponseDelegate<TResult> callback)
         {
             try
@@ -46,6 +74,10 @@ namespace MNet
                 var result = await POST<TPayload, TResult>(path, payload);
 
                 callback(result, null);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -56,6 +88,9 @@ namespace MNet
                 callback(default, error);
             }
         }
+        #endregion
+
+        public void CancelPendingRequests() => Client.CancelPendingRequests();
 
         public RestClientAPI(ushort port, RestScheme scheme)
         {

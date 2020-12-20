@@ -33,13 +33,13 @@ namespace MNet
             public static int Size => Info.Size;
 
             #region Info
-            public delegate void GetInfoDelegate();
-            public static event GetInfoDelegate OnGetInfo;
-            public static void GetInfo()
+            public delegate void RequestInfoDelegate();
+            public static event RequestInfoDelegate OnRequestInfo;
+            public static void RequestInfo()
             {
                 var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
-                OnGetInfo?.Invoke();
+                OnRequestInfo?.Invoke();
 
                 Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, InfoCallback);
             }

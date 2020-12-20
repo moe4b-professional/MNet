@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class NetworkStresser : NetworkBehaviour
+	public class NetworkEntityStresser : NetworkBehaviour
 	{
 		public int count = 2000;
 

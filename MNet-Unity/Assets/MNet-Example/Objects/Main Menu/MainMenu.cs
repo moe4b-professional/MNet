@@ -21,43 +21,12 @@ namespace MNet.Example
 {
     public class MainMenu : MonoBehaviour
     {
-        [SerializeField]
-        ServerSelectorPanel serverSelector = default;
-
         Core Core => Core.Instance;
         PopupPanel Popup => Core.UI.Popup;
 
         void Start()
         {
-            NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
             NetworkAPI.Client.OnDisconnect += ClientDisconnectCallback;
-
-            if (NetworkAPI.Server.Game.Selection == null) GetMasterServerInfo();
-        }
-
-        void GetMasterServerInfo()
-        {
-            Popup.Show("Retrieving Servers");
-
-            NetworkAPI.Server.Master.OnInfo += Callback;
-            NetworkAPI.Server.Master.GetInfo();
-
-            void Callback(MasterServerInfoResponse info, RestError error)
-            {
-                NetworkAPI.Server.Master.OnInfo -= Callback;
-
-                if (error == null)
-                {
-                    if (info.Servers.Length > 0)
-                        Popup.Hide();
-                    else
-                        Popup.Show("No Game Servers Found on Master", "Retry", GetMasterServerInfo);
-                }
-                else
-                {
-                    Popup.Show("Could not Retrieve Servers", "Retry", GetMasterServerInfo);
-                }
-            }
         }
 
         void ClientDisconnectCallback(DisconnectCode code)
@@ -65,16 +34,8 @@ namespace MNet.Example
             Popup.Show($"Client Disconnected{Environment.NewLine}Reason: {code}", "Okay");
         }
 
-        void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
-        {
-            if (error != null) return;
-
-            if (NetworkAPI.Server.Game.Selection == null) serverSelector.Show();
-        }
-
         void OnDestroy()
         {
-            NetworkAPI.Server.Master.OnInfo -= MasterServerInfoCallback;
             NetworkAPI.Client.OnDisconnect -= ClientDisconnectCallback;
         }
     }

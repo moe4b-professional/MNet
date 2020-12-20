@@ -61,6 +61,18 @@ namespace MNet
 
                     Server.Game.Register(servers);
                 }
+
+                static void ApplicationQuitCallback()
+                {
+                    Application.quitting -= ApplicationQuitCallback;
+
+                    Rest.CancelPendingRequests();
+                }
+
+                static Master()
+                {
+                    Application.quitting += ApplicationQuitCallback;
+                }
             }
         }
     }

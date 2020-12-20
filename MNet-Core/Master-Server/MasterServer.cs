@@ -25,8 +25,6 @@ namespace MNet
 
         static void Main()
         {
-            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
-
             try
             {
                 Procedure();
@@ -59,11 +57,12 @@ namespace MNet
             foreach (var app in Apps.Values) Log.Info(app);
 
             RestServerAPI.Configure(Constants.Server.Master.Rest.Port);
-            RestServerAPI.Start();
 
             RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
             RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
             RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
+
+            RestServerAPI.Start();
         }
 
         static void GetInfo(RestRequest request, RestResponse response)

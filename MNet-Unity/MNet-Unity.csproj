@@ -93,10 +93,9 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\ShowUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\AutoJoinProtocol.cs" />
-     <Compile Include="Assets\MNet-Example\Sandbox\RestStress.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\Entity Stresser\Entity\NetworkStressBehaviour.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\Entity Stresser\NetworkEntityStresser.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
-     <Compile Include="Assets\MNet-Example\Sandbox\Stresser\Entity\NetworkStressBehaviour.cs" />
-     <Compile Include="Assets\MNet-Example\Sandbox\Stresser\NetworkStresser.cs" />
      <Compile Include="Assets\MNet-Example\Utility\GameServerSelectionLabel.cs" />
      <Compile Include="Assets\MNet-Example\Utility\LobbyRefreshButton.cs" />
      <Compile Include="Assets\MNet-Example\Utility\PlayerNameInputField.cs" />

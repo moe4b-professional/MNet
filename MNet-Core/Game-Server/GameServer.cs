@@ -65,13 +65,13 @@ namespace MNet
             Log.Info($"Server ID: {ID}");
             Log.Info($"Server Region: {Region}");
 
-            RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
-            RestServerAPI.Start();
-
             RealtimeAPI.Configure(Config.Remote.Transport);
             RealtimeAPI.Start();
 
             Lobby.Configure();
+
+            RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
+            RestServerAPI.Start();
         }
 
         static void ResolveAddress()

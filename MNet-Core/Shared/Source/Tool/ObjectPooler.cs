@@ -10,6 +10,8 @@ namespace MNet
     {
         public ConcurrentQueue<T> Queue { get; protected set; }
 
+        public int Size => Queue.Count;
+
         public CreateDelegate Create { get; protected set; }
         public delegate T CreateDelegate();
 
@@ -24,21 +26,14 @@ namespace MNet
 
             element = Create();
 
-            Add(element);
-
             return element;
-        }
-
-        void Add(T element)
-        {
-            Queue.Enqueue(element);
         }
 
         public void Return(T element)
         {
             Reset(element);
 
-            Add(element);
+            Queue.Enqueue(element);
         }
 
         public ObjectPooler(CreateDelegate create, ResetDelegate reset)

@@ -40,7 +40,7 @@ namespace MNet.Example
 
         void OnEnable()
         {
-            NetworkAPI.Lobby.OnGetInfo += GetLobbyInfoCallback;
+            NetworkAPI.Lobby.OnRequestInfo += GetLobbyInfoCallback;
         }
 
         void GetLobbyInfoCallback()
@@ -101,7 +101,7 @@ namespace MNet.Example
 
         void OnDisable()
         {
-            NetworkAPI.Lobby.OnGetInfo -= GetLobbyInfoCallback;
+            NetworkAPI.Lobby.OnRequestInfo -= GetLobbyInfoCallback;
         }
 
         void OnDestroy()
