@@ -426,8 +426,8 @@ namespace MNet
         NetworkEntityType type;
         public NetworkEntityType Type => type;
 
-        string resource;
-        public string Resource { get { return resource; } }
+        ushort resource;
+        public ushort Resource { get { return resource; } }
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
@@ -438,29 +438,26 @@ namespace MNet
         byte scene;
         public byte Scene => scene;
 
-        ushort index;
-        public ushort Index => index;
-
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref type);
 
+            context.Select(ref resource);
+
             switch (type)
             {
                 case NetworkEntityType.Dynamic:
-                    context.Select(ref resource);
                     context.Select(ref attributes);
                     context.Select(ref owner);
                     break;
 
                 case NetworkEntityType.SceneObject:
                     context.Select(ref scene);
-                    context.Select(ref index);
                     break;
             }
         }
 
-        public static SpawnEntityRequest Write(string resource, AttributesCollection attributes, NetworkClientID? owner = null)
+        public static SpawnEntityRequest Write(ushort resource, AttributesCollection attributes, NetworkClientID? owner = null)
         {
             var request = new SpawnEntityRequest()
             {
@@ -473,13 +470,13 @@ namespace MNet
             return request;
         }
 
-        public static SpawnEntityRequest Write(byte scene, ushort index)
+        public static SpawnEntityRequest Write(ushort resource, byte scene)
         {
             var request = new SpawnEntityRequest()
             {
                 type = NetworkEntityType.SceneObject,
                 scene = scene,
-                index = index,
+                resource = resource,
             };
 
             return request;
@@ -499,17 +496,14 @@ namespace MNet
         NetworkEntityType type;
         public NetworkEntityType Type => type;
 
-        string resource;
-        public string Resource { get { return resource; } }
+        ushort resource;
+        public ushort Resource { get { return resource; } }
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
         byte scene;
         public byte Scene => scene;
-
-        ushort index;
-        public ushort Index => index;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -518,16 +512,16 @@ namespace MNet
 
             context.Select(ref type);
 
+            context.Select(ref resource);
+
             switch (type)
             {
                 case NetworkEntityType.Dynamic:
-                    context.Select(ref resource);
                     context.Select(ref attributes);
                     break;
 
                 case NetworkEntityType.SceneObject:
                     context.Select(ref scene);
-                    context.Select(ref index);
                     break;
             }
         }
@@ -542,7 +536,6 @@ namespace MNet
                 resource = request.Resource,
                 attributes = request.Attributes,
                 scene = request.Scene,
-                index = request.Index,
             };
 
             return command;

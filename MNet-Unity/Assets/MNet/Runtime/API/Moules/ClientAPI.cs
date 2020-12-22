@@ -165,16 +165,38 @@ namespace MNet
             #endregion
 
             #region Spawn Entity
-            public static void SpawnEntity(string resource, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            public static void SpawnEntity(GameObject prefab, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            {
+                if (NetworkAPI.SpawnableObjects.Prefabs.TryGetValue(prefab, out var resource) == false)
+                {
+                    Debug.LogError($"Prefab '{prefab}' Not Registerd as a Network Spawnable Object");
+                    return;
+                }
+
+                SpawnEntity(resource, attributes: attributes, owner: owner);
+            }
+
+            public static void SpawnEntity(string name, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            {
+                if (NetworkAPI.SpawnableObjects.Names.TryGetValue(name, out var resource) == false)
+                {
+                    Debug.LogError($"No Network Spawnable Objects Registerd with Name '{name}'");
+                    return;
+                }
+
+                SpawnEntity(resource, attributes: attributes, owner: owner);
+            }
+
+            public static void SpawnEntity(ushort resource, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
                 var request = SpawnEntityRequest.Write(resource, attributes, owner);
 
                 Send(request);
             }
 
-            public static void SpawnSceneObject(NetworkEntity entity, ushort index) => SpawnSceneObject(entity.Scene, index);
-            public static void SpawnSceneObject(Scene scene, ushort index) => SpawnSceneObject((byte)scene.buildIndex, index);
-            public static void SpawnSceneObject(byte scene, ushort index)
+            public static void SpawnSceneObject(ushort resource, NetworkEntity entity) => SpawnSceneObject(resource, entity.Scene);
+            public static void SpawnSceneObject(ushort resource, Scene scene) => SpawnSceneObject(resource, (byte)scene.buildIndex);
+            public static void SpawnSceneObject(ushort resource, byte scene)
             {
                 if (IsMaster == false)
                 {
@@ -182,7 +204,7 @@ namespace MNet
                     return;
                 }
 
-                var request = SpawnEntityRequest.Write(scene, index);
+                var request = SpawnEntityRequest.Write(resource, scene);
 
                 Send(request);
             }

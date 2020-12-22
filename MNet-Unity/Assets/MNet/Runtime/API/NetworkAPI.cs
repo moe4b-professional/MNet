@@ -19,6 +19,8 @@ namespace MNet
     {
         public static NetworkAPIConfig Config { get; private set; }
 
+        public static NetworkSpawnableObjects SpawnableObjects { get; private set; }
+
         public static string Address => Config.Address;
 
         public static AppID AppID { get; private set; }
@@ -34,6 +36,11 @@ namespace MNet
 
             if (Config == null)
                 throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
+
+            SpawnableObjects = NetworkSpawnableObjects.Load();
+
+            if (SpawnableObjects == null)
+                throw new Exception("No Network Spawnable Objects ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
 
             Configure();
         }

@@ -114,13 +114,13 @@ namespace MNet
 
         public void Spawn()
         {
-            for (ushort i = 0; i < list.Count; i++)
+            for (ushort resource = 0; resource < list.Count; resource++)
             {
-                if (list[i] == null) continue;
+                if (list[resource] == null) continue;
 
-                if (list[i].IsReady) continue;
+                if (list[resource].IsReady) continue;
 
-                NetworkAPI.Client.SpawnSceneObject(Scene, i);
+                NetworkAPI.Client.SpawnSceneObject(resource, Scene);
             }
         }
         #endregion

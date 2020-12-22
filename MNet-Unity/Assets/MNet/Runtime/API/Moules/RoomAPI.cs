@@ -211,12 +211,14 @@ namespace MNet
             {
                 if (command.Type == NetworkEntityType.Dynamic)
                 {
-                    var prefab = Resources.Load<GameObject>(command.Resource);
-                    if (prefab == null) throw new Exception($"No Resource {command.Resource} Found to Spawn");
+                    var prefab = NetworkAPI.SpawnableObjects[command.Resource];
+
+                    if (prefab == null)
+                        throw new Exception($"No Dynamic Network Spawnable Object with ID: {command.Resource} Found to Spawn");
 
                     var instance = Object.Instantiate(prefab);
 
-                    instance.name = $"{command.Resource} {command.Owner}";
+                    instance.name = $"{prefab.name} {command.Owner}";
 
                     var entity = instance.GetComponent<NetworkEntity>();
                     if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
@@ -228,10 +230,10 @@ namespace MNet
                 {
                     var scene = NetworkScene.Find(command.Scene);
 
-                    if (scene == null) throw new Exception($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Index}");
+                    if (scene == null) throw new Exception($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Resource}");
 
-                    if (scene.Find(command.Index, out var entity) == false)
-                        throw new Exception($"Couldn't Find NetworkBehaviour {command.Index} In Scene {command.Scene}");
+                    if (scene.Find(command.Resource, out var entity) == false)
+                        throw new Exception($"Couldn't Find NetworkBehaviour {command.Resource} In Scene {command.Scene}");
 
                     return entity;
                 }

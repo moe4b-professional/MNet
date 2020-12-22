@@ -35,7 +35,15 @@ namespace MNet
             Owner = client;
         }
 
-        public bool IsMine => Owner?.ID == NetworkAPI.Client.ID;
+        public bool IsMine
+        {
+            get
+            {
+                if (IsConnected == false) return false;
+
+                return Owner?.ID == NetworkAPI.Client.ID;
+            }
+        }
 
         public AttributesCollection Attributes { get; protected set; }
 

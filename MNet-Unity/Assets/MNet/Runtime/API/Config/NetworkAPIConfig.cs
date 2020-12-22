@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [CreateAssetMenu]
+    [CreateAssetMenu(menuName = Constants.Path + "Network API Config")]
     public class NetworkAPIConfig : ScriptableObject
     {
         [SerializeField]
@@ -157,11 +157,11 @@ namespace MNet
 
         public static NetworkAPIConfig Load()
         {
-            var configs = Resources.LoadAll<NetworkAPIConfig>("");
+            var assets = Resources.LoadAll<NetworkAPIConfig>("");
 
-            if (configs.Length == 0) return null;
+            if (assets.Length == 0) return null;
 
-            var instance = configs[0];
+            var instance = assets[0];
 
             return instance;
         }
