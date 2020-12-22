@@ -54,11 +54,9 @@ namespace MNet
             Peer = Client.Connect(server.Address, Port, key);
         }
 
-        bool STOP = false;
-
         void Run()
         {
-            while (STOP == false) Tick();
+            while (NetworkAPI.IsRunning) Tick();
         }
 
         void Tick()
@@ -85,8 +83,6 @@ namespace MNet
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
-            Debug.Log($"Internal LiteNetLib Disconnect Code: {info.Reason}");
-
             var code = Utility.Disconnect.InfoToCode(info);
 
             QueueDisconnect(code);
@@ -107,18 +103,11 @@ namespace MNet
 
         public override void Close() => Peer.Disconnect();
 
-        void ApplicationQuitCallback()
-        {
-            STOP = true;
-        }
-
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
             Client.UpdateTime = 1;
             Client.Start();
-
-            Application.quitting += ApplicationQuitCallback;
 
             new Thread(Run).Start();
         }

@@ -22,19 +22,6 @@ namespace MNet
     [CreateAssetMenu]
     public class NetworkAPIConfig : ScriptableObject
     {
-        public static NetworkAPIConfig Load()
-        {
-            var configs = Resources.LoadAll<NetworkAPIConfig>("");
-
-            if (configs.Length == 0) return null;
-
-            var instance = configs[0];
-
-            instance.Configure();
-
-            return instance;
-        }
-
         [SerializeField]
         protected string address = "127.0.0.1";
         public string Address => address;
@@ -49,11 +36,134 @@ namespace MNet
 
         [SerializeField]
         protected VersionProperty version = new VersionProperty("0.1");
-        public Version Version { get; protected set; }
-
-        void Configure()
+        public Version Version => version.Value;
+        [Serializable]
+        public class VersionProperty
         {
-            Version = version.Value;
+            [SerializeField]
+            string value;
+
+            [SerializeField]
+            bool infer;
+
+            public string Text => infer ? Application.version : value;
+
+            public Version Value => Version.Parse(Text);
+
+            public VersionProperty(string value)
+            {
+                this.value = value;
+                infer = true;
+            }
+
+#if UNITY_EDITOR
+            [CustomPropertyDrawer(typeof(VersionProperty))]
+            public class Drawer : PropertyDrawer
+            {
+                SerializedProperty property;
+                SerializedProperty value;
+                SerializedProperty infer;
+
+                public static GUIContent InferGUIContent;
+
+                void Init(SerializedProperty property)
+                {
+                    if (this.property == property) return;
+
+                    this.property = property;
+
+                    value = property.FindPropertyRelative(nameof(VersionProperty.value));
+                    infer = property.FindPropertyRelative(nameof(VersionProperty.infer));
+
+                    InferGUIContent = new GUIContent("Infer Version", "Toggle On to Infer Version from the Project's Version");
+                }
+
+                public static float LineHeight => EditorGUIUtility.singleLineHeight;
+
+                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+                {
+                    Init(property);
+
+                    return (infer.boolValue ? 1 : 2) * LineHeight;
+                }
+
+                public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+                {
+                    Init(property);
+
+                    DrawInfer(ref position);
+
+                    if (infer.boolValue == false) DrawValue(ref position);
+                }
+
+                void DrawValue(ref Rect rect)
+                {
+                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                    value.stringValue = EditorGUI.TextField(area, "Version", value.stringValue);
+
+                    rect.y += LineHeight;
+                    rect.height -= LineHeight;
+                }
+
+                void DrawInfer(ref Rect rect)
+                {
+                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                    infer.boolValue = EditorGUI.Toggle(area, InferGUIContent, infer.boolValue);
+
+                    rect.y += LineHeight;
+                    rect.height -= LineHeight;
+                }
+            }
+#endif
+        }
+
+        [SerializeField]
+        UpdateMethodProperty updateMethod = default;
+        public UpdateMethodProperty UpdateMethod => updateMethod;
+        [Serializable]
+        public class UpdateMethodProperty
+        {
+            [SerializeField]
+            bool early = false;
+            public bool Early => early;
+
+            [SerializeField]
+            bool normal = true;
+            public bool Normal => normal;
+
+            [SerializeField]
+            bool @fixed = false;
+            public bool Fixed => @fixed;
+
+            [SerializeField]
+            LateProperty late = new LateProperty();
+            public LateProperty Late => late;
+            [Serializable]
+            public class LateProperty
+            {
+                [SerializeField]
+                bool pre = true;
+                public bool Pre => pre;
+
+                [SerializeField]
+                bool post = false;
+                public bool Post => post;
+            }
+
+            public bool Any => early || normal || @fixed || late.Pre || late.Post;
+        }
+
+        public static NetworkAPIConfig Load()
+        {
+            var configs = Resources.LoadAll<NetworkAPIConfig>("");
+
+            if (configs.Length == 0) return null;
+
+            var instance = configs[0];
+
+            return instance;
         }
 
 #if UNITY_EDITOR
@@ -83,88 +193,6 @@ namespace MNet
                 EditorGUILayout.LabelField($"API Version: {Constants.ApiVersion}", VersionLabelStyle);
                 EditorGUILayout.Space();
                 base.OnInspectorGUI();
-            }
-        }
-#endif
-    }
-
-    [Serializable]
-    public class VersionProperty
-    {
-        [SerializeField]
-        string value;
-
-        [SerializeField]
-        bool infer;
-
-        public string Text => infer ? Application.version : value;
-
-        public Version Value => Version.Parse(Text);
-
-        public VersionProperty(string value)
-        {
-            this.value = value;
-            infer = true;
-        }
-
-#if UNITY_EDITOR
-        [CustomPropertyDrawer(typeof(VersionProperty))]
-        public class Drawer : PropertyDrawer
-        {
-            SerializedProperty property;
-            SerializedProperty value;
-            SerializedProperty infer;
-
-            public static GUIContent InferGUIContent;
-
-            void Init(SerializedProperty property)
-            {
-                if (this.property == property) return;
-
-                this.property = property;
-
-                value = property.FindPropertyRelative(nameof(VersionProperty.value));
-                infer = property.FindPropertyRelative(nameof(VersionProperty.infer));
-
-                InferGUIContent = new GUIContent("Infer Version", "Toggle On to Infer Version from the Project's Version");
-            }
-
-            public static float LineHeight => EditorGUIUtility.singleLineHeight;
-
-            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-            {
-                Init(property);
-
-                return (infer.boolValue ? 1 : 2) * LineHeight;
-            }
-
-            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-            {
-                Init(property);
-
-                DrawInfer(ref position);
-
-                if (infer.boolValue == false) DrawValue(ref position);
-            }
-
-            void DrawValue(ref Rect rect)
-            {
-                var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
-
-                value.stringValue = EditorGUI.TextField(area, "Version", value.stringValue);
-
-                rect.y += LineHeight;
-                rect.height -= LineHeight;
-            }
-
-            void DrawInfer(ref Rect rect)
-            {
-                var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
-
-                infer.boolValue = EditorGUI.Toggle(area, InferGUIContent, infer.boolValue);
-
-                rect.y += LineHeight;
-                rect.height -= LineHeight;
             }
         }
 #endif

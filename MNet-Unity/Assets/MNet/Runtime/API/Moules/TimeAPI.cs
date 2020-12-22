@@ -85,7 +85,7 @@ namespace MNet
 
             }
 
-            static void Update()
+            static void Process()
             {
                 if (Client.IsReady) Calculate();
             }
@@ -145,7 +145,7 @@ namespace MNet
                 Client.OnMessage += ClientMessageCallback;
                 Client.OnDisconnect += DisconnectCallback;
 
-                OnUpdate += Update;
+                NetworkAPI.OnProcess += Process;
             }
         }
     }

@@ -12,6 +12,7 @@ using UnityEngine.AI;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 #endif
 
@@ -161,6 +162,24 @@ namespace MNet
 
             [MenuItem(Path + "Launch Mono Client")]
             static void LaunchMonoClient() => Launch.Client.Mono();
+        }
+
+        public static class Scenes
+        {
+            public const string Path = "Scenes/";
+
+            [MenuItem(Path + "Main Menu")]
+            static void MainMenu() => Load("Main Menu");
+
+            [MenuItem(Path + "Level 1")]
+            static void Level1() => Load("Level 1");
+
+            static void Load(string name)
+            {
+                var scene = EditorBuildSettings.scenes.First(x => x.path.EndsWith(name + ".unity"));
+
+                EditorSceneManager.OpenScene(scene.path);
+            }
         }
 
         static System.Diagnostics.Process StartProcess(string path)

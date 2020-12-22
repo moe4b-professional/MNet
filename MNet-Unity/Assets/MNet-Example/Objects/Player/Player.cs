@@ -57,6 +57,13 @@ namespace MNet.Example
         {
 
         }
-	}
+
+        protected override void OnSpawn()
+        {
+            base.OnSpawn();
+
+			rigidbody.isKinematic = IsMine == false;
+		}
+    }
 #pragma warning restore CS0108
 }

@@ -348,6 +348,7 @@ namespace MNet
         }
         #endregion
 
+        public NetworkReader() : this(new byte[0]) { }
         public NetworkReader(byte[] data) : base(data) { }
     }
 }

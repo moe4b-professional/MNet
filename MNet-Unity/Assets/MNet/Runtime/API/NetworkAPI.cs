@@ -23,23 +23,17 @@ namespace MNet
 
         public static AppID AppID { get; private set; }
 
-        public static Version Version => Config.Version;
+        public static Version Version { get; private set; }
+
+        public static bool IsRunning { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
         {
-#if ENABLE_IL2CPP
-            DynamicNetworkSerialization.Enabled = false;
-#else
-            DynamicNetworkSerialization.Enabled = true;
-#endif
-
             Config = NetworkAPIConfig.Load();
 
             if (Config == null)
                 throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
-
-            RegisterPlayerLoop<Update>(Update);
 
             Configure();
         }
@@ -48,13 +42,27 @@ namespace MNet
         {
             Log.Output = LogOutput;
 
+#if ENABLE_IL2CPP
+            DynamicNetworkSerialization.Enabled = false;
+#else
+            DynamicNetworkSerialization.Enabled = true;
+#endif
+
             ParseAppID();
+
+            Version = Config.Version;
+
+            IsRunning = true;
+
+            Application.quitting += ApplicationQuitCallback;
 
             Server.Configure();
             Realtime.Configure();
             Client.Configure();
             Time.Configure();
             Room.Configure();
+
+            RegisterUpdateMethods();
         }
 
         static void ParseAppID()
@@ -68,12 +76,74 @@ namespace MNet
             AppID = new AppID(guid);
         }
 
-        public static event Action OnUpdate;
-        public static void Update()
+        static void RegisterUpdateMethods()
         {
-            if (Application.isPlaying == false) return;
+            if (Application.isEditor || Config.UpdateMethod.Early) RegisterPlayerLoop<EarlyUpdate>(EarlyUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Normal) RegisterPlayerLoop<Update>(Update);
+            if (Application.isEditor || Config.UpdateMethod.Fixed) RegisterPlayerLoop<FixedUpdate>(FixedUpdate);
 
-            OnUpdate?.Invoke();
+            if (Application.isEditor || Config.UpdateMethod.Late.Pre) RegisterPlayerLoop<PreLateUpdate>(PreLateUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Late.Post) RegisterPlayerLoop<PostLateUpdate>(PostLateUpdate);
+
+            if (Config.UpdateMethod.Any == false)
+                Debug.LogWarning("No Update Methods Selected in Network API Config, Network Message's Won't be Processed");
+        }
+
+        #region Updates
+        static void EarlyUpdate()
+        {
+#if UNITY_EDITOR
+            if (Config.UpdateMethod.Early == false) return;
+#endif
+
+            Process();
+        }
+
+        static void Update()
+        {
+#if UNITY_EDITOR
+            if (Config.UpdateMethod.Normal == false) return;
+#endif
+
+            Process();
+        }
+
+        static void FixedUpdate()
+        {
+#if UNITY_EDITOR
+            if (Config.UpdateMethod.Fixed == false) return;
+#endif
+
+            Process();
+        }
+
+        static void PreLateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Config.UpdateMethod.Late.Pre == false) return;
+#endif
+
+            Process();
+        }
+
+        static void PostLateUpdate()
+        {
+#if UNITY_EDITOR
+            if (Config.UpdateMethod.Late.Post == false) return;
+#endif
+
+            Process();
+        }
+        #endregion
+
+        public static event Action OnProcess;
+        public static void Process()
+        {
+#if UNITY_EDITOR
+            if (Application.isPlaying == false) return;
+#endif
+
+            OnProcess?.Invoke();
         }
 
         static void LogOutput(object target, Log.Level level)
@@ -97,6 +167,13 @@ namespace MNet
                     Debug.Log(target);
                     break;
             }
+        }
+
+        static void ApplicationQuitCallback()
+        {
+            Application.quitting -= ApplicationQuitCallback;
+
+            IsRunning = false;
         }
 
         static void RegisterPlayerLoop<TType>(PlayerLoopSystem.UpdateFunction callback)

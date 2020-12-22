@@ -18,3 +18,10 @@ MonoBehaviour:
   version:
     value: 0.0.1
     infer: 1
+  updateMethod:
+    early: 0
+    normal: 1
+    fixed: 0
+    late:
+      pre: 1
+      post: 0

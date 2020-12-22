@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class PlayerMovement : NetworkBehaviour
+	public class PlayerMovement : MonoBehaviour
 	{
 		[SerializeField]
 		float speed = 3.5f;
@@ -30,20 +30,9 @@ namespace MNet.Example
 		public Player Player { get; protected set; }
 		public void Set(Player reference) => Player = reference;
 
-		public const float SyncDelay = 0.1f;
-
-		protected override void OnSpawn()
-		{
-			base.OnSpawn();
-
-			Player.rigidbody.isKinematic = IsMine == false;
-
-			if (IsMine) StartCoroutine(Broadcast());
-		}
-
 		void Update()
 		{
-			if (IsMine == false) return;
+			if (Player.IsMine == false) return;
 
 			var target = new Vector3()
 			{
@@ -58,22 +47,6 @@ namespace MNet.Example
 			velocity = Vector3.MoveTowards(velocity, target, acceleration * Time.deltaTime);
 
 			Player.Velocity = velocity + (Vector3.up * Player.Velocity.y);
-		}
-
-		IEnumerator Broadcast()
-		{
-			while (true)
-			{
-				if (IsConnected) BroadcastRPC(SyncCoordinates, transform.position, buffer: RpcBufferMode.Last, exception: NetworkAPI.Client.ID);
-
-				yield return new WaitForSeconds(SyncDelay);
-			}
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner, Delivery = DeliveryMode.Unreliable)]
-		void SyncCoordinates(Vector3 position, RpcInfo info)
-		{
-			Player.Position = position;
 		}
 	}
 }

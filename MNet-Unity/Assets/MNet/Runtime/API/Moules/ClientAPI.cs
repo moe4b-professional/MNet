@@ -54,14 +54,9 @@ namespace MNet
                 SendQueue = new MessageSendQueue(transport.CheckMTU);
             }
 
-            static void Update()
-            {
-                if (IsConnected) Process();
-            }
-
             static void Process()
             {
-                if (AppAPI.Config.QueueMessages) SendQueue.Resolve(Realtime.Send);
+                if (IsConnected && AppAPI.Config.QueueMessages) SendQueue.Resolve(Realtime.Send);
             }
 
             public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -257,7 +252,7 @@ namespace MNet
                 Room.OnSpawnEntity += SpawnEntityCallback;
                 Room.OnDestroyEntity += DestroyEntityCallback;
 
-                NetworkAPI.OnUpdate += Update;
+                NetworkAPI.OnProcess += Process;
             }
         }
     }

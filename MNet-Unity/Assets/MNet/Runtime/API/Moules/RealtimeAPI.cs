@@ -81,20 +81,15 @@ namespace MNet
                 return true;
             }
 
-            static void Update()
-            {
-                if (Transport != null) Process();
-            }
-
-            public static bool Pause { get; set; } = false;
-
             static void Process()
             {
+                if (Transport == null) return;
+
                 if (Pause) return;
 
                 var count = Transport.InputQueue.Count;
 
-                while(true)
+                while (true)
                 {
                     if (Pause) break;
 
@@ -106,6 +101,8 @@ namespace MNet
                     if (count <= 0) break;
                 }
             }
+
+            public static bool Pause { get; set; } = false;
 
             #region Callbacks
             public delegate void ConnectDelegate();
@@ -150,12 +147,14 @@ namespace MNet
 
             static void ApplicationQuitCallback()
             {
+                Application.quitting -= ApplicationQuitCallback;
+
                 if (IsConnected) Disconnect();
             }
 
             static Realtime()
             {
-                NetworkAPI.OnUpdate += Update;
+                NetworkAPI.OnProcess += Process;
 
                 Application.quitting += ApplicationQuitCallback;
             }
