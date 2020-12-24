@@ -103,14 +103,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f0a89c1699a28f44aa3f02d135035a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncInverval: 0.1
-  config:
-    position: 1
+  syncInverval: 0.05
+  syncConfig:
+    position:
+      x: 1
+      y: 1
+      z: 1
     rotation:
       x: 0
       y: 1
       z: 0
-    scale: 0
+    scale:
+      x: 0
+      y: 0
+      z: 0
 --- !u!1 &573034543690439767
 GameObject:
   m_ObjectHideFlags: 0

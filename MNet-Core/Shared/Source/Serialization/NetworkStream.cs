@@ -102,6 +102,15 @@ namespace MNet
             return result;
         }
 
+        public byte[] Flush()
+        {
+            var raw = ToArray();
+
+            Clear();
+
+            return raw;
+        }
+
         public void Insert(byte[] source)
         {
             var count = source.Length;

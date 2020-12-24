@@ -27,20 +27,25 @@ namespace MNet
         public float SyncInterval => syncInverval;
 
         [SerializeField]
-        ConfigProperty config = default;
-        public ConfigProperty Config => config;
+        SyncConfigProperty syncConfig = default;
+        public SyncConfigProperty SyncConfig => syncConfig;
         [Serializable]
-        public class ConfigProperty : INetworkSerializable
+        public class SyncConfigProperty : INetworkSerializable
         {
             [SerializeField]
-            bool position = true;
-            public bool Position => position;
+            VectorProperty position = new VectorProperty(true);
+            public VectorProperty Position => position;
 
             [SerializeField]
-            RotationProperty rotation = new RotationProperty();
-            public RotationProperty Rotation => rotation;
+            VectorProperty rotation = new VectorProperty(false, true, false);
+            public VectorProperty Rotation => rotation;
+
+            [SerializeField]
+            VectorProperty scale = new VectorProperty(false);
+            public VectorProperty Scale => scale;
+
             [Serializable]
-            public class RotationProperty : INetworkSerializable
+            public class VectorProperty : INetworkSerializable
             {
                 [SerializeField]
                 bool x = false;
@@ -54,6 +59,22 @@ namespace MNet
                 bool z = false;
                 public bool Z => z;
 
+                public int Count
+                {
+                    get
+                    {
+                        var count = 0;
+
+                        if (x) count += 1;
+                        if (y) count += 1;
+                        if (z) count += 1;
+
+                        return count;
+                    }
+                }
+
+                public int Size => Count * sizeof(float);
+
                 public bool Any => x | y | z;
 
                 public void Select(ref NetworkSerializationContext context)
@@ -62,31 +83,21 @@ namespace MNet
                     context.Select(ref y);
                     context.Select(ref z);
                 }
-            }
 
-            [SerializeField]
-            bool scale = false;
-            public bool Scale => scale;
-
-            public int Count
-            {
-                get
+                public VectorProperty(bool value) : this(value, value, value) { }
+                public VectorProperty(bool x, bool y, bool z)
                 {
-                    var count = 0;
-
-                    if (position) count += 1;
-
-                    if (rotation.X) count += 1;
-                    if (rotation.Y) count += 1;
-                    if (rotation.Z) count += 1;
-
-                    if (scale) count += 1;
-
-                    return count;
+                    this.x = x;
+                    this.y = y;
+                    this.z = z;
                 }
             }
 
+            public int Count => position.Count + rotation.Count + scale.Count;
+
             public int Size => Count * sizeof(float);
+
+            public bool Any => position.Any | rotation.Any | scale.Any;
 
             public void Select(ref NetworkSerializationContext context)
             {
@@ -101,7 +112,7 @@ namespace MNet
 
         void Awake()
         {
-            writer = new NetworkWriter(config.Size);
+            writer = new NetworkWriter(syncConfig.Size);
             reader = new NetworkReader();
         }
 
@@ -122,57 +133,39 @@ namespace MNet
 
         void Broadcast()
         {
-            var raw = WriteBinary();
+            WriteVector(transform.position, syncConfig.Position);
+            WriteVector(transform.eulerAngles, syncConfig.Rotation);
+            WriteVector(transform.localScale, syncConfig.Scale);
+
+            var raw = writer.Flush();
 
             BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Owner.ID);
         }
 
-        byte[] WriteBinary()
+        void WriteVector(Vector3 value, SyncConfigProperty.VectorProperty config)
         {
-            if (config.Position) writer.Write(transform.position);
-
-            if (config.Rotation.X) writer.Write(transform.eulerAngles.x);
-            if (config.Rotation.Y) writer.Write(transform.eulerAngles.y);
-            if (config.Rotation.Z) writer.Write(transform.eulerAngles.z);
-
-            if (config.Scale) writer.Write(transform.localScale);
-
-            var raw = writer.ToArray();
-
-            writer.Clear();
-
-            return raw;
+            if (config.X) writer.Write(value.x);
+            if (config.Y) writer.Write(value.y);
+            if (config.Z) writer.Write(value.z);
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Owner, Delivery = DeliveryMode.Unreliable)]
-        void Sync(byte[] binary, RpcInfo info) => ReadBinary(config, binary);
-
-        void ReadBinary(ConfigProperty config, byte[] binary)
+        void Sync(byte[] binary, RpcInfo info)
         {
             reader.Set(binary);
 
-            if (config.Position)
-            {
-                reader.Read(out Vector3 value);
-                transform.position = value;
-            }
+            transform.position = ReadVector(syncConfig.Position, transform.position);
+            transform.eulerAngles = ReadVector(syncConfig.Rotation, transform.eulerAngles);
+            transform.localScale = ReadVector(syncConfig.Scale, transform.localScale);
+        }
 
-            if (config.Rotation.Any)
-            {
-                var angles = transform.eulerAngles;
+        Vector3 ReadVector(SyncConfigProperty.VectorProperty config, Vector3 value)
+        {
+            if (config.X) value.x = reader.Read<float>();
+            if (config.Y) value.y = reader.Read<float>();
+            if (config.Z) value.z = reader.Read<float>();
 
-                if (config.Rotation.X) angles.x = reader.Read<float>();
-                if (config.Rotation.Y) angles.y = reader.Read<float>();
-                if (config.Rotation.Z) angles.z = reader.Read<float>();
-
-                transform.eulerAngles = angles;
-            }
-
-            if (config.Scale)
-            {
-                reader.Read(out Vector3 value);
-                transform.localScale = value;
-            }
+            return value;
         }
     }
 }
