@@ -69,7 +69,7 @@
     <Compile Include="Source\Utility\GeneralExtensions.cs" />
     <Compile Include="Source\Structure\Lobby.cs" />
     <Compile Include="Source\Tool\Log.cs" />
-    <Compile Include="Source\Tool\MessageSendQueue.cs" />
+    <Compile Include="Source\Communication\MessageSendQueue.cs" />
     <Compile Include="Source\Serialization\NetworkSerializationHelper.cs" />
     <Compile Include="Source\Serialization\NetworkSerializationResolver.cs" />
     <Compile Include="Source\Serialization\NetworkSerializer.cs" />

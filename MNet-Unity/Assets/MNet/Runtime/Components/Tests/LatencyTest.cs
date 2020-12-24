@@ -38,11 +38,11 @@ namespace MNet
             if (IsConnected == false) return;
 
             isProcessing = true;
-            TargetRPC(Call, NetworkAPI.Client.Self, Time.time);
+            TargetRPC(Ping, NetworkAPI.Client.Self, Time.time);
         }
 
         [NetworkRPC]
-        void Call(float time, RpcInfo info)
+        void Ping(float time, RpcInfo info)
         {
             var elapsed = (Time.time - time) * 1000;
 
