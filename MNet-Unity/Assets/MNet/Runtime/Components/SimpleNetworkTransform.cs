@@ -27,83 +27,151 @@ namespace MNet
         public float SyncInterval => syncInverval;
 
         [SerializeField]
-        SyncConfigProperty syncConfig = default;
-        public SyncConfigProperty SyncConfig => syncConfig;
+        VectorCoordinateProperty position = default;
+        public VectorCoordinateProperty Position => position;
         [Serializable]
-        public class SyncConfigProperty : INetworkSerializable
+        public class VectorCoordinateProperty : CoordinateProperty<Vector3>
+        {
+            public override float CalculateDistance(Vector3 target) => Vector3.Distance(value, target);
+
+            public override Vector3 MoveTowards(Vector3 current) => Vector3.Lerp(current, value, speed * Time.deltaTime);
+
+            public override void WriteBinary(NetworkWriter writer)
+            {
+                if (ReplicationTarget.X) writer.Write(value.x);
+                if (ReplicationTarget.Y) writer.Write(value.y);
+                if (ReplicationTarget.Z) writer.Write(value.z);
+            }
+            public override void ReadBinary(NetworkReader reader)
+            {
+                if (ReplicationTarget.X) value.x = reader.Read<float>();
+                if (ReplicationTarget.Y) value.y = reader.Read<float>();
+                if (ReplicationTarget.Z) value.z = reader.Read<float>();
+            }
+
+            public VectorCoordinateProperty()
+            {
+                replicationTarget = new ReplicationTargetProperty(true);
+            }
+        }
+
+        [SerializeField]
+        QuaternionCoordinateProperty rotation = default;
+        public QuaternionCoordinateProperty Rotation => rotation;
+        [Serializable]
+        public class QuaternionCoordinateProperty : CoordinateProperty<Quaternion>
+        {
+            public override float CalculateDistance(Quaternion target) => Quaternion.Angle(value, target);
+
+            public override Quaternion MoveTowards(Quaternion current) => Quaternion.Lerp(current, value, speed * Time.deltaTime);
+
+            public override void WriteBinary(NetworkWriter writer)
+            {
+                var vector = Value.eulerAngles;
+
+                if (ReplicationTarget.X) writer.Write(vector.x);
+                if (ReplicationTarget.Y) writer.Write(vector.y);
+                if (ReplicationTarget.Z) writer.Write(vector.z);
+            }
+            public override void ReadBinary(NetworkReader reader)
+            {
+                var vector = value.eulerAngles;
+
+                if (ReplicationTarget.X) vector.x = reader.Read<float>();
+                if (ReplicationTarget.Y) vector.y = reader.Read<float>();
+                if (ReplicationTarget.Z) vector.z = reader.Read<float>();
+
+                value = Quaternion.Euler(vector);
+            }
+
+            public QuaternionCoordinateProperty()
+            {
+                replicationTarget = new ReplicationTargetProperty(false, true, false);
+            }
+        }
+
+        [Serializable]
+        public abstract class CoordinateProperty<TValue>
         {
             [SerializeField]
-            VectorProperty position = new VectorProperty(true);
-            public VectorProperty Position => position;
-
-            [SerializeField]
-            VectorProperty rotation = new VectorProperty(false, true, false);
-            public VectorProperty Rotation => rotation;
-
-            [SerializeField]
-            VectorProperty scale = new VectorProperty(false);
-            public VectorProperty Scale => scale;
-
-            [Serializable]
-            public class VectorProperty : INetworkSerializable
+            protected TValue value = default;
+            public TValue Value
             {
-                [SerializeField]
-                bool x = false;
-                public bool X => x;
+                get => value;
+                set => Set(value);
+            }
 
-                [SerializeField]
-                bool y = true;
-                public bool Y => y;
+            [SerializeField]
+            protected ReplicationTargetProperty replicationTarget = default;
+            public ReplicationTargetProperty ReplicationTarget => replicationTarget;
 
-                [SerializeField]
-                bool z = false;
-                public bool Z => z;
+            [SerializeField]
+            protected float epsilon = 0.01f;
+            public float Epsilon => epsilon;
 
-                public int Count
+            [SerializeField]
+            protected float speed = 10;
+            public float Speed => speed;
+
+            public void Set(TValue value) => this.value = value;
+
+            public abstract TValue MoveTowards(TValue current);
+
+            public abstract float CalculateDistance(TValue target);
+
+            public bool Update(TValue target)
+            {
+                if (replicationTarget.Any == false) return false;
+
+                if (CalculateDistance(target) < epsilon) return false;
+
+                value = target;
+                return true;
+            }
+
+            public abstract void WriteBinary(NetworkWriter writer);
+            public abstract void ReadBinary(NetworkReader reader);
+        }
+
+        [Serializable]
+        public class ReplicationTargetProperty
+        {
+            [SerializeField]
+            bool x = false;
+            public bool X => x;
+
+            [SerializeField]
+            bool y = true;
+            public bool Y => y;
+
+            [SerializeField]
+            bool z = false;
+            public bool Z => z;
+
+            public int Count
+            {
+                get
                 {
-                    get
-                    {
-                        var count = 0;
+                    var count = 0;
 
-                        if (x) count += 1;
-                        if (y) count += 1;
-                        if (z) count += 1;
+                    if (x) count += 1;
+                    if (y) count += 1;
+                    if (z) count += 1;
 
-                        return count;
-                    }
-                }
-
-                public int Size => Count * sizeof(float);
-
-                public bool Any => x | y | z;
-
-                public void Select(ref NetworkSerializationContext context)
-                {
-                    context.Select(ref x);
-                    context.Select(ref y);
-                    context.Select(ref z);
-                }
-
-                public VectorProperty(bool value) : this(value, value, value) { }
-                public VectorProperty(bool x, bool y, bool z)
-                {
-                    this.x = x;
-                    this.y = y;
-                    this.z = z;
+                    return count;
                 }
             }
 
-            public int Count => position.Count + rotation.Count + scale.Count;
-
             public int Size => Count * sizeof(float);
 
-            public bool Any => position.Any | rotation.Any | scale.Any;
+            public bool Any => x | y | z;
 
-            public void Select(ref NetworkSerializationContext context)
+            public ReplicationTargetProperty(bool value) : this(value, value, value) { }
+            public ReplicationTargetProperty(bool x, bool y, bool z)
             {
-                context.Select(ref position);
-                context.Select(ref rotation);
-                context.Select(ref scale);
+                this.x = x;
+                this.y = y;
+                this.z = z;
             }
         }
 
@@ -112,41 +180,51 @@ namespace MNet
 
         void Awake()
         {
-            writer = new NetworkWriter(syncConfig.Size);
+            writer = new NetworkWriter(position.ReplicationTarget.Size + rotation.ReplicationTarget.Size);
             reader = new NetworkReader();
         }
 
         void Start()
         {
-            if(IsMine) StartCoroutine(Procedure());
+            StartCoroutine(Procedure());
         }
 
         IEnumerator Procedure()
         {
             while (true)
             {
-                if (IsConnected) Broadcast();
+                if(IsMine)
+                {
+                    if (IsConnected)
+                    {
+                        bool updated = false;
 
-                yield return new WaitForSeconds(syncInverval);
+                        updated |= position.Update(transform.position);
+                        updated |= rotation.Update(transform.rotation);
+
+                        if (updated) Broadcast();
+                    }
+
+                    yield return new WaitForSeconds(syncInverval);
+                }
+                else
+                {
+                    transform.position = Position.MoveTowards(transform.position);
+                    transform.rotation = Rotation.MoveTowards(transform.rotation);
+
+                    yield return new WaitForEndOfFrame();
+                }
             }
         }
 
         void Broadcast()
         {
-            WriteVector(transform.position, syncConfig.Position);
-            WriteVector(transform.eulerAngles, syncConfig.Rotation);
-            WriteVector(transform.localScale, syncConfig.Scale);
+            position.WriteBinary(writer);
+            rotation.WriteBinary(writer);
 
             var raw = writer.Flush();
 
             BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Owner.ID);
-        }
-
-        void WriteVector(Vector3 value, SyncConfigProperty.VectorProperty config)
-        {
-            if (config.X) writer.Write(value.x);
-            if (config.Y) writer.Write(value.y);
-            if (config.Z) writer.Write(value.z);
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Owner, Delivery = DeliveryMode.Unreliable)]
@@ -154,18 +232,14 @@ namespace MNet
         {
             reader.Set(binary);
 
-            transform.position = ReadVector(syncConfig.Position, transform.position);
-            transform.eulerAngles = ReadVector(syncConfig.Rotation, transform.eulerAngles);
-            transform.localScale = ReadVector(syncConfig.Scale, transform.localScale);
-        }
+            Position.ReadBinary(reader);
+            Rotation.ReadBinary(reader);
 
-        Vector3 ReadVector(SyncConfigProperty.VectorProperty config, Vector3 value)
-        {
-            if (config.X) value.x = reader.Read<float>();
-            if (config.Y) value.y = reader.Read<float>();
-            if (config.Z) value.z = reader.Read<float>();
-
-            return value;
+            if(info.IsBuffered)
+            {
+                transform.position = position.Value;
+                transform.rotation = rotation.Value;
+            }
         }
     }
 }

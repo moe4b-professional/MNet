@@ -33,6 +33,17 @@ namespace MNet.Example
 			set => rigidbody.velocity = value;
         }
 
+		public float yAngle
+        {
+			get => transform.eulerAngles.y;
+			set
+            {
+				var angles = transform.eulerAngles;
+				angles.y = value;
+				transform.eulerAngles = angles;
+            }
+        }
+
 		public Vector3 Position
         {
 			get => transform.position;

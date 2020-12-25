@@ -47,6 +47,14 @@ namespace MNet.Example
 			velocity = Vector3.MoveTowards(velocity, target, acceleration * Time.deltaTime);
 
 			Player.Velocity = velocity + (Vector3.up * Player.Velocity.y);
+
+			if(velocity.magnitude > 0.1f)
+				Player.yAngle = Vector2Angle(velocity.x, velocity.z);
+		}
+
+		public static float Vector2Angle(float x, float y)
+		{
+			return Mathf.Atan2(x, y) * Mathf.Rad2Deg;
 		}
 	}
 }
