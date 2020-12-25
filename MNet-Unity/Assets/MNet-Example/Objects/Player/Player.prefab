@@ -126,6 +126,7 @@ MonoBehaviour:
       z: 0
     epsilon: 0.01
     speed: 10
+  forceSync: 1
 --- !u!1 &573034543690439767
 GameObject:
   m_ObjectHideFlags: 0
