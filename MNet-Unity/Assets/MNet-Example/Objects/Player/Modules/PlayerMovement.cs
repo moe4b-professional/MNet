@@ -30,6 +30,8 @@ namespace MNet.Example
 		public Player Player { get; protected set; }
 		public void Set(Player reference) => Player = reference;
 
+		public PlayerRotation Rotation => Player.Rotation;
+
 		void Update()
 		{
 			if (Player.IsMine == false) return;
@@ -48,13 +50,7 @@ namespace MNet.Example
 
 			Player.Velocity = velocity + (Vector3.up * Player.Velocity.y);
 
-			if(velocity.magnitude > 0.1f)
-				Player.yAngle = Vector2Angle(velocity.x, velocity.z);
-		}
-
-		public static float Vector2Angle(float x, float y)
-		{
-			return Mathf.Atan2(x, y) * Mathf.Rad2Deg;
+			Rotation.Process(velocity);
 		}
 	}
 }

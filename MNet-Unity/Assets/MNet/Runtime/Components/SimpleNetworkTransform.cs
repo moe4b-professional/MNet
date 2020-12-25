@@ -23,12 +23,22 @@ namespace MNet
     public class SimpleNetworkTransform : NetworkBehaviour
     {
         [SerializeField]
-        float syncInverval = 0.1f;
-        public float SyncInterval => syncInverval;
+        [Tooltip("Sync Interval in ms, 1s = 1000ms")]
+        SyncInvervalProperty syncInverval = new SyncInvervalProperty(100);
+        public SyncInvervalProperty SyncInterval => syncInverval;
 
         [SerializeField]
-        VectorCoordinateProperty position = default;
+        VectorCoordinateProperty position = new VectorCoordinateProperty(true);
         public VectorCoordinateProperty Position => position;
+        
+        [SerializeField]
+        QuaternionCoordinateProperty rotation = new QuaternionCoordinateProperty();
+        public QuaternionCoordinateProperty Rotation => rotation;
+
+        [SerializeField]
+        VectorCoordinateProperty scale = new VectorCoordinateProperty(false);
+        public VectorCoordinateProperty Scale => scale;
+
         [Serializable]
         public class VectorCoordinateProperty : CoordinateProperty<Vector3>
         {
@@ -38,26 +48,23 @@ namespace MNet
 
             public override void WriteBinary(NetworkWriter writer)
             {
-                if (ReplicationTarget.X) writer.Write(value.x);
-                if (ReplicationTarget.Y) writer.Write(value.y);
-                if (ReplicationTarget.Z) writer.Write(value.z);
+                if (Target.X) writer.Write(value.x);
+                if (Target.Y) writer.Write(value.y);
+                if (Target.Z) writer.Write(value.z);
             }
             public override void ReadBinary(NetworkReader reader)
             {
-                if (ReplicationTarget.X) value.x = reader.Read<float>();
-                if (ReplicationTarget.Y) value.y = reader.Read<float>();
-                if (ReplicationTarget.Z) value.z = reader.Read<float>();
+                if (Target.X) value.x = reader.Read<float>();
+                if (Target.Y) value.y = reader.Read<float>();
+                if (Target.Z) value.z = reader.Read<float>();
             }
 
-            public VectorCoordinateProperty()
+            public VectorCoordinateProperty(bool target)
             {
-                replicationTarget = new ReplicationTargetProperty(true);
+                this.target = new VectorTargetProperty(target);
             }
         }
 
-        [SerializeField]
-        QuaternionCoordinateProperty rotation = default;
-        public QuaternionCoordinateProperty Rotation => rotation;
         [Serializable]
         public class QuaternionCoordinateProperty : CoordinateProperty<Quaternion>
         {
@@ -69,31 +76,30 @@ namespace MNet
             {
                 var vector = Value.eulerAngles;
 
-                if (ReplicationTarget.X) writer.Write(vector.x);
-                if (ReplicationTarget.Y) writer.Write(vector.y);
-                if (ReplicationTarget.Z) writer.Write(vector.z);
+                if (Target.X) writer.Write(vector.x);
+                if (Target.Y) writer.Write(vector.y);
+                if (Target.Z) writer.Write(vector.z);
             }
             public override void ReadBinary(NetworkReader reader)
             {
                 var vector = value.eulerAngles;
 
-                if (ReplicationTarget.X) vector.x = reader.Read<float>();
-                if (ReplicationTarget.Y) vector.y = reader.Read<float>();
-                if (ReplicationTarget.Z) vector.z = reader.Read<float>();
+                if (Target.X) vector.x = reader.Read<float>();
+                if (Target.Y) vector.y = reader.Read<float>();
+                if (Target.Z) vector.z = reader.Read<float>();
 
                 value = Quaternion.Euler(vector);
             }
 
             public QuaternionCoordinateProperty()
             {
-                replicationTarget = new ReplicationTargetProperty(false, true, false);
+                target = new VectorTargetProperty(false, true, false);
             }
         }
 
         [Serializable]
         public abstract class CoordinateProperty<TValue>
         {
-            [SerializeField]
             protected TValue value = default;
             public TValue Value
             {
@@ -102,8 +108,8 @@ namespace MNet
             }
 
             [SerializeField]
-            protected ReplicationTargetProperty replicationTarget = default;
-            public ReplicationTargetProperty ReplicationTarget => replicationTarget;
+            protected VectorTargetProperty target;
+            public VectorTargetProperty Target => target;
 
             [SerializeField]
             protected float epsilon = 0.01f;
@@ -121,7 +127,7 @@ namespace MNet
 
             public bool Update(TValue target)
             {
-                if (replicationTarget.Any == false) return false;
+                if (this.target.Any == false) return false;
 
                 if (CalculateDistance(target) < epsilon) return false;
 
@@ -134,7 +140,7 @@ namespace MNet
         }
 
         [Serializable]
-        public class ReplicationTargetProperty
+        public class VectorTargetProperty
         {
             [SerializeField]
             bool x = false;
@@ -166,8 +172,8 @@ namespace MNet
 
             public bool Any => x | y | z;
 
-            public ReplicationTargetProperty(bool value) : this(value, value, value) { }
-            public ReplicationTargetProperty(bool x, bool y, bool z)
+            public VectorTargetProperty(bool value) : this(value, value, value) { }
+            public VectorTargetProperty(bool x, bool y, bool z)
             {
                 this.x = x;
                 this.y = y;
@@ -180,8 +186,12 @@ namespace MNet
 
         void Awake()
         {
-            writer = new NetworkWriter(position.ReplicationTarget.Size + rotation.ReplicationTarget.Size);
+            writer = new NetworkWriter(position.Target.Size + rotation.Target.Size + scale.Target.Size);
             reader = new NetworkReader();
+
+            position.Set(transform.position);
+            rotation.Set(transform.rotation);
+            scale.Set(transform.localScale);
         }
 
         void Start()
@@ -189,38 +199,48 @@ namespace MNet
             StartCoroutine(Procedure());
         }
 
+        //Yes, I'm using coroutines, get off my back!
         IEnumerator Procedure()
         {
             while (true)
             {
-                if(IsMine)
-                {
-                    if (IsConnected)
-                    {
-                        bool updated = false;
-
-                        updated |= position.Update(transform.position);
-                        updated |= rotation.Update(transform.rotation);
-
-                        if (updated) Broadcast();
-                    }
-
-                    yield return new WaitForSeconds(syncInverval);
-                }
+                if (IsMine)
+                    yield return LocalProcedure();
                 else
-                {
-                    transform.position = Position.MoveTowards(transform.position);
-                    transform.rotation = Rotation.MoveTowards(transform.rotation);
-
-                    yield return new WaitForEndOfFrame();
-                }
+                    yield return RemoteProcedure();
             }
+        }
+
+        YieldInstruction LocalProcedure()
+        {
+            if (IsConnected)
+            {
+                bool updated = false;
+
+                updated |= position.Update(transform.position);
+                updated |= rotation.Update(transform.rotation);
+                updated |= scale.Update(transform.localScale);
+
+                if (updated) Broadcast();
+            }
+
+            return new WaitForSeconds(syncInverval.Seconds);
+        }
+
+        YieldInstruction RemoteProcedure()
+        {
+            if (position.Target.Any) transform.position = position.MoveTowards(transform.position);
+            if (rotation.Target.Any) transform.rotation = rotation.MoveTowards(transform.rotation);
+            if (scale.Target.Any) transform.localScale = scale.MoveTowards(transform.localScale);
+
+            return new WaitForEndOfFrame();
         }
 
         void Broadcast()
         {
             position.WriteBinary(writer);
             rotation.WriteBinary(writer);
+            scale.WriteBinary(writer);
 
             var raw = writer.Flush();
 
@@ -232,14 +252,82 @@ namespace MNet
         {
             reader.Set(binary);
 
-            Position.ReadBinary(reader);
-            Rotation.ReadBinary(reader);
+            position.ReadBinary(reader);
+            rotation.ReadBinary(reader);
+            scale.ReadBinary(reader);
 
             if(info.IsBuffered)
             {
                 transform.position = position.Value;
                 transform.rotation = rotation.Value;
+                transform.localScale = scale.Value;
             }
         }
+    }
+
+    [Serializable]
+    public struct SyncInvervalProperty
+    {
+        [SerializeField]
+        int value;
+        public int Value => value;
+
+        public float Seconds => value / 1000f;
+
+        public SyncInvervalProperty(int value)
+        {
+            this.value = value;
+        }
+
+#if UNITY_EDITOR
+        [CustomPropertyDrawer(typeof(SyncInvervalProperty))]
+        public class Drawer : PropertyDrawer
+        {
+            public const float Spacing = 80;
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                return EditorGUIUtility.singleLineHeight;
+            }
+
+            public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
+            {
+                var value = property.FindPropertyRelative(nameof(SyncInvervalProperty.value));
+
+                DrawValue(ref rect, label, value);
+
+                DrawFrames(ref rect, value.intValue);
+            }
+
+            void DrawValue(ref Rect rect, GUIContent label, SerializedProperty value)
+            {
+                var area = rect;
+
+                area.width -= Spacing;
+
+                value.intValue = EditorGUI.IntSlider(area, label, value.intValue, 0, 200);
+
+                rect.x += area.width;
+                rect.width -= area.width;
+            }
+
+            void DrawFrames(ref Rect rect, int value)
+            {
+                var area = rect;
+
+                string symbol = value == 0 ? "∞" : $"~{1000 / value}";
+                var text = $"{symbol}Hz";
+
+                var style = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 15,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter
+                };
+
+                EditorGUI.LabelField(area, text, style);
+            }
+        }
+#endif
     }
 }

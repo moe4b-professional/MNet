@@ -61,5 +61,15 @@ namespace MNet
             min = samples.Min();
             max = samples.Max();
         }
+
+        void OnGUI()
+        {
+            var style = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 50,
+            };
+
+            GUILayout.Label($"AVG: {average}\nMin: {min}\nMax: {max}", style);
+        }
     }
 }

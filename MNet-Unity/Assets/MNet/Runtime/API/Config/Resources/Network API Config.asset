@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb3371d12fbd87148b5e95d7e39d7206, type: 3}
   m_Name: Network API Config
   m_EditorClassIdentifier: 
-  address: 127.0.0.1
+  address: 35.176.108.184
   appID: AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA
   restScheme: 0
   version:

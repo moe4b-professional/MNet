@@ -24,6 +24,7 @@ namespace MNet.Example
 	public class Player : NetworkBehaviour
 	{
 		public PlayerMovement Movement { get; protected set; }
+		public PlayerRotation Rotation { get; protected set; }
 
 		public Rigidbody rigidbody { get; protected set; }
 
@@ -62,7 +63,10 @@ namespace MNet.Example
 
 			Movement = GetComponentInChildren<PlayerMovement>();
 			Movement.Set(this);
-        }
+
+			Rotation = GetComponentInChildren<PlayerRotation>();
+			Rotation.Set(this);
+		}
 
 		void Start()
         {
