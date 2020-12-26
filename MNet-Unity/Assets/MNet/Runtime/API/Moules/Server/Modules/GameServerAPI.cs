@@ -52,11 +52,20 @@ namespace MNet
                     Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
 
                     Collection = new Dictionary<GameServerID, GameServerInfo>();
+
+                    Master.OnInfo += MasterInfoCallback;
+                }
+
+                static void MasterInfoCallback(MasterServerInfoResponse info, RestError error)
+                {
+                    if (error != null) return;
+
+                    Register(info.Servers);
                 }
 
                 public delegate void RegisterDelegate();
                 public static event RegisterDelegate OnRegister;
-                public static void Register(IList<GameServerInfo> list)
+                static void Register(IList<GameServerInfo> list)
                 {
                     Collection.Clear();
 

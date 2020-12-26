@@ -20,36 +20,36 @@ using Random = UnityEngine.Random;
 namespace MNet.Example
 {
 	[RequireComponent(typeof(Button))]
-	public class LobbyRefreshButton : MonoBehaviour
+	public class ServerBrowserRefreshButton : MonoBehaviour
 	{
-		Button button;
+		[SerializeField]
+		ServerBrowser browser = default;
 
-		Core Core => Core.Instance;
-		PopupPanel Popup => Core.UI.Popup;
+		Button button;
 
 		void Start()
 		{
 			button = GetComponent<Button>();
 			button.onClick.AddListener(Action);
 
-			NetworkAPI.Lobby.OnInfo += Callback;
+            NetworkAPI.Server.Master.OnInfo += Callback;
 		}
 
-		void Action()
+        void Action()
 		{
-			NetworkAPI.Lobby.RequestInfo();
-
 			button.interactable = false;
+
+			browser.Refresh();
 		}
 
-		void Callback(LobbyInfo lobby, RestError error)
+		void Callback(MasterServerInfoResponse info, RestError error)
 		{
 			button.interactable = true;
 		}
 
 		void OnDestroy()
 		{
-			NetworkAPI.Lobby.OnInfo -= Callback;
+			NetworkAPI.Server.Master.OnInfo -= Callback;
 		}
 	}
 }

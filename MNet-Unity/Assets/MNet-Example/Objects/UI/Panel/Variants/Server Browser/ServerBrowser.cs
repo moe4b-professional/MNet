@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-    public class ServerSelectorPanel : UIPanel
+    public class ServerBrowser : UIPanel
     {
         [SerializeField]
         GameObject template = default;
@@ -46,34 +46,35 @@ namespace MNet.Example
         {
             NetworkAPI.Server.Master.OnInfo += MasterInfoCallback;
 
-            if (NetworkAPI.Server.Game.Selection == null) GetMasterServerInfo();
-
             Populate(NetworkAPI.Server.Game.Collection.Values);
-        }
 
-        void GetMasterServerInfo()
-        {
-            Popup.Show("Retrieving Servers");
-
-            NetworkAPI.Server.Master.GetInfo();
+            if (NetworkAPI.Server.Game.Selection == null) Show();
         }
 
         void MasterInfoCallback(MasterServerInfoResponse info, RestError error)
         {
-            if (error != null)
-            {
-                Popup.Show("Could not Retrieve Servers", "Retry", GetMasterServerInfo);
-                return;
-            }
+            if (error != null) return;
 
             Populate(info.Servers);
 
-            if (info.Servers.Length > 0)
-                Popup.Hide();
-            else
-                Popup.Show("No Game Servers Found on Master", "Retry", GetMasterServerInfo);
+            if (info.Servers.Length == 0) Popup.Show("No Game Servers Found on Master", "Refresh", Refresh);
 
             if (NetworkAPI.Server.Game.Selection == null) Show();
+        }
+
+        public void Refresh()
+        {
+            Popup.Show("Retrieving Servers");
+
+            NetworkAPI.Server.Master.GetInfo(Callback);
+
+            void Callback(MasterServerInfoResponse info, RestError error)
+            {
+                if (error == null)
+                    Popup.Hide();
+                else
+                    Popup.Show("Failed To Retrieve Servers", "Okay");
+            }
         }
 
         void Populate(ICollection<GameServerInfo> collection)

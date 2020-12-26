@@ -25,16 +25,7 @@ namespace MNet
 
         public static void GetInfo(RestRequest request, RestResponse response)
         {
-            GetLobbyInfoRequest payload;
-            try
-            {
-                RestServerAPI.Read(request, out payload);
-            }
-            catch (Exception)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
-                return;
-            }
+            if (RestServerAPI.TryRead(request, response, out GetLobbyInfoRequest payload) == false) return;
 
             var list = Query(payload.AppID, payload.Version);
 
@@ -53,16 +44,7 @@ namespace MNet
         #region Create Room
         public static void CreateRoom(RestRequest request, RestResponse response)
         {
-            CreateRoomRequest payload;
-            try
-            {
-                RestServerAPI.Read(request, out payload);
-            }
-            catch (Exception)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
-                return;
-            }
+            if (RestServerAPI.TryRead(request, response, out CreateRoomRequest payload) == false) return;
 
             if(AppsAPI.TryGet(payload.AppID, out var app) == false)
             {

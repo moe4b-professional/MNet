@@ -64,14 +64,12 @@ namespace MNet
 
             #region Join
             public static void Join(RoomBasicInfo info) => Join(info.ID);
-
             public static void Join(RoomID id) => Realtime.Connect(Server.Game.ID, id);
             #endregion
 
             #region Create
             public delegate void CreateDelegate(RoomBasicInfo room, RestError error);
             public static event CreateDelegate OnCreate;
-
             public static void Create(string name, byte capacity, AttributesCollection attributes = null)
             {
                 var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, attributes);

@@ -58,25 +58,17 @@ namespace MNet
 
             RestServerAPI.Configure(Constants.Server.Master.Rest.Port);
 
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
+            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Scheme, SendScheme);
+            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, SendInfo);
             RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
             RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
 
             RestServerAPI.Start();
         }
 
-        static void GetInfo(RestRequest request, RestResponse response)
+        static void SendScheme(RestRequest request, RestResponse response)
         {
-            MasterServerInfoRequest payload;
-            try
-            {
-                RestServerAPI.Read(request, out payload);
-            }
-            catch (Exception)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
-                return;
-            }
+            if (RestServerAPI.TryRead(request, response, out MasterServerSchemeRequest payload) == false) return;
 
             if (payload.ApiVersion != Constants.ApiVersion)
             {
@@ -99,9 +91,18 @@ namespace MNet
                 return;
             }
 
-            var list = Query();
+            var info = new MasterServerSchemeResponse(app, RemoteConfig);
 
-            var info = new MasterServerInfoResponse(app, list, RemoteConfig);
+            RestServerAPI.Write(response, info);
+        }
+
+        static void SendInfo(RestRequest request, RestResponse response)
+        {
+            if (RestServerAPI.TryRead(request, response, out MasterServerInfoRequest payload) == false) return;
+
+            var servers = Query();
+
+            var info = new MasterServerInfoResponse(servers);
 
             RestServerAPI.Write(response, info);
         }
@@ -119,17 +120,8 @@ namespace MNet
         #region Register Server
         static void RegisterServer(RestRequest request, RestResponse response)
         {
-            RegisterGameServerRequest payload;
-            try
-            {
-                RestServerAPI.Read(request, out payload);
-            }
-            catch (Exception)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
-                return;
-            }
-
+            if (RestServerAPI.TryRead(request, response, out RegisterGameServerRequest payload) == false) return;
+            
             if (payload.Key != ApiKey.Token)
             {
                 RestServerAPI.Write(response, RestStatusCode.InvalidApiKey);
@@ -159,17 +151,8 @@ namespace MNet
         #region Remove Server
         static void RemoveServer(RestRequest request, RestResponse response)
         {
-            RemoveGameServerRequest payload;
-            try
-            {
-                RestServerAPI.Read(request, out payload);
-            }
-            catch (Exception)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
-                return;
-            }
-
+            if (RestServerAPI.TryRead(request, response, out RemoveGameServerRequest payload) == false) return;
+            
             RemoveServer(payload.ID);
 
             var result = new RemoveGameServerResponse(true);

@@ -26,6 +26,8 @@ namespace MNet
                     {
                         public static string Path { get; private set; } = "/";
 
+                        public static string Scheme { get; private set; } = Path + nameof(Scheme);
+
                         public static string Info { get; private set; } = Path + nameof(Info);
 
                         public static class Server
@@ -36,8 +38,6 @@ namespace MNet
 
                             public static string Remove { get; private set; } = Path + nameof(Remove);
                         }
-
-                        public static string RemoteConfig { get; private set; } = Path + nameof(RemoteConfig);
                     }
                 }
             }

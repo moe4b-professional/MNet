@@ -54,7 +54,7 @@ namespace MNet.Example
         {
             base.SetData(data);
 
-            Rename($"{data.ID} | {data.ID}");
+            Rename($"{data.ID} | {data.Region}");
         }
 
         public override void UpdateState()

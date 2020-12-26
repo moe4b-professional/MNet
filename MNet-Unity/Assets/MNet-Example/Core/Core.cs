@@ -135,15 +135,51 @@ namespace MNet.Example
 				NetworkAPI.Client.OnConnect += ClientConnectCallback;
 				NetworkAPI.Client.OnRegister += ClientRegisterCallback;
 
-				Core.OnInit += Start;
+				Core.OnInit += Init;
 			}
 
-            void Start()
+            void Init()
 			{
-				
+				GetMasterConfig();
 			}
 
-			void ClientConnectCallback()
+			void GetMasterConfig()
+            {
+				Popup.Show("Getting Master Scheme");
+
+				NetworkAPI.Server.Master.GetScheme(Callback);
+
+				void Callback(MasterServerSchemeResponse response, RestError error)
+				{
+					if (error == null)
+					{
+						GetMasterInfo();
+						return;
+					}
+
+					Popup.Show("Failed To Retrieve Master Scheme", "Retry", GetMasterConfig);
+				}
+			}
+			
+			void GetMasterInfo()
+            {
+				Popup.Show("Getting Master Info");
+
+				NetworkAPI.Server.Master.GetInfo(Callback);
+
+				void Callback(MasterServerInfoResponse info, RestError error)
+				{
+					if (error == null)
+					{
+						Popup.Hide();
+						return;
+					}
+
+					Popup.Show("Failed to Retrieve Master Info", "Retry", GetMasterInfo);
+				}
+			}
+
+            void ClientConnectCallback()
 			{
 				NetworkAPI.Client.Profile = new NetworkClientProfile(PlayerName);
 

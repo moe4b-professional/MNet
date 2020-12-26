@@ -37,29 +37,34 @@ namespace MNet
                     Rest.SetIP(Address);
                 }
 
+                public delegate void SchemeDelegate(MasterServerSchemeResponse response, RestError error);
+                public static event SchemeDelegate OnScheme;
+                public static void GetScheme(SchemeDelegate callback = null)
+                {
+                    var payload = new MasterServerSchemeRequest(NetworkAPI.AppID, NetworkAPI.Version);
+
+                    Rest.POST<MasterServerSchemeRequest, MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload, Callback);
+
+                    void Callback(MasterServerSchemeResponse response, RestError error)
+                    {
+                        callback?.Invoke(response, error);
+                        OnScheme?.Invoke(response, error);
+                    }
+                }
+
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
-                public static void GetInfo()
+                public static void GetInfo(InfoDelegate callback = null)
                 {
-                    var payload = new MasterServerInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
+                    var payload = new MasterServerInfoRequest();
 
                     Rest.POST<MasterServerInfoRequest, MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload, Callback);
 
                     void Callback(MasterServerInfoResponse info, RestError error)
                     {
-                        if (error == null) Initialize(info.App, info.RemoteConfig, info.Servers);
-
+                        callback?.Invoke(info, error);
                         OnInfo?.Invoke(info, error);
                     }
-                }
-
-                static void Initialize(AppConfig app, RemoteConfig remoteConfig, IList<GameServerInfo> servers)
-                {
-                    AppAPI.Set(app);
-
-                    Server.SetRemoteConfig(remoteConfig);
-
-                    Server.Game.Register(servers);
                 }
 
                 static void ApplicationQuitCallback()

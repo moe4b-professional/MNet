@@ -25,7 +25,19 @@ namespace MNet
 		{
 			public static AppConfig Config { get; private set; }
 
-			public delegate void SetDelegate(AppConfig app);
+			public static void Configure()
+            {
+                Server.Master.OnScheme += MasterServerSchemeCallback;
+            }
+
+            static void MasterServerSchemeCallback(MasterServerSchemeResponse response, RestError error)
+            {
+                if (error != null) return;
+
+                Set(response.App);
+            }
+
+            public delegate void SetDelegate(AppConfig app);
 			public static event SetDelegate OnSet;
 			public static void Set(AppConfig instance)
             {

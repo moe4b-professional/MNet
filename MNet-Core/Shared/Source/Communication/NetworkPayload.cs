@@ -233,10 +233,10 @@ namespace MNet
         }
     }
 
-    #region Master Server
+    #region Master Server Config
     [Preserve]
     [Serializable]
-    public struct MasterServerInfoRequest : INetworkSerializable
+    public struct MasterServerSchemeRequest : INetworkSerializable
     {
         Version apiVersion;
         public Version ApiVersion => apiVersion;
@@ -258,7 +258,7 @@ namespace MNet
             context.Select(ref gameVersion);
         }
 
-        public MasterServerInfoRequest(AppID appID, Version gameVersion) : this()
+        public MasterServerSchemeRequest(AppID appID, Version gameVersion) : this()
         {
             apiVersion = Constants.ApiVersion;
             this.appID = appID;
@@ -267,8 +267,7 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
-    public struct MasterServerInfoResponse : INetworkSerializable
+    public struct MasterServerSchemeResponse : INetworkSerializable
     {
         AppConfig app;
         public AppConfig App => app;
@@ -276,21 +275,43 @@ namespace MNet
         RemoteConfig remoteConfig;
         public RemoteConfig RemoteConfig => remoteConfig;
 
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref app);
+            context.Select(ref remoteConfig);
+        }
+
+        public MasterServerSchemeResponse(AppConfig app, RemoteConfig remoteConfig)
+        {
+            this.app = app;
+            this.remoteConfig = remoteConfig;
+        }
+    }
+    #endregion
+
+    #region Master Server Info
+    [Preserve]
+    [Serializable]
+    public struct MasterServerInfoRequest : INetworkSerializable
+    {
+        public void Select(ref NetworkSerializationContext context) { }
+    }
+
+    [Preserve]
+    [Serializable]
+    public struct MasterServerInfoResponse : INetworkSerializable
+    {
         GameServerInfo[] servers;
         public GameServerInfo[] Servers => servers;
 
         public void Select(ref NetworkSerializationContext context)
         {
-            context.Select(ref app);
-            context.Select(ref remoteConfig);
             context.Select(ref servers);
         }
 
-        public MasterServerInfoResponse(AppConfig app, GameServerInfo[] servers, RemoteConfig remoteConfig)
+        public MasterServerInfoResponse(GameServerInfo[] servers)
         {
-            this.app = app;
             this.servers = servers;
-            this.remoteConfig = remoteConfig;
         }
     }
     #endregion

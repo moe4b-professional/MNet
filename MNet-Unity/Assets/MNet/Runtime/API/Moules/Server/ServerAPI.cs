@@ -29,6 +29,15 @@ namespace MNet
             {
                 Master.Configure();
                 Game.Configure();
+
+                Master.OnScheme += MasterSchemeCallback;
+            }
+
+            static void MasterSchemeCallback(MasterServerSchemeResponse response, RestError error)
+            {
+                if (error != null) return;
+
+                SetRemoteConfig(response.RemoteConfig);
             }
 
             public delegate void RemoteConfigDelegate(RemoteConfig config);

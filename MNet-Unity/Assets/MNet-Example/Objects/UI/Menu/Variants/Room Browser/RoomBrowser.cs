@@ -34,36 +34,32 @@ namespace MNet.Example
 
         void Start()
         {
-            NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
             NetworkAPI.Lobby.OnClear += Clear;
         }
 
-        void OnEnable()
-        {
-            NetworkAPI.Lobby.OnRequestInfo += GetLobbyInfoCallback;
-        }
-
-        void GetLobbyInfoCallback()
+        public void Refresh()
         {
             Popup.Show("Retrieving Rooms");
-        }
 
-        void LobbyInfoCallback(LobbyInfo lobby, RestError error)
-        {
-            if (error == null)
+            NetworkAPI.Lobby.GetInfo(Callback);
+
+            void Callback(LobbyInfo lobby, RestError error)
             {
-                if (Visible && lobby.Size == 0)
-                    Popup.Show($"Found {lobby.Size} Rooms", "Okay");
+                if (error == null)
+                {
+                    if (lobby.Size == 0)
+                        Popup.Show($"Found {lobby.Size} Rooms", "Okay");
+                    else
+                        Popup.Hide();
+
+                    Populate(lobby.Rooms);
+                }
                 else
-                    Popup.Hide();
+                {
+                    Popup.Show("Failed To Retrieve Rooms", "Okay");
 
-                Populate(lobby.Rooms);
-            }
-            else
-            {
-                if (Visible) Popup.Show("Failed To Retrieve Rooms", "Okay");
-
-                Clear();
+                    Clear();
+                }
             }
         }
 
@@ -99,14 +95,8 @@ namespace MNet.Example
             templates.Clear();
         }
 
-        void OnDisable()
-        {
-            NetworkAPI.Lobby.OnRequestInfo -= GetLobbyInfoCallback;
-        }
-
         void OnDestroy()
         {
-            NetworkAPI.Lobby.OnInfo -= LobbyInfoCallback;
             NetworkAPI.Lobby.OnClear -= Clear;
         }
     }

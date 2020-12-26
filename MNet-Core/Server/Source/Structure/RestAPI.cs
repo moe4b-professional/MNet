@@ -19,6 +19,8 @@ using WebSocketSharp.Server;
 using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
 using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
 
+using System.Threading;
+
 namespace MNet
 {
     public static class RestServerAPI
@@ -118,6 +120,22 @@ namespace MNet
             var value = NetworkSerializer.Deserialize<TPayload>(binary);
 
             return value;
+        }
+
+        public static bool TryRead<TPayload>(RestRequest request, RestResponse response, out TPayload payload)
+        {
+            try
+            {
+                Read(request, out payload);
+            }
+            catch (Exception)
+            {
+                Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
+                payload = default;
+                return false;
+            }
+
+            return true;
         }
 
         public static byte[] Read(RestRequest request)

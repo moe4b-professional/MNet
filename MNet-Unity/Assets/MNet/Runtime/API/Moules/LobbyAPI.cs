@@ -32,27 +32,22 @@ namespace MNet
 
             public static int Size => Info.Size;
 
-            #region Info
-            public delegate void RequestInfoDelegate();
-            public static event RequestInfoDelegate OnRequestInfo;
-            public static void RequestInfo()
+            public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
+            public static event InfoDelegate OnInfo;
+            public static void GetInfo(InfoDelegate callback = null)
             {
                 var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
-                OnRequestInfo?.Invoke();
+                Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, Callback);
 
-                Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, InfoCallback);
+                void Callback(LobbyInfo info, RestError error)
+                {
+                    Lobby.Info = info;
+
+                    callback?.Invoke(info, error);
+                    OnInfo?.Invoke(info, error);
+                }
             }
-
-            public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
-            public static event InfoDelegate OnInfo;
-            static void InfoCallback(LobbyInfo info, RestError error)
-            {
-                Lobby.Info = info;
-
-                OnInfo?.Invoke(info, error);
-            }
-            #endregion
 
             public static event Action OnClear;
             public static void Clear()
