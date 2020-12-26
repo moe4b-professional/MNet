@@ -23,74 +23,10 @@ namespace MNet
     public class SimpleNetworkTransform : NetworkBehaviour
     {
         [SerializeField]
+        [SyncInterval(0, 200)]
         [Tooltip("Sync Interval in ms, 1s = 1000ms")]
-        SyncInvervalProperty syncInverval = new SyncInvervalProperty(100);
-        public SyncInvervalProperty SyncInterval => syncInverval;
-        [Serializable]
-        public struct SyncInvervalProperty
-        {
-            [SerializeField]
-            int value;
-            public int Value => value;
-
-            public float Seconds => value / 1000f;
-
-            public SyncInvervalProperty(int value)
-            {
-                this.value = value;
-            }
-
-#if UNITY_EDITOR
-            [CustomPropertyDrawer(typeof(SyncInvervalProperty))]
-            public class Drawer : PropertyDrawer
-            {
-                public const float Spacing = 80;
-
-                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-                {
-                    return EditorGUIUtility.singleLineHeight;
-                }
-
-                public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
-                {
-                    var value = property.FindPropertyRelative(nameof(SyncInvervalProperty.value));
-
-                    DrawValue(ref rect, label, value);
-
-                    DrawFrames(ref rect, value.intValue);
-                }
-
-                void DrawValue(ref Rect rect, GUIContent label, SerializedProperty value)
-                {
-                    var area = rect;
-
-                    area.width -= Spacing;
-
-                    value.intValue = EditorGUI.IntSlider(area, label, value.intValue, 0, 200);
-
-                    rect.x += area.width;
-                    rect.width -= area.width;
-                }
-
-                void DrawFrames(ref Rect rect, int value)
-                {
-                    var area = rect;
-
-                    string symbol = value == 0 ? "∞" : $"~{1000 / value}";
-                    var text = $"{symbol}Hz";
-
-                    var style = new GUIStyle(GUI.skin.label)
-                    {
-                        fontSize = 15,
-                        fontStyle = FontStyle.Bold,
-                        alignment = TextAnchor.MiddleCenter
-                    };
-
-                    EditorGUI.LabelField(area, text, style);
-                }
-            }
-#endif
-        }
+        int syncInverval = 100;
+        public int SyncInterval => syncInverval;
 
         [SerializeField]
         VectorCoordinateProperty position = new VectorCoordinateProperty(true);
@@ -293,7 +229,7 @@ namespace MNet
                 if (updated || forceSync) Broadcast();
             }
 
-            return new WaitForSeconds(syncInverval.Seconds);
+            return new WaitForSeconds(syncInverval / 1000f);
         }
 
         YieldInstruction RemoteProcedure()

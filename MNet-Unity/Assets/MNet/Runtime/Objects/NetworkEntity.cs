@@ -23,6 +23,7 @@ namespace MNet
     [ExecuteInEditMode]
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(ExecutionOrder)]
+    [AddComponentMenu(Constants.Path + "Network Entity")]
     public class NetworkEntity : MonoBehaviour
     {
         public const int ExecutionOrder = -400;

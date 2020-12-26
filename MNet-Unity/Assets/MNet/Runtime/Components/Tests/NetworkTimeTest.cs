@@ -19,6 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
+    [AddComponentMenu(Constants.Path + "Tests/" + "Network Time Test")]
 	public class NetworkTimeTest : MonoBehaviour
 	{
 		public float time;
