@@ -395,7 +395,7 @@ namespace MNet
         public bool ValidateAuthority(NetworkClientID sender, RemoteAuthority authority)
         {
             //instantly validate every buffered message
-            if (NetworkAPI.Room.IsApplyingMessageBuffer) return true;
+            if (NetworkAPI.Realtime.IsOnBuffer) return true;
 
             if (authority.HasFlag(RemoteAuthority.Any)) return true;
 

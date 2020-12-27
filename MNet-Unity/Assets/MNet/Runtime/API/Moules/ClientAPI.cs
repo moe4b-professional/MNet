@@ -44,9 +44,37 @@ namespace MNet
 
             public static MessageSendQueue SendQueue { get; private set; }
 
+            #region Message Dispatcher
+            public static Dictionary<Type, MessageCallbackDelegate> MessageDispatcher { get; private set; }
+
+            public delegate void MessageCallbackDelegate(NetworkMessage message);
+            public delegate void MessageHandlerDelegate<TPayload>(TPayload payload);
+
+            public static void RegisterMessageHandler<TPayload>(MessageHandlerDelegate<TPayload> handler)
+            {
+                var type = typeof(TPayload);
+
+                if (MessageDispatcher.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
+
+                MessageDispatcher.Add(type, Callback);
+
+                void Callback(NetworkMessage message)
+                {
+                    var payload = message.Read<TPayload>();
+
+                    handler(payload);
+                }
+            }
+            #endregion
+
             public static void Configure()
             {
                 IsReady = false;
+
+                MessageDispatcher = new Dictionary<Type, MessageCallbackDelegate>();
+
+                RegisterMessageHandler<RegisterClientResponse>(RegisterCallback);
+                RegisterMessageHandler<ReadyClientResponse>(ReadyCallback);
 
                 NetworkAPI.OnProcess += Process;
 
@@ -104,24 +132,21 @@ namespace MNet
                 OnConnect?.Invoke();
             }
 
-            public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
-            public static event MessageDelegate OnMessage;
             static void MessageCallback(NetworkMessage message, DeliveryMode mode)
             {
-                if (message.Is<RegisterClientResponse>())
+                if (MessageDispatcher.TryGetValue(message.Type, out var callback) == false)
                 {
-                    var response = message.Read<RegisterClientResponse>();
-
-                    RegisterCallback(response);
-                }
-                else if (message.Is<ReadyClientResponse>())
-                {
-                    var response = message.Read<ReadyClientResponse>();
-
-                    ReadyCallback(response);
+                    Debug.LogWarning($"Recieved Message with Payload of {message.Type} Has no Handler");
+                    return;
                 }
 
-                OnMessage?.Invoke(message, mode);
+                callback(message);
+            }
+
+            public static void ManullyDispatch(IList<NetworkMessage> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    MessageCallback(list[i], DeliveryMode.Reliable);
             }
 
             #region Register

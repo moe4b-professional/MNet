@@ -30,71 +30,42 @@ namespace MNet
 
         public abstract void Connect(GameServerID server, RoomID room);
 
-        public ConcurrentQueue<Action> InputQueue { get; protected set; }
-
         public abstract int CheckMTU(DeliveryMode mode);
 
-        #region Connect
         public delegate void ConnectDelegate();
         public event ConnectDelegate OnConnect;
-        void InvokeConnect()
+        protected virtual void InvokeConnect()
         {
             OnConnect?.Invoke();
         }
 
-        protected virtual void QueueConnect()
-        {
-            InputQueue.Enqueue(Action);
-
-            void Action() => InvokeConnect();
-        }
-        #endregion
-
-        #region Message
         public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
         public event MessageDelegate OnMessage;
-        void InvokeMessage(NetworkMessage message, DeliveryMode mode)
+        protected virtual void InvokeMessage(NetworkMessage message, DeliveryMode mode)
         {
             OnMessage?.Invoke(message, mode);
         }
 
-        protected virtual void QueueMessage(NetworkMessage message, DeliveryMode mode)
-        {
-            InputQueue.Enqueue(Action);
-
-            void Action() => InvokeMessage(message, mode);
-        }
-        #endregion
-
-        #region Disconnect
         public delegate void DisconnectDelegate(DisconnectCode code);
         public event DisconnectDelegate OnDisconnect;
-        void InvokeDisconnected(DisconnectCode code)
+        protected virtual void InvokeDisconnect(DisconnectCode code)
         {
             OnDisconnect?.Invoke(code);
         }
 
-        protected virtual void QueueDisconnect(DisconnectCode code)
-        {
-            InputQueue.Enqueue(Action);
-
-            void Action() => InvokeDisconnected(code);
-        }
-        #endregion
-
         public abstract void Send(byte[] raw, DeliveryMode mode);
 
-        protected void RegisterMessages(byte[] raw, DeliveryMode mode)
+        protected void InvokeMessages(byte[] raw, DeliveryMode mode)
         {
             foreach (var message in NetworkMessage.ReadAll(raw))
-                QueueMessage(message, mode);
+                InvokeMessage(message, mode);
         }
 
         public abstract void Close();
 
         public NetworkTransport()
         {
-            InputQueue = new ConcurrentQueue<Action>();
+            
         }
     }
 }

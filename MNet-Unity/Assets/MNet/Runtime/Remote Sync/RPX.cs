@@ -113,7 +113,7 @@ namespace MNet
             this.Sender = sender;
             this.Time = time;
 
-            this.IsBuffered = NetworkAPI.Room.IsApplyingMessageBuffer;
+            this.IsBuffered = NetworkAPI.Realtime.IsOnBuffer;
         }
     }
 

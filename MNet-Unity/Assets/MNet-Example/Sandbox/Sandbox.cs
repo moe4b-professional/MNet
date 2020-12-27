@@ -22,14 +22,14 @@ using System.Reflection.Emit;
 
 namespace MNet.Example
 {
-	public class Sandbox : MonoBehaviour
-	{
+    public class Sandbox : MonoBehaviour
+    {
         public float range = 5f;
 
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
-            
+
         }
 
         void Update()

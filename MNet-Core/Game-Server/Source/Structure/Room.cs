@@ -16,6 +16,7 @@ namespace MNet
 {
     class Room
     {
+        #region Info
         public RoomID ID { get; protected set; }
 
         public AppConfig App { get; protected set; }
@@ -31,7 +32,7 @@ namespace MNet
 
         public AttributesCollection Attributes { get; protected set; }
 
-        #region Read Info
+        #region Read
         public RoomBasicInfo GetBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
         public static RoomBasicInfo GetBasicInfo(Room room) => room.GetBasicInfo();
 
@@ -49,11 +50,15 @@ namespace MNet
 
         public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
         #endregion
+        #endregion
 
+        #region Transport
         public bool QueueMessages => App.QueueMessages;
 
         public INetworkTransportContext TransportContext { get; protected set; }
+        #endregion
 
+        #region Time
         public Scheduler Scheduler { get; protected set; }
 
         public byte TickDelay => App.TickDelay;
@@ -61,12 +66,15 @@ namespace MNet
         public DateTime Timestamp { get; protected set; }
 
         public NetworkTimeSpan Time { get; protected set; }
+        #endregion
 
+        #region Objects
         public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
 
         public AutoKeyDictionary<NetworkEntityID, NetworkEntity> Entities { get; protected set; }
 
         public List<NetworkEntity> SceneObjects { get; protected set; }
+        #endregion
 
         #region Master
         public NetworkClient Master { get; protected set; }
@@ -110,7 +118,7 @@ namespace MNet
 
         public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
 
-        public void UnbufferMessages(HashSet<NetworkMessage> collection) => MessageBuffer.RemoveAll(collection.Contains);
+        public void UnbufferMessages(ICollection<NetworkMessage> collection) => MessageBuffer.RemoveAll(collection.Contains);
         #endregion
 
         #region Communication
@@ -187,6 +195,8 @@ namespace MNet
             }
         }
         #endregion
+
+        public List<NetworkMessage> LoadScenesMessages { get; set; }
 
         public void Start()
         {
@@ -281,6 +291,12 @@ namespace MNet
                     var request = message.Read<ChangeEntityOwnerRequest>();
 
                     ChangeEntityOwner(client, request);
+                }
+                else if(message.Is<LoadScenesRequest>())
+                {
+                    var request = message.Read<LoadScenesRequest>();
+
+                    LoadScenes(client, request);
                 }
             }
             else
@@ -488,6 +504,28 @@ namespace MNet
             Send(response, sender);
         }
 
+        void LoadScenes(NetworkClient sender, LoadScenesRequest request)
+        {
+            if (sender != Master)
+            {
+                Log.Warning($"Non Master Client {sender} Trying to Load Scenes in Room, Ignoring");
+                return;
+            }
+
+            var command = LoadScenesCommand.Write(request);
+
+            var message = Broadcast(command, condition: NetworkClient.IsReady);
+
+            if (request.Mode == NetworkSceneLoadMode.Single)
+            {
+                UnbufferMessages(LoadScenesMessages);
+                LoadScenesMessages.Clear();
+            }
+
+            LoadScenesMessages.Add(message);
+            BufferMessage(message);
+        }
+
         #region Entity
         void SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
@@ -660,6 +698,8 @@ namespace MNet
             SceneObjects = new List<NetworkEntity>();
 
             Scheduler = new Scheduler(TickDelay, Tick);
+
+            LoadScenesMessages = new List<NetworkMessage>();
         }
     }
 }

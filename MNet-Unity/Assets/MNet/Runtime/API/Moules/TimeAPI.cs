@@ -67,8 +67,9 @@ namespace MNet
                 NetworkAPI.OnProcess += Process;
 
                 Client.OnReady += ClientReadyCallback;
-                Client.OnMessage += ClientMessageCallback;
                 Client.OnDisconnect += DisconnectCallback;
+
+                Client.RegisterMessageHandler<RoomTimeResponse>(Set);
             }
 
             static void Process()
@@ -129,16 +130,6 @@ namespace MNet
 
             #region Callbacks
             static void ClientReadyCallback(ReadyClientResponse response) => Set(response.Time);
-
-            static void ClientMessageCallback(NetworkMessage message, DeliveryMode mode)
-            {
-                if (message.Is<RoomTimeResponse>())
-                {
-                    var response = message.Read<RoomTimeResponse>();
-
-                    Set(response);
-                }
-            }
 
             static void DisconnectCallback(DisconnectCode code) => Clear();
             #endregion

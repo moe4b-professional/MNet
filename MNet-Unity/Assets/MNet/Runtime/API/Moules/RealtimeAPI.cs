@@ -16,7 +16,10 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+
 using System.Net;
+
+using System.Collections.Concurrent;
 
 namespace MNet
 {
@@ -30,12 +33,32 @@ namespace MNet
 
             public static void Configure()
             {
+                Buffer = new Queue<NetworkMessage>();
+
+                InputQueue = new ConcurrentQueue<Action>();
+
                 NetworkAPI.OnProcess += Process;
 
                 Server.OnRemoteConfig += Initialize;
 
                 Application.quitting += ApplicationQuitCallback;
             }
+
+            #region Buffer
+            public static Queue<NetworkMessage> Buffer { get; private set; }
+
+            public static bool IsOnBuffer => Buffer.Count > 0;
+
+            public static void AddToBuffer(IList<NetworkMessage> list)
+            {
+                for (int i = 0; i < list.Count; i++)
+                    Buffer.Enqueue(list[i]);
+            }
+            #endregion
+
+            public static ConcurrentQueue<Action> InputQueue { get; private set; }
+
+            public static bool Pause { get; set; } = false;
 
             public delegate void InitializeDelegate(NetworkTransport transport);
             public static event InitializeDelegate OnInitialize;
@@ -45,9 +68,9 @@ namespace MNet
 
                 Transport = CreateTransport(config.Transport);
 
-                Transport.OnConnect += ConnectCallback;
-                Transport.OnMessage += MessageCallback;
-                Transport.OnDisconnect += DisconnectCallback;
+                Transport.OnConnect += QueueConnect;
+                Transport.OnMessage += QueueMessage;
+                Transport.OnDisconnect += QueueDisconnect;
 
                 OnInitialize?.Invoke(Transport);
             }
@@ -91,24 +114,42 @@ namespace MNet
 
                 if (Pause) return;
 
-                var count = Transport.InputQueue.Count;
+                if (Buffer.Count > 0)
+                    ProcessBuffer();
+                else
+                    ProcessInput();
+            }
 
-                while (true)
+            static void ProcessBuffer()
+            {
+                while(Buffer.Count > 0)
                 {
+                    var message = Buffer.Peek();
+
+                    MessageCallback(message, DeliveryMode.Reliable);
+
+                    Buffer.Dequeue();
+
                     if (Pause) break;
-
-                    if (Transport.InputQueue.TryDequeue(out var action) == false) break;
-
-                    action();
-                    count -= 1;
-
-                    if (count <= 0) break;
                 }
             }
 
-            public static bool Pause { get; set; } = false;
+            static void ProcessInput()
+            {
+                var count = InputQueue.Count;
 
-            #region Callbacks
+                for (int i = 0; i < count; i++)
+                {
+                    if (InputQueue.TryDequeue(out var action) == false) break;
+
+                    action();
+
+                    if (Pause) break;
+                    if (IsOnBuffer) break;
+                }
+            }
+
+            #region Connect
             public delegate void ConnectDelegate();
             public static event ConnectDelegate OnConnect;
             static void ConnectCallback()
@@ -116,6 +157,15 @@ namespace MNet
                 OnConnect?.Invoke();
             }
 
+            static void QueueConnect()
+            {
+                InputQueue.Enqueue(Action);
+
+                void Action() => ConnectCallback();
+            }
+            #endregion
+
+            #region Message
             public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
             public static event MessageDelegate OnMessage;
             static void MessageCallback(NetworkMessage message, DeliveryMode mode)
@@ -123,6 +173,15 @@ namespace MNet
                 OnMessage?.Invoke(message, mode);
             }
 
+            static void QueueMessage(NetworkMessage message, DeliveryMode mode)
+            {
+                InputQueue.Enqueue(Action);
+
+                void Action() => MessageCallback(message, mode);
+            }
+            #endregion
+
+            #region Disconnect
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
             static void DisconnectCallback(DisconnectCode code)
@@ -130,11 +189,11 @@ namespace MNet
                 OnDisconnect?.Invoke(code);
             }
 
-            public delegate void ErrorDelegate();
-            public static event ErrorDelegate OnError;
-            static void ErrorCallback()
+            static void QueueDisconnect(DisconnectCode code)
             {
-                OnError?.Invoke();
+                InputQueue.Enqueue(Action);
+
+                void Action() => DisconnectCallback(code);
             }
             #endregion
 

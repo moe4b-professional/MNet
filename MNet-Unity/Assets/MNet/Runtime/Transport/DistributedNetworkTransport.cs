@@ -50,7 +50,7 @@ namespace MNet
             IsRegistered = code == Utility.Registeration.Success;
 
             if (IsRegistered)
-                QueueConnect();
+                InvokeConnect();
             else
                 Debug.LogError($"Registeration Failed, Recieved Code: {code} Instead of Code {Utility.Registeration.Success}");
         }
@@ -61,7 +61,7 @@ namespace MNet
             {
                 var message = NetworkMessage.Read(raw);
 
-                QueueMessage(message, mode);
+                InvokeMessage(message, mode);
             }
             else
             {
@@ -69,11 +69,11 @@ namespace MNet
             }
         }
 
-        protected override void QueueDisconnect(DisconnectCode code)
+        protected override void InvokeDisconnect(DisconnectCode code)
         {
             IsRegistered = false;
 
-            base.QueueDisconnect(code);
+            base.InvokeDisconnect(code);
         }
 
         public DistributedNetworkTransport() : base()

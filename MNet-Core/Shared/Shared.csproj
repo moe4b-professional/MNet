@@ -65,6 +65,7 @@
     <Compile Include="Source\Constants.cs" />
     <Compile Include="Source\Structure\GameServer.cs" />
     <Compile Include="Source\Structure\RestAPI.cs" />
+    <Compile Include="Source\Structure\Scene.cs" />
     <Compile Include="Source\Tool\ObjectPooler.cs" />
     <Compile Include="Source\Utility\GeneralExtensions.cs" />
     <Compile Include="Source\Structure\Lobby.cs" />

@@ -58,7 +58,6 @@
      <Compile Include="Assets\MNet-Example\Core\Core.cs" />
      <Compile Include="Assets\MNet-Example\Core\Tools\SceneAccessor.cs" />
      <Compile Include="Assets\MNet-Example\Core\UI\CoreUIContainer.cs" />
-     <Compile Include="Assets\MNet-Example\General\Scripts\GameScene.cs" />
      <Compile Include="Assets\MNet-Example\General\Scripts\Initializer\Initializer.cs" />
      <Compile Include="Assets\MNet-Example\General\Scripts\Initializer\Scriptable Object\Editor\ScriptableObjectInitializerBuildProcessor.cs" />
      <Compile Include="Assets\MNet-Example\General\Scripts\Initializer\Scriptable Object\ScriptableObjectInitializer.cs" />
@@ -96,6 +95,7 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\HideUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\ShowUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\Additive Scene\AdditiveSceneLoader.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
      <Compile Include="Assets\MNet-Example\Utility\AutoJoinProtocol.cs" />
      <Compile Include="Assets\MNet-Example\Utility\Entity Stresser\Entity\NetworkStressBehaviour.cs" />
@@ -110,6 +110,7 @@
      <Compile Include="Assets\MNet\Runtime\API\Moules\PingAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RealtimeAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RoomAPI.cs" />
+     <Compile Include="Assets\MNet\Runtime\API\Moules\ScenesAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\Modules\GameServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\Modules\MasterServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\ServerAPI.cs" />
@@ -123,6 +124,7 @@
      <Compile Include="Assets\MNet\Runtime\Components\Tests\RprTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\SerializationTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\SyncVarTest.cs" />
+     <Compile Include="Assets\MNet\Runtime\Data\GameScene.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviour.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviourGRPCs.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkClient.cs" />
@@ -135,6 +137,7 @@
      <Compile Include="Assets\MNet\Runtime\Transport\Variants\LiteNetLibTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Transport\Variants\WebSocketTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\Dependancy.cs" />
+     <Compile Include="Assets\MNet\Runtime\Utility\GlobalCoroutine.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\SyncInterval.cs" />
      <None Include="Assets\MNet-Example\MNet-Unity.asmref" />
      <None Include="Assets\MNet-Project-Utility\MNet-Unity.asmref" />

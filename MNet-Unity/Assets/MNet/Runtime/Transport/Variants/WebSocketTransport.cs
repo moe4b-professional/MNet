@@ -61,16 +61,16 @@ namespace MNet
         {
             Socket.DisableNagleAlgorithm();
 
-            QueueConnect();
+            InvokeConnect();
         }
 
-        void RecievedMessageCallback(object sender, MessageEventArgs args) => RegisterMessages(args.RawData, DeliveryMode.Reliable);
+        void RecievedMessageCallback(object sender, MessageEventArgs args) => InvokeMessages(args.RawData, DeliveryMode.Reliable);
 
         void CloseCallback(object sender, CloseEventArgs args)
         {
             var code = Utility.Disconnect.ValueToCode(args.Code);
 
-            QueueDisconnect(code);
+            InvokeDisconnect(code);
         }
         #endregion
 

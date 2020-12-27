@@ -66,8 +66,21 @@ namespace MNet
                 Client.OnConnect += Setup;
                 Client.OnRegister += Register;
                 Client.OnReady += Ready;
-                Client.OnMessage += MessageCallback;
                 Client.OnDisconnect += Disconnect;
+
+                Client.RegisterMessageHandler<RpcCommand>(InvokeRPC);
+                Client.RegisterMessageHandler<RprCommand>(InvokeRPR);
+                Client.RegisterMessageHandler<SyncVarCommand>(InvokeSyncVar);
+
+                Client.RegisterMessageHandler<SpawnEntityCommand>(SpawnEntity);
+                Client.RegisterMessageHandler<DestroyEntityCommand>(DestroyEntity);
+
+                Client.RegisterMessageHandler<ClientConnectedPayload>(ClientConnected);
+                Client.RegisterMessageHandler<ClientDisconnectPayload>(ClientDisconnected);
+
+                Client.RegisterMessageHandler<ChangeMasterCommand>(ChangeMaster);
+
+                Client.RegisterMessageHandler<ChangeEntityOwnerCommand>(ChangeEntityOwner);
             }
 
             #region Join
@@ -96,66 +109,6 @@ namespace MNet
                 
             }
 
-            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
-            {
-                if (Client.IsReady)
-                {
-                    if (message.Is<RpcCommand>())
-                    {
-                        var command = message.Read<RpcCommand>();
-
-                        InvokeRPC(command);
-                    }
-                    else if (message.Is<SpawnEntityCommand>())
-                    {
-                        var command = message.Read<SpawnEntityCommand>();
-
-                        SpawnEntity(command);
-                    }
-                    else if (message.Is<DestroyEntityCommand>())
-                    {
-                        var command = message.Read<DestroyEntityCommand>();
-
-                        DestroyEntity(command);
-                    }
-                    else if (message.Is<RprCommand>())
-                    {
-                        var payload = message.Read<RprCommand>();
-
-                        InvokeRPR(payload);
-                    }
-                    else if (message.Is<SyncVarCommand>())
-                    {
-                        var command = message.Read<SyncVarCommand>();
-
-                        InvokeSyncVar(command);
-                    }
-                    else if (message.Is<ClientConnectedPayload>())
-                    {
-                        var payload = message.Read<ClientConnectedPayload>();
-
-                        ClientConnected(payload);
-                    }
-                    else if (message.Is<ClientDisconnectPayload>())
-                    {
-                        var payload = message.Read<ClientDisconnectPayload>();
-
-                        ClientDisconnected(payload);
-                    }
-                    else if (message.Is<ChangeMasterCommand>())
-                    {
-                        var command = message.Read<ChangeMasterCommand>();
-
-                        ChangeMaster(command);
-                    }
-                    else if(message.Is<ChangeEntityOwnerCommand>())
-                    {
-                        var command = message.Read<ChangeEntityOwnerCommand>();
-                        ChangeEntityOwner(command);
-                    }
-                }
-            }
-
             static void Register(RegisterClientResponse response)
             {
                 Info = response.Room;
@@ -167,7 +120,8 @@ namespace MNet
             {
                 AddClients(response.Clients);
                 AssignMaster(response.Master);
-                ApplyMessageBuffer(response.Buffer);
+
+                Realtime.AddToBuffer(response.Buffer);
 
                 OnReady?.Invoke(response);
             }
@@ -367,24 +321,6 @@ namespace MNet
             }
             #endregion
 
-            #region Message Buffer
-            public static bool IsApplyingMessageBuffer { get; private set; }
-
-            public delegate void MessageBufferDelegate(IList<NetworkMessage> list);
-            public static event MessageBufferDelegate OnAppliedMessageBuffer;
-            static void ApplyMessageBuffer(IList<NetworkMessage> list)
-            {
-                IsApplyingMessageBuffer = true;
-
-                for (int i = 0; i < list.Count; i++)
-                    MessageCallback(list[i], DeliveryMode.Reliable);
-
-                IsApplyingMessageBuffer = false;
-
-                OnAppliedMessageBuffer?.Invoke(list);
-            }
-            #endregion
-
             #region RPX
             #region RPC
             static void InvokeRPC(RpcCommand command)
@@ -393,7 +329,7 @@ namespace MNet
                 {
                     if (Entities.TryGetValue(command.Entity, out var target) == false)
                     {
-                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
 
                         ResolveRPC(command, RprResult.InvalidEntity);
 
@@ -469,8 +405,6 @@ namespace MNet
                 Info = default;
 
                 Master = default;
-
-                IsApplyingMessageBuffer = false;
 
                 Entities.Clear();
                 Clients.Clear();

@@ -272,7 +272,7 @@ namespace MNet
 
             reader.Read(out NetworkBehaviourID behaviourID);
 
-            if (entity.TryGetBehaviour(behaviourID, out var behaviour) == false)
+            if (entity.Behaviours.TryGetValue(behaviourID, out var behaviour) == false)
             {
                 Debug.LogWarning($"Network Behaviour {behaviourID} Couldn't be Found on Entity '{entity}' when Deserializing, Returning null");
                 return null;

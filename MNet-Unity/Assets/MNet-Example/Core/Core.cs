@@ -49,7 +49,11 @@ namespace MNet.Example
 			GameScene mainMenu = default;
 			public GameScene MainMenu => mainMenu;
 
-			public virtual void LoadMainMenu() => SceneManager.LoadScene(mainMenu.name);
+			[SerializeField]
+			GameScene additiveScene = default;
+			public int AdditiveScene => additiveScene;
+
+			public virtual void LoadMainMenu() => SceneManager.LoadScene(mainMenu);
 		}
 
 		[SerializeField]
@@ -77,21 +81,6 @@ namespace MNet.Example
 					return data;
 
 				return null;
-			}
-
-			public Coroutine Load(LevelData level)
-			{
-				return StartCoroutine(Procedure());
-
-				IEnumerator Procedure()
-				{
-					var operation = SceneManager.LoadSceneAsync(level.Scene.name, LoadSceneMode.Single);
-
-					operation.allowSceneActivation = true;
-
-					bool IsDone() => operation.isDone;
-					yield return new WaitUntil(IsDone);
-				}
 			}
 		}
 
@@ -130,10 +119,9 @@ namespace MNet.Example
 				if (PlayerPrefs.HasKey(PlayerNameKey) == false) PlayerName = GetDefaultPlayerName();
 
 				NetworkAPI.Client.AutoRegister = false;
-				NetworkAPI.Client.AutoReady = false;
 
 				NetworkAPI.Client.OnConnect += ClientConnectCallback;
-				NetworkAPI.Client.OnRegister += ClientRegisterCallback;
+                NetworkAPI.Client.OnReady += ReadyCallback;
 
 				Core.OnInit += Init;
 			}
@@ -186,22 +174,18 @@ namespace MNet.Example
 				NetworkAPI.Client.Register();
 			}
 
-			void ClientRegisterCallback(RegisterClientResponse response)
+			void ReadyCallback(ReadyClientResponse response)
 			{
-				StartCoroutine(Procedure());
-
-				IEnumerator Procedure()
+				if (NetworkAPI.Client.IsMaster)
 				{
-					var attributes = response.Room.Basic.Attributes;
+					var attributes = NetworkAPI.Room.Info.Basic.Attributes;
 
 					var level = ReadLevel(attributes);
 
-					yield return Core.Levels.Load(level);
-
-					Popup.Hide();
-
-					NetworkAPI.Client.Ready();
+					NetworkAPI.Scenes.Load(LoadSceneMode.Single, level.Scene);
 				}
+
+				Popup.Hide();
 			}
 
 			public LevelData ReadLevel(AttributesCollection attributes)

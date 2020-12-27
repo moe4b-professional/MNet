@@ -184,6 +184,9 @@ namespace MNet
 
             Register<ChangeEntityOwnerRequest>(47);
             Register<ChangeEntityOwnerCommand>(48);
+
+            Register<LoadScenesRequest>(49);
+            Register<LoadScenesCommand>(50);
         }
 
         static NetworkPayload()
@@ -270,6 +273,7 @@ namespace MNet
     }
 
     [Preserve]
+    [Serializable]
     public struct MasterServerSchemeResponse : INetworkSerializable
     {
         AppConfig app;
@@ -754,6 +758,7 @@ namespace MNet
     #endregion
 
     #region Takeover Entity
+    [Preserve]
     public struct ChangeEntityOwnerRequest : INetworkSerializable
     {
         NetworkClientID client;
@@ -775,6 +780,7 @@ namespace MNet
         }
     }
 
+    [Preserve]
     public struct ChangeEntityOwnerCommand : INetworkSerializable
     {
         NetworkClientID client;

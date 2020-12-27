@@ -44,8 +44,7 @@ namespace MNet
 
                 NetworkAPI.OnProcess += Process;
 
-                Client.OnMessage += ClientMessageCallback;
-                Client.OnDisconnect += ClientDisconnectCallback;
+                Client.RegisterMessageHandler<PingResponse>(Register);
             }
 
             static void Process()
@@ -95,19 +94,7 @@ namespace MNet
                 InvokeChange();
             }
 
-            #region Callbacks
-            static void ClientMessageCallback(NetworkMessage message, DeliveryMode mode)
-            {
-                if (message.Is<PingResponse>())
-                {
-                    var response = message.Read<PingResponse>();
-
-                    Register(response);
-                }
-            }
-
             static void ClientDisconnectCallback(DisconnectCode code) => Clear();
-            #endregion
         }
     }
 }

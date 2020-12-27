@@ -30,7 +30,18 @@ namespace MNet
 
         public NetworkEntityID ID { get; protected set; }
 
+        #region Ownership
         public NetworkClient Owner { get; protected set; }
+
+        public bool IsMine
+        {
+            get
+            {
+                if (IsConnected == false) return false;
+
+                return Owner?.ID == NetworkAPI.Client.ID;
+            }
+        }
 
         public delegate void SetOwnerDelegate(NetworkClient client);
         public event SetOwnerDelegate OnSetOwner;
@@ -64,25 +75,15 @@ namespace MNet
 
             NetworkAPI.Client.Send(requst);
         }
-
-        public bool IsMine
-        {
-            get
-            {
-                if (IsConnected == false) return false;
-
-                return Owner?.ID == NetworkAPI.Client.ID;
-            }
-        }
+        #endregion
 
         public AttributesCollection Attributes { get; protected set; }
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
-        public bool TryGetBehaviour(NetworkBehaviourID id, out NetworkBehaviour behaviour) => Behaviours.TryGetValue(id, out behaviour);
-
-        public bool IsReady { get; protected set; } = false;
 
         public bool IsConnected => NetworkAPI.Client.IsConnected;
+
+        public bool IsReady { get; protected set; } = false;
 
         public NetworkEntityType Type { get; protected set; }
 
@@ -100,6 +101,8 @@ namespace MNet
         public void Configure()
         {
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
+
+            RPRs = new AutoKeyDictionary<ushort, RprBind>(RprBind.Increment);
 
             var targets = GetComponentsInChildren<NetworkBehaviour>(true);
 
@@ -216,7 +219,7 @@ namespace MNet
 
         public void InvokeRPC(RpcCommand command)
         {
-            if (TryGetBehaviour(command.Behaviour, out var target) == false)
+            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to Invoke RPC");
 
@@ -230,7 +233,7 @@ namespace MNet
 
         public void InvokeSyncVar(SyncVarCommand command)
         {
-            if (TryGetBehaviour(command.Behaviour, out var target) == false)
+            if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to invoke RPC");
                 return;
@@ -242,11 +245,6 @@ namespace MNet
         protected virtual void OnDestroy()
         {
             if (Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
-        }
-
-        public NetworkEntity()
-        {
-            RPRs = new AutoKeyDictionary<ushort, RprBind>(RprBind.Increment);
         }
 
         //Static Utility

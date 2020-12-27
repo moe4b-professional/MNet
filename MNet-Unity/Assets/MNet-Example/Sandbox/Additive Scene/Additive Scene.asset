@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e86945eb885b0604c8b76dfad3e91990, type: 3}
+  m_Name: Additive Scene
+  m_EditorClassIdentifier: 
+  asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
+  _name: Additive Scene
+  buildIndex: 2
+  path: Assets/MNet-Example/Sandbox/Additive Scene/Additive Scene.unity

@@ -69,7 +69,7 @@ namespace MNet
         }
 
         #region Callbacks
-        public void OnPeerConnected(NetPeer peer) => QueueConnect();
+        public void OnPeerConnected(NetPeer peer) => InvokeConnect();
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
@@ -78,14 +78,14 @@ namespace MNet
 
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            RegisterMessages(raw, mode);
+            InvokeMessages(raw, mode);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
             var code = Utility.Disconnect.InfoToCode(info);
 
-            QueueDisconnect(code);
+            InvokeDisconnect(code);
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }

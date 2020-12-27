@@ -62,7 +62,6 @@ namespace MNet
 
             client.NoDelay = true;
         }
-
         public static void DisableNagleAlgorithm(this WebSocketSharp.Server.WebSocketServer socket)
         {
             var binding = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -70,6 +69,20 @@ namespace MNet
             var listener = socket.GetType().GetField("_listener", binding).GetValue(socket) as TcpListener;
 
             listener.Server.NoDelay = true;
+        }
+
+        public static bool TryGetIndex<T>(this IList<T> collection, out int index, Predicate<T> predicate)
+        {
+            for (int i = 0; i < collection.Count; i++)
+            {
+                if (predicate(collection[i]) == false) continue;
+
+                index = i;
+                return true;
+            }
+
+            index = default;
+            return false;
         }
     }
 }
