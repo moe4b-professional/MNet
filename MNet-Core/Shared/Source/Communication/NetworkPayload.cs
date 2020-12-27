@@ -181,6 +181,9 @@ namespace MNet
             Register<PingResponse>(45);
 
             Register<byte[]>(46);
+
+            Register<ChangeEntityOwnerRequest>(47);
+            Register<ChangeEntityOwnerCommand>(48);
         }
 
         static NetworkPayload()
@@ -747,6 +750,50 @@ namespace MNet
             this.timestamp = timestamp;
         }
         public PingResponse(PingRequest request) : this(request.Timestamp) { }
+    }
+    #endregion
+
+    #region Takeover Entity
+    public struct ChangeEntityOwnerRequest : INetworkSerializable
+    {
+        NetworkClientID client;
+        public NetworkClientID Client => client;
+
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref client);
+            context.Select(ref entity);
+        }
+
+        public ChangeEntityOwnerRequest(NetworkClientID client, NetworkEntityID entity)
+        {
+            this.client = client;
+            this.entity = entity;
+        }
+    }
+
+    public struct ChangeEntityOwnerCommand : INetworkSerializable
+    {
+        NetworkClientID client;
+        public NetworkClientID Client => client;
+
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref client);
+            context.Select(ref entity);
+        }
+
+        public ChangeEntityOwnerCommand(NetworkClientID client, NetworkEntityID entity)
+        {
+            this.client = client;
+            this.entity = entity;
+        }
     }
     #endregion
     #endregion

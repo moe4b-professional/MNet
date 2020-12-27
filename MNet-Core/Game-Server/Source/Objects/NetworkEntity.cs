@@ -11,7 +11,7 @@ namespace MNet
         public NetworkClient Owner { get; protected set; }
         public void SetOwner(NetworkClient client)
         {
-            this.Owner = client;
+            Owner = client;
         }
 
         public NetworkEntityID ID { get; protected set; }
@@ -19,6 +19,8 @@ namespace MNet
         public NetworkEntityType Type { get; protected set; }
 
         public NetworkMessage SpawnMessage { get; set; }
+
+        public NetworkMessage? OwnershipMessage { get; set; }
 
         public RpcBuffer RpcBuffer { get; protected set; }
         public RprCache RprCache { get; protected set; }

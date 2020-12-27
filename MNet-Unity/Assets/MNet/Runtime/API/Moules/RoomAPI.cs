@@ -96,6 +96,66 @@ namespace MNet
                 
             }
 
+            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
+            {
+                if (Client.IsReady)
+                {
+                    if (message.Is<RpcCommand>())
+                    {
+                        var command = message.Read<RpcCommand>();
+
+                        InvokeRPC(command);
+                    }
+                    else if (message.Is<SpawnEntityCommand>())
+                    {
+                        var command = message.Read<SpawnEntityCommand>();
+
+                        SpawnEntity(command);
+                    }
+                    else if (message.Is<DestroyEntityCommand>())
+                    {
+                        var command = message.Read<DestroyEntityCommand>();
+
+                        DestroyEntity(command);
+                    }
+                    else if (message.Is<RprCommand>())
+                    {
+                        var payload = message.Read<RprCommand>();
+
+                        InvokeRPR(payload);
+                    }
+                    else if (message.Is<SyncVarCommand>())
+                    {
+                        var command = message.Read<SyncVarCommand>();
+
+                        InvokeSyncVar(command);
+                    }
+                    else if (message.Is<ClientConnectedPayload>())
+                    {
+                        var payload = message.Read<ClientConnectedPayload>();
+
+                        ClientConnected(payload);
+                    }
+                    else if (message.Is<ClientDisconnectPayload>())
+                    {
+                        var payload = message.Read<ClientDisconnectPayload>();
+
+                        ClientDisconnected(payload);
+                    }
+                    else if (message.Is<ChangeMasterCommand>())
+                    {
+                        var command = message.Read<ChangeMasterCommand>();
+
+                        ChangeMaster(command);
+                    }
+                    else if(message.Is<ChangeEntityOwnerCommand>())
+                    {
+                        var command = message.Read<ChangeEntityOwnerCommand>();
+                        ChangeEntityOwner(command);
+                    }
+                }
+            }
+
             static void Register(RegisterClientResponse response)
             {
                 Info = response.Room;
@@ -262,6 +322,25 @@ namespace MNet
                 throw new NotImplementedException();
             }
 
+            static void ChangeEntityOwner(ChangeEntityOwnerCommand command)
+            {
+                if(Clients.TryGetValue(command.Client, out var owner) == false)
+                {
+                    Debug.LogWarning($"No Client {command.Client} Found to Takeover Entity {command.Entity}");
+                    return;
+                }
+
+                if(Entities.TryGetValue(command.Entity, out var entity) == false)
+                {
+                    Debug.LogWarning($"No Entity {command.Entity} To be Taken Over by Client {owner}");
+                    return;
+                }
+
+                entity.Owner?.Entities.Remove(entity);
+                entity.SetOwner(owner);
+                entity.Owner?.Entities.Add(entity);
+            }
+
             public delegate void DestroyEntityDelegate(NetworkEntity entity);
             public static event DestroyEntityDelegate OnDestroyEntity;
             static void DestroyEntity(DestroyEntityCommand command)
@@ -305,61 +384,6 @@ namespace MNet
                 OnAppliedMessageBuffer?.Invoke(list);
             }
             #endregion
-
-            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
-            {
-                if (Client.IsReady)
-                {
-                    if (message.Is<RpcCommand>())
-                    {
-                        var command = message.Read<RpcCommand>();
-
-                        InvokeRPC(command);
-                    }
-                    else if (message.Is<SpawnEntityCommand>())
-                    {
-                        var command = message.Read<SpawnEntityCommand>();
-
-                        SpawnEntity(command);
-                    }
-                    else if (message.Is<DestroyEntityCommand>())
-                    {
-                        var command = message.Read<DestroyEntityCommand>();
-
-                        DestroyEntity(command);
-                    }
-                    else if (message.Is<RprCommand>())
-                    {
-                        var payload = message.Read<RprCommand>();
-
-                        InvokeRPR(payload);
-                    }
-                    else if (message.Is<SyncVarCommand>())
-                    {
-                        var command = message.Read<SyncVarCommand>();
-
-                        InvokeSyncVar(command);
-                    }
-                    else if (message.Is<ClientConnectedPayload>())
-                    {
-                        var payload = message.Read<ClientConnectedPayload>();
-
-                        ClientConnected(payload);
-                    }
-                    else if (message.Is<ClientDisconnectPayload>())
-                    {
-                        var payload = message.Read<ClientDisconnectPayload>();
-
-                        ClientDisconnected(payload);
-                    }
-                    else if (message.Is<ChangeMasterCommand>())
-                    {
-                        var command = message.Read<ChangeMasterCommand>();
-
-                        ChangeMaster(command);
-                    }
-                }
-            }
 
             #region RPX
             #region RPC

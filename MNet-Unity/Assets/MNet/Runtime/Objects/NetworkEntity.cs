@@ -31,9 +31,38 @@ namespace MNet
         public NetworkEntityID ID { get; protected set; }
 
         public NetworkClient Owner { get; protected set; }
+
+        public delegate void SetOwnerDelegate(NetworkClient client);
+        public event SetOwnerDelegate OnSetOwner;
         public void SetOwner(NetworkClient client)
         {
             Owner = client;
+
+            OnSetOwner?.Invoke(Owner);
+        }
+
+        public void TakeoverOwnership()
+        {
+            if (IsMine)
+            {
+                Debug.LogWarning($"You Already Own Entity {this}, no Need to Takeover it, Ignoring");
+                return;
+            }
+
+            ChangeOwnership(NetworkAPI.Client.Self);
+        }
+
+        public void ChangeOwnership(NetworkClient reciever)
+        {
+            if (Owner == reciever)
+            {
+                Debug.LogWarning($"Client: {reciever} Already Owns Entity '{this};, Ignoring Request");
+                return;
+            }
+
+            var requst = new ChangeEntityOwnerRequest(reciever.ID, ID);
+
+            NetworkAPI.Client.Send(requst);
         }
 
         public bool IsMine
@@ -103,13 +132,13 @@ namespace MNet
         public event Action OnSpawn;
         public void Spawn(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type)
         {
-            SetOwner(owner);
-
             this.ID = id;
             this.Attributes = attributes;
             this.Type = type;
 
             IsReady = true;
+
+            SetOwner(owner);
 
             OnSpawn?.Invoke();
         }

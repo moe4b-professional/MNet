@@ -28,13 +28,24 @@ namespace MNet.Example
 		public Player Player { get; protected set; }
 		public void Set(Player reference) => Player = reference;
 
+		public float yAngle
+		{
+			get => Player.transform.eulerAngles.y;
+			set
+			{
+				var angles = Player.transform.eulerAngles;
+				angles.y = value;
+				Player.transform.eulerAngles = angles;
+			}
+		}
+
 		public void Process(Vector3 velocity)
         {
 			if (velocity.magnitude < 0.1f) return;
 
 			var target = Vector2Angle(velocity.x, velocity.z);
 
-			Player.yAngle = Mathf.MoveTowardsAngle(Player.yAngle, target, speed * Time.deltaTime);
+			yAngle = Mathf.MoveTowardsAngle(yAngle, target, speed * Time.deltaTime);
 		}
 
 		public static float Vector2Angle(float x, float y)

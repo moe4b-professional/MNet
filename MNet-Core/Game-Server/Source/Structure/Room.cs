@@ -276,6 +276,12 @@ namespace MNet
 
                     ProcessPingRequest(client, request);
                 }
+                else if(message.Is<ChangeEntityOwnerRequest>())
+                {
+                    var request = message.Read<ChangeEntityOwnerRequest>();
+
+                    ChangeEntityOwner(client, request);
+                }
             }
             else
             {
@@ -482,18 +488,19 @@ namespace MNet
             Send(response, sender);
         }
 
-        NetworkEntity SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
+        #region Entity
+        void SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
             if (request.Type == NetworkEntityType.SceneObject && sender != Master)
             {
                 Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Scene Object");
-                return null;
+                return;
             }
 
             if (request.Owner != null && sender != Master)
             {
                 Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Object for Client {request.Owner}");
-                return null;
+                return;
             }
 
             var id = Entities.Reserve();
@@ -508,13 +515,13 @@ namespace MNet
             if (owner == null)
             {
                 Log.Warning($"No Owner Found For Spawn Entity Request");
-                return null;
+                return;
             }
 
             var entity = new NetworkEntity(owner, id, request.Type);
 
-            owner.Entities.Add(entity);
             Entities.Assign(id, entity);
+            owner?.Entities.Add(entity);
 
             Log.Info($"Room {this.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
 
@@ -522,15 +529,42 @@ namespace MNet
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
 
-            var message = Broadcast(command, condition: NetworkClient.IsReady);
-
-            entity.SpawnMessage = message;
-            BufferMessage(message);
-
-            return entity;
+            entity.SpawnMessage = Broadcast(command, condition: NetworkClient.IsReady);
+            
+            BufferMessage(entity.SpawnMessage);
         }
 
-        #region Destroy Entity
+        void ChangeEntityOwner(NetworkClient sender, ChangeEntityOwnerRequest request)
+        {
+            if (Clients.TryGetValue(request.Client, out var owner) == false)
+            {
+                Log.Warning($"No Network Client: {request.Client} Found to Take Ownership of Entity {request.Entity}");
+                return;
+            }
+
+            if (Entities.TryGetValue(request.Entity, out var entity) == false)
+            {
+                Log.Warning($"No Entity {request.Entity} Found to Change Ownership of, Ignoring request from Client: {sender}");
+                return;
+            }
+
+            if (entity.Type == NetworkEntityType.SceneObject)
+            {
+                Log.Warning($"Scene Objects Cannot be Taken Over by Clients, Ignoring request from Client: {sender}");
+                return;
+            }
+
+            entity.Owner?.Entities.Remove(entity);
+            entity.SetOwner(owner);
+            entity.Owner?.Entities.Add(entity);
+
+            var command = new ChangeEntityOwnerCommand(owner.ID, request.Entity);
+
+            if (entity.OwnershipMessage != null) UnbufferMessage(entity.OwnershipMessage.Value);
+            entity.OwnershipMessage = Broadcast(command, condition: NetworkClient.IsReady);
+            BufferMessage(entity.OwnershipMessage.Value);
+        }
+
         void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
         {
             if (Entities.TryGetValue(request.ID, out var entity) == false)
@@ -547,19 +581,18 @@ namespace MNet
 
             DestroyEntity(entity);
         }
-
         void DestroyEntity(NetworkEntity entity)
         {
-            var owner = entity.Owner;
-
             UnbufferMessage(entity.SpawnMessage);
+            if (entity.OwnershipMessage != null) UnbufferMessage(entity.OwnershipMessage.Value);
 
             entity.RpcBuffer.Clear(UnbufferMessages);
             ResolveRprCache(entity, RprResult.Disconnected);
             entity.SyncVarBuffer.Clear(UnbufferMessages);
 
             Entities.Remove(entity.ID);
-            owner.Entities.Remove(entity);
+
+            entity.Owner?.Entities.Remove(entity);
 
             var command = new DestroyEntityCommand(entity.ID);
 
@@ -582,6 +615,7 @@ namespace MNet
             {
                 if (client.Entities[i].Type == NetworkEntityType.SceneObject) continue;
 
+                Log.Info("Removing: " + client.Entities[i]);
                 DestroyEntity(client.Entities[i]);
             }
 

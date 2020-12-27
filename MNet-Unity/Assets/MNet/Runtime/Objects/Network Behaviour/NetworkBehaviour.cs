@@ -76,9 +76,22 @@ namespace MNet
 
             UpdateReadyState();
 
+            entity.OnSetOwner += SetOwnerCallback;
             entity.OnSpawn += SpawnCallback;
             entity.OnDespawn += DespawnCallback;
         }
+
+        #region Set Owner
+        void SetOwnerCallback(NetworkClient client)
+        {
+            OnSetOwner(client);
+        }
+
+        protected virtual void OnSetOwner(NetworkClient client)
+        {
+
+        }
+        #endregion
 
         #region Spawn
         void SpawnCallback()
