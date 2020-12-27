@@ -49,6 +49,8 @@ namespace MNet
 
                 public static void Configure()
                 {
+                    Application.quitting += ApplicationQuitCallback;
+
                     Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
 
                     Collection = new Dictionary<GameServerID, GameServerInfo>();
@@ -91,11 +93,6 @@ namespace MNet
                     Application.quitting -= ApplicationQuitCallback;
 
                     Rest.CancelPendingRequests();
-                }
-
-                static Game()
-                {
-                    Application.quitting += ApplicationQuitCallback;
                 }
             }
         }

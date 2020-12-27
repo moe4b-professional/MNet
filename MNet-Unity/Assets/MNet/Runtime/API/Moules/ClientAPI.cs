@@ -46,7 +46,17 @@ namespace MNet
 
             public static void Configure()
             {
+                IsReady = false;
 
+                NetworkAPI.OnProcess += Process;
+
+                Realtime.OnConnect += ConnectCallback;
+                Realtime.OnMessage += MessageCallback;
+                Realtime.OnDisconnect += DisconnectedCallback;
+                Realtime.OnInitialize += RealtimeInitializeCallback;
+
+                Room.OnSpawnEntity += SpawnEntityCallback;
+                Room.OnDestroyEntity += DestroyEntityCallback;
             }
 
             static void RealtimeInitializeCallback(NetworkTransport transport)
@@ -260,21 +270,6 @@ namespace MNet
                 IsReady = false;
 
                 SendQueue.Clear();
-            }
-
-            static Client()
-            {
-                IsReady = false;
-
-                Realtime.OnConnect += ConnectCallback;
-                Realtime.OnMessage += MessageCallback;
-                Realtime.OnDisconnect += DisconnectedCallback;
-                Realtime.OnInitialize += RealtimeInitializeCallback;
-
-                Room.OnSpawnEntity += SpawnEntityCallback;
-                Room.OnDestroyEntity += DestroyEntityCallback;
-
-                NetworkAPI.OnProcess += Process;
             }
         }
     }

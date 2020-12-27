@@ -720,7 +720,7 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        PingRequest(DateTime timestamp)
+        public PingRequest(DateTime timestamp)
         {
             this.timestamp = timestamp;
         }

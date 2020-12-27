@@ -30,7 +30,11 @@ namespace MNet
 
             public static void Configure()
             {
+                NetworkAPI.OnProcess += Process;
+
                 Server.OnRemoteConfig += Initialize;
+
+                Application.quitting += ApplicationQuitCallback;
             }
 
             public delegate void InitializeDelegate(NetworkTransport transport);
@@ -150,13 +154,6 @@ namespace MNet
                 Application.quitting -= ApplicationQuitCallback;
 
                 if (IsConnected) Disconnect();
-            }
-
-            static Realtime()
-            {
-                NetworkAPI.OnProcess += Process;
-
-                Application.quitting += ApplicationQuitCallback;
             }
 
             static NetworkTransport CreateTransport(NetworkTransportType type)

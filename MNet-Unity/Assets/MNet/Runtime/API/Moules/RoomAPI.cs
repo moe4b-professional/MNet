@@ -59,7 +59,15 @@ namespace MNet
 
             public static void Configure()
             {
+                Clients = new Dictionary<NetworkClientID, NetworkClient>();
+                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
+                SceneObjects = new List<NetworkEntity>();
 
+                Client.OnConnect += Setup;
+                Client.OnRegister += Register;
+                Client.OnReady += Ready;
+                Client.OnMessage += MessageCallback;
+                Client.OnDisconnect += Disconnect;
             }
 
             #region Join
@@ -443,19 +451,6 @@ namespace MNet
                 Entities.Clear();
                 Clients.Clear();
                 SceneObjects.Clear();
-            }
-
-            static Room()
-            {
-                Clients = new Dictionary<NetworkClientID, NetworkClient>();
-                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-                SceneObjects = new List<NetworkEntity>();
-
-                Client.OnConnect += Setup;
-                Client.OnRegister += Register;
-                Client.OnReady += Ready;
-                Client.OnMessage += MessageCallback;
-                Client.OnDisconnect += Disconnect;
             }
         }
     }

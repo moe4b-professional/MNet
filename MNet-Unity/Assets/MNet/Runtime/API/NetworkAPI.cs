@@ -67,6 +67,7 @@ namespace MNet
             Realtime.Configure();
             AppAPI.Configure();
             Client.Configure();
+            Ping.Configure();
             Time.Configure();
             Room.Configure();
 

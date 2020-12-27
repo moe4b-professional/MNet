@@ -194,8 +194,8 @@ namespace MNet
             writer = new NetworkWriter(position.Target.Size + rotation.Target.Size + scale.Target.Size);
             reader = new NetworkReader();
 
-            position.Set(transform.position);
-            rotation.Set(transform.rotation);
+            position.Set(transform.localPosition);
+            rotation.Set(transform.localRotation);
             scale.Set(transform.localScale);
         }
 
@@ -222,8 +222,8 @@ namespace MNet
             {
                 bool updated = false;
 
-                updated |= position.Update(transform.position);
-                updated |= rotation.Update(transform.rotation);
+                updated |= position.Update(transform.localPosition);
+                updated |= rotation.Update(transform.localRotation);
                 updated |= scale.Update(transform.localScale);
 
                 if (updated || forceSync) Broadcast();
@@ -234,8 +234,8 @@ namespace MNet
 
         YieldInstruction RemoteProcedure()
         {
-            if (position.Target.Any) transform.position = position.MoveTowards(transform.position);
-            if (rotation.Target.Any) transform.rotation = rotation.MoveTowards(transform.rotation);
+            if (position.Target.Any) transform.localPosition = position.MoveTowards(transform.localPosition);
+            if (rotation.Target.Any) transform.localRotation = rotation.MoveTowards(transform.localRotation);
             if (scale.Target.Any) transform.localScale = scale.MoveTowards(transform.localScale);
 
             return new WaitForEndOfFrame();
@@ -263,8 +263,8 @@ namespace MNet
 
             if(info.IsBuffered)
             {
-                transform.position = position.Value;
-                transform.rotation = rotation.Value;
+                transform.localPosition = position.Value;
+                transform.localRotation = rotation.Value;
                 transform.localScale = scale.Value;
             }
         }

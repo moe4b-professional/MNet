@@ -731,12 +731,10 @@ GameObject:
   m_Component:
   - component: {fileID: 358559470}
   - component: {fileID: 358559476}
-  - component: {fileID: 358559475}
+  - component: {fileID: 358559479}
   - component: {fileID: 358559474}
   - component: {fileID: 358559473}
   - component: {fileID: 358559471}
-  - component: {fileID: 358559472}
-  - component: {fileID: 358559477}
   - component: {fileID: 358559478}
   m_Layer: 0
   m_Name: Network Tests
@@ -773,20 +771,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   field: 
---- !u!114 &358559472
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 358559469}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c0d5e7db8b12f2e4db2ea6d9f2feb5f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  time: 0
-  delta: 0
 --- !u!114 &358559473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -814,23 +798,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   results: 
   success: 0
---- !u!114 &358559475
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 358559469}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30ef11cac582fca47ba4c82d3a6236aa, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxSamples: 20
-  samples: []
-  average: 0
-  min: 0
-  max: 0
 --- !u!114 &358559476
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -843,22 +810,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1889af4b8cc73dd44bf202677196f59a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &358559477
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 358559469}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9de06fcd0e7269846b413a7a505656ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  interval: 0.5
-  sent: 0
-  recieved: 0
-  loss: 0
 --- !u!114 &358559478
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -872,6 +823,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   success: 0
+--- !u!114 &358559479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 358559469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71cbb22ff3a8a4c4cb63c6772493126f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  time: 0
+  ping:
+    average: 0
+    min: 0
+    max: 0
 --- !u!1 &389711963
 GameObject:
   m_ObjectHideFlags: 0

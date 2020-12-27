@@ -24,8 +24,10 @@ namespace MNet
 	{
 		public bool success = false;
 
-		void Start()
+		protected override void OnSpawn()
 		{
+			base.OnSpawn();
+
 			if (IsMine == false) return;
 
 			TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this);

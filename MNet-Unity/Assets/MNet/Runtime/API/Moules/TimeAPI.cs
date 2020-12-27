@@ -25,26 +25,65 @@ namespace MNet
         {
             public static NetworkTimeSpan Span { get; private set; }
 
-            public static NetworkTimeSpan Delta { get; private set; }
-
             public static float Milliseconds => Span.Millisecond;
             public static float Seconds => Span.Seconds;
 
+            public static NetworkTimeSpan Delta { get; private set; }
+
+            #region Delta & Break
             public static bool IsBroken { get; private set; } = false;
 
             const float DeltaBreakingThreshold = 4.0f;
 
             static bool ValidateDelta(NetworkTimeSpan span) => span.Ticks >= 0 && Delta.Seconds < DeltaBreakingThreshold;
 
-            /// <summary>
-            /// UTC Timestamp in client time of when the client last recieved a RoomTime message
-            /// </summary>
+            static void Break()
+            {
+                Debug.LogWarning($"Network Time Broken, Delta: {Delta.Seconds}, Requesting New");
+
+                IsBroken = true;
+
+                Delta = default;
+
+                Request();
+            }
+
+            static void UnBreak()
+            {
+                IsBroken = false;
+            }
+            #endregion
+
+            // UTC Timestamp in client time of when the client last recieved a RoomTime message
             static DateTime stamp;
 
-            /// <summary>
-            /// Room's time offset in ticks when timestamp was set + half of round trip time
-            /// </summary>
+            // Room's time offset in ticks when timestamp was set + half of round trip time
             static long offset;
+
+            public static void Configure()
+            {
+                Span = default;
+
+                NetworkAPI.OnProcess += Process;
+
+                Client.OnReady += ClientReadyCallback;
+                Client.OnMessage += ClientMessageCallback;
+                Client.OnDisconnect += DisconnectCallback;
+            }
+
+            static void Process()
+            {
+                if (Client.IsReady == false) return;
+
+                Calculate();
+            }
+
+            public static void Request()
+            {
+                var payload = RoomTimeRequest.Write();
+
+                Client.Send(payload, DeliveryMode.Reliable);
+            }
 
             static void Set(RoomTimeResponse response)
             {
@@ -80,39 +119,6 @@ namespace MNet
                 Span = value;
             }
 
-            public static void Configure()
-            {
-
-            }
-
-            static void Process()
-            {
-                if (Client.IsReady) Calculate();
-            }
-
-            public static void Request()
-            {
-                var payload = RoomTimeRequest.Write();
-
-                Client.Send(payload, DeliveryMode.Reliable);
-            }
-
-            static void Break()
-            {
-                Debug.LogWarning($"Network Time Broken, Delta: {Delta.Seconds}, Requesting New");
-
-                IsBroken = true;
-
-                Delta = default;
-
-                Request();
-            }
-
-            static void UnBreak()
-            {
-                IsBroken = false;
-            }
-
             static void Clear()
             {
                 Span = default;
@@ -136,17 +142,6 @@ namespace MNet
 
             static void DisconnectCallback(DisconnectCode code) => Clear();
             #endregion
-
-            static Time()
-            {
-                Span = default;
-
-                Client.OnReady += ClientReadyCallback;
-                Client.OnMessage += ClientMessageCallback;
-                Client.OnDisconnect += DisconnectCallback;
-
-                NetworkAPI.OnProcess += Process;
-            }
         }
     }
 }
