@@ -623,13 +623,12 @@ namespace MNet
             {
                 if (client.Entities[i].Type == NetworkEntityType.SceneObject) continue;
 
-                Log.Info("Removing: " + client.Entities[i]);
                 DestroyEntity(client.Entities[i], false);
             }
 
             for (int i = 0; i < client.RprCache.Count; i++)
             {
-                Log.Info("Resolving RPR Promise");
+                Log.Info($"Resolving RPR Promise For Disconnecting Client: {client}, Requested by {client.RprCache[i].Requester}");
 
                 ResolveRPR(client.RprCache[i], RprResult.Disconnected);
             }

@@ -45,6 +45,7 @@ namespace MNet
                 NetworkAPI.OnProcess += Process;
 
                 Client.RegisterMessageHandler<PingResponse>(Register);
+                Client.OnDisconnect += ClientDisconnectCallback;
             }
 
             static void Process()
@@ -90,6 +91,8 @@ namespace MNet
                 Samples.Clear();
 
                 Average = Min = Max = 0d;
+
+                SendLock = false;
 
                 InvokeChange();
             }
