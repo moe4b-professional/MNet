@@ -33,6 +33,8 @@ namespace MNet
 
         public MessageSendQueue SendQueue { get; protected set; }
 
+        public RprCache RprCache { get; protected set; }
+
         public override string ToString() => ID.ToString();
 
         public NetworkClient(NetworkClientInfo info)
@@ -42,6 +44,8 @@ namespace MNet
             Entities = new List<NetworkEntity>();
 
             SendQueue = new MessageSendQueue(RealtimeAPI.Transport.CheckMTU);
+
+            RprCache = new RprCache();
         }
 
         //Static Utility

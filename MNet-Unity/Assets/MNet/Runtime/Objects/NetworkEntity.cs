@@ -87,6 +87,8 @@ namespace MNet
 
         public NetworkEntityType Type { get; protected set; }
 
+        public PersistanceFlags Persistance { get; protected set; }
+
         public Scene Scene => gameObject.scene;
 
         protected virtual void Awake()
@@ -98,11 +100,16 @@ namespace MNet
             }
         }
 
-        public void Configure()
+        public void Setup(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type, PersistanceFlags persistance)
         {
-            Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
+            IsReady = true;
 
-            RPRs = new AutoKeyDictionary<ushort, RprBind>(RprBind.Increment);
+            this.ID = id;
+            this.Attributes = attributes;
+            this.Type = type;
+            this.Persistance = persistance;
+
+            Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
             var targets = GetComponentsInChildren<NetworkBehaviour>(true);
 
@@ -111,12 +118,19 @@ namespace MNet
 
             for (byte i = 0; i < targets.Length; i++)
             {
-                var id = new NetworkBehaviourID(i);
+                var a = new NetworkBehaviourID(i);
 
-                targets[i].Configure(this, id);
+                targets[i].Setup(this, a);
 
-                Behaviours[id] = targets[i];
+                Behaviours[a] = targets[i];
             }
+
+            SetOwner(owner);
+
+            if (NetworkAPI.Realtime.IsOnBuffer)
+                SpawnAfterBuffer();
+            else
+                Spawn();
         }
 
         public void UpdateReadyState()
@@ -132,17 +146,20 @@ namespace MNet
         }
 
         #region Spawn
-        public event Action OnSpawn;
-        public void Spawn(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type)
+        void SpawnAfterBuffer()
         {
-            this.ID = id;
-            this.Attributes = attributes;
-            this.Type = type;
+            NetworkAPI.Realtime.OnAppliedBuffer += AppliedBufferCallback;
+        }
+        void AppliedBufferCallback()
+        {
+            NetworkAPI.Realtime.OnAppliedBuffer -= AppliedBufferCallback;
 
-            IsReady = true;
+            Spawn();
+        }
 
-            SetOwner(owner);
-
+        public event Action OnSpawn;
+        void Spawn()
+        {
             OnSpawn?.Invoke();
         }
 
@@ -155,76 +172,11 @@ namespace MNet
         }
         #endregion
 
-        #region RPR
-        public AutoKeyDictionary<ushort, RprBind> RPRs { get; protected set; }
-
-        public RprBind RegisterRPR(MethodInfo method, object target)
-        {
-            var code = RPRs.Reserve();
-
-            var callback = new RprBind(code, method, target);
-
-            RPRs.Assign(code, callback);
-
-            return callback;
-        }
-
-        public void InvokeRPR(RprCommand command)
-        {
-            if (RPRs.TryGetValue(command.ID, out var bind) == false)
-            {
-                Debug.LogError($"Couldn't Find RPR with Code {command.ID} to Invoke On Entity {name}");
-                return;
-            }
-
-            object[] arguments;
-            try
-            {
-                arguments = bind.ParseArguments(command);
-            }
-            catch (Exception e)
-            {
-                var text = $"Error trying to read RPR Argument of {name}'s {command.ID} callback as {bind.ReturnType}, Invalid Data Sent Most Likely \n" +
-                    $"Exception: \n" +
-                    $"{e.ToString()}";
-
-                Debug.LogError(text, this);
-                return;
-            }
-
-            try
-            {
-                bind.Invoke(arguments);
-            }
-            catch (TargetInvocationException)
-            {
-                throw;
-            }
-            catch (ArgumentException)
-            {
-                var text = $"Error Trying to Invoke RPR '{ bind.Method.Name}' on '{ bind.Target}', " +
-                    $"Please Ensure Callback Method is Implemented Correctly to Consume Recieved Argument: {arguments.GetType()}";
-
-                Debug.LogError(text, this);
-            }
-
-            UnregisterRPR(bind);
-        }
-
-        public void UnregisterRPR(RprBind bind)
-        {
-            RPRs.Remove(bind.ID);
-        }
-        #endregion
-
         public void InvokeRPC(RpcCommand command)
         {
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to Invoke RPC");
-
-                NetworkAPI.Room.ResolveRPC(command, RprResult.InvalidBehaviour);
-
                 return;
             }
 
@@ -244,6 +196,8 @@ namespace MNet
 
         protected virtual void OnDestroy()
         {
+            NetworkAPI.Realtime.OnAppliedBuffer -= AppliedBufferCallback;
+
             if (Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
         }
 

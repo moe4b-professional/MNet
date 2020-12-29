@@ -42,25 +42,6 @@ namespace MNet
 
         public bool HasInfoParameter { get; protected set; }
 
-        public RpcRequest CreateRequest(RpcBufferMode bufferMode, params object[] arguments)
-        {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, MethodID, bufferMode, arguments);
-
-            return request;
-        }
-        public RpcRequest CreateRequest(NetworkClientID target, params object[] arguments)
-        {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, MethodID, target, arguments);
-
-            return request;
-        }
-        public RpcRequest CreateRequest(NetworkClientID target, ushort callback, params object[] arguments)
-        {
-            var request = RpcRequest.Write(Entity.ID, Behaviour.ID, MethodID, target, callback, arguments);
-
-            return request;
-        }
-
         public object[] ParseArguments(RpcCommand command)
         {
             var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
@@ -84,20 +65,22 @@ namespace MNet
 
         public override string ToString() => $"{Entity}->{Name}";
 
-        public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method)
+        public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index)
         {
             Behaviour = behaviour;
 
             Attribute = attribute;
 
             MethodInfo = method;
-            Name = MethodInfo.Name;
-            MethodID = new RpcMethodID(Name);
+            Name = GetName(MethodInfo);
+            MethodID = new RpcMethodID(index);
 
             ParametersInfo = method.GetParameters();
 
             HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
         }
+
+        public static string GetName(MethodInfo method) => method.Name;
     }
 
     public struct RpcInfo
@@ -124,6 +107,8 @@ namespace MNet
         public DeliveryMode Delivery { get; set; } = DeliveryMode.Reliable;
 
         public NetworkRPCAttribute() { }
+
+        public static bool Defined(MethodInfo info) => info.GetCustomAttribute<NetworkRPCAttribute>() != null;
     }
 
     public delegate void RpcMethod(RpcInfo info);
@@ -136,49 +121,6 @@ namespace MNet
     #endregion
 
     #region Return
-    public class RprBind
-    {
-        public ushort ID { get; protected set; }
-
-        public object Target { get; protected set; }
-
-        public MethodInfo Method { get; protected set; }
-        public ParameterInfo[] Parameters { get; protected set; }
-
-        public Type ReturnType { get; protected set; }
-
-        public object[] ParseArguments(RprCommand command)
-        {
-            var arguments = new object[2];
-
-            arguments[0] = command.Result;
-
-            if (command.Result == RprResult.Success)
-                arguments[1] = command.Read(ReturnType);
-            else
-                arguments[1] = GetDefault(ReturnType);
-
-            return arguments;
-        }
-
-        public void Invoke(params object[] arguments) => Method.Invoke(Target, arguments);
-
-        public RprBind(ushort id, MethodInfo method, object target)
-        {
-            this.ID = id;
-            this.Target = target;
-            this.Method = method;
-
-            Parameters = method.GetParameters();
-
-            this.ReturnType = Parameters[1].ParameterType;
-        }
-
-        public static object GetDefault(Type type) => type.IsValueType ? Activator.CreateInstance(type) : null;
-
-        public static ushort Increment(ushort id) => id += 1;
-    }
-
     public delegate void RprCallback<T>(RprResult result, T value);
 
     public delegate TResult RprMethod<TResult>(RpcInfo info);

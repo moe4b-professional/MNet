@@ -163,9 +163,6 @@ namespace MNet
 
             Register<ChangeMasterCommand>(32);
 
-            Register<RprRequest>(35);
-            Register<RprCommand>(36);
-
             Register<SyncVarRequest>(37);
             Register<SyncVarCommand>(38);
 
@@ -457,6 +454,9 @@ namespace MNet
         ushort resource;
         public ushort Resource { get { return resource; } }
 
+        PersistanceFlags persistance;
+        public PersistanceFlags Persistance => persistance;
+
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
@@ -475,6 +475,7 @@ namespace MNet
             switch (type)
             {
                 case NetworkEntityType.Dynamic:
+                    context.Select(ref persistance);
                     context.Select(ref attributes);
                     context.Select(ref owner);
                     break;
@@ -485,12 +486,13 @@ namespace MNet
             }
         }
 
-        public static SpawnEntityRequest Write(ushort resource, AttributesCollection attributes, NetworkClientID? owner = null)
+        public static SpawnEntityRequest Write(ushort resource, PersistanceFlags persistance, AttributesCollection attributes, NetworkClientID? owner = null)
         {
             var request = new SpawnEntityRequest()
             {
                 type = NetworkEntityType.Dynamic,
                 resource = resource,
+                persistance = persistance,
                 attributes = attributes,
                 owner = owner,
             };
@@ -524,6 +526,9 @@ namespace MNet
         NetworkEntityType type;
         public NetworkEntityType Type => type;
 
+        PersistanceFlags persistance;
+        public PersistanceFlags Persistance => persistance;
+
         ushort resource;
         public ushort Resource { get { return resource; } }
 
@@ -545,6 +550,7 @@ namespace MNet
             switch (type)
             {
                 case NetworkEntityType.Dynamic:
+                    context.Select(ref persistance);
                     context.Select(ref attributes);
                     break;
 
@@ -561,6 +567,7 @@ namespace MNet
                 owner = owner,
                 id = id,
                 type = request.Type,
+                persistance = request.Persistance,
                 resource = request.Resource,
                 attributes = request.Attributes,
                 scene = request.Scene,

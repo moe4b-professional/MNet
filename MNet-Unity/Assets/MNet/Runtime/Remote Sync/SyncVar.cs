@@ -32,6 +32,8 @@ namespace MNet
 
         public PropertyInfo PropertyInfo { get; protected set; }
 
+        public SyncVarFieldID FieldID { get; protected set; }
+
         public string Name { get; protected set; }
 
         public Type Type => PropertyInfo.PropertyType;
@@ -42,7 +44,7 @@ namespace MNet
 
         public SyncVarRequest CreateRequest(object value)
         {
-            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, Name, value);
+            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, FieldID, value);
 
             return request;
         }
@@ -56,15 +58,15 @@ namespace MNet
 
         public override string ToString() => $"{Entity}->{Name}";
 
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property)
+        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property, byte index)
         {
             this.Behaviour = behaviour;
 
             this.Attribute = attribute;
 
             this.PropertyInfo = property;
-
-            Name = PropertyInfo.Name;
+            Name = GetName(PropertyInfo);
+            this.FieldID = new SyncVarFieldID(index);
 
             if (property.SetMethod == null) throw FormatInvalidPropertyException(behaviour, property, "Setter");
 
@@ -80,6 +82,8 @@ namespace MNet
 
             throw new Exception(text);
         }
+
+        public static string GetName(PropertyInfo info) => info.Name;
     }
 
     [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
@@ -92,5 +96,7 @@ namespace MNet
         {
 
         }
+
+        public static bool Defined(PropertyInfo info) => info.GetCustomAttribute<SyncVarAttribute>() != null;
     }
 }

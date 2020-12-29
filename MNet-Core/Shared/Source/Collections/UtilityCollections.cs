@@ -166,4 +166,50 @@ namespace MNet
             Keys = new AutoKeyCollection<TKey>(incrementor);
         }
     }
+
+    public class DualDictionary<TKey1, TKey2, TValue>
+    {
+        public Dictionary<TKey1, TValue> Dictionary1 { get; protected set; }
+        public Dictionary<TKey2, TValue> Dictionary2 { get; protected set; }
+
+        public int Count => Dictionary1.Count;
+
+        public TValue this[TKey1 key] => Dictionary1[key];
+        public TValue this[TKey2 key] => Dictionary2[key];
+
+        public void Add(TKey1 key1, TKey2 key2, TValue value)
+        {
+            Dictionary1.Add(key1, value);
+            Dictionary2.Add(key2, value);
+        }
+
+        public bool Contains(TKey1 key) => Dictionary1.ContainsKey(key);
+        public bool Contains(TKey2 key) => Dictionary2.ContainsKey(key);
+
+        public bool TryGetValue(TKey1 key, out TValue value) => Dictionary1.TryGetValue(key, out value);
+        public bool TryGetValue(TKey2 key, out TValue value) => Dictionary2.TryGetValue(key, out value);
+
+        public bool Remove(TKey1 key1, TKey2 key2)
+        {
+            var removed = false;
+
+            removed |= Dictionary1.Remove(key1);
+            removed |= Dictionary2.Remove(key2);
+
+            return removed;
+        }
+
+        public void Clear()
+        {
+            Dictionary1.Clear();
+            Dictionary2.Clear();
+        }
+
+        public DualDictionary() : this(0) { }
+        public DualDictionary(int capacity)
+        {
+            Dictionary1 = new Dictionary<TKey1, TValue>(capacity);
+            Dictionary2 = new Dictionary<TKey2, TValue>(capacity);
+        }
+    }
 }

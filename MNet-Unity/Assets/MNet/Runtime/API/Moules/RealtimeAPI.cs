@@ -49,6 +49,8 @@ namespace MNet
 
             public static bool IsOnBuffer => Buffer.Count > 0;
 
+            public static event Action OnAppliedBuffer;
+
             public static void AddToBuffer(IList<NetworkMessage> list)
             {
                 for (int i = 0; i < list.Count; i++)
@@ -114,7 +116,7 @@ namespace MNet
 
                 if (Pause) return;
 
-                if (Buffer.Count > 0)
+                if (IsOnBuffer)
                     ProcessBuffer();
                 else
                     ProcessInput();
@@ -122,7 +124,7 @@ namespace MNet
 
             static void ProcessBuffer()
             {
-                while(Buffer.Count > 0)
+                while (Buffer.Count > 0)
                 {
                     var message = Buffer.Peek();
 
@@ -132,6 +134,8 @@ namespace MNet
 
                     if (Pause) break;
                 }
+
+                OnAppliedBuffer?.Invoke();
             }
 
             static void ProcessInput()

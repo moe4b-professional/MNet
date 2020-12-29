@@ -30,13 +30,17 @@ namespace MNet
         {
             base.OnSpawn();
 
-            ReturnRPC(Call, NetworkAPI.Room.Master, Callback);
+            QueryRPC(Call, NetworkAPI.Room.Master, Return);
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Any)]
-        string Call(RpcInfo info) => Payload;
+        string Call(RpcInfo info)
+        {
+            return Payload;
+        }
 
-        void Callback(RprResult result, string value)
+        [NetworkRPC]
+        void Return(RprResult result, string value)
         {
             if(result != RprResult.Success)
             {

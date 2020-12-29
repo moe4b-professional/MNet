@@ -81,6 +81,7 @@ namespace MNet
         }
     }
 
+    /*
     public static class Serialization
     {
         public const int Count = 10_000_000;
@@ -99,14 +100,14 @@ namespace MNet
         {
             NetworkSerializer.Clone(data);
 
-            var request = RpcRequest.Write(default, default, new RpcMethodID("Method"), default, 42, 42);
+            var request = RpcRequest.Write(default, default, new RpcMethodID(0), default, 42, 42);
             var command = RpcCommand.Write(default, request, default);
             NetworkSerializer.Serialize(command);
         }
 
         static void SerializeRPC()
         {
-            var request = RpcRequest.Write(default, default, new RpcMethodID("Method"), default, 42, 42);
+            var request = RpcRequest.Write(default, default, new RpcMethodID(0), default, 42, 42);
 
             var command = RpcCommand.Write(default, request, default);
 
@@ -125,4 +126,5 @@ namespace MNet
             for (int i = 0; i < Count; i++) NetworkSerializer.Serialize(data);
         }
     }
+    */
 }

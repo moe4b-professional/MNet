@@ -60,7 +60,7 @@ namespace MNet.Example
         {
 			var attributes = new AttributesCollection();
 
-			NetworkAPI.Client.SpawnEntity("Player", attributes);
+			NetworkAPI.Client.SpawnEntity("Player", attributes: attributes);
 		}
 
 		public void Quit()

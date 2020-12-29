@@ -12,7 +12,7 @@ namespace MNet
 
         public const string Path = Name + "/";
 
-        public static Version ApiVersion { get; private set; } = new Version(0, 0, 14);
+        public static Version ApiVersion { get; private set; } = new Version(0, 0, 15);
 
         public static class Server
         {

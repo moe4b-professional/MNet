@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e86945eb885b0604c8b76dfad3e91990, type: 3}
-  m_Name: Level 1
+  m_Name: Additive Scene 1
   m_EditorClassIdentifier: 
-  asset: {fileID: 102900000, guid: 7c9c581b1c1becb4180296dfcfbf9975, type: 3}
+  asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
   registered: 1
   active: 1
-  id: Level 1
-  buildIndex: 1
-  path: Assets/MNet-Example/Objects/Level/Variants/Level 1/Level 1.unity
+  id: Additive Scene 1
+  buildIndex: 2
+  path: Assets/MNet-Example/Sandbox/Additive Scenes/Additive Scene 1.unity

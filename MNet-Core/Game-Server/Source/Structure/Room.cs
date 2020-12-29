@@ -256,12 +256,6 @@ namespace MNet
 
                     DestroyEntity(client, request);
                 }
-                else if (message.Is<RprRequest>())
-                {
-                    var callback = message.Read<RprRequest>();
-
-                    InvokeRPR(client, callback);
-                }
                 else if (message.Is<SyncVarRequest>())
                 {
                     var request = message.Read<SyncVarRequest>();
@@ -377,7 +371,7 @@ namespace MNet
             {
                 Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
 
-                if (request.Type == RpcType.Return) ResolveRpr(sender, request, RprResult.InvalidClient);
+                if (request.Type == RpcType.Query) ResolveRPR(sender, request, RprResult.InvalidEntity);
 
                 return;
             }
@@ -389,8 +383,9 @@ namespace MNet
                     break;
 
                 case RpcType.Target:
-                case RpcType.Return:
-                    InvokeTargetedRPC(sender, request, entity, mode);
+                case RpcType.Query:
+                case RpcType.Response:
+                    InvokeDirectRPC(sender, request, entity, mode);
                     break;
             }
         }
@@ -404,7 +399,7 @@ namespace MNet
             entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
         }
 
-        void InvokeTargetedRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
+        void InvokeDirectRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
         {
             var command = RpcCommand.Write(sender.ID, request, Time);
 
@@ -412,64 +407,39 @@ namespace MNet
             {
                 Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
 
-                if (request.Type == RpcType.Return) ResolveRpr(sender, request, RprResult.InvalidClient);
+                if (request.Type == RpcType.Query) ResolveRPR(sender, request, RprResult.InvalidClient);
 
                 return;
             }
 
-            if (request.Type == RpcType.Return) entity.RprCache.Register(request, sender, target);
+            if (request.Type == RpcType.Query)
+            {
+                target.RprCache.Register(sender, entity, request.Behaviour, request.Callback);
+            }
+
+            if (request.Type == RpcType.Response)
+            {
+                if (sender.RprCache.Unregister(target, entity, request.Behaviour, request.Method) == false)
+                    Log.Warning($"Client {sender} Sending Response to Client {target} On '{entity.ID}->{request.Behaviour}' But no Cached RPC Was Registerd There");
+            }
 
             Send(command, target, mode);
         }
         #endregion
 
         #region RPR
-        void InvokeRPR(NetworkClient sender, RprRequest request)
+        void ResolveRPR(NetworkClient requester, RpcRequest request, RprResult result)
         {
-            if (Entities.TryGetValue(request.Entity, out var entity) == false)
-            {
-                Log.Warning($"No Entity '{request.Entity}' Found to Invoke RPR On");
-                return;
-            }
+            var command = RpcCommand.Write(Master.ID, request.Entity, request.Behaviour, request.Callback, result, Time);
 
-            if (Clients.TryGetValue(request.Target, out var target) == false)
-            {
-                Log.Warning($"No Client '{request.Target}' Found to Invoke RPR On");
-                return;
-            }
-
-            if (entity.RprCache.TryGet(request, out var callback) == false)
-            {
-                Log.Warning($"No RPR '{request.ID}' Found in '{entity}'s RPR Cache");
-                return;
-            }
-
-            if (sender != callback.Target)
-            {
-                Log.Info($"Client {sender} Sending RPR for Client {callback.Sender} Even Thought They Aren't the RPR Callback Target");
-                return;
-            }
-
-            if (entity.RprCache.Unregister(request) == false)
-                Log.Warning($"Couldn't Unregister Cached RPR {callback.ID}");
-
-            var command = RprCommand.Write(entity.ID, request);
-
-            Send(command, target);
+            Send(command, requester);
         }
 
-        void ResolveRpr(NetworkClient target, RpcRequest request, RprResult result) => ResolveRpr(target, request.Entity, request.Callback, result);
-        void ResolveRpr(NetworkClient target, NetworkEntityID entity, ushort id, RprResult result)
+        void ResolveRPR(RprPromise promise, RprResult result)
         {
-            var command = RprCommand.Write(entity, id, result);
+            var command = RpcCommand.Write(Master.ID, promise.Entity.ID, promise.Behaviour, promise.Callback, result, Time);
 
-            Send(command, target);
-        }
-
-        void ResolveRprCache(NetworkEntity entity, RprResult result)
-        {
-            foreach (var callback in entity.RprCache.Collection)
-                ResolveRpr(callback.Sender, callback.Request, result);
+            Send(command, promise.Requester);
         }
         #endregion
 
@@ -556,7 +526,7 @@ namespace MNet
                 return;
             }
 
-            var entity = new NetworkEntity(owner, id, request.Type);
+            var entity = new NetworkEntity(owner, id, request.Type, request.Persistance);
 
             Entities.Assign(id, entity);
             owner?.Entities.Add(entity);
@@ -617,15 +587,15 @@ namespace MNet
                 return;
             }
 
-            DestroyEntity(entity);
+            DestroyEntity(entity, true);
         }
-        void DestroyEntity(NetworkEntity entity)
+
+        void DestroyEntity(NetworkEntity entity, bool broadcast)
         {
             UnbufferMessage(entity.SpawnMessage);
             if (entity.OwnershipMessage != null) UnbufferMessage(entity.OwnershipMessage.Value);
 
             entity.RpcBuffer.Clear(UnbufferMessages);
-            ResolveRprCache(entity, RprResult.Disconnected);
             entity.SyncVarBuffer.Clear(UnbufferMessages);
 
             Entities.Remove(entity.ID);
@@ -634,7 +604,7 @@ namespace MNet
 
             var command = new DestroyEntityCommand(entity.ID);
 
-            Broadcast(command, condition: NetworkClient.IsReady);
+            if (broadcast) Broadcast(command, condition: NetworkClient.IsReady);
         }
         #endregion
 
@@ -654,7 +624,14 @@ namespace MNet
                 if (client.Entities[i].Type == NetworkEntityType.SceneObject) continue;
 
                 Log.Info("Removing: " + client.Entities[i]);
-                DestroyEntity(client.Entities[i]);
+                DestroyEntity(client.Entities[i], false);
+            }
+
+            for (int i = 0; i < client.RprCache.Count; i++)
+            {
+                Log.Info("Resolving RPR Promise");
+
+                ResolveRPR(client.RprCache[i], RprResult.Disconnected);
             }
 
             Clients.Remove(client.ID);

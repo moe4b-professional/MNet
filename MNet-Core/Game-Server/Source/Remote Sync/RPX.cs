@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace MNet
 {
@@ -67,59 +67,65 @@ namespace MNet
 
     class RprCache
     {
-        public Dictionary<(NetworkClientID client, ushort id), RprCallback> Dictionary { get; protected set; }
+        public List<RprPromise> Promises { get; protected set; }
 
-        public IReadOnlyCollection<RprCallback> Collection => Dictionary.Values;
+        public int Count => Promises.Count;
 
-        public void Register(RpcRequest request, NetworkClient sender, NetworkClient target)
+        public RprPromise this[int index] => Promises[index];
+
+        public void Register(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
         {
-            var callback = new RprCallback(request, sender, target);
+            var promise = new RprPromise(requester, entity, behaviour, callback);
 
-            var key = (sender.ID, request.Callback);
-
-            Dictionary[key] = callback;
+            Promises.Add(promise);
         }
 
-        public bool TryGet(RprRequest request, out RprCallback callback) => TryGet(request.Target, request.ID, out callback);
-        public bool TryGet(NetworkClientID client, ushort id, out RprCallback callback)
+        public bool Unregister(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
         {
-            var key = (client, id);
+            for (int i = 0; i < Promises.Count; i++)
+            {
+                if (Promises[i].Equals(requester, entity, behaviour, callback))
+                {
+                    Promises.RemoveAt(i);
+                    return true;
+                }
+            }
 
-            return Dictionary.TryGetValue(key, out callback);
+            return false;
         }
-
-        public bool Unregister(RprRequest request) => Unregister(request.Target, request.ID);
-        public bool Unregister(NetworkClientID client, ushort id)
-        {
-            var key = (client, id);
-
-            return Dictionary.Remove(key);
-        }
-
-        public void Clear() => Dictionary.Clear();
 
         public RprCache()
         {
-            Dictionary = new Dictionary<(NetworkClientID, ushort), RprCallback>();
+            Promises = new List<RprPromise>();
         }
     }
 
-    class RprCallback
+    class RprPromise
     {
-        public RpcRequest Request { get; protected set; }
-        public ushort ID => Request.Callback;
+        public NetworkClient Requester { get; protected set; }
 
-        public NetworkClient Sender { get; protected set; }
-        public NetworkClient Target { get; protected set; }
+        public NetworkEntity Entity { get; protected set; }
 
-        public override string ToString() => $"[ ID: {ID} | Sender: {Sender} | Target: {Target} ]";
+        public NetworkBehaviourID Behaviour { get; protected set; }
 
-        public RprCallback(RpcRequest request, NetworkClient sender, NetworkClient target)
+        public RpcMethodID Callback { get; protected set; }
+
+        public bool Equals(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
         {
-            this.Request = request;
+            if (this.Requester != requester) return false;
+            if (this.Entity != entity) return false;
+            if (this.Behaviour != behaviour) return false;
+            if (this.Callback != callback) return false;
 
-            this.Sender = sender;
-            this.Target = target;
+            return true;
+        }
+
+        public RprPromise(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
+        {
+            this.Requester = requester;
+            this.Entity = entity;
+            this.Behaviour = behaviour;
+            this.Callback = callback;
         }
     }
 }

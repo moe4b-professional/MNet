@@ -66,7 +66,7 @@ namespace MNet
             enabled = IsReady;
         }
 
-        public virtual void Configure(NetworkEntity entity, NetworkBehaviourID id)
+        public void Setup(NetworkEntity entity, NetworkBehaviourID id)
         {
             this.Entity = entity;
             this.ID = id;
@@ -116,7 +116,7 @@ namespace MNet
         #endregion
 
         #region RPC
-        protected Dictionary<string, RpcBind> RPCs { get; private set; }
+        protected DualDictionary<RpcMethodID, string, RpcBind> RPCs { get; private set; }
 
         void ParseRPCs()
         {
@@ -124,70 +124,81 @@ namespace MNet
 
             var type = GetType();
 
-            foreach (var method in type.GetMethods(flags))
+            var methods = type.GetMethods(flags).Where(NetworkRPCAttribute.Defined).OrderBy(RpcBind.GetName).ToArray();
+
+            if (methods.Length > byte.MaxValue)
+                throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} RPCs Defined");
+
+            for (byte i = 0; i < methods.Length; i++)
             {
-                var attribute = method.GetCustomAttribute<NetworkRPCAttribute>();
+                var attribute = methods[i].GetCustomAttribute<NetworkRPCAttribute>();
 
-                if (attribute == null) continue;
+                var bind = new RpcBind(this, attribute, methods[i], i);
 
-                var bind = new RpcBind(this, attribute, method);
-
-                if (RPCs.ContainsKey(bind.Name))
+                if (RPCs.Contains(bind.Name))
                     throw new Exception($"Rpc '{bind.Name}' Already Registered On '{GetType()}', Please Assign Every RPC a Unique Name And Don't Overload RPC Methods");
 
-                RPCs.Add(bind.Name, bind);
+                RPCs.Add(bind.MethodID, bind.Name, bind);
             }
         }
-
-        bool FindRPC(RpcMethodID method, out RpcBind bind) => FindRPC(method.Value, out bind);
-        bool FindRPC(string name, out RpcBind bind) => RPCs.TryGetValue(name, out bind);
 
         #region Methods
         protected bool BroadcastRPC(string method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null, params object[] arguments)
         {
-            if (FindRPC(method, out var bind) == false)
+            if (RPCs.TryGetValue(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
                 return false;
             }
 
-            var payload = bind.CreateRequest(buffer, arguments);
+            var payload = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, arguments);
 
             if (exception.HasValue) payload.Except(exception.Value);
 
             return SendRPC(bind, payload);
         }
 
-        protected bool TargetRPC(string method, NetworkClient target, params object[] arguments)
+        protected bool TargetRPC(string method, NetworkClientID target, params object[] arguments)
         {
-            if (FindRPC(method, out var bind) == false)
+            if (RPCs.TryGetValue(method, out var bind) == false)
             {
                 Debug.LogWarning($"No RPC Found With Name {method}");
                 return false;
             }
 
-            var payload = bind.CreateRequest(target.ID, arguments);
+            var payload = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target, arguments);
 
             return SendRPC(bind, payload);
         }
 
-        protected bool ReturnRPC<TResult>(string method, NetworkClient target, RprCallback<TResult> result, params object[] arguments)
+        protected bool QueryRPC(string method, NetworkClient target, string result, params object[] arguments)
         {
-            if (FindRPC(method, out var bind) == false)
+            if (RPCs.TryGetValue(method, out var bind) == false)
             {
                 Debug.LogError($"No RPC With Name '{method}' Found on Entity '{Entity}'");
                 return false;
             }
 
-            if (bind.ReturnType != typeof(TResult))
+            if(RPCs.TryGetValue(result, out var callback) == false)
             {
-                Debug.LogError($"RPC '{bind}' has Mismatched RPR Return Types '{bind.ReturnType.Name}' vs '{typeof(TResult).Name}'");
+                Debug.LogError($"No RPC With Name '{result}' Found on Entity '{Entity}' to use for Return, Please Define all Return Methods as RPCs");
                 return false;
             }
 
-            var rpr = Entity.RegisterRPR(result.Method, result.Target);
+            var payload = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, callback.MethodID, arguments);
 
-            var payload = bind.CreateRequest(target.ID, rpr.ID, arguments);
+            return SendRPC(bind, payload);
+        }
+
+        protected bool ResponseRPC(RpcMethodID method, NetworkClientID target, params object[] arguments)
+        {
+            if (RPCs.TryGetValue(method, out var bind) == false)
+            {
+                Debug.LogWarning($"No RPC Found With Name {method}");
+                return false;
+            }
+
+            var payload = RpcRequest.WriteResponse(Entity.ID, ID, bind.MethodID, target, arguments);
 
             return SendRPC(bind, payload);
         }
@@ -212,21 +223,15 @@ namespace MNet
 
         internal void InvokeRPC(RpcCommand command)
         {
-            if (FindRPC(command.Method, out var bind) == false)
+            if (RPCs.TryGetValue(command.Method, out var bind) == false)
             {
                 Debug.LogWarning($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
-
-                ResolveRPC(command, RprResult.MethodNotFound);
-
                 return;
             }
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
                 Debug.LogWarning($"RPC '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
-
-                ResolveRPC(command, RprResult.InvalidAuthority);
-
                 return;
             }
 
@@ -242,9 +247,6 @@ namespace MNet
                     $"{e}";
 
                 Debug.LogWarning(text, this);
-
-                ResolveRPC(command, RprResult.InvalidArguments);
-
                 return;
             }
 
@@ -255,7 +257,6 @@ namespace MNet
             }
             catch (TargetInvocationException)
             {
-                ResolveRPC(command, RprResult.RuntimeException);
                 throw;
             }
             catch (Exception)
@@ -264,29 +265,15 @@ namespace MNet
                     $"Please Ensure Method is Implemented And Invoked Correctly";
 
                 Debug.LogWarning(text, this);
-
-                ResolveRPC(command, RprResult.RuntimeException);
-
                 return;
             }
 
-            if (command.Type == RpcType.Return) SendRPR(command, result);
-        }
-
-        void ResolveRPC(RpcCommand command, RprResult result) => NetworkAPI.Room.ResolveRPC(command, result);
-        #endregion
-
-        #region RPR
-        void SendRPR(RpcCommand rpc, object value)
-        {
-            var payload = RprRequest.Write(rpc.Entity, rpc.Sender, rpc.Callback, value);
-
-            Send(payload);
+            if (command.Type == RpcType.Query) ResponseRPC(command.Callback, command.Sender, RprResult.Success, result);
         }
         #endregion
 
         #region SyncVar
-        protected Dictionary<string, SyncVarBind> SyncVars { get; private set; }
+        protected DualDictionary<SyncVarFieldID, string, SyncVarBind> SyncVars { get; private set; }
 
         void ParseSyncVars()
         {
@@ -294,22 +281,23 @@ namespace MNet
 
             var type = GetType();
 
-            foreach (var property in type.GetProperties(flags))
+            var properties = type.GetProperties(flags).Where(SyncVarAttribute.Defined).OrderBy(SyncVarBind.GetName).ToArray();
+
+            if (properties.Length > byte.MaxValue)
+                throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} SyncVars Defined");
+
+            for (byte i = 0; i < properties.Length; i++)
             {
-                var attribute = property.GetCustomAttribute<SyncVarAttribute>();
+                var attribute = properties[i].GetCustomAttribute<SyncVarAttribute>();
 
-                if (attribute == null) continue;
+                var bind = new SyncVarBind(this, attribute, properties[i], i);
 
-                var bind = new SyncVarBind(this, attribute, property);
-
-                if (SyncVars.ContainsKey(bind.Name))
+                if (SyncVars.Contains(bind.Name))
                     throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
 
-                SyncVars.Add(bind.Name, bind);
+                SyncVars.Add(bind.FieldID, bind.Name, bind);
             }
         }
-
-        bool FindSyncVar(string variable, out SyncVarBind bind) => SyncVars.TryGetValue(variable, out bind);
 
         #region Methods
         /// <summary>
@@ -319,7 +307,7 @@ namespace MNet
 
         protected bool SyncVar(string variable, object value)
         {
-            if (FindSyncVar(variable, out var bind) == false)
+            if (SyncVars.TryGetValue(variable, out var bind) == false)
             {
                 Debug.LogError($"No SyncVar Found With Name {variable}");
                 return false;
@@ -350,9 +338,9 @@ namespace MNet
 
         internal void InvokeSyncVar(SyncVarCommand command)
         {
-            if (SyncVars.TryGetValue(command.Variable, out var bind) == false)
+            if (SyncVars.TryGetValue(command.Field, out var bind) == false)
             {
-                Debug.LogWarning($"No SyncVar '{GetType().Name}->{command.Variable}' Found on to Invoke");
+                Debug.LogWarning($"No SyncVar '{GetType().Name}->{command.Field}' Found on to Invoke");
                 return;
             }
 
@@ -427,9 +415,9 @@ namespace MNet
 
         public NetworkBehaviour()
         {
-            RPCs = new Dictionary<string, RpcBind>();
+            RPCs = new DualDictionary<RpcMethodID, string, RpcBind>();
 
-            SyncVars = new Dictionary<string, SyncVarBind>();
+            SyncVars = new DualDictionary<SyncVarFieldID, string, SyncVarBind>();
         }
     }
 }

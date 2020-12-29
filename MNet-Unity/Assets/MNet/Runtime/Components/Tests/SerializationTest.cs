@@ -28,8 +28,6 @@ namespace MNet
 		{
 			base.OnSpawn();
 
-			if (IsMine == false) return;
-
 			TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this);
 		}
 

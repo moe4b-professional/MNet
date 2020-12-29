@@ -37,11 +37,11 @@ namespace MNet
                 Master = target;
                 Debug.Log($"Assigned {Master} as Master Client");
 
-                for (int i = 0; i < SceneObjects.Count; i++)
+                for (int i = 0; i < MasterObjects.Count; i++)
                 {
-                    if (SceneObjects[i] == null) continue;
+                    if (MasterObjects[i] == null) continue;
 
-                    SceneObjects[i].SetOwner(Master);
+                    MasterObjects[i].SetOwner(Master);
                 }
 
                 return true;
@@ -62,6 +62,7 @@ namespace MNet
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
                 SceneObjects = new List<NetworkEntity>();
+                MasterObjects = new List<NetworkEntity>();
 
                 Client.OnConnect += Setup;
                 Client.OnRegister += Register;
@@ -69,7 +70,6 @@ namespace MNet
                 Client.OnDisconnect += Disconnect;
 
                 Client.RegisterMessageHandler<RpcCommand>(InvokeRPC);
-                Client.RegisterMessageHandler<RprCommand>(InvokeRPR);
                 Client.RegisterMessageHandler<SyncVarCommand>(InvokeSyncVar);
 
                 Client.RegisterMessageHandler<SpawnEntityCommand>(SpawnEntity);
@@ -161,6 +161,16 @@ namespace MNet
             {
                 Clients.Remove(client.ID);
 
+                var entities = client.Entities;
+
+                for (int i = 0; i < entities.Count; i++)
+                {
+                    if (entities[i].Type == NetworkEntityType.SceneObject) continue;
+                    if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection)) continue;
+
+                    DestroyEntity(entities[i]);
+                }
+
                 OnRemoveClient?.Invoke(client);
             }
 
@@ -201,13 +211,13 @@ namespace MNet
 
             public static List<NetworkEntity> SceneObjects { get; private set; }
 
+            public static List<NetworkEntity> MasterObjects { get; private set; }
+
             public delegate void SpawnEntityDelegate(NetworkEntity entity);
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
                 var entity = AssimilateEntity(command);
-
-                entity.Configure();
 
                 Debug.Log($"Spawned '{entity.name}' with ID: {command.ID}, Owned By Client {command.Owner}");
 
@@ -218,11 +228,15 @@ namespace MNet
                 else
                     owner.Entities.Add(entity);
 
-                entity.Spawn(owner, command.ID, command.Attributes, command.Type);
+                entity.Setup(owner, command.ID, command.Attributes, command.Type, command.Persistance);
 
                 Entities.Add(entity.ID, entity);
 
-                if (command.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
+                if (command.Type == NetworkEntityType.SceneObject)
+                {
+                    SceneObjects.Add(entity);
+                    MasterObjects.Add(entity);
+                }
 
                 OnSpawnEntity?.Invoke(entity);
             }
@@ -305,12 +319,23 @@ namespace MNet
                     return;
                 }
 
+                DestroyEntity(entity);
+            }
+
+            static void DestroyEntity(NetworkEntity entity)
+            {
                 Debug.Log($"Destroying '{entity.name}'");
 
                 var owner = entity.Owner;
 
                 Entities.Remove(entity.ID);
-                if (entity.Type == NetworkEntityType.SceneObject) SceneObjects.Remove(entity);
+
+                if (entity.Type == NetworkEntityType.SceneObject)
+                {
+                    SceneObjects.Remove(entity);
+                    MasterObjects.Remove(entity);
+                }
+
                 owner?.Entities.Remove(entity);
 
                 entity.Despawn();
@@ -321,7 +346,6 @@ namespace MNet
             }
             #endregion
 
-            #region RPX
             #region RPC
             static void InvokeRPC(RpcCommand command)
             {
@@ -330,9 +354,6 @@ namespace MNet
                     if (Entities.TryGetValue(command.Entity, out var target) == false)
                     {
                         Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
-
-                        ResolveRPC(command, RprResult.InvalidEntity);
-
                         return;
                     }
 
@@ -340,40 +361,8 @@ namespace MNet
                 }
                 catch (Exception)
                 {
-                    ResolveRPC(command, RprResult.RuntimeException);
                     throw;
                 }
-            }
-
-            public static void ResolveRPC(RpcCommand command, RprResult result)
-            {
-                if (command.Type == RpcType.Return) ResolveRPR(command, result);
-            }
-            #endregion
-
-            #region RPR
-            static void InvokeRPR(RprCommand payload)
-            {
-                if (Entities.TryGetValue(payload.Entity, out var target) == false)
-                {
-                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {payload.Entity}");
-                    return;
-                }
-
-                target.InvokeRPR(payload);
-            }
-
-            public static void ResolveRPR(RpcCommand command, RprResult result)
-            {
-                if (command.Type != RpcType.Return)
-                {
-                    Debug.LogWarning($"Trying to Resolve RPR for Non Return Type RPC Command {command.Method}, Ignoring");
-                    return;
-                }
-
-                var request = RprRequest.Write(command.Entity, command.Sender, command.Callback, result);
-
-                Client.Send(request);
             }
             #endregion
 
@@ -387,7 +376,6 @@ namespace MNet
 
                 target.InvokeSyncVar(command);
             }
-            #endregion
 
             public static void Leave() => Client.Disconnect();
 
@@ -409,6 +397,7 @@ namespace MNet
                 Entities.Clear();
                 Clients.Clear();
                 SceneObjects.Clear();
+                MasterObjects.Clear();
             }
         }
     }

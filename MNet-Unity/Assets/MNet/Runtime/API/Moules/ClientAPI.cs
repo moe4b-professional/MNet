@@ -200,7 +200,7 @@ namespace MNet
             #endregion
 
             #region Spawn Entity
-            public static void SpawnEntity(GameObject prefab, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            public static void SpawnEntity(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
                 if (NetworkAPI.SpawnableObjects.Prefabs.TryGetValue(prefab, out var resource) == false)
                 {
@@ -208,10 +208,10 @@ namespace MNet
                     return;
                 }
 
-                SpawnEntity(resource, attributes: attributes, owner: owner);
+                SpawnEntity(resource, persistance : persistance, attributes: attributes, owner: owner);
             }
 
-            public static void SpawnEntity(string name, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            public static void SpawnEntity(string name, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
                 if (NetworkAPI.SpawnableObjects.Names.TryGetValue(name, out var resource) == false)
                 {
@@ -219,12 +219,12 @@ namespace MNet
                     return;
                 }
 
-                SpawnEntity(resource, attributes: attributes, owner: owner);
+                SpawnEntity(resource, persistance: persistance, attributes: attributes, owner: owner);
             }
 
-            public static void SpawnEntity(ushort resource, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            public static void SpawnEntity(ushort resource, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
-                var request = SpawnEntityRequest.Write(resource, attributes, owner);
+                var request = SpawnEntityRequest.Write(resource, persistance, attributes, owner);
 
                 Send(request);
             }

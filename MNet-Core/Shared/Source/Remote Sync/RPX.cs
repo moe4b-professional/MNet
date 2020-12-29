@@ -11,7 +11,10 @@ namespace MNet
     #region RPC
     public enum RpcType : byte
     {
-        Broadcast, Target, Return
+        Broadcast,
+        Target,
+        Query,
+        Response
     }
 
     [Serializable]
@@ -24,15 +27,15 @@ namespace MNet
     [Serializable]
     public struct RpcMethodID : INetworkSerializable
     {
-        string value;
-        public string Value { get { return value; } }
+        byte value;
+        public byte Value { get { return value; } }
 
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }
 
-        public RpcMethodID(string value)
+        public RpcMethodID(byte value)
         {
             this.value = value;
         }
@@ -86,8 +89,8 @@ namespace MNet
             exception = client;
         }
 
-        ushort callback;
-        public ushort Callback => callback;
+        RpcMethodID callback;
+        public RpcMethodID Callback => callback;
 
         public object[] Read(IList<ParameterInfo> parameters)
         {
@@ -125,7 +128,11 @@ namespace MNet
                     context.Select(ref target);
                     break;
 
-                case RpcType.Return:
+                case RpcType.Response:
+                    context.Select(ref target);
+                    break;
+
+                case RpcType.Query:
                     context.Select(ref target);
                     context.Select(ref callback);
                     break;
@@ -150,7 +157,7 @@ namespace MNet
             return raw;
         }
 
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RpcBufferMode bufferMode, params object[] arguments)
+        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RpcBufferMode bufferMode, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -166,7 +173,8 @@ namespace MNet
 
             return request;
         }
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, params object[] arguments)
+
+        public static RpcRequest WriteTarget(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -182,7 +190,8 @@ namespace MNet
 
             return request;
         }
-        public static RpcRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, ushort callback, params object[] arguments)
+
+        public static RpcRequest WriteQuery(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, RpcMethodID callback, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -192,9 +201,26 @@ namespace MNet
                 behaviour = behaviour,
                 method = method,
                 raw = raw,
-                type = RpcType.Return,
+                type = RpcType.Query,
                 target = target,
                 callback = callback,
+            };
+
+            return request;
+        }
+
+        public static RpcRequest WriteResponse(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, params object[] arguments)
+        {
+            var raw = Serialize(arguments);
+
+            var request = new RpcRequest()
+            {
+                entity = entity,
+                behaviour = behaviour,
+                method = method,
+                raw = raw,
+                type = RpcType.Response,
+                target = target,
             };
 
             return request;
@@ -226,8 +252,8 @@ namespace MNet
         RpcType type;
         public RpcType Type => type;
 
-        ushort callback;
-        public ushort Callback => callback;
+        RpcMethodID callback;
+        public RpcMethodID Callback => callback;
 
         public object[] Read(IList<ParameterInfo> parameters, int optional)
         {
@@ -240,6 +266,12 @@ namespace MNet
                 var value = reader.Read(parameters[i].ParameterType);
 
                 results[i] = value;
+
+                if (i == 0 && value is RprResult rpr && rpr != RprResult.Success && parameters.Count > 1)
+                {
+                    results[i + 1] = null;
+                    break;
+                }
             }
 
             return results;
@@ -265,7 +297,7 @@ namespace MNet
                 case RpcType.Target:
                     break;
 
-                case RpcType.Return:
+                case RpcType.Query:
                     context.Select(ref callback);
                     break;
             }
@@ -287,6 +319,24 @@ namespace MNet
 
             return command;
         }
+
+        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RprResult result, NetworkTimeSpan time)
+        {
+            var raw = NetworkSerializer.Serialize(result);
+
+            var command = new RpcCommand()
+            {
+                sender = sender,
+                entity = entity,
+                behaviour = behaviour,
+                method = method,
+                raw = raw,
+                type = RpcType.Target,
+                time = time,
+            };
+
+            return command;
+        }
     }
     #endregion
 
@@ -295,134 +345,8 @@ namespace MNet
     {
         Success,
         Disconnected,
-        MethodNotFound,
-        InvalidAuthority,
-        InvalidArguments,
-        RuntimeException,
         InvalidClient,
         InvalidEntity,
-        InvalidBehaviour,
-    }
-
-    [Preserve]
-    [Serializable]
-    public struct RprRequest : INetworkSerializable
-    {
-        NetworkEntityID entity;
-        public NetworkEntityID Entity => entity;
-
-        NetworkClientID target;
-        public NetworkClientID Target => target;
-
-        ushort id;
-        public ushort ID => id;
-
-        RprResult result;
-        public RprResult Result => result;
-
-        byte[] raw;
-        public byte[] Raw => raw;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref entity);
-            context.Select(ref target);
-
-            context.Select(ref id);
-
-            context.Select(ref result);
-
-            if (result == RprResult.Success) context.Select(ref raw);
-        }
-
-        public override string ToString() => $"RPR Request: {id}";
-
-        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort id, RprResult result)
-        {
-            var payload = new RprRequest()
-            {
-                entity = entity,
-                target = target,
-                id = id,
-                result = result,
-            };
-
-            return payload;
-        }
-        public static RprRequest Write(NetworkEntityID entity, NetworkClientID target, ushort id, object value)
-        {
-            var raw = NetworkSerializer.Serialize(value);
-
-            var payload = new RprRequest()
-            {
-                entity = entity,
-                target = target,
-                id = id,
-                result = RprResult.Success,
-                raw = raw,
-            };
-
-            return payload;
-        }
-    }
-
-    [Preserve]
-    [Serializable]
-    public struct RprCommand : INetworkSerializable
-    {
-        NetworkEntityID entity;
-        public NetworkEntityID Entity => entity;
-
-        ushort id;
-        public ushort ID => id;
-
-        RprResult result;
-        public RprResult Result => result;
-
-        byte[] raw;
-        public byte[] Raw => raw;
-
-        public object Read(Type type)
-        {
-            var result = NetworkSerializer.Deserialize(raw, type);
-
-            return result;
-        }
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref entity);
-
-            context.Select(ref id);
-            context.Select(ref result);
-
-            if (result == RprResult.Success) context.Select(ref raw);
-        }
-
-        public static RprCommand Write(NetworkEntityID entity, RprRequest request) => Write(entity, request.ID, request.Result, request.Raw);
-        public static RprCommand Write(NetworkEntityID entity, ushort id, RprResult result, byte[] raw)
-        {
-            var payload = new RprCommand()
-            {
-                entity = entity,
-                id = id,
-                result = result,
-                raw = raw,
-            };
-
-            return payload;
-        }
-        public static RprCommand Write(NetworkEntityID entity, ushort id, RprResult result)
-        {
-            var command = new RprCommand()
-            {
-                entity = entity,
-                id = id,
-                result = result,
-            };
-
-            return command;
-        }
     }
     #endregion
 }

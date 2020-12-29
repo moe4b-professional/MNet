@@ -18,26 +18,27 @@ namespace MNet
 
         public NetworkEntityType Type { get; protected set; }
 
+        public PersistanceFlags Persistance { get; protected set; }
+
         public NetworkMessage SpawnMessage { get; set; }
 
         public NetworkMessage? OwnershipMessage { get; set; }
 
         public RpcBuffer RpcBuffer { get; protected set; }
-        public RprCache RprCache { get; protected set; }
         public SyncVarBuffer SyncVarBuffer { get; protected set; }
 
         public override string ToString() => ID.ToString();
 
-        public NetworkEntity(NetworkClient owner, NetworkEntityID id, NetworkEntityType type)
+        public NetworkEntity(NetworkClient owner, NetworkEntityID id, NetworkEntityType type, PersistanceFlags persistance)
         {
             SetOwner(owner);
 
             this.ID = id;
 
             this.Type = type;
+            this.Persistance = persistance;
 
             RpcBuffer = new RpcBuffer();
-            RprCache = new RprCache();
             SyncVarBuffer = new SyncVarBuffer();
         }
     }

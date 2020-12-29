@@ -7,7 +7,7 @@ namespace MNet
 {
     class SyncVarBuffer
     {
-        public Dictionary<string, NetworkMessage> Dictionary { get; protected set; }
+        public Dictionary<(NetworkBehaviourID behaviour, SyncVarFieldID field), NetworkMessage> Dictionary { get; protected set; }
 
         public HashSet<NetworkMessage> Hash { get; protected set; }
 
@@ -15,11 +15,9 @@ namespace MNet
         public delegate void UnBufferDelegate(NetworkMessage message);
         public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> message);
 
-        public static string RequestToID(SyncVarRequest request) => $"{request.Behaviour}{request.Variable}";
-
         public void Set(NetworkMessage message, SyncVarRequest request, BufferDelegate buffer, UnBufferDelegate unbuffer)
         {
-            var id = RequestToID(request);
+            var id = (request.Behaviour, request.Field);
 
             if (Dictionary.TryGetValue(id, out var previous))
             {
@@ -44,7 +42,7 @@ namespace MNet
 
         public SyncVarBuffer()
         {
-            Dictionary = new Dictionary<string, NetworkMessage>();
+            Dictionary = new Dictionary<(NetworkBehaviourID, SyncVarFieldID), NetworkMessage>();
 
             Hash = new HashSet<NetworkMessage>();
         }

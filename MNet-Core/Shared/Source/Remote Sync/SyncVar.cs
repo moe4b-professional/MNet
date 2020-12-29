@@ -6,18 +6,51 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public abstract class SyncVarPayload : INetworkSerializable
+    public struct SyncVarFieldID : INetworkSerializable
     {
-        protected NetworkEntityID entity;
+        byte value;
+        public byte Value { get { return value; } }
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref value);
+        }
+
+        public SyncVarFieldID(byte value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is SyncVarFieldID target) return Equals(target);
+
+            return false;
+        }
+        public bool Equals(SyncVarFieldID target) => Equals(value, target.value);
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(SyncVarFieldID a, SyncVarFieldID b) => a.Equals(b);
+        public static bool operator !=(SyncVarFieldID a, SyncVarFieldID b) => !a.Equals(b);
+    }
+
+    [Preserve]
+    [Serializable]
+    public struct SyncVarRequest : INetworkSerializable
+    {
+        NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
 
-        protected NetworkBehaviourID behaviour;
+        NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour => behaviour;
 
-        protected string variable;
-        public string Variable => variable;
+        SyncVarFieldID field;
+        public SyncVarFieldID Field => field;
 
-        protected byte[] raw;
+        byte[] raw;
         public byte[] Raw => raw;
 
         public object Read(Type type)
@@ -27,25 +60,15 @@ namespace MNet
             return value;
         }
 
-        public virtual void Select(ref NetworkSerializationContext context)
+        public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref entity);
             context.Select(ref behaviour);
-            context.Select(ref variable);
+            context.Select(ref field);
             context.Select(ref raw);
         }
 
-        public SyncVarPayload()
-        {
-
-        }
-    }
-
-    [Preserve]
-    [Serializable]
-    public class SyncVarRequest : SyncVarPayload
-    {
-        public static SyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, string variable, object value)
+        public static SyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, object value)
         {
             var raw = NetworkSerializer.Serialize(value);
 
@@ -53,7 +76,7 @@ namespace MNet
             {
                 entity = entity,
                 behaviour = behaviour,
-                variable = variable,
+                field = field,
                 raw = raw,
             };
 
@@ -63,30 +86,51 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public class SyncVarCommand : SyncVarPayload
+    public struct SyncVarCommand : INetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
 
-        public override void Select(ref NetworkSerializationContext context)
-        {
-            base.Select(ref context);
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
 
+        NetworkBehaviourID behaviour;
+        public NetworkBehaviourID Behaviour => behaviour;
+
+        SyncVarFieldID field;
+        public SyncVarFieldID Field => field;
+
+        byte[] raw;
+        public byte[] Raw => raw;
+
+        public object Read(Type type)
+        {
+            var value = NetworkSerializer.Deserialize(raw, type);
+
+            return value;
+        }
+
+        public void Select(ref NetworkSerializationContext context)
+        {
             context.Select(ref sender);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref field);
+            context.Select(ref raw);
         }
 
         public static SyncVarCommand Write(NetworkClientID sender, SyncVarRequest request)
         {
-            return Write(sender, request.Entity, request.Behaviour, request.Variable, request.Raw);
+            return Write(sender, request.Entity, request.Behaviour, request.Field, request.Raw);
         }
-        public static SyncVarCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, string variable, byte[] raw)
+        public static SyncVarCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, byte[] raw)
         {
             var request = new SyncVarCommand()
             {
                 sender = sender,
                 entity = entity,
                 behaviour = behaviour,
-                variable = variable,
+                field = field,
                 raw = raw,
             };
 

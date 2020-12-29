@@ -11,6 +11,23 @@ namespace MNet
         Dynamic, SceneObject
     }
 
+    [Flags]
+    public enum PersistanceFlags : byte
+    {
+        /// <summary>
+        /// Entity Will Not Persist
+        /// </summary>
+        None = 1 << 0,
+        /// <summary>
+        /// Entity Will Persist Through Player Disconnection
+        /// </summary>
+        PlayerDisconnection = 1 << 1,
+        /// <summary>
+        /// Entity Will Persist Through Single Scene Loading
+        /// </summary>
+        SceneLoad = 1 << 2,
+    }
+
     [Preserve]
     [Serializable]
     public struct NetworkEntityID : INetworkSerializable

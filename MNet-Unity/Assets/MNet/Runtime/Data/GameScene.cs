@@ -43,20 +43,78 @@ namespace MNet
 		}
 
 		[SerializeField]
-		string _name = default;
-		new public string name
+		bool registered = default;
+		public bool Registered
 		{
-			get => _name;
-			set => _name = value;
+			get
+			{
+#if UNITY_EDITOR
+				if (asset == null) throw new NullReferenceException($"No Scene Asset Defined for GameScene {name}");
+#endif
+
+				return registered;
+			}
+		}
+
+		[SerializeField]
+        bool active = default;
+        public bool Active
+        {
+			get
+            {
+#if UNITY_EDITOR
+				if (asset == null) throw new NullReferenceException($"No Scene Asset Defined for GameScene {name}");
+#endif
+
+				return active;
+			}
+        }
+
+        [SerializeField]
+		string id = default;
+		public string ID
+		{
+			get
+			{
+#if UNITY_EDITOR
+				if (asset == null) throw new NullReferenceException($"No Scene Asset Defined for GameScene {name}");
+#endif
+
+				return id;
+			}
 		}
 
 		[SerializeField]
 		int buildIndex = -1;
-		public int BuildIndex => buildIndex;
+		public int BuildIndex
+        {
+			get
+            {
+#if UNITY_EDITOR
+				if (asset == null) throw new NullReferenceException($"No Scene Asset Defined for GameScene {name}");
+#endif
+
+				if (registered == false) throw new Exception($"Scene '{path}' Not Added to Editor Build Settings");
+
+				if (active == false) throw new Exception($"Scene '{path}' Not Active in Editor Build Settings");
+
+				return buildIndex;
+			}
+        }
 
 		[SerializeField]
 		string path = string.Empty;
-		public string Path => path;
+		public string Path
+        {
+			get
+            {
+#if UNITY_EDITOR
+				if (asset == null) throw new NullReferenceException($"No Scene Asset Defined for GameScene {name}");
+#endif
+
+				return path;
+			}
+        }
 
 		void OnEnable()
 		{
@@ -77,23 +135,35 @@ namespace MNet
 				return;
 			}
 
-			var list = EditorBuildSettingsScene.GetActiveSceneList(EditorBuildSettings.scenes);
-
-			for (int i = 0; i < list.Length; i++)
-			{
-				var instance = AssetDatabase.LoadAssetAtPath<SceneAsset>(list[i]);
-
-				if (asset != instance) continue;
-
-				buildIndex = i;
-				path = list[i];
-
-				name = System.IO.Path.GetFileNameWithoutExtension(Path);
-
-				break;
-			}
+			registered = TryGetInfo(asset, out active, out id, out path, out buildIndex);
 
 			EditorUtility.SetDirty(this);
+		}
+
+		static bool TryGetInfo(Object asset, out bool active, out string name, out string path, out int buildIndex)
+		{
+			name = asset.name;
+			path = AssetDatabase.GetAssetPath(asset);
+
+			buildIndex = 0;
+
+			foreach (var item in EditorBuildSettings.scenes)
+			{
+				var scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(item.path);
+
+				if (scene == asset)
+				{
+					active = item.enabled;
+					return true;
+				}
+
+				if (item.enabled) buildIndex += 1;
+			}
+
+			buildIndex = -1;
+
+			active = false;
+			return false;
 		}
 #endif
 
@@ -104,7 +174,7 @@ namespace MNet
 
 		public static void Register(GameScene scene)
 		{
-			Dictionary[scene.name] = scene;
+			Dictionary[scene.ID] = scene;
 		}
 
 		public static bool TryFind(string name, out GameScene scene) => Dictionary.TryGetValue(name, out scene);
