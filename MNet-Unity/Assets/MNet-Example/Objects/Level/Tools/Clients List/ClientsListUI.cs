@@ -45,12 +45,14 @@ namespace MNet.Example
 
 		void Start()
 		{
-			NetworkAPI.Room.OnAddClient += AddClientCallback;
-			NetworkAPI.Room.OnRemoveClient += RemoveClientCallback;
+			NetworkAPI.Room.OnClientConnected += AddClientCallback;
+			NetworkAPI.Room.OnClientDisconnected += RemoveClientCallback;
 
-			panel.Hide();
+			Populate();
 
 			UpdateState();
+
+			panel.Hide();
 		}
 
 		void Update()
@@ -85,11 +87,17 @@ namespace MNet.Example
 			count.text = $"{NetworkAPI.Room.Clients.Count}/{NetworkAPI.Room.Info.Basic.Capacity}";
 		}
 
+		void Populate()
+        {
+            foreach (var client in NetworkAPI.Room.Clients.Values)
+				Add(client.ID, client.Profile);
+        }
+
 		#region Add & Remove
 		void AddClientCallback(NetworkClient client) => Add(client.ID, client.Profile);
-		void Add(NetworkClientID id, NetworkClientProfile info)
+		void Add(NetworkClientID id, NetworkClientProfile profile)
 		{
-			var element = ClientListUITemplate.Create(template, info);
+			var element = ClientListUITemplate.Create(template, profile);
 
 			element.SetParent(scroll.content);
 
@@ -111,8 +119,8 @@ namespace MNet.Example
 
         void OnDestroy()
 		{
-			NetworkAPI.Room.OnAddClient -= AddClientCallback;
-			NetworkAPI.Room.OnRemoveClient -= RemoveClientCallback;
+			NetworkAPI.Room.OnClientConnected -= AddClientCallback;
+			NetworkAPI.Room.OnClientDisconnected -= RemoveClientCallback;
 		}
 	}
 }

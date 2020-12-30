@@ -121,7 +121,6 @@ namespace MNet
                 else
                     ProcessInput();
             }
-
             static void ProcessBuffer()
             {
                 while (Buffer.Count > 0)
@@ -137,7 +136,6 @@ namespace MNet
 
                 OnAppliedBuffer?.Invoke();
             }
-
             static void ProcessInput()
             {
                 var count = InputQueue.Count;
@@ -151,6 +149,12 @@ namespace MNet
                     if (Pause) break;
                     if (IsOnBuffer) break;
                 }
+            }
+
+            internal static void Clear()
+            {
+                Buffer.Clear();
+                InputQueue = new ConcurrentQueue<Action>();
             }
 
             #region Connect
@@ -190,6 +194,8 @@ namespace MNet
             public static event DisconnectDelegate OnDisconnect;
             static void DisconnectCallback(DisconnectCode code)
             {
+                Clear();
+
                 OnDisconnect?.Invoke(code);
             }
 
@@ -208,6 +214,8 @@ namespace MNet
                     Debug.LogWarning("Disconnecting Client When They Aren't Connected, Ignoring");
                     return;
                 }
+
+                Clear();
 
                 Transport.Close();
             }

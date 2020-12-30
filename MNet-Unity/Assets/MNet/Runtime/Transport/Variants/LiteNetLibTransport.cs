@@ -51,6 +51,8 @@ namespace MNet
         {
             var key = $"{room}";
 
+            Client.Start();
+
             Peer = Client.Connect(server.Address, Port, key);
         }
 
@@ -101,13 +103,16 @@ namespace MNet
             Peer.Send(raw, method);
         }
 
-        public override void Close() => Peer.Disconnect();
+        public override void Close()
+        {
+            Peer.Disconnect();
+            Client.Stop(true);
+        }
 
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
             Client.UpdateTime = 1;
-            Client.Start();
 
             new Thread(Run).Start();
         }

@@ -38,11 +38,11 @@ namespace MNet.Example
             Add($"<b>{client.Name}</b> Connected");
         }
 
-        void ClientDisconnectedCallback(NetworkClientID id, NetworkClientProfile profile)
+        void ClientDisconnectedCallback(NetworkClient client)
         {
-            if (profile == null) return;
+            if (client == null) return;
 
-            Add($"<b>{profile.Name}</b> Disconnected");
+            Add($"<b>{client.Name}</b> Disconnected");
         }
 
         void ChangeMasterCallback(NetworkClient client)

@@ -526,6 +526,9 @@ namespace MNet
         NetworkEntityType type;
         public NetworkEntityType Type => type;
 
+        //Yes, I know, mutable structs are "evil", I'll be careful, I swear
+        public void MakeOrphan() => type = NetworkEntityType.Orphan;
+
         PersistanceFlags persistance;
         public PersistanceFlags Persistance => persistance;
 
@@ -549,6 +552,7 @@ namespace MNet
 
             switch (type)
             {
+                case NetworkEntityType.Orphan:
                 case NetworkEntityType.Dynamic:
                     context.Select(ref persistance);
                     context.Select(ref attributes);
@@ -557,6 +561,9 @@ namespace MNet
                 case NetworkEntityType.SceneObject:
                     context.Select(ref scene);
                     break;
+
+                default:
+                    throw new Exception($"No Case Defined for Type: {type}");
             }
         }
 

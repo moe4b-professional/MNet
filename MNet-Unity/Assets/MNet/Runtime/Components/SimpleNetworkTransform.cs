@@ -209,7 +209,7 @@ namespace MNet
         {
             while (true)
             {
-                if (IsMine)
+                if (IsMine || (NetworkAPI.Client.IsMaster && Entity.IsOrphan))
                     yield return LocalProcedure();
                 else
                     yield return RemoteProcedure();
@@ -249,10 +249,10 @@ namespace MNet
 
             var raw = writer.Flush();
 
-            BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Owner.ID);
+            BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Owner);
         }
 
-        [NetworkRPC(Authority = RemoteAuthority.Owner, Delivery = DeliveryMode.Unreliable)]
+        [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master, Delivery = DeliveryMode.Unreliable)]
         void Sync(byte[] binary, RpcInfo info)
         {
             reader.Set(binary);

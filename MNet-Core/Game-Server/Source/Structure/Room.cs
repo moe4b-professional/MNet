@@ -59,32 +59,32 @@ namespace MNet
         #endregion
 
         #region Time
-        public Scheduler Scheduler { get; protected set; }
+        Scheduler scheduler;
 
         public byte TickDelay => App.TickDelay;
 
-        public DateTime Timestamp { get; protected set; }
+        DateTime timestamp;
 
-        public NetworkTimeSpan Time { get; protected set; }
+        NetworkTimeSpan time;
         #endregion
 
         #region Objects
-        public Dictionary<NetworkClientID, NetworkClient> Clients { get; protected set; }
+        Dictionary<NetworkClientID, NetworkClient> Clients;
 
-        public AutoKeyDictionary<NetworkEntityID, NetworkEntity> Entities { get; protected set; }
+        AutoKeyDictionary<NetworkEntityID, NetworkEntity> Entities;
 
-        public List<NetworkEntity> SceneObjects { get; protected set; }
+        List<NetworkEntity> MasterObjects;
         #endregion
 
         #region Master
-        public NetworkClient Master { get; protected set; }
+        NetworkClient Master;
 
         void SetMaster(NetworkClient target)
         {
             Master = target;
 
-            for (int i = 0; i < SceneObjects.Count; i++)
-                SceneObjects[i].SetOwner(Master);
+            for (int i = 0; i < MasterObjects.Count; i++)
+                MasterObjects[i].SetOwner(Master);
         }
 
         void ChangeMaster(NetworkClient target)
@@ -112,13 +112,73 @@ namespace MNet
         #endregion
 
         #region Message Buffer
-        public NetworkMessageBuffer MessageBuffer { get; protected set; }
+        NetworkMessageBuffer MessageBuffer;
 
         public void BufferMessage(NetworkMessage message) => MessageBuffer.Add(message);
 
         public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
 
         public void UnbufferMessages(ICollection<NetworkMessage> collection) => MessageBuffer.RemoveAll(collection.Contains);
+        #endregion
+
+        #region Message Dispatcher
+        Dictionary<Type, MessageCallbackDelegate> MessageDispatcher;
+        public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkMessage message, DeliveryMode mode);
+
+        public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, TPayload payload, DeliveryMode mode);
+        public void RegisterMessageHandler<TPayload>(MessageHandler1Delegate<TPayload> handler)
+        {
+            var type = typeof(TPayload);
+
+            RegisterMessageHandler(type, Callback);
+
+            void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
+            {
+                var payload = message.Read<TPayload>();
+
+                handler.Invoke(sender, payload, mode);
+            }
+        }
+
+        public delegate void MessageHandler2Delegate<TPayload>(NetworkClient sender, TPayload payload);
+        public void RegisterMessageHandler<TPayload>(MessageHandler2Delegate<TPayload> handler)
+        {
+            var type = typeof(TPayload);
+
+            RegisterMessageHandler(type, Callback);
+
+            void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
+            {
+                var payload = message.Read<TPayload>();
+
+                handler.Invoke(sender, payload);
+            }
+        }
+
+        public void RegisterMessageHandler(Type type, MessageCallbackDelegate callback)
+        {
+            if (MessageDispatcher.ContainsKey(type))
+                throw new Exception($"Type {type} Already Added to Room's Message Dispatcher");
+
+            MessageDispatcher.Add(type, callback);
+        }
+
+        void RegisterMessageHandlers()
+        {
+            RegisterMessageHandler<ReadyClientRequest>(ReadyClient);
+
+            RegisterMessageHandler<SpawnEntityRequest>(SpawnEntity);
+            RegisterMessageHandler<ChangeEntityOwnerRequest>(ChangeEntityOwner);
+            RegisterMessageHandler<DestroyEntityRequest>(DestroyEntity);
+
+            RegisterMessageHandler<RpcRequest>(InvokeRPC);
+            RegisterMessageHandler<SyncVarRequest>(InvokeSyncVar);
+
+            RegisterMessageHandler<RoomTimeRequest>(ProcessTimeRequest);
+            RegisterMessageHandler<PingRequest>(ProcessPingRequest);
+
+            RegisterMessageHandler<LoadScenesRequest>(LoadScenes);
+        }
         #endregion
 
         #region Communication
@@ -142,7 +202,12 @@ namespace MNet
             return message;
         }
 
-        void QueueMessage(NetworkMessage message, NetworkClient target, DeliveryMode mode) => target.SendQueue.Add(message, mode);
+        void QueueMessage(NetworkMessage message, NetworkClient target, DeliveryMode mode)
+        {
+            target.SendQueue.Add(message, mode);
+
+            if (ClientSendQueue.Contains(target) == false) ClientSendQueue.Add(target);
+        }
         #endregion
 
         #region Broadcast
@@ -181,28 +246,36 @@ namespace MNet
         public delegate bool BroadcastCondition(NetworkClient client);
         #endregion
 
+        HashQueue<NetworkClient> ClientSendQueue;
+
         void ResolveSendQueues()
         {
-            foreach (var client in Clients.Values)
+            while (ClientSendQueue.Count > 0)
             {
-                foreach (var delivery in client.SendQueue.Deliveries)
-                {
-                    if (delivery.Empty) continue;
+                var client = ClientSendQueue.Dequeue();
 
-                    foreach (var binary in delivery.Serialize())
-                        TransportContext.Send(client.ID, binary, delivery.Mode);
+                var deliveries = client.SendQueue.Deliveries;
+
+                for (int i = 0; i < deliveries.Count; i++)
+                {
+                    if (deliveries[i].Empty) continue;
+
+                    foreach (var binary in deliveries[i].Serialize())
+                        TransportContext.Send(client.ID, binary, deliveries[i].Mode);
                 }
             }
         }
         #endregion
 
-        public List<NetworkMessage> LoadScenesMessages { get; set; }
+        List<NetworkMessage> LoadScenesMessages;
 
         public void Start()
         {
             Log.Info($"Starting Room {ID}");
 
-            Timestamp = DateTime.UtcNow;
+            timestamp = DateTime.UtcNow;
+
+            RegisterMessageHandlers();
 
             TransportContext = RealtimeAPI.Register(ID.Value);
 
@@ -210,7 +283,7 @@ namespace MNet
             TransportContext.OnMessage += MessageRecievedCallback;
             TransportContext.OnDisconnect += ClientDisconnected;
 
-            Scheduler.Start();
+            scheduler.Start();
         }
 
         void ClientConnected(NetworkClientID id)
@@ -221,77 +294,23 @@ namespace MNet
         public event Action OnTick;
         void Tick()
         {
-            Time = NetworkTimeSpan.Calculate(Timestamp);
+            time = NetworkTimeSpan.Calculate(timestamp);
 
             TransportContext.Poll();
 
             OnTick?.Invoke();
 
-            if (Scheduler.Running == false) return;
+            if (scheduler.Running == false) return;
 
             if (QueueMessages) ResolveSendQueues();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
         {
-            //Log.Info($"{message.Type} Binary Size: {raw.Count}");
-
             if (Clients.TryGetValue(id, out var client))
             {
-                if (message.Is<RpcRequest>())
-                {
-                    var request = message.Read<RpcRequest>();
-
-                    InvokeRPC(client, request, mode);
-                }
-                else if (message.Is<SpawnEntityRequest>())
-                {
-                    var request = message.Read<SpawnEntityRequest>();
-
-                    SpawnEntity(client, request);
-                }
-                else if (message.Is<DestroyEntityRequest>())
-                {
-                    var request = message.Read<DestroyEntityRequest>();
-
-                    DestroyEntity(client, request);
-                }
-                else if (message.Is<SyncVarRequest>())
-                {
-                    var request = message.Read<SyncVarRequest>();
-
-                    InvokeSyncVar(client, request, mode);
-                }
-                else if (message.Is<ReadyClientRequest>())
-                {
-                    var request = message.Read<ReadyClientRequest>();
-
-                    ReadyClient(client, request);
-                }
-                else if (message.Is<RoomTimeRequest>())
-                {
-                    var request = message.Read<RoomTimeRequest>();
-
-                    ProcessTimeRequest(client, request);
-                }
-                else if (message.Is<PingRequest>())
-                {
-                    var request = message.Read<PingRequest>();
-
-                    ProcessPingRequest(client, request);
-                }
-                else if(message.Is<ChangeEntityOwnerRequest>())
-                {
-                    var request = message.Read<ChangeEntityOwnerRequest>();
-
-                    ChangeEntityOwner(client, request);
-                }
-                else if(message.Is<LoadScenesRequest>())
-                {
-                    var request = message.Read<LoadScenesRequest>();
-
-                    LoadScenes(client, request);
-                }
+                if (MessageDispatcher.TryGetValue(message.Type, out var callback))
+                    callback(client, message, mode);
             }
             else
             {
@@ -344,7 +363,7 @@ namespace MNet
         {
             client.SetReady();
 
-            var time = new RoomTimeResponse(Time, request.Timestamp);
+            var time = new RoomTimeResponse(this.time, request.Timestamp);
 
             ///DO NOT PASS the Message Buffer in as an argument for the ReadyClientResponse
             ///You'll get what I can only describe as a very rare single-threaded race condition
@@ -392,7 +411,7 @@ namespace MNet
 
         void InvokeBroadcastRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
         {
-            var command = RpcCommand.Write(sender.ID, request, Time);
+            var command = RpcCommand.Write(sender.ID, request, time);
 
             var message = Broadcast(command, mode: mode, condition: NetworkClient.IsReady, exception: request.Exception);
 
@@ -401,7 +420,7 @@ namespace MNet
 
         void InvokeDirectRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
         {
-            var command = RpcCommand.Write(sender.ID, request, Time);
+            var command = RpcCommand.Write(sender.ID, request, time);
 
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
@@ -430,14 +449,14 @@ namespace MNet
         #region RPR
         void ResolveRPR(NetworkClient requester, RpcRequest request, RprResult result)
         {
-            var command = RpcCommand.Write(Master.ID, request.Entity, request.Behaviour, request.Callback, result, Time);
+            var command = RpcCommand.Write(Master.ID, request.Entity, request.Behaviour, request.Callback, result, time);
 
             Send(command, requester);
         }
 
         void ResolveRPR(RprPromise promise, RprResult result)
         {
-            var command = RpcCommand.Write(Master.ID, promise.Entity.ID, promise.Behaviour, promise.Callback, result, Time);
+            var command = RpcCommand.Write(Master.ID, promise.Entity.ID, promise.Behaviour, promise.Callback, result, time);
 
             Send(command, promise.Requester);
         }
@@ -462,7 +481,7 @@ namespace MNet
 
         void ProcessTimeRequest(NetworkClient sender, RoomTimeRequest request)
         {
-            var response = new RoomTimeResponse(Time, request.Timestamp);
+            var response = new RoomTimeResponse(time, request.Timestamp);
 
             Send(response, sender);
         }
@@ -480,6 +499,18 @@ namespace MNet
             {
                 Log.Warning($"Non Master Client {sender} Trying to Load Scenes in Room, Ignoring");
                 return;
+            }
+
+            if (request.Mode == NetworkSceneLoadMode.Single)
+            {
+                var array = Entities.Values.ToArray();
+
+                for (int i = 0; i < array.Length; i++)
+                {
+                    if (array[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
+
+                    DestroyEntity(array[i], false);
+                }
             }
 
             var command = LoadScenesCommand.Write(request);
@@ -533,8 +564,6 @@ namespace MNet
 
             Log.Info($"Room {this.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
 
-            if (request.Type == NetworkEntityType.SceneObject) SceneObjects.Add(entity);
-
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
 
             entity.SpawnMessage = Broadcast(command, condition: NetworkClient.IsReady);
@@ -571,6 +600,24 @@ namespace MNet
             if (entity.OwnershipMessage != null) UnbufferMessage(entity.OwnershipMessage.Value);
             entity.OwnershipMessage = Broadcast(command, condition: NetworkClient.IsReady);
             BufferMessage(entity.OwnershipMessage.Value);
+        }
+
+        void MakeEntityOrphan(NetworkEntity entity)
+        {
+            if (MessageBuffer.TryGetIndex(entity.SpawnMessage, out var bufferIndex) == false)
+            {
+                Log.Error($"Trying to Make Entity {entity} an Orphan but It's spawn message was not found in the MessageBuffer, Ignoring");
+                return;
+            }
+
+            var command = entity.SpawnMessage.Read<SpawnEntityCommand>();
+
+            command.MakeOrphan();
+            Log.Info(command.Type);
+
+            var message = NetworkMessage.Write(command);
+
+            MessageBuffer.Set(bufferIndex, message);
         }
 
         void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
@@ -619,9 +666,17 @@ namespace MNet
 
         void RemoveClient(NetworkClient client)
         {
-            for (int i = client.Entities.Count; i-- > 0;)
+            var entities = client.Entities;
+
+            for (int i = entities.Count; i-- > 0;)
             {
-                if (client.Entities[i].Type == NetworkEntityType.SceneObject) continue;
+                if (entities[i].Type == NetworkEntityType.SceneObject) continue;
+
+                if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                {
+                    MakeEntityOrphan(entities[i]);
+                    continue;
+                }
 
                 DestroyEntity(client.Entities[i], false);
             }
@@ -647,7 +702,7 @@ namespace MNet
         {
             Log.Info($"Stopping Room {ID}");
 
-            Scheduler.Stop();
+            scheduler.Stop();
 
             RealtimeAPI.Unregister(ID.Value);
 
@@ -669,13 +724,17 @@ namespace MNet
 
             MessageBuffer = new NetworkMessageBuffer();
 
+            MessageDispatcher = new Dictionary<Type, MessageCallbackDelegate>();
+
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
-            SceneObjects = new List<NetworkEntity>();
+            MasterObjects = new List<NetworkEntity>();
 
-            Scheduler = new Scheduler(TickDelay, Tick);
+            scheduler = new Scheduler(TickDelay, Tick);
 
             LoadScenesMessages = new List<NetworkMessage>();
+
+            ClientSendQueue = new HashQueue<NetworkClient>(capacity);
         }
     }
 }

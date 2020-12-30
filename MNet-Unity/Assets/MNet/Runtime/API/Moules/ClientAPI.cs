@@ -45,7 +45,7 @@ namespace MNet
             public static MessageSendQueue SendQueue { get; private set; }
 
             #region Message Dispatcher
-            public static Dictionary<Type, MessageCallbackDelegate> MessageDispatcher { get; private set; }
+            internal static Dictionary<Type, MessageCallbackDelegate> MessageDispatcher { get; private set; }
 
             public delegate void MessageCallbackDelegate(NetworkMessage message);
             public delegate void MessageHandlerDelegate<TPayload>(TPayload payload);
@@ -143,12 +143,6 @@ namespace MNet
                 callback(message);
             }
 
-            public static void ManullyDispatch(IList<NetworkMessage> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    MessageCallback(list[i], DeliveryMode.Reliable);
-            }
-
             #region Register
             public static bool AutoRegister { get; set; } = true;
 
@@ -229,9 +223,10 @@ namespace MNet
                 Send(request);
             }
 
-            public static void SpawnSceneObject(ushort resource, NetworkEntity entity) => SpawnSceneObject(resource, entity.Scene);
-            public static void SpawnSceneObject(ushort resource, Scene scene) => SpawnSceneObject(resource, (byte)scene.buildIndex);
-            public static void SpawnSceneObject(ushort resource, byte scene)
+            #region Scene Object
+            internal static void SpawnSceneObject(ushort resource, Scene scene) => SpawnSceneObject(resource, (byte)scene.buildIndex);
+
+            internal static void SpawnSceneObject(ushort resource, byte scene)
             {
                 if (IsMaster == false)
                 {
@@ -243,6 +238,7 @@ namespace MNet
 
                 Send(request);
             }
+            #endregion
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity);
             public static event SpawnEntityDelegate OnSpawnEntity;

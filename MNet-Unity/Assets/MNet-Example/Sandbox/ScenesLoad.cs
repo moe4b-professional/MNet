@@ -19,13 +19,13 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-	public class AdditiveScenesLoader : NetworkBehaviour
+	public class ScenesLoad : NetworkBehaviour
 	{
-		[SerializeField]
-		GameScene[] scenes = default;
+		public GameScene[] scenes = default;
 
-		[SerializeField]
-		float delay = 2f;
+		public LoadSceneMode mode = LoadSceneMode.Single;
+
+		public float delay = 2f;
 
 		IEnumerator Start()
 		{
@@ -33,7 +33,7 @@ namespace MNet
 			{
 				yield return new WaitForSeconds(delay);
 
-				NetworkAPI.Scenes.Load(LoadSceneMode.Additive, scenes);
+				NetworkAPI.Scenes.Load(mode, scenes);
 			}
 		}
 	}

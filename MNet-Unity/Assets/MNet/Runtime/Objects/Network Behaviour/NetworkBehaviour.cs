@@ -36,10 +36,13 @@ namespace MNet
 
         /// <summary>
         /// Reflects 'IsReady' to Component's 'enabled' Property,
-        /// Set to True by default to ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
-        /// Override to False if normal Unity callback behaviour is desired
+        /// set by default to match the Behaviour's initial enabled state,
+        /// ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
+        /// ovverride to False if normal Unity callback behaviour is desired
         /// </summary>
-        public virtual bool ReflectReadyToEnable => true;
+        public virtual bool ReflectReadyToEnable => initialEnableState;
+
+        bool initialEnableState;
 
         protected virtual void Reset()
         {
@@ -59,17 +62,19 @@ namespace MNet
 #endif
         }
 
-        public void UpdateReadyState()
+        internal void UpdateReadyState()
         {
             if (ReflectReadyToEnable == false) return;
 
             enabled = IsReady;
         }
 
-        public void Setup(NetworkEntity entity, NetworkBehaviourID id)
+        internal void Setup(NetworkEntity entity, NetworkBehaviourID id)
         {
             this.Entity = entity;
             this.ID = id;
+
+            initialEnableState = enabled;
 
             ParseRPCs();
             ParseSyncVars();
@@ -143,7 +148,7 @@ namespace MNet
         }
 
         #region Methods
-        protected bool BroadcastRPC(string method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null, params object[] arguments)
+        protected bool BroadcastRPC(string method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -153,7 +158,7 @@ namespace MNet
 
             var payload = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, arguments);
 
-            if (exception.HasValue) payload.Except(exception.Value);
+            if (exception != null) payload.Except(exception.ID);
 
             return SendRPC(bind, payload);
         }
@@ -202,10 +207,11 @@ namespace MNet
 
             return SendRPC(bind, payload);
         }
+        #endregion
 
-        bool SendRPC(RpcBind bind, RpcRequest request)
+        internal bool SendRPC(RpcBind bind, RpcRequest request)
         {
-            if(NetworkAPI.Client.IsConnected == false)
+            if (NetworkAPI.Client.IsConnected == false)
             {
                 Debug.LogWarning($"Attempting to Send RPC {request} when Client is not Connected, Ignoring");
                 return false;
@@ -219,7 +225,6 @@ namespace MNet
 
             return Send(request, bind.DeliveryMode);
         }
-        #endregion
 
         internal void InvokeRPC(RpcCommand command)
         {
@@ -317,8 +322,9 @@ namespace MNet
 
             return SendSyncVar(bind, request);
         }
+        #endregion
 
-        bool SendSyncVar(SyncVarBind bind, SyncVarRequest request)
+        internal bool SendSyncVar(SyncVarBind bind, SyncVarRequest request)
         {
             if (NetworkAPI.Client.IsConnected == false)
             {
@@ -334,7 +340,6 @@ namespace MNet
 
             return Send(request, bind.DeliveryMode);
         }
-        #endregion
 
         internal void InvokeSyncVar(SyncVarCommand command)
         {

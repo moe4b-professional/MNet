@@ -212,4 +212,36 @@ namespace MNet
             Dictionary2 = new Dictionary<TKey2, TValue>(capacity);
         }
     }
+
+    public class HashQueue<T>
+    {
+        Queue<T> queue;
+
+        HashSet<T> hash;
+
+        public int Count => hash.Count;
+
+        public void Add(T item)
+        {
+            queue.Enqueue(item);
+            hash.Add(item);
+        }
+
+        public T Dequeue()
+        {
+            var item = queue.Dequeue();
+
+            hash.Remove(item);
+
+            return item;
+        }
+
+        public bool Contains(T item) => hash.Contains(item);
+
+        public HashQueue(int capacity)
+        {
+            queue = new Queue<T>(capacity);
+            hash = new HashSet<T>(queue);
+        }
+    }
 }

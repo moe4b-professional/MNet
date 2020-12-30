@@ -8,7 +8,20 @@ namespace MNet
 {
     public enum NetworkEntityType : byte
     {
-        Dynamic, SceneObject
+        /// <summary>
+        /// Entities local to a Scene
+        /// </summary>
+        SceneObject,
+
+        /// <summary>
+        /// Dynamically Created Entities such as Players
+        /// </summary>
+        Dynamic,
+
+        /// <summary>
+        /// Dynamic Entities that Have no Owner anymore, will be controlled by Master Client
+        /// </summary>
+        Orphan,
     }
 
     [Flags]

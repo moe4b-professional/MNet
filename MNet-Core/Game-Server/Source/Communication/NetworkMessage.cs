@@ -41,6 +41,22 @@ namespace MNet
     {
         public List<NetworkMessage> List { get; protected set; }
 
+        public bool TryGetIndex(NetworkMessage message, out int index)
+        {
+            for (index = 0; index < List.Count; index++)
+            {
+                if (Equals(List[index], message))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public void Set(int index, NetworkMessage message)
+        {
+            List[index] = message;
+        }
+
         public void Add(NetworkMessage message)
         {
             List.Add(message);

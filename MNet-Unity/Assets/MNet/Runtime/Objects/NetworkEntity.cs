@@ -39,17 +39,27 @@ namespace MNet
             {
                 if (IsConnected == false) return false;
 
-                return Owner?.ID == NetworkAPI.Client.ID;
+                if (Owner == null) return false;
+
+                return Owner.ID == NetworkAPI.Client.ID;
             }
         }
 
+        public bool IsOrphan => Type == NetworkEntityType.Orphan;
+
         public delegate void SetOwnerDelegate(NetworkClient client);
         public event SetOwnerDelegate OnSetOwner;
-        public void SetOwner(NetworkClient client)
+        internal void SetOwner(NetworkClient client)
         {
             Owner = client;
 
             OnSetOwner?.Invoke(Owner);
+        }
+
+        internal void MakeOrphan() //*cocks gun with malicious intent*
+        {
+            SetOwner(null);
+            Type = NetworkEntityType.Orphan;
         }
 
         public void TakeoverOwnership()
@@ -100,7 +110,7 @@ namespace MNet
             }
         }
 
-        public void Setup(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type, PersistanceFlags persistance)
+        internal void Setup(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type, PersistanceFlags persistance)
         {
             IsReady = true;
 
@@ -133,7 +143,7 @@ namespace MNet
                 Spawn();
         }
 
-        public void UpdateReadyState()
+        internal void UpdateReadyState()
         {
             ICollection<NetworkBehaviour> collection;
 
@@ -164,7 +174,7 @@ namespace MNet
         }
 
         public event Action OnDespawn;
-        public virtual void Despawn()
+        internal virtual void Despawn()
         {
             IsReady = false;
 

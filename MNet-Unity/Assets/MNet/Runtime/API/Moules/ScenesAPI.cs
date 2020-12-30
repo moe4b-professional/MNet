@@ -25,6 +25,8 @@ namespace MNet
 	{
 		public static class Scenes
 		{
+			public static Scene Active => SceneManager.GetActiveScene();
+
 			public static void Configure()
             {
 				Client.RegisterMessageHandler<LoadScenesCommand>(Load);
@@ -37,16 +39,18 @@ namespace MNet
 				var scenes = command.Scenes;
 				var mode = ConvertLoadMode(command.Mode);
 
+				if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
+
 				for (int i = 0; i < scenes.Length; i++)
 				{
 					var scene = SceneManager.GetSceneByBuildIndex(scenes[i]);
 
-					if(scene.isLoaded)
-                    {
+					if (scene.isLoaded)
+					{
 						Log.Warning($"Got Command to Load Scene at Index {scenes[i]} but That Scene is Already Loaded, " +
 							$"Loading The Same Scene Multiple Times is not Supported, Ignoring");
 						continue;
-                    }
+					}
 
 					var operation = SceneManager.LoadSceneAsync(scenes[i], mode);
 
@@ -56,6 +60,18 @@ namespace MNet
 				}
 
 				Realtime.Pause = false;
+			}
+
+            static void DestoryNonPersistantEntities()
+            {
+				var entities = Room.Entities.Values.ToArray();
+
+				for (int i = 0; i < entities.Length; i++)
+				{
+					if (entities[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
+
+					Room.DestroyEntity(entities[i]);
+				}
 			}
 
 			///Hidden because Unity is stupid like that
@@ -107,6 +123,9 @@ namespace MNet
 
 			static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
 			static LoadSceneMode ConvertLoadMode(NetworkSceneLoadMode mode) => (LoadSceneMode)mode;
+
+			internal static void MoveToActive(Component target) => MoveToActive(target.gameObject);
+			internal static void MoveToActive(GameObject gameObject) => SceneManager.MoveGameObjectToScene(gameObject, Scenes.Active);
 		}
 	}
 }

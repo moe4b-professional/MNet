@@ -3013,6 +3013,7 @@ GameObject:
   - component: {fileID: 1697156423}
   - component: {fileID: 1697156422}
   - component: {fileID: 1697156424}
+  - component: {fileID: 1697156425}
   m_Layer: 0
   m_Name: Level
   m_TagString: Untagged
@@ -3068,7 +3069,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1697156420}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4214365ec6c713f4fa1834cf3438cad4, type: 3}
   m_Name: 
@@ -3076,6 +3077,23 @@ MonoBehaviour:
   scenes:
   - {fileID: 11400000, guid: 73a74f7a88bdd9d4583d763b50e1dd41, type: 2}
   - {fileID: 11400000, guid: dbabf3e5e30fabb42a79d0f5361c3a82, type: 2}
+  mode: 1
+  delay: 5
+--- !u!114 &1697156425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1697156420}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4214365ec6c713f4fa1834cf3438cad4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  scenes:
+  - {fileID: 11400000, guid: 614e0547b3ca9d74798af5e8bf8acf35, type: 2}
+  mode: 0
   delay: 5
 --- !u!1 &1735019178
 GameObject:

@@ -122,7 +122,7 @@ namespace MNet
 			Refresh();
 #endif
 
-			Register(this);
+			if(asset != null) Register(this);
 		}
 
 #if UNITY_EDITOR

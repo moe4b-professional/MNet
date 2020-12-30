@@ -22,19 +22,19 @@ namespace MNet
     public partial class NetworkBehaviour
     {
         #region Broadcast
-        public void BroadcastRPC(RpcMethod method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC(RpcMethod method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception);
-        public void BroadcastRPC<T1>(RpcMethod<T1> method, T1 arg1, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC<T1>(RpcMethod<T1> method, T1 arg1, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1);
-        public void BroadcastRPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2);
-        public void BroadcastRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3);
-        public void BroadcastRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4);
-        public void BroadcastRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5);
-        public void BroadcastRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcBufferMode buffer = RpcBufferMode.None, NetworkClientID? exception = null)
+        public void BroadcastRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 

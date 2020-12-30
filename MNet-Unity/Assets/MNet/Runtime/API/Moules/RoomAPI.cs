@@ -61,7 +61,6 @@ namespace MNet
             {
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-                SceneObjects = new List<NetworkEntity>();
                 MasterObjects = new List<NetworkEntity>();
 
                 Client.OnConnect += Setup;
@@ -166,7 +165,12 @@ namespace MNet
                 for (int i = 0; i < entities.Count; i++)
                 {
                     if (entities[i].Type == NetworkEntityType.SceneObject) continue;
-                    if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection)) continue;
+
+                    if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                    {
+                        entities[i].MakeOrphan();
+                        continue;
+                    }
 
                     DestroyEntity(entities[i]);
                 }
@@ -191,25 +195,26 @@ namespace MNet
                 Debug.Log($"Client {client.ID} Connected to Room");
             }
 
-            public delegate void ClientDisconnectedDelegate(NetworkClientID id, NetworkClientProfile profile);
+            public delegate void ClientDisconnectedDelegate(NetworkClient client);
             public static event ClientDisconnectedDelegate OnClientDisconnected;
             static void ClientDisconnected(ClientDisconnectPayload payload)
             {
                 Debug.Log($"Client {payload.ID} Disconnected from Room");
 
-                if (Clients.TryGetValue(payload.ID, out var client))
-                    RemoveClient(client);
-                else
+                if (Clients.TryGetValue(payload.ID, out var client) == false)
+                {
                     Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
+                    return;
+                }
 
-                OnClientDisconnected?.Invoke(payload.ID, client?.Profile);
+                RemoveClient(client);
+
+                OnClientDisconnected?.Invoke(client);
             }
             #endregion
 
             #region Entity
             public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
-
-            public static List<NetworkEntity> SceneObjects { get; private set; }
 
             public static List<NetworkEntity> MasterObjects { get; private set; }
 
@@ -223,27 +228,25 @@ namespace MNet
 
                 var owner = FindOwner(command);
 
-                if (owner == null)
-                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
-                else
-                    owner.Entities.Add(entity);
+                if (owner == null && command.Type != NetworkEntityType.Orphan)
+                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner Even Thouh it is not an Orphan");
+
+                owner?.Entities.Add(entity);
 
                 entity.Setup(owner, command.ID, command.Attributes, command.Type, command.Persistance);
 
                 Entities.Add(entity.ID, entity);
 
-                if (command.Type == NetworkEntityType.SceneObject)
-                {
-                    SceneObjects.Add(entity);
-                    MasterObjects.Add(entity);
-                }
+                if (command.Type == NetworkEntityType.SceneObject) MasterObjects.Add(entity);
+
+                if (command.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
 
                 OnSpawnEntity?.Invoke(entity);
             }
 
             static NetworkEntity AssimilateEntity(SpawnEntityCommand command)
             {
-                if (command.Type == NetworkEntityType.Dynamic)
+                if (command.Type == NetworkEntityType.Dynamic || command.Type == NetworkEntityType.Orphan)
                 {
                     var prefab = NetworkAPI.SpawnableObjects[command.Resource];
 
@@ -277,13 +280,18 @@ namespace MNet
 
             static NetworkClient FindOwner(SpawnEntityCommand command)
             {
-                if (command.Type == NetworkEntityType.SceneObject) return Master;
-
-                if (command.Type == NetworkEntityType.Dynamic)
+                switch (command.Type)
                 {
-                    if (Clients.TryGetValue(command.Owner, out var owner))
-                        return owner;
-                    else
+                    case NetworkEntityType.SceneObject:
+                        return Master;
+
+                    case NetworkEntityType.Dynamic:
+                        if (Clients.TryGetValue(command.Owner, out var owner))
+                            return owner;
+                        else
+                            return null;
+
+                    case NetworkEntityType.Orphan:
                         return null;
                 }
 
@@ -322,27 +330,26 @@ namespace MNet
                 DestroyEntity(entity);
             }
 
-            static void DestroyEntity(NetworkEntity entity)
+            internal static void DestroyEntity(NetworkEntity entity)
             {
                 Debug.Log($"Destroying '{entity.name}'");
 
-                var owner = entity.Owner;
-
+                entity.Owner?.Entities.Remove(entity);
                 Entities.Remove(entity.ID);
+                MasterObjects.Remove(entity);
 
-                if (entity.Type == NetworkEntityType.SceneObject)
-                {
-                    SceneObjects.Remove(entity);
-                    MasterObjects.Remove(entity);
-                }
-
-                owner?.Entities.Remove(entity);
-
-                entity.Despawn();
+                DespawnEntity(entity);
 
                 OnDestroyEntity?.Invoke(entity);
 
                 Object.Destroy(entity.gameObject);
+            }
+
+            internal static void DespawnEntity(NetworkEntity entity)
+            {
+                entity.Despawn();
+
+                if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Scenes.MoveToActive(entity);
             }
             #endregion
 
@@ -385,9 +392,13 @@ namespace MNet
             {
                 foreach (var entity in Entities.Values)
                 {
-                    if (entity == null) continue;
+                    if (entity == null)
+                    {
+                        Debug.LogWarning("Found null Entity when Clearing Room's Entities, Ignoring Entity");
+                        continue;
+                    }
 
-                    entity.Despawn();
+                    DespawnEntity(entity);
                 }
 
                 Info = default;
@@ -396,7 +407,6 @@ namespace MNet
 
                 Entities.Clear();
                 Clients.Clear();
-                SceneObjects.Clear();
                 MasterObjects.Clear();
             }
         }
