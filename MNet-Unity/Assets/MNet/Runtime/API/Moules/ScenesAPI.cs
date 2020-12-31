@@ -32,12 +32,17 @@ namespace MNet
 				Client.RegisterMessageHandler<LoadScenesCommand>(Load);
 			}
 
+			#region Load
+			public static event LoadDelegate OnLoadBegin;
+
 			static async void Load(LoadScenesCommand command)
 			{
 				Realtime.Pause = true;
 
 				var scenes = command.Scenes;
 				var mode = ConvertLoadMode(command.Mode);
+
+				OnLoadBegin?.Invoke(scenes, mode);
 
 				if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
 
@@ -59,11 +64,18 @@ namespace MNet
 					if (i == 0) mode = LoadSceneMode.Additive;
 				}
 
+				OnLoadEnd?.Invoke(scenes, mode);
+
 				Realtime.Pause = false;
 			}
 
-            static void DestoryNonPersistantEntities()
-            {
+			public static event LoadDelegate OnLoadEnd;
+
+			public delegate void LoadDelegate(byte[] indexes, LoadSceneMode mode);
+			#endregion
+
+			static void DestoryNonPersistantEntities()
+			{
 				var entities = Room.Entities.Values.ToArray();
 
 				for (int i = 0; i < entities.Length; i++)
@@ -74,30 +86,14 @@ namespace MNet
 				}
 			}
 
-			///Hidden because Unity is stupid like that
-			static void Load(params string[] names) => Load(LoadSceneMode.Single, names);
-			static void Load(LoadSceneMode mode, params string[] names)
-			{
-				var scenes = Array.ConvertAll(names, Convert);
-
-				GameScene Convert(string element)
-                {
-					if (GameScene.TryFind(element, out var value))
-						return value;
-
-					throw new Exception($"Couldn't Find Scene With Name {element}");
-				}
-
-				Load(mode, scenes);
-			}
-
-			public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
+            #region Request
+            public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
 			public static void Load(LoadSceneMode mode, params GameScene[] scenes)
 			{
 				var indexes = Array.ConvertAll(scenes, Convert);
 
 				byte Convert(GameScene element)
-                {
+				{
 					if (element.BuildIndex > byte.MaxValue)
 						throw new Exception($"Trying to Load at Build Index {element.BuildIndex}, Maximum Allowed Build Index is {byte.MaxValue}");
 
@@ -120,12 +116,13 @@ namespace MNet
 
 				Client.Send(request);
 			}
+            #endregion
 
-			static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
+            static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
 			static LoadSceneMode ConvertLoadMode(NetworkSceneLoadMode mode) => (LoadSceneMode)mode;
 
 			internal static void MoveToActive(Component target) => MoveToActive(target.gameObject);
-			internal static void MoveToActive(GameObject gameObject) => SceneManager.MoveGameObjectToScene(gameObject, Scenes.Active);
+			internal static void MoveToActive(GameObject gameObject) => SceneManager.MoveGameObjectToScene(gameObject, Active);
 		}
 	}
 }

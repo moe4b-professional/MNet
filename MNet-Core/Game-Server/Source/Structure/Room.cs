@@ -163,7 +163,7 @@ namespace MNet
             MessageDispatcher.Add(type, callback);
         }
 
-        void RegisterMessageHandlers()
+        void RegisterInternalMessageHandlers()
         {
             RegisterMessageHandler<ReadyClientRequest>(ReadyClient);
 
@@ -275,7 +275,7 @@ namespace MNet
 
             timestamp = DateTime.UtcNow;
 
-            RegisterMessageHandlers();
+            RegisterInternalMessageHandlers();
 
             TransportContext = RealtimeAPI.Register(ID.Value);
 
@@ -613,7 +613,6 @@ namespace MNet
             var command = entity.SpawnMessage.Read<SpawnEntityCommand>();
 
             command.MakeOrphan();
-            Log.Info(command.Type);
 
             var message = NetworkMessage.Write(command);
 
