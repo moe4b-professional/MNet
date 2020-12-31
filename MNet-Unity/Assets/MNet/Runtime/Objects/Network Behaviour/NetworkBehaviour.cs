@@ -40,9 +40,17 @@ namespace MNet
         /// ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
         /// ovverride to False if normal Unity callback behaviour is desired
         /// </summary>
-        public virtual bool ReflectReadyToEnable => initialEnableState;
+        public virtual bool ReflectReadyToEnable
+        {
+            get
+            {
+                if (initialEnableState.HasValue == false) initialEnableState = enabled;
 
-        bool initialEnableState;
+                return initialEnableState.Value;
+            }
+        }
+
+        bool? initialEnableState;
 
         protected virtual void Reset()
         {
@@ -73,8 +81,6 @@ namespace MNet
         {
             this.Entity = entity;
             this.ID = id;
-
-            initialEnableState = enabled;
 
             ParseRPCs();
             ParseSyncVars();

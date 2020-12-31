@@ -255,7 +255,7 @@ namespace MNet
 
                     var instance = Object.Instantiate(prefab);
 
-                    instance.name = $"{prefab.name} {command.Owner}";
+                    instance.name = $"{prefab.name} {command.ID}";
 
                     var entity = instance.GetComponent<NetworkEntity>();
                     if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
