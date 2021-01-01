@@ -25,7 +25,7 @@ namespace MNet
         {
             public static RemoteConfig RemoteConfig { get; private set; }
 
-            public static void Configure()
+            internal static void Configure()
             {
                 Master.Configure();
                 Game.Configure();

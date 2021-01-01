@@ -252,7 +252,7 @@ namespace MNet.Example
 
 			}
 
-			public static void Configure(Property property) => property.Configure();
+			internal static void Configure(Property property) => property.Configure();
 		}
 
 		public void ForAllProperties(Action<Property> action)

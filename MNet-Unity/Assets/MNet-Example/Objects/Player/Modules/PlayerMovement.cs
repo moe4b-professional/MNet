@@ -34,7 +34,7 @@ namespace MNet.Example
 
 		void Update()
 		{
-			if (Player.IsMine == false) return;
+			if (Player.Entity.IsMine == false) return;
 
 			var target = new Vector3()
 			{

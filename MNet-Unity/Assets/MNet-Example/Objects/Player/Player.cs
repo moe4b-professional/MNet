@@ -57,11 +57,11 @@ namespace MNet.Example
 			Rotation.Set(this);
 		}
 
-		protected override void OnOwnerSet(NetworkClient client)
+        protected override void OnOwnerSet(NetworkClient client)
 		{
 			base.OnOwnerSet(client);
 
-			rigidbody.isKinematic = IsMine == false;
+			rigidbody.isKinematic = Entity.IsMine == false;
 		}
     }
 #pragma warning restore CS0108

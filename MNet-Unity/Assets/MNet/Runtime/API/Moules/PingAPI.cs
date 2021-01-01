@@ -36,7 +36,7 @@ namespace MNet
 
             public static string Text => $"Average: {Average.ToString("N")}ms | Min: {Min.ToString("N")}ms | Max: {Max.ToString("N")}ms";
 
-            public static void Configure()
+            internal static void Configure()
             {
                 Samples = new List<double>();
 

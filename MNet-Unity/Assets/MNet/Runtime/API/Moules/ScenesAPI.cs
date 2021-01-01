@@ -27,21 +27,27 @@ namespace MNet
 		{
 			public static Scene Active => SceneManager.GetActiveScene();
 
-			public static void Configure()
+			internal static void Configure()
             {
 				Client.RegisterMessageHandler<LoadScenesCommand>(Load);
 			}
 
 			#region Load
+			public static bool IsLoading { get; private set; } = false;
+
+			static readonly object RealtimePauseLock = new object();
+
 			public static event LoadDelegate OnLoadBegin;
 
 			static async void Load(LoadScenesCommand command)
 			{
-				Realtime.Pause = true;
+				if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
 
 				var scenes = command.Scenes;
 				var mode = ConvertLoadMode(command.Mode);
 
+				IsLoading = true;
+				Realtime.Pause.AddLock(RealtimePauseLock);
 				OnLoadBegin?.Invoke(scenes, mode);
 
 				if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
@@ -64,9 +70,9 @@ namespace MNet
 					if (i == 0) mode = LoadSceneMode.Additive;
 				}
 
+				IsLoading = false;
+				Realtime.Pause.RemoveLock(RealtimePauseLock);
 				OnLoadEnd?.Invoke(scenes, mode);
-
-				Realtime.Pause = false;
 			}
 
 			public static event LoadDelegate OnLoadEnd;

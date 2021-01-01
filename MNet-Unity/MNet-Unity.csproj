@@ -108,6 +108,7 @@
      <Compile Include="Assets\MNet\Runtime\API\Moules\AppAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\ClientAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\LobbyAPI.cs" />
+     <Compile Include="Assets\MNet\Runtime\API\Moules\PhysicsAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\PingAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RealtimeAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RoomAPI.cs" />

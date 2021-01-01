@@ -27,34 +27,17 @@ namespace MNet
 
         public NetworkEntity Entity { get; protected set; }
 
-        public bool IsMine => Entity == null ? false : Entity.IsMine;
-        public bool IsReady => Entity == null ? false : Entity.IsReady;
-        public bool IsConnected => Entity == null ? false : Entity.IsConnected;
-
-        public NetworkClient Owner => Entity?.Owner;
-
-        public NetworkClient Supervisor => Entity?.Supervisor;
-
-        public AttributesCollection Attributes => Entity?.Attributes;
-
         /// <summary>
         /// Reflects 'IsReady' to Component's 'enabled' Property,
         /// set by default to match the Behaviour's initial enabled state,
         /// ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
         /// ovverride to False if normal Unity callback behaviour is desired
         /// </summary>
-        public virtual bool ReflectReadyToEnable
-        {
-            get
-            {
-                if (initialEnableState.HasValue == false) initialEnableState = enabled;
+        public virtual bool ReflectReadyToEnable => initialEnableState;
 
-                return initialEnableState.Value;
-            }
-        }
+        bool initialEnableState;
 
-        bool? initialEnableState;
-
+#if UNITY_EDITOR
         protected virtual void Reset()
         {
             ResolveEntity();
@@ -62,7 +45,6 @@ namespace MNet
 
         void ResolveEntity()
         {
-#if UNITY_EDITOR
             var entity = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
 
             if (entity == null)
@@ -70,29 +52,55 @@ namespace MNet
                 entity = gameObject.AddComponent<NetworkEntity>();
                 ComponentUtility.MoveComponentUp(entity);
             }
+        }
 #endif
-        }
 
-        internal void UpdateReadyState()
-        {
-            if (ReflectReadyToEnable == false) return;
-
-            enabled = IsReady;
-        }
-
+        #region Setup
         internal void Setup(NetworkEntity entity, NetworkBehaviourID id)
         {
-            this.Entity = entity;
             this.ID = id;
+
+            this.Entity = entity;
+
+            initialEnableState = enabled;
 
             ParseRPCs();
             ParseSyncVars();
 
             UpdateReadyState();
 
-            entity.OnOwnerSet += OwnerSetCallback;
-            entity.OnSpawn += SpawnCallback;
-            entity.OnDespawn += DespawnCallback;
+            Entity.OnOwnerSet += OwnerSetCallback;
+            Entity.OnSpawn += SpawnCallback;
+            Entity.OnDespawn += DespawnCallback;
+
+            OnSetup();
+        }
+
+        /// <summary>
+        /// Simillar to Awake, invoked before OnLoad
+        /// </summary>
+        protected virtual void OnSetup() { }
+        #endregion
+
+        #region Load
+        internal void Load()
+        {
+            UpdateReadyState();
+
+            OnLoad();
+        }
+
+        /// <summary>
+        /// Called when Behaviour is loaded in the network, invoked after OnSetup
+        /// </summary>
+        protected virtual void OnLoad() { }
+        #endregion
+
+        void UpdateReadyState()
+        {
+            if (ReflectReadyToEnable == false) return;
+
+            enabled = Entity == null ? false : Entity.IsReady;
         }
 
         #region Set Owner
@@ -101,6 +109,10 @@ namespace MNet
             OnOwnerSet(client);
         }
 
+        /// <summary>
+        /// Invoked when entity owner is set, such as when the entity is spawned, made orphan, has its owner changed, ... etc
+        /// </summary>
+        /// <param name="client"></param>
         protected virtual void OnOwnerSet(NetworkClient client)
         {
 
@@ -115,6 +127,9 @@ namespace MNet
             OnSpawn();
         }
 
+        /// <summary>
+        /// Invoked when this behaviour is spawned and ready for use
+        /// </summary>
         protected virtual void OnSpawn() { }
         #endregion
 
@@ -126,6 +141,9 @@ namespace MNet
             OnDespawn();
         }
 
+        /// <summary>
+        /// Invoked when the entity is despawned from the network
+        /// </summary>
         protected virtual void OnDespawn() { }
         #endregion
 
@@ -193,7 +211,7 @@ namespace MNet
                 return false;
             }
 
-            if(RPCs.TryGetValue(result, out var callback) == false)
+            if (RPCs.TryGetValue(result, out var callback) == false)
             {
                 Debug.LogError($"No RPC With Name '{result}' Found on Entity '{Entity}' to use for Return, Please Define all Return Methods as RPCs");
                 return false;
@@ -403,7 +421,7 @@ namespace MNet
 
             if (authority.HasFlag(RemoteAuthority.Owner))
             {
-                if (sender == Owner?.ID)
+                if (sender == Entity.Owner?.ID)
                     return true;
             }
 
@@ -418,7 +436,7 @@ namespace MNet
 
         protected virtual bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
         {
-            if (IsReady == false)
+            if (Entity.IsReady == false)
             {
                 Debug.LogError($"Trying to Send Payload '{payload}' Before Entity '{this}' is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}");
                 return false;

@@ -60,7 +60,7 @@ namespace MNet
             // Room's time offset in ticks when timestamp was set + half of round trip time
             static long offset;
 
-            public static void Configure()
+            internal static void Configure()
             {
                 Span = default;
 

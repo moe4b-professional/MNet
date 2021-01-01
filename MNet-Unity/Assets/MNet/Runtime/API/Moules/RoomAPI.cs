@@ -57,7 +57,7 @@ namespace MNet
             }
             #endregion
 
-            public static void Configure()
+            internal static void Configure()
             {
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
@@ -120,7 +120,7 @@ namespace MNet
                 AddClients(response.Clients);
                 AssignMaster(response.Master);
 
-                Realtime.AddToBuffer(response.Buffer);
+                Realtime.ApplyBuffer(response.Buffer);
 
                 OnReady?.Invoke(response);
             }
@@ -233,7 +233,9 @@ namespace MNet
 
                 owner?.Entities.Add(entity);
 
-                entity.Setup(owner, command.ID, command.Attributes, command.Type, command.Persistance);
+                if (command.Type != NetworkEntityType.SceneObject) entity.Setup();
+
+                entity.Load(owner, command.ID, command.Attributes, command.Type, command.Persistance);
 
                 Entities.Add(entity.ID, entity);
 

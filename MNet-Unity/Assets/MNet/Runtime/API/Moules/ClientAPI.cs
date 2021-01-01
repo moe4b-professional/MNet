@@ -67,7 +67,7 @@ namespace MNet
             }
             #endregion
 
-            public static void Configure()
+            internal static void Configure()
             {
                 IsReady = false;
 

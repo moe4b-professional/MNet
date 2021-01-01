@@ -29,9 +29,9 @@ namespace MNet.Example
 
         void ReadAttributes(out Vector3 position, out float angle, out int area)
         {
-            Attributes.TryGetValue(0, out position);
-            Attributes.TryGetValue(1, out angle);
-            Attributes.TryGetValue(2, out area);
+            Entity.Attributes.TryGetValue(0, out position);
+            Entity.Attributes.TryGetValue(1, out angle);
+            Entity.Attributes.TryGetValue(2, out area);
         }
 
         void Start()
@@ -42,12 +42,12 @@ namespace MNet.Example
 
             Apply(position, angle);
 
-            if (IsMine) StartCoroutine(Procedure());
+            if (Entity.IsMine) StartCoroutine(Procedure());
         }
 
         IEnumerator Procedure()
         {
-            while (IsConnected)
+            while (Entity.IsConnected)
             {
                 Broadcast();
 

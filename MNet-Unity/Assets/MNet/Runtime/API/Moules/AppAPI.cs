@@ -25,7 +25,7 @@ namespace MNet
 		{
 			public static AppConfig Config { get; private set; }
 
-			public static void Configure()
+            internal static void Configure()
             {
                 Server.Master.OnScheme += MasterServerSchemeCallback;
             }

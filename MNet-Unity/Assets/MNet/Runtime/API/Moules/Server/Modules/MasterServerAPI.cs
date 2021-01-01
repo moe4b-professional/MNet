@@ -31,7 +31,7 @@ namespace MNet
 
                 public static RestClientAPI Rest { get; private set; }
 
-                public static void Configure()
+                internal static void Configure()
                 {
                     Rest = new RestClientAPI(Constants.Server.Master.Rest.Port, NetworkAPI.Config.RestScheme);
                     Rest.SetIP(Address);

@@ -38,7 +38,7 @@ namespace MNet.Example
 
 		void Start()
 		{
-			if (IsMine) SyncVar(nameof(Color), Random.ColorHSV());
+			if (Entity.IsMine) SyncVar(nameof(Color), Random.ColorHSV());
 		}
 	}
 }

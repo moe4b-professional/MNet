@@ -68,6 +68,7 @@ namespace MNet
             AppAPI.Configure();
             Client.Configure();
             Scenes.Configure();
+            Physics.Configure();
             Ping.Configure();
             Time.Configure();
             Room.Configure();

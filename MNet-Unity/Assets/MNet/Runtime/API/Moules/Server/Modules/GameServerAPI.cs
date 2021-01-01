@@ -47,7 +47,7 @@ namespace MNet
 
                 public static RestClientAPI Rest { get; private set; }
 
-                public static void Configure()
+                internal static void Configure()
                 {
                     Application.quitting += ApplicationQuitCallback;
 

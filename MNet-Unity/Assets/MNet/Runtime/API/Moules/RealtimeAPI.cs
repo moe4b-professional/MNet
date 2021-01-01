@@ -20,6 +20,7 @@ using Random = UnityEngine.Random;
 using System.Net;
 
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace MNet
 {
@@ -31,11 +32,87 @@ namespace MNet
 
             public static bool IsConnected => Transport == null ? false : Transport.IsConnected;
 
-            public static void Configure()
-            {
-                Buffer = new Queue<NetworkMessage>();
+            #region Buffer
+            public static bool IsOnBuffer { get; private set; } = false;
 
+            public static event Action OnBufferBegin;
+
+            internal static async void ApplyBuffer(IList<NetworkMessage> list)
+            {
+                if (IsOnBuffer) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
+
+                IsOnBuffer = true;
+                OnBufferBegin?.Invoke();
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    while (Pause.Value) await Task.Delay(200);
+
+                    MessageCallback(list[i], DeliveryMode.Reliable);
+                }
+
+                IsOnBuffer = false;
+                OnBufferEnd?.Invoke();
+            }
+
+            public static event Action OnBufferEnd;
+            #endregion
+
+            public static ConcurrentQueue<Action> InputQueue { get; private set; }
+
+            public static class Pause
+            {
+                static HashSet<object> locks;
+
+                public static bool Value => locks.Count > 0;
+
+                internal static void Configure()
+                {
+                    locks = new HashSet<object>();
+                }
+
+                public static event Action OnBegin;
+                static void Begin()
+                {
+                    OnBegin?.Invoke();
+                }
+
+                public static object AddLock()
+                {
+                    var instance = new object();
+
+                    return AddLock(instance);
+                }
+                public static object AddLock(object instance)
+                {
+                    var delta = locks.Count;
+
+                    locks.Add(instance);
+
+                    if (delta == 0) Begin();
+
+                    return instance;
+                }
+
+                public static void RemoveLock(object instance)
+                {
+                    if (locks.Remove(instance) == false) return;
+
+                    if (locks.Count == 0) End();
+                }
+
+                public static event Action OnEnd;
+                static void End()
+                {
+                    OnEnd.Invoke();
+                }
+            }
+
+            internal static void Configure()
+            {
                 InputQueue = new ConcurrentQueue<Action>();
+
+                Pause.Configure();
 
                 NetworkAPI.OnProcess += Process;
 
@@ -43,24 +120,6 @@ namespace MNet
 
                 Application.quitting += ApplicationQuitCallback;
             }
-
-            #region Buffer
-            public static Queue<NetworkMessage> Buffer { get; private set; }
-
-            public static bool IsOnBuffer => Buffer.Count > 0;
-
-            public static event Action OnAppliedBuffer;
-
-            public static void AddToBuffer(IList<NetworkMessage> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    Buffer.Enqueue(list[i]);
-            }
-            #endregion
-
-            public static ConcurrentQueue<Action> InputQueue { get; private set; }
-
-            public static bool Pause { get; set; } = false;
 
             public delegate void InitializeDelegate(NetworkTransport transport);
             public static event InitializeDelegate OnInitialize;
@@ -84,8 +143,6 @@ namespace MNet
                     Debug.LogError("Client Must Be Disconnected Before Reconnecting");
                     return;
                 }
-
-                //Socket.OnError += ErrorCallback; //TODO Implement Transport Error Handling
 
                 Transport.Connect(server, room);
             }
@@ -114,46 +171,24 @@ namespace MNet
             {
                 if (Transport == null) return;
 
-                if (Pause) return;
+                if (Pause.Value) return;
+                if (IsOnBuffer) return;
 
-                if (IsOnBuffer)
-                    ProcessBuffer();
-                else
-                    ProcessInput();
-            }
-            static void ProcessBuffer()
-            {
-                while (Buffer.Count > 0)
-                {
-                    var message = Buffer.Peek();
-
-                    MessageCallback(message, DeliveryMode.Reliable);
-
-                    Buffer.Dequeue();
-
-                    if (Pause) break;
-                }
-
-                OnAppliedBuffer?.Invoke();
-            }
-            static void ProcessInput()
-            {
                 var count = InputQueue.Count;
 
                 for (int i = 0; i < count; i++)
                 {
-                    if (InputQueue.TryDequeue(out var action) == false) break;
+                    if (Pause.Value) return;
+                    if (IsOnBuffer) return;
+
+                    if (InputQueue.TryDequeue(out var action) == false) return;
 
                     action();
-
-                    if (Pause) break;
-                    if (IsOnBuffer) break;
                 }
             }
 
             internal static void Clear()
             {
-                Buffer.Clear();
                 InputQueue = new ConcurrentQueue<Action>();
             }
 

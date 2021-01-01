@@ -24,7 +24,7 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Network Scene")]
     public class NetworkScene : MonoBehaviour
     {
-        public const int ExecutionOrder = NetworkEntity.ExecutionOrder - 50;
+        public const int ExecutionOrder = NetworkEntity.ExecutionOrder + -50;
 
         [SerializeField]
         protected List<NetworkEntity> list = new List<NetworkEntity>();
@@ -52,6 +52,11 @@ namespace MNet
         bool IsInSameScene(NetworkEntity entity) => entity.Scene == this.Scene;
 
 #if UNITY_EDITOR
+        void Reset()
+        {
+            FindAll();
+        }
+
         void FindAll()
         {
             list.Clear();
@@ -64,16 +69,9 @@ namespace MNet
         }
 #endif
 
-        void Reset()
-        {
-#if UNITY_EDITOR
-            FindAll();
-#endif
-        }
-
         void Awake()
         {
-            if(Application.isPlaying == false)
+            if (Application.isPlaying == false)
             {
                 Register(this);
                 return;
@@ -83,7 +81,7 @@ namespace MNet
             {
                 if (list[i] == null) return;
 
-                list[i].UpdateReadyState();
+                list[i].Setup();
             }
         }
 
