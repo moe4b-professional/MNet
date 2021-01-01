@@ -121,7 +121,13 @@ namespace MNet
         static void RegisterServer(RestRequest request, RestResponse response)
         {
             if (RestServerAPI.TryRead(request, response, out RegisterGameServerRequest payload) == false) return;
-            
+
+            if (payload.ApiVersion != Constants.ApiVersion)
+            {
+                RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion);
+                return;
+            }
+
             if (payload.Key != ApiKey.Token)
             {
                 RestServerAPI.Write(response, RestStatusCode.InvalidApiKey);

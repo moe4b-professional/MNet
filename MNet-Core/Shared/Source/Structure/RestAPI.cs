@@ -24,8 +24,6 @@ namespace MNet
 
         public HttpClient Client { get; protected set; }
 
-        public int MaxRetryAttempts { get; set; } = 2;
-
         public delegate void ResponseDelegate<TResult>(TResult result, RestError error);
 
         #region POST
@@ -35,27 +33,12 @@ namespace MNet
 
             var content = WriteContent(payload);
 
-            for (int tries = 1; tries <= MaxRetryAttempts; tries++) //1 indexed loop!
-            {
-                try
-                {
-                    var response = await Client.PostAsync(url, content);
-                    EnsureSuccess(response);
+            var response = await Client.PostAsync(url, content);
+            EnsureSuccess(response);
 
-                    var result = await ReadResult<TResult>(response);
+            var result = await ReadResult<TResult>(response);
 
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    if (tries == MaxRetryAttempts || ex is TaskCanceledException)
-                        throw;
-                    else
-                        continue;
-                }
-            }
-
-            throw new Exception($"Rest API Max Retry Attempts is {MaxRetryAttempts}, Value must be Bigger than 0");
+            return result;
         }
 
         /// <summary>

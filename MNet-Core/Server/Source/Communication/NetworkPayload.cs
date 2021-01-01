@@ -9,6 +9,9 @@ namespace MNet
     [Serializable]
     public struct RegisterGameServerRequest : INetworkSerializable
     {
+        Version apiVersion;
+        public Version ApiVersion => apiVersion;
+
         GameServerInfo info;
         public GameServerInfo Info => info;
 
@@ -20,12 +23,15 @@ namespace MNet
 
         public void Select(ref NetworkSerializationContext context)
         {
+            context.Select(ref apiVersion);
             context.Select(ref info);
             context.Select(ref key);
         }
 
         public RegisterGameServerRequest(GameServerInfo info, string key)
         {
+            this.apiVersion = Constants.ApiVersion;
+
             this.info = info;
             this.key = key;
         }

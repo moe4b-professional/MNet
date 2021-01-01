@@ -32,8 +32,10 @@ namespace MNet
                 response = Rest.POST<RegisterGameServerRequest, RegisterGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Register, payload).Result;
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Error(ex);
+
                 response = default;
                 return false;
             }
@@ -48,8 +50,10 @@ namespace MNet
                 response = Rest.POST<RemoveGameServerRequest, RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Remove, payload).Result;
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Error(ex);
+
                 response = default;
                 return false;
             }
