@@ -62,6 +62,7 @@
      <Compile Include="Assets\MNet-Example\General\Scripts\Initializer\Scriptable Object\Editor\ScriptableObjectInitializerBuildProcessor.cs" />
      <Compile Include="Assets\MNet-Example\General\Scripts\Initializer\Scriptable Object\ScriptableObjectInitializer.cs" />
      <Compile Include="Assets\MNet-Example\General\Scripts\UIExtensions.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Actor\Actor.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\Level.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\Misc\LevelData.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\Modules\LevelPause.cs" />
@@ -126,7 +127,7 @@
      <Compile Include="Assets\MNet\Runtime\Components\Tests\SyncVarTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Data\GameScene.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviour.cs" />
-     <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviourGRPCs.cs" />
+     <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviourGenericRPCs.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkClient.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkEntity.cs" />
      <Compile Include="Assets\MNet\Runtime\Remote Sync\RPX.cs" />

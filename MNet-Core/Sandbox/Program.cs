@@ -21,19 +21,6 @@ namespace MNet
         {
             DynamicNetworkSerialization.Enabled = true;
 
-            HashSet<C> queue = new HashSet<C>();
-
-            for (int i = 0; i < Count; i++)
-                queue.Add(new C());
-
-            var c = new C();
-
-            for (int i = 0; i < 20; i++)
-            {
-                queue.Contains(c);
-            }
-
-            return;
             ThreadMan.Run();
             
             Log.Info("Complete");

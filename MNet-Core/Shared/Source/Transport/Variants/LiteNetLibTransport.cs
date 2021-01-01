@@ -18,10 +18,9 @@ namespace MNet
                 {
                     case DeliveryMode.Reliable:
                         return int.MaxValue;
-
-                    default:
-                        return 400;
                 }
+
+                return 400;
             }
 
             public static class Disconnect

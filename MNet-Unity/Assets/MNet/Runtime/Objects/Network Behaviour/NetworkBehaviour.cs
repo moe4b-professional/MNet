@@ -32,6 +32,9 @@ namespace MNet
         public bool IsConnected => Entity == null ? false : Entity.IsConnected;
 
         public NetworkClient Owner => Entity?.Owner;
+
+        public NetworkClient Supervisor => Entity?.Supervisor;
+
         public AttributesCollection Attributes => Entity?.Attributes;
 
         /// <summary>
@@ -87,18 +90,18 @@ namespace MNet
 
             UpdateReadyState();
 
-            entity.OnSetOwner += SetOwnerCallback;
+            entity.OnOwnerSet += OwnerSetCallback;
             entity.OnSpawn += SpawnCallback;
             entity.OnDespawn += DespawnCallback;
         }
 
         #region Set Owner
-        void SetOwnerCallback(NetworkClient client)
+        void OwnerSetCallback(NetworkClient client)
         {
-            OnSetOwner(client);
+            OnOwnerSet(client);
         }
 
-        protected virtual void OnSetOwner(NetworkClient client)
+        protected virtual void OnOwnerSet(NetworkClient client)
         {
 
         }
@@ -142,7 +145,7 @@ namespace MNet
 
             for (byte i = 0; i < methods.Length; i++)
             {
-                var attribute = methods[i].GetCustomAttribute<NetworkRPCAttribute>();
+                var attribute = NetworkRPCAttribute.Retrieve(methods[i]);
 
                 var bind = new RpcBind(this, attribute, methods[i], i);
 
@@ -299,7 +302,7 @@ namespace MNet
 
             for (byte i = 0; i < properties.Length; i++)
             {
-                var attribute = properties[i].GetCustomAttribute<SyncVarAttribute>();
+                var attribute = SyncVarAttribute.Retrieve(properties[i]);
 
                 var bind = new SyncVarBind(this, attribute, properties[i], i);
 

@@ -97,6 +97,8 @@ namespace MNet
 
         }
 
-        public static bool Defined(PropertyInfo info) => info.GetCustomAttribute<SyncVarAttribute>() != null;
+        public static SyncVarAttribute Retrieve(PropertyInfo info) => info.GetCustomAttribute<SyncVarAttribute>(true);
+
+        public static bool Defined(PropertyInfo info) => Retrieve(info) != null;
     }
 }

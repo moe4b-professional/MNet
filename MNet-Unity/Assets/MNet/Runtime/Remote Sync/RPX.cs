@@ -108,7 +108,9 @@ namespace MNet
 
         public NetworkRPCAttribute() { }
 
-        public static bool Defined(MethodInfo info) => info.GetCustomAttribute<NetworkRPCAttribute>() != null;
+        public static NetworkRPCAttribute Retrieve(MethodInfo info) => info.GetCustomAttribute<NetworkRPCAttribute>(true);
+
+        public static bool Defined(MethodInfo info) => Retrieve(info) != null;
     }
 
     public delegate void RpcMethod(RpcInfo info);

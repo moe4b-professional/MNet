@@ -136,6 +136,10 @@ namespace MNet
                     context.Select(ref target);
                     context.Select(ref callback);
                     break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
             }
         }
 
@@ -299,6 +303,13 @@ namespace MNet
 
                 case RpcType.Query:
                     context.Select(ref callback);
+                    break;
+
+                case RpcType.Response:
+                    break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
                     break;
             }
         }

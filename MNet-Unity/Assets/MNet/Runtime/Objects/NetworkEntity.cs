@@ -45,18 +45,28 @@ namespace MNet
             }
         }
 
+        public NetworkClient Supervisor
+        {
+            get
+            {
+                if (Type == NetworkEntityType.Orphan) return NetworkAPI.Room.Master;
+
+                return Owner;
+            }
+        }
+
         public bool IsOrphan => Type == NetworkEntityType.Orphan;
 
-        public delegate void SetOwnerDelegate(NetworkClient client);
-        public event SetOwnerDelegate OnSetOwner;
+        public delegate void OwnerSetDelegate(NetworkClient client);
+        public event OwnerSetDelegate OnOwnerSet;
         internal void SetOwner(NetworkClient client)
         {
             Owner = client;
 
-            OnSetOwner?.Invoke(Owner);
+            OnOwnerSet?.Invoke(Owner);
         }
 
-        internal void MakeOrphan() //*cocks gun with malicious intent*
+        internal void MakeOrphan() //*cocks gun with malicious intent* 
         {
             SetOwner(null);
             Type = NetworkEntityType.Orphan;

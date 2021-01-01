@@ -21,7 +21,7 @@ namespace MNet.Example
 {
 	[RequireComponent(typeof(Rigidbody))]
 #pragma warning disable CS0108
-	public class Player : NetworkBehaviour
+	public class Player : Actor
 	{
 		public PlayerMovement Movement { get; protected set; }
 		public PlayerRotation Rotation { get; protected set; }
@@ -57,12 +57,12 @@ namespace MNet.Example
 			Rotation.Set(this);
 		}
 
-		protected override void OnSetOwner(NetworkClient client)
+		protected override void OnOwnerSet(NetworkClient client)
 		{
-			base.OnSetOwner(client);
+			base.OnOwnerSet(client);
 
 			rigidbody.isKinematic = IsMine == false;
 		}
-	}
+    }
 #pragma warning restore CS0108
 }

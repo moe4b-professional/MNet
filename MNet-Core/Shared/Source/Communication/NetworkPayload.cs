@@ -483,6 +483,10 @@ namespace MNet
                 case NetworkEntityType.SceneObject:
                     context.Select(ref scene);
                     break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
             }
         }
 
@@ -517,23 +521,20 @@ namespace MNet
     [Serializable]
     public struct SpawnEntityCommand : INetworkSerializable
     {
-        NetworkClientID owner;
-        public NetworkClientID Owner { get { return owner; } }
-
         NetworkEntityID id;
         public NetworkEntityID ID { get { return id; } }
+
+        ushort resource;
+        public ushort Resource { get { return resource; } }
 
         NetworkEntityType type;
         public NetworkEntityType Type => type;
 
-        //Yes, I know, mutable structs are "evil", I'll be careful, I swear
-        public void MakeOrphan() => type = NetworkEntityType.Orphan;
+        NetworkClientID owner;
+        public NetworkClientID Owner { get { return owner; } }
 
         PersistanceFlags persistance;
         public PersistanceFlags Persistance => persistance;
-
-        ushort resource;
-        public ushort Resource { get { return resource; } }
 
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
@@ -541,19 +542,26 @@ namespace MNet
         byte scene;
         public byte Scene => scene;
 
+        //Yes, I know, mutable structs are "evil", I'll be careful, I swear
+        public void MakeOrphan() => type = NetworkEntityType.Orphan;
+
         public void Select(ref NetworkSerializationContext context)
         {
-            context.Select(ref owner);
             context.Select(ref id);
-
-            context.Select(ref type);
 
             context.Select(ref resource);
 
+            context.Select(ref type);
+
             switch (type)
             {
-                case NetworkEntityType.Orphan:
                 case NetworkEntityType.Dynamic:
+                    context.Select(ref owner);
+                    context.Select(ref persistance);
+                    context.Select(ref attributes);
+                    break;
+
+                case NetworkEntityType.Orphan:
                     context.Select(ref persistance);
                     context.Select(ref attributes);
                     break;
@@ -563,7 +571,8 @@ namespace MNet
                     break;
 
                 default:
-                    throw new Exception($"No Case Defined for Type: {type}");
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
             }
         }
 
