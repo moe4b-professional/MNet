@@ -37,12 +37,7 @@ namespace MNet
                 Master = target;
                 Debug.Log($"Assigned {Master} as Master Client");
 
-                for (int i = 0; i < MasterObjects.Count; i++)
-                {
-                    if (MasterObjects[i] == null) continue;
-
-                    MasterObjects[i].SetOwner(Master);
-                }
+                foreach (var entity in MasterObjects) entity.SetOwner(Master);
 
                 return true;
             }
@@ -61,7 +56,7 @@ namespace MNet
             {
                 Clients = new Dictionary<NetworkClientID, NetworkClient>();
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-                MasterObjects = new List<NetworkEntity>();
+                MasterObjects = new HashSet<NetworkEntity>();
 
                 Client.OnConnect += Setup;
                 Client.OnRegister += Register;
@@ -216,33 +211,38 @@ namespace MNet
             #region Entity
             public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
 
-            public static List<NetworkEntity> MasterObjects { get; private set; }
+            public static HashSet<NetworkEntity> MasterObjects { get; private set; }
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity);
             public static event SpawnEntityDelegate OnSpawnEntity;
             static void SpawnEntity(SpawnEntityCommand command)
             {
+                var id = command.ID;
+                var type = command.Type;
+                var persistance = command.Persistance;
+                var attributes = command.Attributes;
+
                 var entity = AssimilateEntity(command);
 
-                Debug.Log($"Spawned '{entity.name}' with ID: {command.ID}, Owned By Client {command.Owner}");
-
                 var owner = FindOwner(command);
+
+                Debug.Log($"Spawned Entity '{entity.name}' with ID: {id}, Owned By Client {owner}");
 
                 if (owner == null)
                     Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
 
                 owner?.Entities.Add(entity);
 
+                Entities.Add(id, entity);
+
+                if (NetworkEntity.CheckIfMasterObject(type)) MasterObjects.Add(entity);
+
+                if (persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
+
                 //Scene Objects are Setup on NetworkScene Awake
-                if (command.Type != NetworkEntityType.SceneObject) entity.Setup();
+                if (type != NetworkEntityType.SceneObject) entity.Setup();
 
-                entity.Load(owner, command.ID, command.Attributes, command.Type, command.Persistance);
-
-                Entities.Add(entity.ID, entity);
-
-                if (command.Type == NetworkEntityType.SceneObject || command.Type == NetworkEntityType.Orphan) MasterObjects.Add(entity);
-
-                if (command.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
+                entity.Load(owner, id, attributes, type, persistance);
 
                 OnSpawnEntity?.Invoke(entity);
             }
@@ -296,9 +296,10 @@ namespace MNet
 
                     case NetworkEntityType.Orphan:
                         return Master;
-                }
 
-                throw new NotImplementedException();
+                    default:
+                        throw new NotImplementedException();
+                }
             }
 
             static void ChangeEntityOwner(ChangeEntityOwnerCommand command)
@@ -322,12 +323,12 @@ namespace MNet
 
             static void MakeEntityOrphan(NetworkEntity entity)
             {
-                entity.MakeOrphan();
+                entity.Type = NetworkEntityType.Orphan;
+                entity.SetOwner(Master);
+
                 MasterObjects.Add(entity);
             }
 
-            public delegate void DestroyEntityDelegate(NetworkEntity entity);
-            public static event DestroyEntityDelegate OnDestroyEntity;
             static void DestroyEntity(DestroyEntityCommand command)
             {
                 if (Entities.TryGetValue(command.ID, out var entity) == false)
@@ -339,12 +340,16 @@ namespace MNet
                 DestroyEntity(entity);
             }
 
+            public delegate void DestroyEntityDelegate(NetworkEntity entity);
+            public static event DestroyEntityDelegate OnDestroyEntity;
             internal static void DestroyEntity(NetworkEntity entity)
             {
-                Debug.Log($"Destroying '{entity.name}'");
+                Debug.Log($"Destroying Entity '{entity.name}'");
 
                 entity.Owner?.Entities.Remove(entity);
+
                 Entities.Remove(entity.ID);
+
                 if (entity.IsMasterObject) MasterObjects.Remove(entity);
 
                 DespawnEntity(entity);

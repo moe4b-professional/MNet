@@ -16,7 +16,13 @@ namespace MNet
 
         public NetworkEntityID ID { get; protected set; }
 
-        public NetworkEntityType Type { get; protected set; }
+        public NetworkEntityType Type { get; internal set; }
+
+        public bool IsSceneObject => Type == NetworkEntityType.SceneObject;
+        public bool IsDynamic => Type == NetworkEntityType.Dynamic;
+        public bool IsOrphan => Type == NetworkEntityType.Orphan;
+
+        public bool IsMasterObject => CheckIfMasterObject(Type);
 
         public PersistanceFlags Persistance { get; protected set; }
 
@@ -41,5 +47,8 @@ namespace MNet
             RpcBuffer = new RpcBuffer();
             SyncVarBuffer = new SyncVarBuffer();
         }
+
+        //Static Utility
+        public static bool CheckIfMasterObject(NetworkEntityType type) => type == NetworkEntityType.SceneObject || type == NetworkEntityType.Orphan;
     }
 }

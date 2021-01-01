@@ -31,7 +31,7 @@ namespace MNet
 
         public bool IsConnected => NetworkAPI.Client.IsConnected;
 
-        public NetworkEntityType Type { get; protected set; }
+        public NetworkEntityType Type { get; internal set; }
 
         public bool IsSceneObject => Type == NetworkEntityType.SceneObject;
         public bool IsDynamic => Type == NetworkEntityType.Dynamic;
@@ -61,34 +61,34 @@ namespace MNet
             OnOwnerSet?.Invoke(Owner);
         }
 
-        internal void MakeOrphan() //*cocks gun with malicious intent* 
-        {
-            SetOwner(NetworkAPI.Room.Master);
-            Type = NetworkEntityType.Orphan;
-        }
-
-        public void TakeoverOwnership()
+        public bool TakeoverOwnership()
         {
             if (IsMine)
             {
                 Debug.LogWarning($"You Already Own Entity {this}, no Need to Takeover it, Ignoring");
-                return;
+                return false;
             }
 
-            ChangeOwnership(NetworkAPI.Client.Self);
+            return ChangeOwnership(NetworkAPI.Client.Self);
         }
 
-        public void ChangeOwnership(NetworkClient reciever)
+        public bool ChangeOwnership(NetworkClient reciever)
         {
+            if (IsMasterObject)
+            {
+                Log.Error($"Master Objects Cannot be Taken Over by Clients, Will not Send Change Ownership Request");
+                return false;
+            }
+
             if (Owner == reciever)
             {
                 Debug.LogWarning($"Client: {reciever} Already Owns Entity '{this};, Ignoring Request");
-                return;
+                return false;
             }
 
             var requst = new ChangeEntityOwnerRequest(reciever.ID, ID);
 
-            NetworkAPI.Client.Send(requst);
+            return NetworkAPI.Client.Send(requst);
         }
         #endregion
 
@@ -225,5 +225,7 @@ namespace MNet
 
             return false;
         }
+
+        public static bool CheckIfMasterObject(NetworkEntityType type) => type == NetworkEntityType.SceneObject || type == NetworkEntityType.Orphan;
     }
 }

@@ -46,7 +46,7 @@ namespace MNet
 
                 for (int i = 0; i < list.Count; i++)
                 {
-                    while (Pause.Value) await Task.Delay(200);
+                    while (Pause.Value) await Task.Delay(1);
 
                     MessageCallback(list[i], DeliveryMode.Reliable);
                 }

@@ -73,7 +73,7 @@ namespace MNet
 
         AutoKeyDictionary<NetworkEntityID, NetworkEntity> Entities;
 
-        List<NetworkEntity> MasterObjects;
+        HashSet<NetworkEntity> MasterObjects;
         #endregion
 
         #region Master
@@ -83,8 +83,7 @@ namespace MNet
         {
             Master = target;
 
-            for (int i = 0; i < MasterObjects.Count; i++)
-                MasterObjects[i].SetOwner(Master);
+            foreach (var entity in MasterObjects) entity.SetOwner(Master);
         }
 
         void ChangeMaster(NetworkClient target)
@@ -115,8 +114,16 @@ namespace MNet
         NetworkMessageBuffer MessageBuffer;
 
         public void BufferMessage(NetworkMessage message) => MessageBuffer.Add(message);
-
+        public void BufferMessage(NetworkMessage? message)
+        {
+            if (message.HasValue) BufferMessage(message);
+        }
+        
         public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
+        public void UnbufferMessage(NetworkMessage? message)
+        {
+            if (message.HasValue) UnbufferMessage(message.Value);
+        }
 
         public void UnbufferMessages(ICollection<NetworkMessage> collection) => MessageBuffer.RemoveAll(collection.Contains);
         #endregion
@@ -553,21 +560,22 @@ namespace MNet
 
             if (owner == null)
             {
-                Log.Warning($"No Owner Found For Spawn Entity Request");
+                Log.Warning($"No Owner Found For Spawned Entity Request");
                 return;
             }
 
             var entity = new NetworkEntity(owner, id, request.Type, request.Persistance);
 
-            Entities.Assign(id, entity);
             owner?.Entities.Add(entity);
+
+            Entities.Assign(id, entity);
+
+            if (entity.IsMasterObject) MasterObjects.Add(entity);
 
             Log.Info($"Room {this.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
-
             entity.SpawnMessage = Broadcast(command, condition: NetworkClient.IsReady);
-            
             BufferMessage(entity.SpawnMessage);
         }
 
@@ -585,9 +593,9 @@ namespace MNet
                 return;
             }
 
-            if (entity.Type == NetworkEntityType.SceneObject)
+            if (entity.IsMasterObject)
             {
-                Log.Warning($"Scene Objects Cannot be Taken Over by Clients, Ignoring request from Client: {sender}");
+                Log.Warning($"Master Objects Cannot be Taken Over by Clients, Ignoring request from Client: {sender}");
                 return;
             }
 
@@ -595,11 +603,10 @@ namespace MNet
             entity.SetOwner(owner);
             entity.Owner?.Entities.Add(entity);
 
+            UnbufferMessage(entity.OwnershipMessage);
             var command = new ChangeEntityOwnerCommand(owner.ID, request.Entity);
-
-            if (entity.OwnershipMessage != null) UnbufferMessage(entity.OwnershipMessage.Value);
             entity.OwnershipMessage = Broadcast(command, condition: NetworkClient.IsReady);
-            BufferMessage(entity.OwnershipMessage.Value);
+            BufferMessage(entity.OwnershipMessage);
         }
 
         void MakeEntityOrphan(NetworkEntity entity)
@@ -610,13 +617,13 @@ namespace MNet
                 return;
             }
 
+            entity.Type = NetworkEntityType.Orphan;
             entity.SetOwner(Master);
+
             MasterObjects.Add(entity);
 
             var command = entity.SpawnMessage.Read<SpawnEntityCommand>().MakeOrphan();
-
             var message = NetworkMessage.Write(command);
-
             MessageBuffer.Set(bufferIndex, message);
         }
 
@@ -636,21 +643,21 @@ namespace MNet
 
             DestroyEntity(entity, true);
         }
-
         void DestroyEntity(NetworkEntity entity, bool broadcast)
         {
             UnbufferMessage(entity.SpawnMessage);
-            if (entity.OwnershipMessage != null) UnbufferMessage(entity.OwnershipMessage.Value);
+            UnbufferMessage(entity.OwnershipMessage);
 
             entity.RpcBuffer.Clear(UnbufferMessages);
             entity.SyncVarBuffer.Clear(UnbufferMessages);
 
-            Entities.Remove(entity.ID);
-
             entity.Owner?.Entities.Remove(entity);
 
-            var command = new DestroyEntityCommand(entity.ID);
+            Entities.Remove(entity.ID);
 
+            if (entity.IsMasterObject) MasterObjects.Remove(entity);
+
+            var command = new DestroyEntityCommand(entity.ID);
             if (broadcast) Broadcast(command, condition: NetworkClient.IsReady);
         }
         #endregion
@@ -728,7 +735,7 @@ namespace MNet
 
             Clients = new Dictionary<NetworkClientID, NetworkClient>();
             Entities = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
-            MasterObjects = new List<NetworkEntity>();
+            MasterObjects = new HashSet<NetworkEntity>();
 
             scheduler = new Scheduler(TickDelay, Tick);
 
