@@ -209,7 +209,7 @@ namespace MNet
         {
             while (true)
             {
-                if (Entity.IsMyResponsibility)
+                if (Entity.IsMine)
                     yield return LocalProcedure();
                 else
                     yield return RemoteProcedure();
@@ -249,7 +249,7 @@ namespace MNet
 
             var raw = writer.Flush();
 
-            BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Entity.Supervisor);
+            BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Entity.Owner);
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master, Delivery = DeliveryMode.Unreliable)]

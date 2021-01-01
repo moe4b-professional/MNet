@@ -33,26 +33,24 @@ namespace MNet
 
         public NetworkEntityType Type { get; protected set; }
 
+        public bool IsSceneObject => Type == NetworkEntityType.SceneObject;
+        public bool IsDynamic => Type == NetworkEntityType.Dynamic;
         public bool IsOrphan => Type == NetworkEntityType.Orphan;
+
+        /// <summary>
+        /// Is this an entity that will always be owned by the master client? such as scene objects and orphans
+        /// </summary>
+        public bool IsMasterObject => Type == NetworkEntityType.SceneObject | Type == NetworkEntityType.Orphan;
 
         public PersistanceFlags Persistance { get; protected set; }
 
         #region Ownership
         public NetworkClient Owner { get; protected set; }
 
+        /// <summary>
+        /// Am I the owner of this entity?
+        /// </summary>
         public bool IsMine => Owner == NetworkAPI.Client.Self;
-
-        public NetworkClient Supervisor
-        {
-            get
-            {
-                if (IsOrphan) return NetworkAPI.Room.Master;
-
-                return Owner;
-            }
-        }
-
-        public bool IsMyResponsibility => Supervisor == NetworkAPI.Client.Self;
 
         public delegate void OwnerSetDelegate(NetworkClient client);
         public event OwnerSetDelegate OnOwnerSet;
@@ -65,7 +63,7 @@ namespace MNet
 
         internal void MakeOrphan() //*cocks gun with malicious intent* 
         {
-            SetOwner(null);
+            SetOwner(NetworkAPI.Room.Master);
             Type = NetworkEntityType.Orphan;
         }
 

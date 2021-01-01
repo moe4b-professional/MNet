@@ -168,7 +168,7 @@ namespace MNet
 
                     if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
                     {
-                        entities[i].MakeOrphan();
+                        MakeEntityOrphan(entities[i]);
                         continue;
                     }
 
@@ -228,18 +228,19 @@ namespace MNet
 
                 var owner = FindOwner(command);
 
-                if (owner == null && command.Type != NetworkEntityType.Orphan)
-                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner Even Thouh it is not an Orphan");
+                if (owner == null)
+                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
 
                 owner?.Entities.Add(entity);
 
+                //Scene Objects are Setup on NetworkScene Awake
                 if (command.Type != NetworkEntityType.SceneObject) entity.Setup();
 
                 entity.Load(owner, command.ID, command.Attributes, command.Type, command.Persistance);
 
                 Entities.Add(entity.ID, entity);
 
-                if (command.Type == NetworkEntityType.SceneObject) MasterObjects.Add(entity);
+                if (command.Type == NetworkEntityType.SceneObject || command.Type == NetworkEntityType.Orphan) MasterObjects.Add(entity);
 
                 if (command.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
 
@@ -294,7 +295,7 @@ namespace MNet
                             return null;
 
                     case NetworkEntityType.Orphan:
-                        return null;
+                        return Master;
                 }
 
                 throw new NotImplementedException();
@@ -319,6 +320,12 @@ namespace MNet
                 entity.Owner?.Entities.Add(entity);
             }
 
+            static void MakeEntityOrphan(NetworkEntity entity)
+            {
+                entity.MakeOrphan();
+                MasterObjects.Add(entity);
+            }
+
             public delegate void DestroyEntityDelegate(NetworkEntity entity);
             public static event DestroyEntityDelegate OnDestroyEntity;
             static void DestroyEntity(DestroyEntityCommand command)
@@ -338,7 +345,7 @@ namespace MNet
 
                 entity.Owner?.Entities.Remove(entity);
                 Entities.Remove(entity.ID);
-                MasterObjects.Remove(entity);
+                if (entity.IsMasterObject) MasterObjects.Remove(entity);
 
                 DespawnEntity(entity);
 
@@ -355,7 +362,7 @@ namespace MNet
             }
             #endregion
 
-            #region RPC
+            #region Remote Sync
             static void InvokeRPC(RpcCommand command)
             {
                 try
@@ -373,7 +380,6 @@ namespace MNet
                     throw;
                 }
             }
-            #endregion
 
             static void InvokeSyncVar(SyncVarCommand command)
             {
@@ -385,6 +391,7 @@ namespace MNet
 
                 target.InvokeSyncVar(command);
             }
+            #endregion
 
             public static void Leave() => Client.Disconnect();
 

@@ -34,6 +34,8 @@ namespace MNet.Example
 
 		void Update()
 		{
+			if (Player.Entity.IsOrphan) return;
+
 			if (Player.Entity.IsMine == false) return;
 
 			var target = new Vector3()

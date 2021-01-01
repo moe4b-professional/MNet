@@ -543,7 +543,12 @@ namespace MNet
         public byte Scene => scene;
 
         //Yes, I know, mutable structs are "evil", I'll be careful, I swear
-        public void MakeOrphan() => type = NetworkEntityType.Orphan;
+        public SpawnEntityCommand MakeOrphan()
+        {
+            type = NetworkEntityType.Orphan;
+
+            return this;
+        }
 
         public void Select(ref NetworkSerializationContext context)
         {

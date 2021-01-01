@@ -610,9 +610,10 @@ namespace MNet
                 return;
             }
 
-            var command = entity.SpawnMessage.Read<SpawnEntityCommand>();
+            entity.SetOwner(Master);
+            MasterObjects.Add(entity);
 
-            command.MakeOrphan();
+            var command = entity.SpawnMessage.Read<SpawnEntityCommand>().MakeOrphan();
 
             var message = NetworkMessage.Write(command);
 
