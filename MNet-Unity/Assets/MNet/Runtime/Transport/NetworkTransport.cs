@@ -67,5 +67,17 @@ namespace MNet
         {
             
         }
+
+        //Static Utility
+        public static bool IsSupported(NetworkTransportType transport, RuntimePlatform platform)
+        {
+            switch (platform)
+            {
+                case RuntimePlatform.WebGLPlayer:
+                    return transport == NetworkTransportType.WebSockets;
+            }
+
+            return true;
+        }
     }
 }
