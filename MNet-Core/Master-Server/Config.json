@@ -1,5 +1,5 @@
 {
-  "Transport": "LiteNetLib",
+  "Transport": "WebSockets",
   "Apps": [
     {
       "ID": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",

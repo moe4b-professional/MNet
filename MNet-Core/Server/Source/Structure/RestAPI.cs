@@ -168,9 +168,9 @@ namespace MNet
             Server = new HttpServer(IPAddress.Any, port);
 
             Server.OnGet += RequestCallback;
-            Server.OnPost += RequestCallback;
-            Server.OnDelete += RequestCallback;
             Server.OnPut += RequestCallback;
+            Server.OnPost += RequestCallback;
+            Server.OnOptions += RequestCallback;
         }
 
         public static void Start()
@@ -186,6 +186,16 @@ namespace MNet
             var response = args.Response;
 
             Log.Info($"Rest API: {request.HttpMethod}:{request.Url.AbsolutePath} from {request.UserHostAddress}");
+
+            response.AddHeader("Access-Control-Allow-Origin", "*");
+
+            if (request.HttpMethod == "OPTIONS")
+            {
+                response.AddHeader("Access-Control-Allow-Headers", "*");
+                response.AddHeader("Access-Control-Allow-Methods", "GET,PUT,POST");
+                response.StatusCode = 200;
+                return;
+            }
 
             if (Router.Process(request, response) == false) Write(response, RestStatusCode.NotFound, "Error 404");
         }
