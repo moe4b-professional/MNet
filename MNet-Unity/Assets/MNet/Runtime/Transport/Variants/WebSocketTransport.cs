@@ -17,15 +17,87 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using WebSocketSharp;
-
 using Utility = MNet.NetworkTransportUtility.WebSocket;
 
-using System.Net;
+using NativeWebSocket;
 
 namespace MNet
 {
     public class WebSocketTransport : NetworkTransport
+    {
+        public WebSocket Socket { get; protected set; }
+
+        public override bool IsConnected
+        {
+            get
+            {
+                if (Socket == null) return false;
+
+                return Socket.State == WebSocketState.Open;
+            }
+        }
+
+        public const int Port = Constants.Server.Game.Realtime.Port;
+
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
+
+        public override void Connect(GameServerID server, RoomID room)
+        {
+            var url = $"ws://{server}:{Port}/{room}";
+
+            Socket = new WebSocket(url);
+
+            Socket.OnOpen += OpenCallback;
+            Socket.OnMessage += RecievedMessageCallback;
+            Socket.OnClose += CloseCallback;
+
+            Socket.Connect();
+        }
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+        void Process()
+        {
+            if (Socket == null) return;
+
+            Socket.DispatchMessageQueue();
+        }
+#endif
+
+        #region Callbacks
+        void OpenCallback() => InvokeConnect();
+
+        void RecievedMessageCallback(byte[] data) => InvokeMessages(data, DeliveryMode.Reliable);
+
+        void CloseCallback(WebSocketCloseCode closeCode)
+        {
+            var value = (ushort)closeCode;
+
+            var code = Utility.Disconnect.ValueToCode(value);
+
+            InvokeDisconnect(code);
+        }
+        #endregion
+
+        public override void Send(byte[] raw, DeliveryMode mode)
+        {
+            Socket.Send(raw);
+        }
+
+        public override void Close()
+        {
+            Socket.Close();
+        }
+
+        public WebSocketTransport() : base()
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            NetworkAPI.OnProcess += Process;
+#endif
+        }
+    }
+
+    /*
+     public class WebSocketTransport : NetworkTransport
     {
         public WebSocket Socket { get; protected set; }
 
@@ -89,4 +161,5 @@ namespace MNet
 
         }
     }
+    */
 }

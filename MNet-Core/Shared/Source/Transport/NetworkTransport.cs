@@ -8,7 +8,7 @@ namespace MNet
     [Preserve]
     public enum NetworkTransportType : byte
     {
-        WebSocketSharp, LiteNetLib
+        WebSockets, LiteNetLib
     }
 
     [Preserve]

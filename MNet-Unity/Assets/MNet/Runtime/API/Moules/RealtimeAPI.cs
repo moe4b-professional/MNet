@@ -37,22 +37,27 @@ namespace MNet
 
             public static event Action OnBufferBegin;
 
-            internal static async void ApplyBuffer(IList<NetworkMessage> list)
+            internal static void ApplyBuffer(IList<NetworkMessage> list)
             {
                 if (IsOnBuffer) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
 
-                IsOnBuffer = true;
-                OnBufferBegin?.Invoke();
+                GlobalCoroutine.Start(Procedure);
 
-                for (int i = 0; i < list.Count; i++)
+                IEnumerator Procedure()
                 {
-                    while (Pause.Value) await Task.Delay(1);
+                    IsOnBuffer = true;
+                    OnBufferBegin?.Invoke();
 
-                    MessageCallback(list[i], DeliveryMode.Reliable);
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        while (Pause.Value) yield return new WaitForEndOfFrame();
+
+                        MessageCallback(list[i], DeliveryMode.Reliable);
+                    }
+
+                    IsOnBuffer = false;
+                    OnBufferEnd?.Invoke();
                 }
-
-                IsOnBuffer = false;
-                OnBufferEnd?.Invoke();
             }
 
             public static event Action OnBufferEnd;
@@ -266,7 +271,7 @@ namespace MNet
             {
                 switch (type)
                 {
-                    case NetworkTransportType.WebSocketSharp:
+                    case NetworkTransportType.WebSockets:
                         return new WebSocketTransport();
 
                     case NetworkTransportType.LiteNetLib:

@@ -34,7 +34,7 @@ namespace MNet
 
             public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
             public static event InfoDelegate OnInfo;
-            public static void GetInfo(InfoDelegate callback = null)
+            public static void GetInfo(InfoDelegate handler = null)
             {
                 var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
@@ -44,7 +44,7 @@ namespace MNet
                 {
                     Lobby.Info = info;
 
-                    callback?.Invoke(info, error);
+                    handler?.Invoke(info, error);
                     OnInfo?.Invoke(info, error);
                 }
             }

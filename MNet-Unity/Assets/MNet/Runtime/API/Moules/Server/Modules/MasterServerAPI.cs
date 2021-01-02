@@ -39,7 +39,7 @@ namespace MNet
 
                 public delegate void SchemeDelegate(MasterServerSchemeResponse response, RestError error);
                 public static event SchemeDelegate OnScheme;
-                public static void GetScheme(SchemeDelegate callback = null)
+                public static void GetScheme(SchemeDelegate handler = null)
                 {
                     var payload = new MasterServerSchemeRequest(NetworkAPI.AppID, NetworkAPI.Version);
 
@@ -47,14 +47,14 @@ namespace MNet
 
                     void Callback(MasterServerSchemeResponse response, RestError error)
                     {
-                        callback?.Invoke(response, error);
+                        handler?.Invoke(response, error);
                         OnScheme?.Invoke(response, error);
                     }
                 }
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
                 public static event InfoDelegate OnInfo;
-                public static void GetInfo(InfoDelegate callback = null)
+                public static void GetInfo(InfoDelegate handler = null)
                 {
                     var payload = new MasterServerInfoRequest();
 
@@ -62,21 +62,9 @@ namespace MNet
 
                     void Callback(MasterServerInfoResponse info, RestError error)
                     {
-                        callback?.Invoke(info, error);
+                        handler?.Invoke(info, error);
                         OnInfo?.Invoke(info, error);
                     }
-                }
-
-                static void ApplicationQuitCallback()
-                {
-                    Application.quitting -= ApplicationQuitCallback;
-
-                    Rest.CancelPendingRequests();
-                }
-
-                static Master()
-                {
-                    Application.quitting += ApplicationQuitCallback;
                 }
             }
         }

@@ -37,10 +37,14 @@ namespace MNet
 			#region Load
 			public static bool IsLoading { get; private set; } = false;
 
+			/// <summary>
+			/// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
+			/// no need to pause realtime or any of that in custom method, just load the scenes
+			/// </summary>
 			public static LoadMethodDeleagate LoadMethod { get; set; }
-			public delegate Task LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
+			public delegate IEnumerator LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
 
-			public static async Task DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
+			public static IEnumerator DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
 			{
 				for (int i = 0; i < scenes.Length; i++)
 				{
@@ -53,9 +57,7 @@ namespace MNet
 						continue;
 					}
 
-					var operation = SceneManager.LoadSceneAsync(scenes[i], mode);
-
-					while (operation.isDone == false) await Task.Delay(1);
+					yield return SceneManager.LoadSceneAsync(scenes[i], mode);
 
 					if (i == 0) mode = LoadSceneMode.Additive;
 				}
@@ -64,24 +66,29 @@ namespace MNet
 			static readonly object RealtimePauseLock = new object();
 
 			public static event LoadDelegate OnLoadBegin;
-			static async void Load(LoadScenesCommand command)
+			static void Load(LoadScenesCommand command)
 			{
 				if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
 
-				var scenes = command.Scenes;
-				var mode = ConvertLoadMode(command.Mode);
+				GlobalCoroutine.Start(Procedure);
 
-				IsLoading = true;
-				Realtime.Pause.AddLock(RealtimePauseLock);
-				OnLoadBegin?.Invoke(scenes, mode);
+				IEnumerator Procedure()
+                {
+					var scenes = command.Scenes;
+					var mode = ConvertLoadMode(command.Mode);
 
-				if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
+					IsLoading = true;
+					Realtime.Pause.AddLock(RealtimePauseLock);
+					OnLoadBegin?.Invoke(scenes, mode);
 
-				await LoadMethod(scenes, mode);
+					if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
 
-				IsLoading = false;
-				Realtime.Pause.RemoveLock(RealtimePauseLock);
-				OnLoadEnd?.Invoke(scenes, mode);
+					yield return LoadMethod(scenes, mode);
+
+					IsLoading = false;
+					Realtime.Pause.RemoveLock(RealtimePauseLock);
+					OnLoadEnd?.Invoke(scenes, mode);
+				}
 			}
 			public static event LoadDelegate OnLoadEnd;
 

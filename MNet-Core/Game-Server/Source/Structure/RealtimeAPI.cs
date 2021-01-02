@@ -16,7 +16,7 @@ namespace MNet
         {
             switch (type)
             {
-                case NetworkTransportType.WebSocketSharp:
+                case NetworkTransportType.WebSockets:
                     Transport = new WebSocketTransport();
                     break;
 

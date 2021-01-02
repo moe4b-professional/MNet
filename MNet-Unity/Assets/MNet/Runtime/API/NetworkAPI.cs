@@ -49,6 +49,8 @@ namespace MNet
         {
             Log.Output = LogOutput;
 
+            GlobalCoroutine.Configure();
+
 #if ENABLE_IL2CPP
             DynamicNetworkSerialization.Enabled = false;
 #else

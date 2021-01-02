@@ -63,8 +63,6 @@ namespace MNet
 
         void Tick()
         {
-            if (Client == null) return;
-
             Client.PollEvents();
 
             Thread.Sleep(1);

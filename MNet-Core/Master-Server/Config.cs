@@ -22,7 +22,7 @@ namespace MNet
         {
             base.WriteDefaults();
 
-            Transport = NetworkTransportType.WebSocketSharp;
+            Transport = NetworkTransportType.WebSockets;
 
             Apps = new AppConfig[] { };
         }

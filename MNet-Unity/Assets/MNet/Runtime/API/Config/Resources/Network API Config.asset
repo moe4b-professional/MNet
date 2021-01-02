@@ -19,7 +19,7 @@ MonoBehaviour:
     value: 0.0.1
     infer: 1
   updateMethod:
-    early: 0
+    early: 1
     normal: 1
     fixed: 0
     late:

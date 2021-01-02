@@ -49,8 +49,6 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    Application.quitting += ApplicationQuitCallback;
-
                     Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
 
                     Collection = new Dictionary<GameServerID, GameServerInfo>();
@@ -87,13 +85,6 @@ namespace MNet
                     OnSelect?.Invoke(id);
                 }
                 public static void Select(GameServerInfo info) => Select(info.ID);
-
-                static void ApplicationQuitCallback()
-                {
-                    Application.quitting -= ApplicationQuitCallback;
-
-                    Rest.CancelPendingRequests();
-                }
             }
         }
     }

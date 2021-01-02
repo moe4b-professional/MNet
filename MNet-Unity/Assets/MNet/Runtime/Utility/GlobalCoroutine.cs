@@ -23,12 +23,13 @@ namespace MNet
 	{
 		static GlobalCoroutine instance;
 
-		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-		static void OnLoad()
+		public static void Configure()
 		{
 			var gameObject = new GameObject("Global Coroutine");
 
 			instance = gameObject.AddComponent<GlobalCoroutine>();
+
+			DontDestroyOnLoad(instance);
 		}
 
 		public static Coroutine Start(Func<IEnumerator> function) => Start(function());

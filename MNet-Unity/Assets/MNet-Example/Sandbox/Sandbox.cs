@@ -29,7 +29,7 @@ namespace MNet.Example
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
-
+            
         }
 
         void Update()
