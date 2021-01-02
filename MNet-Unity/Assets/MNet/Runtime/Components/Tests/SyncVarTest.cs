@@ -32,8 +32,13 @@ namespace MNet
             {
                 //Do your things here, new value: value, old value: field
                 field = value;
+
+                success = value == NetworkAPI.Client.Profile.Name;
             }
         }
+
+        [SerializeField]
+        bool success = false;
 
         void SyncField(string value) => SyncVar(nameof(Field), Field, value);
 

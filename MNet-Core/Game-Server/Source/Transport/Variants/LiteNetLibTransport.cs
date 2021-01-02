@@ -20,7 +20,7 @@ namespace MNet
 
         public static ushort Port => Constants.Server.Game.Realtime.Port;
 
-        public Dictionary<int, LiteNetLibTransportContext> Routes { get; protected set; }
+        public Dictionary<NetPeer, LiteNetLibTransportContext> Routes { get; protected set; }
 
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
@@ -62,12 +62,12 @@ namespace MNet
 
             var peer = request.Accept();
 
-            Routes[peer.Id] = context;
+            Routes[peer] = context;
         }
 
         public void OnPeerConnected(NetPeer peer)
         {
-            if(Routes.TryGetValue(peer.Id, out var context) == false)
+            if(Routes.TryGetValue(peer, out var context) == false)
             {
                 Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
                 return;
@@ -78,7 +78,7 @@ namespace MNet
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            if (Routes.TryGetValue(peer.Id, out var context) == false)
+            if (Routes.TryGetValue(peer, out var context) == false)
             {
                 Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
                 return;
@@ -94,11 +94,13 @@ namespace MNet
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (Routes.TryGetValue(peer.Id, out var context) == false)
+            if (Routes.TryGetValue(peer, out var context) == false)
             {
                 Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
                 return;
             }
+
+            Routes.Remove(peer);
 
             context.UnregisterClient(peer);
         }
@@ -108,13 +110,6 @@ namespace MNet
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
         #endregion
 
-        public void Reject(ConnectionRequest request, DisconnectCode code)
-        {
-            var binary = Utility.Disconnect.CodeToBinary(code);
-
-            request.Reject(binary);
-        }
-
         protected override LiteNetLibTransportContext CreateContext(uint id) => new LiteNetLibTransportContext(this, id);
 
         public LiteNetLibTransport()
@@ -122,9 +117,18 @@ namespace MNet
             Server = new NetManager(this);
             Server.UpdateTime = 1;
 
-            Routes = new Dictionary<int, LiteNetLibTransportContext>();
+            Routes = new Dictionary<NetPeer, LiteNetLibTransportContext>();
 
             new Thread(Run).Start();
+        }
+
+        //Static Utility
+
+        public static void Reject(ConnectionRequest request, DisconnectCode code)
+        {
+            var binary = Utility.Disconnect.CodeToBinary(code);
+
+            request.Reject(binary);
         }
     }
 

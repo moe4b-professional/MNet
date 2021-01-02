@@ -19,10 +19,11 @@ using Random = UnityEngine.Random;
 
 using Utility = MNet.NetworkTransportUtility.WebSocket;
 
-using NativeWebSocket;
-
 namespace MNet
 {
+#if UNITY_WEBGL && !UNITY_EDITOR
+    using NativeWebSocket;
+
     public class WebSocketTransport : NetworkTransport
     {
         public WebSocket Socket { get; protected set; }
@@ -63,7 +64,6 @@ namespace MNet
         }
 #endif
 
-        #region Callbacks
         void OpenCallback() => InvokeConnect();
 
         void RecievedMessageCallback(byte[] data) => InvokeMessages(data, DeliveryMode.Reliable);
@@ -76,17 +76,10 @@ namespace MNet
 
             InvokeDisconnect(code);
         }
-        #endregion
 
-        public override void Send(byte[] raw, DeliveryMode mode)
-        {
-            Socket.Send(raw);
-        }
+        public override void Send(byte[] raw, DeliveryMode mode) => Socket.Send(raw);
 
-        public override void Close()
-        {
-            Socket.Close();
-        }
+        public override void Close() => Socket.Close();
 
         public WebSocketTransport() : base()
         {
@@ -96,8 +89,10 @@ namespace MNet
         }
     }
 
-    /*
-     public class WebSocketTransport : NetworkTransport
+#else
+    using WebSocketSharp;
+
+    public class WebSocketTransport : NetworkTransport
     {
         public WebSocket Socket { get; protected set; }
 
@@ -128,13 +123,7 @@ namespace MNet
             Socket.ConnectAsync();
         }
 
-        #region Callbacks
-        void OpenCallback(object sender, EventArgs args)
-        {
-            Socket.DisableNagleAlgorithm();
-
-            InvokeConnect();
-        }
+        void OpenCallback(object sender, EventArgs args) => InvokeConnect();
 
         void RecievedMessageCallback(object sender, MessageEventArgs args) => InvokeMessages(args.RawData, DeliveryMode.Reliable);
 
@@ -144,22 +133,15 @@ namespace MNet
 
             InvokeDisconnect(code);
         }
-        #endregion
 
-        public override void Send(byte[] raw, DeliveryMode mode)
-        {
-            Socket.Send(raw);
-        }
+        public override void Send(byte[] raw, DeliveryMode mode) => Socket.Send(raw);
 
-        public override void Close()
-        {
-            Socket.CloseAsync(CloseStatusCode.Normal);
-        }
+        public override void Close() => Socket.CloseAsync(CloseStatusCode.Normal);
 
         public WebSocketTransport() : base()
         {
 
         }
     }
-    */
+#endif
 }

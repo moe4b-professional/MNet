@@ -54,23 +54,6 @@ namespace MNet
             return dictionary.TryRemove(key, out _);
         }
 
-        public static void DisableNagleAlgorithm(this WebSocketSharp.WebSocket socket)
-        {
-            var binding = BindingFlags.Instance | BindingFlags.NonPublic;
-
-            var client = socket.GetType().GetField("_tcpClient", binding).GetValue(socket) as TcpClient;
-
-            client.NoDelay = true;
-        }
-        public static void DisableNagleAlgorithm(this WebSocketSharp.Server.WebSocketServer socket)
-        {
-            var binding = BindingFlags.Instance | BindingFlags.NonPublic;
-
-            var listener = socket.GetType().GetField("_listener", binding).GetValue(socket) as TcpListener;
-
-            listener.Server.NoDelay = true;
-        }
-
         public static bool TryGetIndex<T>(this IList<T> collection, out int index, Predicate<T> predicate)
         {
             for (int i = 0; i < collection.Count; i++)

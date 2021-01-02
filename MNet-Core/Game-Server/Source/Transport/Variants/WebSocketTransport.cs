@@ -36,7 +36,6 @@ namespace MNet
             Server = new WebSocketServer(IPAddress.Any, Port);
 
             Server.KeepClean = false;
-            Server.DisableNagleAlgorithm();
         }
     }
 
