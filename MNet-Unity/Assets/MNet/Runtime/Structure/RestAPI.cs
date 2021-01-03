@@ -23,6 +23,7 @@ using UnityEngine.Networking;
 
 namespace MNet
 {
+    [Preserve]
     public class RestClientAPI
     {
         public ushort Port { get; protected set; }
@@ -63,10 +64,11 @@ namespace MNet
             ReadResult(request, out TResult result, out var error);
 
             if (error != null) Log.Error(error);
-
-            callback(result, error);
+            if (error != null) Log.Error(request.url);
 
             request.Dispose();
+
+            callback(result, error);
         }
 
         public RestClientAPI(ushort port, RestScheme scheme)

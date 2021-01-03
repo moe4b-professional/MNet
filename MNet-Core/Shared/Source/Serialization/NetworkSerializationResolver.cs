@@ -1255,19 +1255,18 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public static Type Interface { get; } = typeof(ITuple);
-        public static bool IsValid(Type target) => Interface.IsAssignableFrom(target);
+        public static bool IsValid(Type target) => TupleUtility.CheckType(target);
 
         public override bool CanResolve(Type target) => IsValid(target);
 
         public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
         {
-            var value = instance as ITuple;
+            var values = TupleUtility.Extract(instance);
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
 
-            for (int i = 0; i < value.Length; i++)
-                writer.Write(value[i], arguments[i]);
+            for (int i = 0; i < values.Length; i++)
+                writer.Write(values[i], arguments[i]);
         }
 
         public override object DeserializeImplicit(NetworkReader reader, Type type)

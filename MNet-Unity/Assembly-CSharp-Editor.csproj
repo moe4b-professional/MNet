@@ -55,7 +55,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\MNet\Editor\MNetEditor.cs" />
+     <Compile Include="Assets\MNet\Editor\NetworkAPIEditor.cs" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>
@@ -251,14 +251,20 @@
  <Reference Include="UnityEditor.WebGL.Extensions">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll</HintPath>
  </Reference>
+ <Reference Include="UnityEditor.LinuxStandalone.Extensions">
+ <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/LinuxStandaloneSupport/UnityEditor.LinuxStandalone.Extensions.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEditor.Android.Extensions">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll</HintPath>
  </Reference>
- <Reference Include="Shared">
- <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Shared.dll</HintPath>
+ <Reference Include="Newtonsoft.Json">
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/JsonDotNet/Assemblies/Standalone/Newtonsoft.Json.dll</HintPath>
  </Reference>
  <Reference Include="websocket-sharp">
- <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Runtime/Third Party/Web Socket Sharp/websocket-sharp.dll</HintPath>
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/Web Socket Sharp/websocket-sharp.dll</HintPath>
+ </Reference>
+ <Reference Include="Shared-Extra">
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Shared-Extra.dll</HintPath>
  </Reference>
  <Reference Include="mscorlib">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/MonoBleedingEdge/lib/mono/4.7.1-api/mscorlib.dll</HintPath>
@@ -626,13 +632,13 @@
       <Project>{1856A5CF-3901-2E75-D979-E95CAF2BC13B}</Project>
       <Name>Assembly-CSharp</Name>
     </ProjectReference>
-    <ProjectReference Include="MNet-Unity.csproj">
-      <Project>{BE1C6F00-BF17-A24A-7C74-DA0167650178}</Project>
-      <Name>MNet-Unity</Name>
-    </ProjectReference>
     <ProjectReference Include="LiteNetLib.csproj">
       <Project>{1B4927FD-1A71-E482-79DE-F153996F9CDF}</Project>
       <Name>LiteNetLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="MNet-Unity-Runtime.csproj">
+      <Project>{4973B75D-8890-01D4-4FEB-A1DB7995FF6D}</Project>
+      <Name>MNet-Unity-Runtime</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

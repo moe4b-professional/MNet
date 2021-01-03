@@ -96,14 +96,17 @@
     <Compile Include="Source\Data\Version.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="DLL Copy Destination.txt" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\Shared-Extra\Shared-Extra.csproj">
+      <Project>{116cb491-07e9-467d-8f54-351c323b7696}</Project>
+      <Name>Shared-Extra</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>set /p Destination=&lt;"$(ProjectDir)DLL Copy Destination.txt"
-xcopy /y /d "$(TargetPath)" "$(ProjectDir)%25Destination%25"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>

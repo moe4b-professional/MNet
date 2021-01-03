@@ -142,6 +142,40 @@
      <Compile Include="Assets\MNet\Runtime\Utility\Dependancy.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\GlobalCoroutine.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\SyncInterval.cs" />
+     <Compile Include="Assets\MNet\Shared\Collections\AttributesCollection.cs" />
+     <Compile Include="Assets\MNet\Shared\Collections\CollectionPrettyPrint.cs" />
+     <Compile Include="Assets\MNet\Shared\Collections\NetworkGenericDictionary.cs" />
+     <Compile Include="Assets\MNet\Shared\Collections\UtilityCollections.cs" />
+     <Compile Include="Assets\MNet\Shared\Communication\MessageSendQueue.cs" />
+     <Compile Include="Assets\MNet\Shared\Communication\NetworkMessage.cs" />
+     <Compile Include="Assets\MNet\Shared\Communication\NetworkPayload.cs" />
+     <Compile Include="Assets\MNet\Shared\Constants.cs" />
+     <Compile Include="Assets\MNet\Shared\Data\NetworkTimeSpan.cs" />
+     <Compile Include="Assets\MNet\Shared\Data\RemoteConfig.cs" />
+     <Compile Include="Assets\MNet\Shared\Data\Version.cs" />
+     <Compile Include="Assets\MNet\Shared\Objects\NetworkBehaviour.cs" />
+     <Compile Include="Assets\MNet\Shared\Objects\NetworkClient.cs" />
+     <Compile Include="Assets\MNet\Shared\Objects\NetworkEntity.cs" />
+     <Compile Include="Assets\MNet\Shared\Remote Sync\RPX.cs" />
+     <Compile Include="Assets\MNet\Shared\Remote Sync\RemoteAuthority.cs" />
+     <Compile Include="Assets\MNet\Shared\Remote Sync\SyncVar.cs" />
+     <Compile Include="Assets\MNet\Shared\Serialization\NetworkSerializationHelper.cs" />
+     <Compile Include="Assets\MNet\Shared\Serialization\NetworkSerializationResolver.cs" />
+     <Compile Include="Assets\MNet\Shared\Serialization\NetworkSerializer.cs" />
+     <Compile Include="Assets\MNet\Shared\Serialization\NetworkStream.cs" />
+     <Compile Include="Assets\MNet\Shared\Structure\App.cs" />
+     <Compile Include="Assets\MNet\Shared\Structure\GameServer.cs" />
+     <Compile Include="Assets\MNet\Shared\Structure\Lobby.cs" />
+     <Compile Include="Assets\MNet\Shared\Structure\RestAPI.cs" />
+     <Compile Include="Assets\MNet\Shared\Structure\Room.cs" />
+     <Compile Include="Assets\MNet\Shared\Structure\Scene.cs" />
+     <Compile Include="Assets\MNet\Shared\Tool\Log.cs" />
+     <Compile Include="Assets\MNet\Shared\Tool\ObjectPooler.cs" />
+     <Compile Include="Assets\MNet\Shared\Transport\NetworkTransport.cs" />
+     <Compile Include="Assets\MNet\Shared\Transport\Variants\LiteNetLibTransport.cs" />
+     <Compile Include="Assets\MNet\Shared\Transport\Variants\WebSocketTransport.cs" />
+     <Compile Include="Assets\MNet\Shared\Utility\GeneralExtensions.cs" />
+     <Compile Include="Assets\MNet\Shared\Utility\PreserveAttribute.cs" />
      <Compile Include="Assets\MNet\Third Party\WebSocket\WebSocket.cs" />
      <None Include="Assets\MNet-Example\MNet-Unity.asmref" />
      <None Include="Assets\MNet-Project-Utility\MNet-Unity.asmref" />
@@ -349,8 +383,8 @@
  <Reference Include="UnityEditor.Android.Extensions">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/PlaybackEngines/AndroidPlayer/UnityEditor.Android.Extensions.dll</HintPath>
  </Reference>
- <Reference Include="Shared">
- <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Shared.dll</HintPath>
+ <Reference Include="Shared-Extra">
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Shared-Extra.dll</HintPath>
  </Reference>
  <Reference Include="Newtonsoft.Json">
  <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Assets/MNet/Third Party/JsonDotNet/Assemblies/Standalone/Newtonsoft.Json.dll</HintPath>
