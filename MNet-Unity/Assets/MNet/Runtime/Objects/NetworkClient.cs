@@ -26,7 +26,7 @@ namespace MNet
         public bool IsMaster => this == NetworkAPI.Room.Master;
 
         public NetworkClientProfile Profile { get; protected set; }
-        public string Name => Profile.Name;
+        public string Name => Profile == null ? "Anonymous Client" : Profile.Name;
         public AttributesCollection Attributes => Profile.Attributes;
 
         public List<NetworkEntity> Entities { get; protected set; }

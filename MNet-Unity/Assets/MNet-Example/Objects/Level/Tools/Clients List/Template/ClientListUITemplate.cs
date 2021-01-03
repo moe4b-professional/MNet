@@ -19,12 +19,12 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class ClientListUITemplate : UITemplate<ClientListUITemplate, NetworkClientProfile>
+	public class ClientListUITemplate : UITemplate<ClientListUITemplate, NetworkClient>
 	{
         [SerializeField]
         Text label = default;
 
-        public override void SetData(NetworkClientProfile data)
+        public override void SetData(NetworkClient data)
         {
             base.SetData(data);
 

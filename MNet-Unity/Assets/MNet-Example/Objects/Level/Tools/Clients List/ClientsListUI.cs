@@ -90,18 +90,18 @@ namespace MNet.Example
 		void Populate()
         {
             foreach (var client in NetworkAPI.Room.Clients.Values)
-				Add(client.ID, client.Profile);
+				Add(client);
         }
 
 		#region Add & Remove
-		void AddClientCallback(NetworkClient client) => Add(client.ID, client.Profile);
-		void Add(NetworkClientID id, NetworkClientProfile profile)
+		void AddClientCallback(NetworkClient client) => Add(client);
+		void Add(NetworkClient client)
 		{
-			var element = ClientListUITemplate.Create(template, profile);
+			var element = ClientListUITemplate.Create(template, client);
 
 			element.SetParent(scroll.content);
 
-			dictionary[id] = element;
+			dictionary[client.ID] = element;
 
 			UpdateState();
 		}

@@ -85,7 +85,7 @@ namespace MNet
             #region Create
             public delegate void CreateDelegate(RoomBasicInfo room, RestError error);
             public static event CreateDelegate OnCreate;
-            public static void Create(string name, byte capacity, AttributesCollection attributes = null)
+            public static void Create(string name, byte capacity, AttributesCollection attributes = null, CreateDelegate handler = null)
             {
                 var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, attributes);
 
@@ -93,6 +93,7 @@ namespace MNet
 
                 void Callback(RoomBasicInfo info, RestError error)
                 {
+                    handler?.Invoke(info, error);
                     OnCreate(info, error);
                 }
             }

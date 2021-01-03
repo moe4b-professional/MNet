@@ -771,6 +771,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   field: 
+  success: 0
 --- !u!114 &358559473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3078,7 +3079,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 73a74f7a88bdd9d4583d763b50e1dd41, type: 2}
   - {fileID: 11400000, guid: dbabf3e5e30fabb42a79d0f5361c3a82, type: 2}
   mode: 1
-  delay: 5
+  delay: 2
 --- !u!114 &1697156425
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3094,7 +3095,7 @@ MonoBehaviour:
   scenes:
   - {fileID: 11400000, guid: 614e0547b3ca9d74798af5e8bf8acf35, type: 2}
   mode: 0
-  delay: 5
+  delay: 2
 --- !u!1 &1735019178
 GameObject:
   m_ObjectHideFlags: 0

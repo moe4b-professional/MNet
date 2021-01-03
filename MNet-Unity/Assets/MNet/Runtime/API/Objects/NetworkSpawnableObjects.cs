@@ -98,11 +98,6 @@ namespace MNet
 				list.Add(element.gameObject);
 			}
 
-			EditorUtility.SetDirty(this);
-		}
-
-		void CleanEmpty()
-        {
 			list.RemoveAll(x => x == null);
 
 			EditorUtility.SetDirty(this);
@@ -141,8 +136,6 @@ namespace MNet
                 base.OnInspectorGUI();
 
 				if (GUILayout.Button("Refresh")) target.Refresh();
-
-				if (GUILayout.Button("Clean Empty")) target.CleanEmpty();
 
 				EditorGUILayout.HelpBox("These Spawnable Objects Automatically Get Updated Whenever PlayMode is Entered" +
 					", So There is no Need to Use These Controls Manually", MessageType.Info);
