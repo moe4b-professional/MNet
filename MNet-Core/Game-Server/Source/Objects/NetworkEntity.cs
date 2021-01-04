@@ -28,7 +28,7 @@ namespace MNet
 
         public NetworkMessage SpawnMessage { get; set; }
 
-        public NetworkMessage? OwnershipMessage { get; set; }
+        public NetworkMessage OwnershipMessage { get; set; }
 
         public RpcBuffer RpcBuffer { get; protected set; }
         public SyncVarBuffer SyncVarBuffer { get; protected set; }

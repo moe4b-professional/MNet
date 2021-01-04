@@ -60,7 +60,7 @@ namespace MNet.Example
         {
 			var attributes = new AttributesCollection();
 
-			var persistance = PersistanceFlags.SceneLoad | PersistanceFlags.PlayerDisconnection;
+			var persistance = PersistanceFlags.SceneLoad;
 
 			NetworkAPI.Client.SpawnEntity("Player", attributes: attributes, persistance: persistance);
 		}

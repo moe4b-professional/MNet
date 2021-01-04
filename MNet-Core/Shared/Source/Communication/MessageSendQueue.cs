@@ -22,66 +22,58 @@ namespace MNet
         {
             public DeliveryMode Mode { get; protected set; }
 
-            public List<NetworkMessage> Collection { get; protected set; }
+            List<byte[]> buffers;
 
-            public int Count => Collection.Count;
-
-            public bool Empty => Collection.Count == 0;
+            public bool Empty => buffers.Count == 0 && writer.Size == 0;
 
             public int MTU { get; protected set; }
 
             NetworkWriter writer;
 
-            public void Add(NetworkMessage message)
+            public void Add(byte[] message)
             {
-                Collection.Add(message);
+                if (message.Length > MTU) throw new Exception($"Message Too Big for {MTU} MTU");
+
+                if (writer.Position + message.Length > MTU)
+                {
+                    var buffer = writer.ToArray();
+
+                    buffers.Add(buffer);
+
+                    writer.Clear();
+                }
+
+                writer.Insert(message);
             }
 
-            public IEnumerable<byte[]> Serialize()
+            public List<byte[]> Read()
             {
-                int position = 0;
+                Finialize();
 
-                for (int i = 0; i < Count; i++)
-                {
-                    writer.Write(Collection[i]);
+                return buffers;
+            }
 
-                    if (writer.Size > MTU)
-                    {
-                        if (writer.Size - position > MTU) //Check the size of the current Network Message
-                            throw new Exception($"Network Message with Payload of '{Collection[i].Type}' is Too Big to Fit in an MTU of {MTU}");
+            void Finialize()
+            {
+                if (writer.Size == 0) return;
 
-                        var segment = writer.ToArray(position); //Read all the way to the previous Network Message and make a segment out of that
+                var buffer = writer.ToArray();
 
-                        writer.Shift(position); //Shift the bytes of the current Network Message to the start of the stream
+                buffers.Add(buffer);
 
-                        yield return segment;
-                    }
-
-                    position = writer.Position;
-                }
-
-                if (writer.Size > 0)
-                {
-                    var segment = writer.ToArray();
-
-                    yield return segment;
-                }
-
-                Clear();
+                writer.Clear();
             }
 
             public void Clear()
             {
-                Collection.Clear();
-
-                writer.Clear();
+                buffers.Clear();
             }
 
             public Delivery(DeliveryMode mode, int mtu)
             {
                 this.Mode = mode;
 
-                Collection = new List<NetworkMessage>();
+                buffers = new List<byte[]>();
 
                 this.MTU = mtu;
 
@@ -89,7 +81,7 @@ namespace MNet
             }
         }
 
-        public void Add(NetworkMessage message, DeliveryMode mode)
+        public void Add(byte[] message, DeliveryMode mode)
         {
             if (Dictionary.TryGetValue(mode, out var delivery) == false)
             {
@@ -102,30 +94,6 @@ namespace MNet
             }
 
             delivery.Add(message);
-        }
-
-        public delegate void SimpleResolveDelegate(byte[] raw, DeliveryMode mode);
-        public void Resolve(SimpleResolveDelegate method)
-        {
-            for (int i = 0; i < Deliveries.Count; i++)
-            {
-                if (Deliveries[i].Count == 0) continue;
-
-                foreach (var binary in Deliveries[i].Serialize())
-                    method(binary, Deliveries[i].Mode);
-            }
-        }
-
-        public delegate bool ReturnResolveDelegate(byte[] raw, DeliveryMode mode);
-        public void Resolve(ReturnResolveDelegate method)
-        {
-            for (int i = 0; i < Deliveries.Count; i++)
-            {
-                if (Deliveries[i].Count == 0) continue;
-
-                foreach (var binary in Deliveries[i].Serialize())
-                    method(binary, Deliveries[i].Mode);
-            }
         }
 
         public void Clear()

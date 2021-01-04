@@ -16,17 +16,17 @@ namespace MNet
         public delegate void BufferDelegate(NetworkMessage message);
         public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> collection);
 
-        public void Set(NetworkMessage message, RpcRequest request, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
+        public void Set(NetworkMessage message, RpcType type, RemoteBufferMode mode, NetworkBehaviourID behaviour, RpcMethodID method, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
         {
-            if (request.Type != RpcType.Broadcast)
+            if (type != RpcType.Broadcast)
             {
-                Log.Error($"RPC {request} of Type {request.Type} isn't Supported for Buffering");
+                Log.Error($"RPC of Type {type} isn't Supported for Buffering");
                 return;
             }
 
-            if (request.BufferMode == RemoteBufferMode.None) return;
+            if (mode == RemoteBufferMode.None) return;
 
-            var key = (request.Behaviour, request.Method);
+            var key = (behaviour, method);
 
             if (Dictionary.TryGetValue(key, out var collection) == false)
             {
@@ -35,7 +35,7 @@ namespace MNet
                 Dictionary.Add(key, collection);
             }
 
-            if (request.BufferMode == RemoteBufferMode.Last)
+            if (mode == RemoteBufferMode.Last)
             {
                 unbuffer(collection.HashSet);
 

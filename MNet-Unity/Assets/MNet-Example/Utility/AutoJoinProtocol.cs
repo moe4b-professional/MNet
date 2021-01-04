@@ -21,6 +21,8 @@ namespace MNet.Example
 {
     public class AutoJoinProtocol : MonoBehaviour
     {
+        static bool tried = false;
+
         void Start()
         {
             if (Application.isEditor == false) Begin();
@@ -28,8 +30,21 @@ namespace MNet.Example
 
         void Begin()
         {
-            NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
+            if (tried) return;
+
+            tried = true;
+
+            NetworkAPI.Server.Game.OnSelect += GameServerSelectCallback;
             NetworkAPI.Lobby.OnInfo += LobbyInfoCallback;
+
+            if (NetworkAPI.Server.Game.Collection.Count == 0)
+            {
+                NetworkAPI.Server.Master.OnInfo += MasterServerInfoCallback;
+            }
+            else
+            {
+                NetworkAPI.Server.Game.Select(NetworkAPI.Server.Game.Collection.FirstOrDefault().Value);
+            }
         }
 
         void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
@@ -37,7 +52,10 @@ namespace MNet.Example
             if (error != null) return;
 
             NetworkAPI.Server.Game.Select(info.Servers[0]);
+        }
 
+        void GameServerSelectCallback(GameServerID id)
+        {
             NetworkAPI.Lobby.GetInfo();
         }
 

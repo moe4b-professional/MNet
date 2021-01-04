@@ -13,7 +13,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct NetworkMessage
+    public class NetworkMessage
     {
         object payload;
         public object Payload => payload;
@@ -58,24 +58,15 @@ namespace MNet
             writer.Write(Type);
             writer.Write(payload);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             reader.Read(out Type type);
             payload = reader.Read(type);
         }
 
-        public override bool Equals(object obj)
-        {
-            if (obj is NetworkMessage message) return Equals(payload, message.payload);
-
-            return false;
-        }
-
-        public override int GetHashCode() => payload.GetHashCode();
-
         public override string ToString() => payload.ToString();
 
+        public NetworkMessage() { }
         NetworkMessage(object payload)
         {
             this.payload = payload;

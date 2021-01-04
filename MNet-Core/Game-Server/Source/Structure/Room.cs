@@ -113,16 +113,18 @@ namespace MNet
         #region Message Buffer
         NetworkMessageBuffer MessageBuffer;
 
-        public void BufferMessage(NetworkMessage message) => MessageBuffer.Add(message);
-        public void BufferMessage(NetworkMessage? message)
+        public void BufferMessage(NetworkMessage message)
         {
-            if (message.HasValue) BufferMessage(message);
+            if (message == null) return;
+
+            MessageBuffer.Add(message);
         }
         
-        public void UnbufferMessage(NetworkMessage message) => MessageBuffer.Remove(message);
-        public void UnbufferMessage(NetworkMessage? message)
+        public void UnbufferMessage(NetworkMessage message)
         {
-            if (message.HasValue) UnbufferMessage(message.Value);
+            if (message == null) return;
+
+            MessageBuffer.Remove(message);
         }
 
         public void UnbufferMessages(ICollection<NetworkMessage> collection) => MessageBuffer.RemoveAll(collection.Contains);
@@ -195,25 +197,14 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
-            if (QueueMessages)
-            {
-                QueueMessage(message, target, mode);
-            }
-            else
-            {
-                var binary = NetworkSerializer.Serialize(message);
+            var raw = NetworkSerializer.Serialize(message);
 
-                TransportContext.Send(target.ID, binary, mode);
-            }
+            if (QueueMessages)
+                QueueMessage(raw, target, mode);
+            else
+                TransportContext.Send(target.ID, raw, mode);
 
             return message;
-        }
-
-        void QueueMessage(NetworkMessage message, NetworkClient target, DeliveryMode mode)
-        {
-            target.SendQueue.Add(message, mode);
-
-            if (ClientSendQueue.Contains(target) == false) ClientSendQueue.Add(target);
         }
         #endregion
 
@@ -222,6 +213,8 @@ namespace MNet
         {
             var message = NetworkMessage.Write(payload);
 
+            var raw = NetworkSerializer.Serialize(message);
+
             if (QueueMessages)
             {
                 foreach (var client in Clients.Values)
@@ -230,20 +223,18 @@ namespace MNet
 
                     if (condition != null && condition(client) == false) continue;
 
-                    QueueMessage(message, client, mode);
+                    QueueMessage(raw, client, mode);
                 }
             }
             else
             {
-                var binary = NetworkSerializer.Serialize(message);
-
                 foreach (var client in Clients.Values)
                 {
                     if (exception != null && exception == client.ID) continue;
 
                     if (condition != null && condition(client) == false) continue;
 
-                    TransportContext.Send(client.ID, binary, mode);
+                    TransportContext.Send(client.ID, raw, mode);
                 }
             }
 
@@ -252,6 +243,13 @@ namespace MNet
 
         public delegate bool BroadcastCondition(NetworkClient client);
         #endregion
+
+        void QueueMessage(byte[] message, NetworkClient target, DeliveryMode mode)
+        {
+            target.SendQueue.Add(message, mode);
+
+            if (ClientSendQueue.Contains(target) == false) ClientSendQueue.Add(target);
+        }
 
         HashQueue<NetworkClient> ClientSendQueue;
 
@@ -263,12 +261,16 @@ namespace MNet
 
                 var deliveries = client.SendQueue.Deliveries;
 
-                for (int i = 0; i < deliveries.Count; i++)
+                for (int d = 0; d < deliveries.Count; d++)
                 {
-                    if (deliveries[i].Empty) continue;
+                    if (deliveries[d].Empty) continue;
 
-                    foreach (var binary in deliveries[i].Serialize())
-                        TransportContext.Send(client.ID, binary, deliveries[i].Mode);
+                    var buffers = deliveries[d].Read();
+
+                    for (int b = 0; b < buffers.Count; b++)
+                        TransportContext.Send(client.ID, buffers[b], deliveries[d].Mode);
+
+                    deliveries[d].Clear();
                 }
             }
         }
@@ -422,7 +424,7 @@ namespace MNet
 
             var message = Broadcast(command, mode: mode, condition: NetworkClient.IsReady, exception: request.Exception);
 
-            entity.RpcBuffer.Set(message, request, BufferMessage, UnbufferMessages);
+            entity.RpcBuffer.Set(message, request.Type, request.BufferMode, request.Behaviour, request.Method, BufferMessage, UnbufferMessages);
         }
 
         void InvokeDirectRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)

@@ -22,9 +22,48 @@ namespace MNet
     {
         public abstract bool CanResolve(Type target);
 
-        public abstract void SerializeImplicit(NetworkWriter writer, object instance, Type type);
+        public abstract void Serialize(NetworkWriter writer, object instance, Type type);
 
-        public abstract object DeserializeImplicit(NetworkReader reader, Type type);
+        protected static bool WriteNull(NetworkWriter writer, object value)
+        {
+            if (value == null)
+            {
+                writer.Insert(1); //Is Null Flag Value
+                return true;
+            }
+            else
+            {
+                writer.Insert(0); //Is Not Null Flag
+                return false;
+            }
+        }
+
+        protected static bool WriteNull(NetworkWriter writer, object instance, Type type)
+        {
+            if (instance == null)
+            {
+                writer.Insert(1); //Is Null Flag Value
+                return true;
+            }
+
+            if (NetworkSerializationHelper.Nullable.Any.Check(type)) writer.Insert(0); //Is Not Null Flag
+
+            return false;
+        }
+
+        public abstract object Deserialize(NetworkReader reader, Type type);
+
+        protected static bool ReadNull(NetworkReader reader)
+        {
+            return reader.Next() == 1 ? true : false;
+        }
+
+        protected static bool ReadNull(NetworkReader reader, Type type)
+        {
+            if (NetworkSerializationHelper.Nullable.Any.Check(type) == false) return false;
+
+            return ReadNull(reader);
+        }
 
         public NetworkSerializationResolver() { }
 
@@ -293,19 +332,35 @@ namespace MNet
                 return Type == target;
         }
 
-        public abstract void SerializeExplicit(NetworkWriter writer, T instance);
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public abstract void Serialize(NetworkWriter writer, T instance);
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             if (instance is T value)
-                SerializeExplicit(writer, value);
+                Serialize(writer, value);
+            else if (instance == null)
+                Serialize(writer, default);
             else
                 throw new InvalidCastException($"Cannot Use {GetType()} to Serialize {type} Explicitly as {type} Cannot be cast to {typeof(T)}");
         }
 
-        public abstract T DeserializeExplicit(NetworkReader reader);
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        protected static bool WriteNull(NetworkWriter writer, T value)
         {
-            return DeserializeExplicit(reader);
+            if (value == null)
+            {
+                writer.Insert(1); //Is Null Flag Value
+                return true;
+            }
+            else
+            {
+                writer.Insert(0); //Is Not Null Flag
+                return false;
+            }
+        }
+
+        public abstract T Deserialize(NetworkReader reader);
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            return Deserialize(reader);
         }
 
         public NetworkSerializationExplicitResolver()
@@ -326,12 +381,12 @@ namespace MNet
     [Preserve]
     public sealed class ByteNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte>
     {
-        public override void SerializeExplicit(NetworkWriter writer, byte instance)
+        public override void Serialize(NetworkWriter writer, byte instance)
         {
             writer.Insert(instance);
         }
 
-        public override byte DeserializeExplicit(NetworkReader reader)
+        public override byte Deserialize(NetworkReader reader)
         {
             var value = reader.Data[reader.Position];
 
@@ -344,12 +399,12 @@ namespace MNet
     [Preserve]
     public sealed class BoolNetworkSerializationResolver : NetworkSerializationExplicitResolver<bool>
     {
-        public override void SerializeExplicit(NetworkWriter writer, bool instance)
+        public override void Serialize(NetworkWriter writer, bool instance)
         {
             writer.Write(instance ? (byte)1 : (byte)0);
         }
 
-        public override bool DeserializeExplicit(NetworkReader reader)
+        public override bool Deserialize(NetworkReader reader)
         {
             reader.Read(out byte value);
 
@@ -360,14 +415,14 @@ namespace MNet
     [Preserve]
     public sealed class ShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<short>
     {
-        public override void SerializeExplicit(NetworkWriter writer, short instance)
+        public override void Serialize(NetworkWriter writer, short instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override short DeserializeExplicit(NetworkReader reader)
+        public override short Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToInt16(reader.Data, reader.Position);
 
@@ -379,14 +434,14 @@ namespace MNet
     [Preserve]
     public sealed class UShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<ushort>
     {
-        public override void SerializeExplicit(NetworkWriter writer, ushort instance)
+        public override void Serialize(NetworkWriter writer, ushort instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override ushort DeserializeExplicit(NetworkReader reader)
+        public override ushort Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToUInt16(reader.Data, reader.Position);
 
@@ -399,14 +454,14 @@ namespace MNet
     [Preserve]
     public sealed class IntNetworkSerializationResolver : NetworkSerializationExplicitResolver<int>
     {
-        public override void SerializeExplicit(NetworkWriter writer, int instance)
+        public override void Serialize(NetworkWriter writer, int instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override int DeserializeExplicit(NetworkReader reader)
+        public override int Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToInt32(reader.Data, reader.Position);
 
@@ -418,14 +473,14 @@ namespace MNet
     [Preserve]
     public sealed class UIntNetworkSerializationResolver : NetworkSerializationExplicitResolver<uint>
     {
-        public override void SerializeExplicit(NetworkWriter writer, uint instance)
+        public override void Serialize(NetworkWriter writer, uint instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override uint DeserializeExplicit(NetworkReader reader)
+        public override uint Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToUInt32(reader.Data, reader.Position);
 
@@ -438,14 +493,14 @@ namespace MNet
     [Preserve]
     public sealed class LongNetworkSerializationResolver : NetworkSerializationExplicitResolver<long>
     {
-        public override void SerializeExplicit(NetworkWriter writer, long instance)
+        public override void Serialize(NetworkWriter writer, long instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override long DeserializeExplicit(NetworkReader reader)
+        public override long Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToInt64(reader.Data, reader.Position);
 
@@ -458,14 +513,14 @@ namespace MNet
     [Preserve]
     public sealed class ULongNetworkSerializationResolver : NetworkSerializationExplicitResolver<ulong>
     {
-        public override void SerializeExplicit(NetworkWriter writer, ulong instance)
+        public override void Serialize(NetworkWriter writer, ulong instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override ulong DeserializeExplicit(NetworkReader reader)
+        public override ulong Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToUInt64(reader.Data, reader.Position);
 
@@ -478,14 +533,14 @@ namespace MNet
     [Preserve]
     public sealed class FloatNetworkSerializationResolver : NetworkSerializationExplicitResolver<float>
     {
-        public override void SerializeExplicit(NetworkWriter writer, float instance)
+        public override void Serialize(NetworkWriter writer, float instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override float DeserializeExplicit(NetworkReader reader)
+        public override float Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToSingle(reader.Data, reader.Position);
 
@@ -498,14 +553,14 @@ namespace MNet
     [Preserve]
     public sealed class DoubleNetworkSerializationResolver : NetworkSerializationExplicitResolver<double>
     {
-        public override void SerializeExplicit(NetworkWriter writer, double instance)
+        public override void Serialize(NetworkWriter writer, double instance)
         {
             var binary = BitConverter.GetBytes(instance);
 
             writer.Insert(binary);
         }
 
-        public override double DeserializeExplicit(NetworkReader reader)
+        public override double Deserialize(NetworkReader reader)
         {
             var value = BitConverter.ToDouble(reader.Data, reader.Position);
 
@@ -518,33 +573,40 @@ namespace MNet
     [Preserve]
     public sealed class StringNetworkSerializationResolver : NetworkSerializationExplicitResolver<string>
     {
-        public override void SerializeExplicit(NetworkWriter writer, string instance)
+        public override void Serialize(NetworkWriter writer, string instance)
         {
-            if (instance.Length == 0)
+            if (instance == null)
             {
                 NetworkSerializationHelper.Length.Write(writer, 0);
+            }
+            else if (instance.Length == 0)
+            {
+                NetworkSerializationHelper.Length.Write(writer, 1);
             }
             else
             {
                 var binary = Encoding.UTF8.GetBytes(instance);
 
-                var count = binary.Length;
+                var length = binary.Length + 1;
 
-                NetworkSerializationHelper.Length.Write(writer, count);
+                NetworkSerializationHelper.Length.Write(writer, length);
 
                 writer.Insert(binary);
             }
         }
 
-        public override string DeserializeExplicit(NetworkReader reader)
+        public override string Deserialize(NetworkReader reader)
         {
-            NetworkSerializationHelper.Length.Read(reader, out var count);
+            NetworkSerializationHelper.Length.Read(reader, out var length);
 
-            if (count == 0) return string.Empty;
+            if (length == 0) return null;
+            if (length == 1) return string.Empty;
 
-            var value = Encoding.UTF8.GetString(reader.Data, reader.Position, count);
+            length -= 1;
 
-            reader.Position += count;
+            var value = Encoding.UTF8.GetString(reader.Data, reader.Position, length);
+
+            reader.Position += length;
 
             return value;
         }
@@ -554,15 +616,19 @@ namespace MNet
     [Preserve]
     public class TypeNetworkSerializationResolver : NetworkSerializationExplicitResolver<Type>
     {
-        public override void SerializeExplicit(NetworkWriter writer, Type instance)
+        public override void Serialize(NetworkWriter writer, Type instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             var code = NetworkPayload.GetCode(instance);
 
             writer.Write(code);
         }
 
-        public override Type DeserializeExplicit(NetworkReader reader)
+        public override Type Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             reader.Read(out ushort code);
 
             var value = NetworkPayload.GetType(code);
@@ -574,12 +640,12 @@ namespace MNet
     [Preserve]
     public class NetworkMessageSerializationResolver : NetworkSerializationExplicitResolver<NetworkMessage>
     {
-        public override void SerializeExplicit(NetworkWriter writer, NetworkMessage instance)
+        public override void Serialize(NetworkWriter writer, NetworkMessage instance)
         {
             instance.Serialize(writer);
         }
 
-        public override NetworkMessage DeserializeExplicit(NetworkReader reader)
+        public override NetworkMessage Deserialize(NetworkReader reader)
         {
             var message = new NetworkMessage();
 
@@ -595,14 +661,14 @@ namespace MNet
     {
         public const byte Size = 16;
 
-        public override void SerializeExplicit(NetworkWriter writer, Guid instance)
+        public override void Serialize(NetworkWriter writer, Guid instance)
         {
             var binary = instance.ToByteArray();
 
             writer.Insert(binary);
         }
 
-        public override Guid DeserializeExplicit(NetworkReader reader)
+        public override Guid Deserialize(NetworkReader reader)
         {
             var binary = reader.BlockCopy(Size);
 
@@ -615,14 +681,14 @@ namespace MNet
     [Preserve]
     public class DateTimeNetworkSerializationResolver : NetworkSerializationExplicitResolver<DateTime>
     {
-        public override void SerializeExplicit(NetworkWriter writer, DateTime instance)
+        public override void Serialize(NetworkWriter writer, DateTime instance)
         {
             long binary = instance.ToBinary();
 
             writer.Write(binary);
         }
 
-        public override DateTime DeserializeExplicit(NetworkReader reader)
+        public override DateTime Deserialize(NetworkReader reader)
         {
             reader.Read(out long binary);
 
@@ -633,14 +699,14 @@ namespace MNet
     [Preserve]
     public class TimeSpanNetworkSerializationResolver : NetworkSerializationExplicitResolver<TimeSpan>
     {
-        public override void SerializeExplicit(NetworkWriter writer, TimeSpan instance)
+        public override void Serialize(NetworkWriter writer, TimeSpan instance)
         {
             long ticks = instance.Ticks;
 
             writer.Write(ticks);
         }
 
-        public override TimeSpan DeserializeExplicit(NetworkReader reader)
+        public override TimeSpan Deserialize(NetworkReader reader)
         {
             reader.Read(out long ticks);
 
@@ -651,23 +717,31 @@ namespace MNet
     [Preserve]
     public class IPAddressNetworkSerializationResolver : NetworkSerializationExplicitResolver<IPAddress>
     {
-        public override void SerializeExplicit(NetworkWriter writer, IPAddress instance)
+        public override void Serialize(NetworkWriter writer, IPAddress instance)
         {
+            if(instance == null)
+            {
+                writer.Insert(0);
+                return;
+            }
+
             var bytes = instance.GetAddressBytes();
 
             byte length = (byte)bytes.Length;
 
-            writer.Write(length);
+            writer.Insert(length);
             writer.Insert(bytes);
         }
 
-        public override IPAddress DeserializeExplicit(NetworkReader reader)
+        public override IPAddress Deserialize(NetworkReader reader)
         {
-            reader.Read(out byte length);
+            var length = reader.Next();
 
-            var bytes = reader.BlockCopy(length);
+            if (length == 0) return null;
 
-            var value = new IPAddress(bytes);
+            var binary = reader.BlockCopy(length);
+
+            var value = new IPAddress(binary);
 
             return value;
         }
@@ -677,14 +751,14 @@ namespace MNet
     [Preserve]
     public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
     {
-        public override void SerializeExplicit(NetworkWriter writer, byte[] instance)
+        public override void Serialize(NetworkWriter writer, byte[] instance)
         {
             writer.Write(instance.Length);
 
             writer.Insert(instance);
         }
 
-        public override byte[] DeserializeExplicit(NetworkReader reader)
+        public override byte[] Deserialize(NetworkReader reader)
         {
             reader.Read(out int length);
 
@@ -700,8 +774,10 @@ namespace MNet
     [Preserve]
     public sealed class ObjectArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<object[]>
     {
-        public override void SerializeExplicit(NetworkWriter writer, object[] instance)
+        public override void Serialize(NetworkWriter writer, object[] instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             NetworkSerializationHelper.Length.Write(writer, instance.Length);
 
             for (int i = 0; i < instance.Length; i++)
@@ -714,8 +790,10 @@ namespace MNet
             }
         }
 
-        public override object[] DeserializeExplicit(NetworkReader reader)
+        public override object[] Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var length);
 
             var value = new object[length];
@@ -737,8 +815,10 @@ namespace MNet
     [Preserve]
     public sealed class ObjectListNetworkSerializationResolver : NetworkSerializationExplicitResolver<List<object>>
     {
-        public override void SerializeExplicit(NetworkWriter writer, List<object> instance)
+        public override void Serialize(NetworkWriter writer, List<object> instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             NetworkSerializationHelper.Length.Write(writer, instance.Count);
 
             for (int i = 0; i < instance.Count; i++)
@@ -751,8 +831,10 @@ namespace MNet
             }
         }
 
-        public override List<object> DeserializeExplicit(NetworkReader reader)
+        public override List<object> Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
             var value = new List<object>(count);
@@ -788,15 +870,21 @@ namespace MNet
     public sealed class INetworkSerializableResolver<T> : NetworkSerializationGenericResolver<T>
         where T : INetworkSerializable, new()
     {
-        public override void SerializeExplicit(NetworkWriter writer, T instance)
+        bool nullable;
+
+        public override void Serialize(NetworkWriter writer, T instance)
         {
+            if (nullable) if (WriteNull(writer, instance)) return;
+
             var context = new NetworkSerializationContext(writer);
 
             instance.Select(ref context);
         }
 
-        public override T DeserializeExplicit(NetworkReader reader)
+        public override T Deserialize(NetworkReader reader)
         {
+            if (nullable) if (ReadNull(reader)) return default;
+
             var value = new T();
 
             var context = new NetworkSerializationContext(reader);
@@ -805,24 +893,40 @@ namespace MNet
 
             return value;
         }
+
+        public INetworkSerializableResolver()
+        {
+            nullable = NetworkSerializationHelper.Nullable.Generic<T>.Is;
+        }
     }
 
     [Preserve]
     public sealed class IManualNetworkSerializableResolver<T> : NetworkSerializationGenericResolver<T>
         where T : IManualNetworkSerializable, new()
     {
-        public override void SerializeExplicit(NetworkWriter writer, T instance)
+        bool nullable;
+
+        public override void Serialize(NetworkWriter writer, T instance)
         {
+            if (nullable) if (WriteNull(writer, instance)) return;
+
             instance.Serialize(writer);
         }
 
-        public override T DeserializeExplicit(NetworkReader reader)
+        public override T Deserialize(NetworkReader reader)
         {
+            if (nullable) if (ReadNull(reader)) return default;
+
             var value = new T();
 
             value.Deserialize(reader);
 
             return value;
+        }
+
+        public IManualNetworkSerializableResolver()
+        {
+            nullable = NetworkSerializationHelper.Nullable.Generic<T>.Is;
         }
     }
 
@@ -833,7 +937,7 @@ namespace MNet
         public ConcurrentDictionary<TBacking, TType> Types { get; private set; }
         public ConcurrentDictionary<TType, TBacking> Values { get; private set; }
 
-        public override void SerializeExplicit(NetworkWriter writer, TType instance)
+        public override void Serialize(NetworkWriter writer, TType instance)
         {
             if (Values.TryGetValue(instance, out var value) == false)
             {
@@ -844,7 +948,7 @@ namespace MNet
             writer.Write(value);
         }
 
-        public override TType DeserializeExplicit(NetworkReader reader)
+        public override TType Deserialize(NetworkReader reader)
         {
             var value = reader.Read<TBacking>();
 
@@ -868,13 +972,17 @@ namespace MNet
     public sealed class NullableNetworkSerializationResolver<TData> : NetworkSerializationGenericResolver<TData?>
         where TData : struct
     {
-        public override void SerializeExplicit(NetworkWriter writer, TData? instance)
+        public override void Serialize(NetworkWriter writer, TData? instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             writer.Write(instance.Value);
         }
 
-        public override TData? DeserializeExplicit(NetworkReader reader)
+        public override TData? Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             return reader.Read<TData>();
         }
     }
@@ -883,13 +991,13 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2> : NetworkSerializationGenericResolver<(T1, T2)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
         }
 
-        public override (T1, T2) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -901,14 +1009,14 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2, T3> : NetworkSerializationGenericResolver<(T1, T2, T3)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2, T3) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2, T3) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
             writer.Write(instance.Item3);
         }
 
-        public override (T1, T2, T3) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2, T3) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -921,7 +1029,7 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2, T3, T4> : NetworkSerializationGenericResolver<(T1, T2, T3, T4)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2, T3, T4) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
@@ -929,7 +1037,7 @@ namespace MNet
             writer.Write(instance.Item4);
         }
 
-        public override (T1, T2, T3, T4) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2, T3, T4) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -943,7 +1051,7 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2, T3, T4, T5> : NetworkSerializationGenericResolver<(T1, T2, T3, T4, T5)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2, T3, T4, T5) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
@@ -952,7 +1060,7 @@ namespace MNet
             writer.Write(instance.Item5);
         }
 
-        public override (T1, T2, T3, T4, T5) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2, T3, T4, T5) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -967,7 +1075,7 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2, T3, T4, T5, T6> : NetworkSerializationGenericResolver<(T1, T2, T3, T4, T5, T6)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2, T3, T4, T5, T6) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5, T6) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
@@ -977,7 +1085,7 @@ namespace MNet
             writer.Write(instance.Item6);
         }
 
-        public override (T1, T2, T3, T4, T5, T6) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2, T3, T4, T5, T6) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -993,7 +1101,7 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2, T3, T4, T5, T6, T7> : NetworkSerializationGenericResolver<(T1, T2, T3, T4, T5, T6, T7)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2, T3, T4, T5, T6, T7) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5, T6, T7) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
@@ -1004,7 +1112,7 @@ namespace MNet
             writer.Write(instance.Item7);
         }
 
-        public override (T1, T2, T3, T4, T5, T6, T7) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2, T3, T4, T5, T6, T7) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -1021,7 +1129,7 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetwokrSerializationResolver<T1, T2, T3, T4, T5, T6, T7, T8> : NetworkSerializationGenericResolver<(T1, T2, T3, T4, T5, T6, T7, T8)>
     {
-        public override void SerializeExplicit(NetworkWriter writer, (T1, T2, T3, T4, T5, T6, T7, T8) instance)
+        public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5, T6, T7, T8) instance)
         {
             writer.Write(instance.Item1);
             writer.Write(instance.Item2);
@@ -1033,7 +1141,7 @@ namespace MNet
             writer.Write(instance.Item8);
         }
 
-        public override (T1, T2, T3, T4, T5, T6, T7, T8) DeserializeExplicit(NetworkReader reader)
+        public override (T1, T2, T3, T4, T5, T6, T7, T8) Deserialize(NetworkReader reader)
         {
             reader.Read(out T1 arg1);
             reader.Read(out T2 arg2);
@@ -1053,15 +1161,19 @@ namespace MNet
     [Preserve]
     public sealed class ArrayNetworkSerializationResolver<TElement> : NetworkSerializationGenericResolver<TElement[]>
     {
-        public override void SerializeExplicit(NetworkWriter writer, TElement[] instance)
+        public override void Serialize(NetworkWriter writer, TElement[] instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             NetworkSerializationHelper.Length.Write(writer, instance.Length);
 
             for (int i = 0; i < instance.Length; i++) writer.Write(instance[i]);
         }
 
-        public override TElement[] DeserializeExplicit(NetworkReader reader)
+        public override TElement[] Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var length);
 
             var array = new TElement[length];
@@ -1075,7 +1187,7 @@ namespace MNet
     [Preserve]
     public sealed class ArraySegmentNetworkSerializationResolver<TElement> : NetworkSerializationGenericResolver<ArraySegment<TElement>>
     {
-        public override void SerializeExplicit(NetworkWriter writer, ArraySegment<TElement> instance)
+        public override void Serialize(NetworkWriter writer, ArraySegment<TElement> instance)
         {
             NetworkSerializationHelper.Length.Write(writer, instance.Count);
 
@@ -1087,7 +1199,7 @@ namespace MNet
             }
         }
 
-        public override ArraySegment<TElement> DeserializeExplicit(NetworkReader reader)
+        public override ArraySegment<TElement> Deserialize(NetworkReader reader)
         {
             NetworkSerializationHelper.Length.Read(reader, out var length);
 
@@ -1104,15 +1216,19 @@ namespace MNet
     [Preserve]
     public sealed class ListNetworkSerializationResolver<TElement> : NetworkSerializationGenericResolver<List<TElement>>
     {
-        public override void SerializeExplicit(NetworkWriter writer, List<TElement> instance)
+        public override void Serialize(NetworkWriter writer, List<TElement> instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             NetworkSerializationHelper.Length.Write(writer, instance.Count);
 
             for (int i = 0; i < instance.Count; i++) writer.Write(instance[i]);
         }
 
-        public override List<TElement> DeserializeExplicit(NetworkReader reader)
+        public override List<TElement> Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
             var list = new List<TElement>(count);
@@ -1131,15 +1247,19 @@ namespace MNet
     [Preserve]
     public sealed class HashSetNetworkSerializationResolver<TElement> : NetworkSerializationGenericResolver<HashSet<TElement>>
     {
-        public override void SerializeExplicit(NetworkWriter writer, HashSet<TElement> instance)
+        public override void Serialize(NetworkWriter writer, HashSet<TElement> instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             NetworkSerializationHelper.Length.Write(writer, instance.Count);
 
             foreach (var item in instance) writer.Write(item);
         }
 
-        public override HashSet<TElement> DeserializeExplicit(NetworkReader reader)
+        public override HashSet<TElement> Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var length);
 
             var array = new TElement[length];
@@ -1154,8 +1274,10 @@ namespace MNet
     [Preserve]
     public sealed class DictionaryNetworkSerializationResolver<TKey, TValue> : NetworkSerializationGenericResolver<Dictionary<TKey, TValue>>
     {
-        public override void SerializeExplicit(NetworkWriter writer, Dictionary<TKey, TValue> instance)
+        public override void Serialize(NetworkWriter writer, Dictionary<TKey, TValue> instance)
         {
+            if (WriteNull(writer, instance)) return;
+
             NetworkSerializationHelper.Length.Write(writer, instance.Count);
 
             foreach (var pair in instance)
@@ -1165,8 +1287,10 @@ namespace MNet
             }
         }
 
-        public override Dictionary<TKey, TValue> DeserializeExplicit(NetworkReader reader)
+        public override Dictionary<TKey, TValue> Deserialize(NetworkReader reader)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
             var dictionary = new Dictionary<TKey, TValue>(count);
@@ -1206,8 +1330,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance, type)) return;
+
             var value = instance as INetworkSerializable;
 
             var context = new NetworkSerializationContext(writer);
@@ -1215,8 +1341,10 @@ namespace MNet
             value.Select(ref context);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader, type)) return null;
+
             var value = Activator.CreateInstance(type, true) as INetworkSerializable;
 
             var context = new NetworkSerializationContext(reader);
@@ -1235,15 +1363,19 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance, type)) return;
+
             var value = instance as IManualNetworkSerializable;
 
             value.Serialize(writer);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader, type)) return null;
+
             var value = Activator.CreateInstance(type, true) as IManualNetworkSerializable;
 
             value.Deserialize(reader);
@@ -1259,8 +1391,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance, type)) return;
+
             var values = TupleUtility.Extract(instance);
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
@@ -1269,8 +1403,10 @@ namespace MNet
                 writer.Write(values[i], arguments[i]);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader, type)) return null;
+
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
 
             var items = new object[arguments.Length];
@@ -1296,13 +1432,17 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance)) return;
+
             writer.Write(instance);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type underlying);
 
             var value = reader.Read(underlying);
@@ -1318,14 +1458,14 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
             var value = NetworkSerializationHelper.Enum.Value.Retrieve(instance);
 
             writer.Write(value);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
             var backing = NetworkSerializationHelper.Enum.UnderlyingType.Retrieve(type);
 
@@ -1345,8 +1485,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance)) return;
+
             var array = instance as IList;
 
             NetworkSerializationHelper.Length.Write(writer, array.Count);
@@ -1356,8 +1498,10 @@ namespace MNet
             for (int i = 0; i < array.Count; i++) writer.Write(array[i], argument);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var length);
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
@@ -1387,8 +1531,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance)) return;
+
             var list = instance as IList;
 
             NetworkSerializationHelper.Length.Write(writer, list.Count);
@@ -1398,8 +1544,10 @@ namespace MNet
             for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
@@ -1429,8 +1577,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance)) return;
+
             var value = instance as IEnumerable;
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
@@ -1445,8 +1595,10 @@ namespace MNet
             for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
@@ -1474,8 +1626,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance)) return;
+
             var value = instance as IEnumerable;
 
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
@@ -1490,8 +1644,10 @@ namespace MNet
             for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
 
             NetworkSerializationHelper.Length.Read(reader, out var length);
@@ -1521,8 +1677,10 @@ namespace MNet
 
         public override bool CanResolve(Type target) => IsValid(target);
 
-        public override void SerializeImplicit(NetworkWriter writer, object instance, Type type)
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
+            if (WriteNull(writer, instance)) return;
+
             var dictionary = (IDictionary)instance;
 
             NetworkSerializationHelper.Length.Write(writer, dictionary.Count);
@@ -1536,8 +1694,10 @@ namespace MNet
             }
         }
 
-        public override object DeserializeImplicit(NetworkReader reader, Type type)
+        public override object Deserialize(NetworkReader reader, Type type)
         {
+            if (ReadNull(reader)) return null;
+
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
             var dictionary = Activator.CreateInstance(type, count) as IDictionary;

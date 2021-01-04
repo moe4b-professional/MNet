@@ -13,16 +13,64 @@ namespace MNet
 {
     static class Program
     {
-        public const int Count = 1_000_000;
+        public const int Count = 10_000_000;
 
-        public static int data = 42;
+        public static List<string> list;
 
         public static void Main(string[] args)
         {
-            for (int i = 0; i < 5; i++)
+            list = new List<string>();
+
+            for (int i = 0; i < Count; i++)
+            {
+                list.Add("Hello World " + i);
+            }
+
+            for (int i = 0; i < 20; i++)
+            {
+                Measure(Foreach);
+                Measure(For);
+
+                Console.WriteLine();
+            }
+
+            Console.ReadKey();
+
+            for (int i = 0; i < 20; i++)
                 Measure(Serialization);
 
             Console.ReadLine();
+
+            for (int i = 0; i < 10; i++)
+            {
+                Measure(Foreach);
+                Measure(For);
+
+                Console.WriteLine();
+            }
+
+            Console.ReadLine();
+        }
+
+        static void Foreach()
+        {
+            foreach (var item in list)
+            {
+                Pass(item);
+            }
+        }
+
+        static void For()
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                Pass(list[i]);
+            }
+        }
+
+        static void Pass<T>(T value)
+        {
+
         }
 
         static void Serialization()

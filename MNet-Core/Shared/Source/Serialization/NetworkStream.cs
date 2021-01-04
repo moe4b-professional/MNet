@@ -139,8 +139,6 @@ namespace MNet
         #region Write
         public void Write<T>(T value)
         {
-            if (ResolveNull(value)) return;
-
             if (ResolveExplicit(value)) return;
 
             var type = typeof(T);
@@ -157,8 +155,6 @@ namespace MNet
         }
         public void Write(object value, Type type)
         {
-            if (ResolveNull(value, type)) return;
-
             if (ResolveAny(value, type)) return;
 
             throw FormatResolverException(type);
@@ -166,38 +162,13 @@ namespace MNet
         #endregion
 
         #region Resolve
-        bool ResolveNull<T>(T value)
-        {
-            if (value == null)
-            {
-                Insert(1); //Is Null Flag Value
-                return true;
-            }
-
-            if (NetworkSerializationHelper.Nullable.Generic<T>.Is) Insert(0); //Is Not Null Flag
-
-            return false;
-        }
-        bool ResolveNull(object value, Type type)
-        {
-            if (value == null)
-            {
-                Insert(1); //Is Null Flag Value
-                return true;
-            }
-
-            if (NetworkSerializationHelper.Nullable.Any.Check(type)) Insert(0); //Is Not Null Flag
-
-            return false;
-        }
-
         bool ResolveExplicit<T>(T value)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
             if (resolver == null) return false;
 
-            resolver.SerializeExplicit(this, value);
+            resolver.Serialize(this, value);
             return true;
         }
 
@@ -207,7 +178,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            resolver.SerializeImplicit(this, value, type);
+            resolver.Serialize(this, value, type);
             return true;
         }
 
@@ -217,7 +188,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            resolver.SerializeImplicit(this, value, type);
+            resolver.Serialize(this, value, type);
             return true;
         }
         #endregion
@@ -266,8 +237,6 @@ namespace MNet
         public void Read<T>(out T value) => value = Read<T>();
         public T Read<T>()
         {
-            if (ResolveNull<T>()) return default;
-
             T value = default;
 
             if (ResolveExplicit(ref value)) return value;
@@ -279,8 +248,6 @@ namespace MNet
 
         public object Read(Type type)
         {
-            if (ResolveNull(type)) return null;
-
             if (ResolveAny(type, out var value)) return value;
 
             throw FormatResolverException(type);
@@ -288,26 +255,13 @@ namespace MNet
         #endregion
 
         #region Resolve
-        bool ResolveNull<T>()
-        {
-            if (NetworkSerializationHelper.Nullable.Generic<T>.Is == false) return false;
-
-            return Next() == 1 ? true : false;
-        }
-        bool ResolveNull(Type type)
-        {
-            if (NetworkSerializationHelper.Nullable.Any.Check(type) == false) return false;
-
-            return Next() == 1 ? true : false;
-        }
-
         bool ResolveExplicit<T>(ref T value)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
             if (resolver == null) return false;
 
-            value = resolver.DeserializeExplicit(this);
+            value = resolver.Deserialize(this);
             return true;
         }
 
@@ -340,7 +294,7 @@ namespace MNet
 
             if (resolver == null) return false;
 
-            value = resolver.DeserializeImplicit(this, type);
+            value = resolver.Deserialize(this, type);
             return true;
         }
 
@@ -354,7 +308,7 @@ namespace MNet
                 return false;
             }
 
-            value = resolver.DeserializeImplicit(this, type);
+            value = resolver.Deserialize(this, type);
             return true;
         }
         #endregion

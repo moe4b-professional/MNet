@@ -94,7 +94,24 @@ namespace MNet
 
             static void Process()
             {
-                if (IsConnected && AppAPI.Config.QueueMessages) SendQueue.Resolve(Realtime.Send);
+                if (IsConnected && AppAPI.Config.QueueMessages) ResolveSendQueue();
+            }
+
+            static void ResolveSendQueue()
+            {
+                var deliveries = SendQueue.Deliveries;
+
+                for (int d = 0; d < deliveries.Count; d++)
+                {
+                    if (deliveries[d].Empty) continue;
+
+                    var buffers = deliveries[d].Read();
+
+                    for (int b = 0; b < buffers.Count; b++)
+                        Realtime.Send(buffers[b], deliveries[d].Mode);
+
+                    deliveries[d].Clear();
+                }
             }
 
             public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -107,16 +124,12 @@ namespace MNet
 
                 var message = NetworkMessage.Write(payload);
 
-                if (AppAPI.Config.QueueMessages)
-                {
-                    SendQueue.Add(message, mode);
-                }
-                else
-                {
-                    var binary = NetworkSerializer.Serialize(message);
+                var raw = NetworkSerializer.Serialize(message);
 
-                    Realtime.Send(binary, mode);
-                }
+                if (AppAPI.Config.QueueMessages)
+                    SendQueue.Add(raw, mode);
+                else
+                    Realtime.Send(raw, mode);
 
                 return true;
             }

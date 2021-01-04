@@ -353,39 +353,6 @@ namespace MNet
             return results;
         }
 
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref sender);
-            context.Select(ref entity);
-            context.Select(ref behaviour);
-            context.Select(ref method);
-            context.Select(ref time);
-
-            context.Select(ref raw);
-
-            context.Select(ref type);
-
-            switch (type)
-            {
-                case RpcType.Broadcast:
-                    break;
-
-                case RpcType.Target:
-                    break;
-
-                case RpcType.Query:
-                    context.Select(ref callback);
-                    break;
-
-                case RpcType.Response:
-                    break;
-
-                default:
-                    Log.Error($"No Case Defined for {type} in {GetType()}");
-                    break;
-            }
-        }
-
         public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
@@ -451,6 +418,8 @@ namespace MNet
                     break;
             }
         }
+
+        //Static Utility
 
         public static RpcCommand Write(NetworkClientID sender, RpcRequest request, NetworkTimeSpan time)
         {
