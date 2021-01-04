@@ -44,7 +44,7 @@ namespace MNet
 
             public delegate void ChangeMasterDelegate(NetworkClient client);
             public static event ChangeMasterDelegate OnChangeMaster;
-            static void ChangeMaster(ChangeMasterCommand command)
+            static void ChangeMaster(ref ChangeMasterCommand command)
             {
                 AssignMaster(command.ID);
 
@@ -176,7 +176,7 @@ namespace MNet
 
             public delegate void ClientConnectedDelegate(NetworkClient client);
             public static event ClientConnectedDelegate OnClientConnected;
-            static void ClientConnected(ClientConnectedPayload payload)
+            static void ClientConnected(ref ClientConnectedPayload payload)
             {
                 if (Clients.ContainsKey(payload.ID))
                 {
@@ -193,7 +193,7 @@ namespace MNet
 
             public delegate void ClientDisconnectedDelegate(NetworkClient client);
             public static event ClientDisconnectedDelegate OnClientDisconnected;
-            static void ClientDisconnected(ClientDisconnectPayload payload)
+            static void ClientDisconnected(ref ClientDisconnectPayload payload)
             {
                 Debug.Log($"Client {payload.ID} Disconnected from Room");
 
@@ -216,7 +216,7 @@ namespace MNet
 
             public delegate void SpawnEntityDelegate(NetworkEntity entity);
             public static event SpawnEntityDelegate OnSpawnEntity;
-            static void SpawnEntity(SpawnEntityCommand command)
+            static void SpawnEntity(ref SpawnEntityCommand command)
             {
                 var id = command.ID;
                 var type = command.Type;
@@ -303,7 +303,7 @@ namespace MNet
                 }
             }
 
-            static void ChangeEntityOwner(ChangeEntityOwnerCommand command)
+            static void ChangeEntityOwner(ref ChangeEntityOwnerCommand command)
             {
                 if(Clients.TryGetValue(command.Client, out var owner) == false)
                 {
@@ -330,7 +330,7 @@ namespace MNet
                 MasterObjects.Add(entity);
             }
 
-            static void DestroyEntity(DestroyEntityCommand command)
+            static void DestroyEntity(ref DestroyEntityCommand command)
             {
                 if (Entities.TryGetValue(command.ID, out var entity) == false)
                 {
@@ -369,7 +369,7 @@ namespace MNet
             #endregion
 
             #region Remote Sync
-            static void InvokeRPC(RpcCommand command)
+            static void InvokeRPC(ref RpcCommand command)
             {
                 try
                 {
@@ -387,7 +387,7 @@ namespace MNet
                 }
             }
 
-            static void InvokeSyncVar(SyncVarCommand command)
+            static void InvokeSyncVar(ref SyncVarCommand command)
             {
                 if (Entities.TryGetValue(command.Entity, out var target) == false)
                 {

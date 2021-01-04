@@ -48,7 +48,7 @@ namespace MNet
             internal static Dictionary<Type, MessageCallbackDelegate> MessageDispatcher { get; private set; }
 
             public delegate void MessageCallbackDelegate(NetworkMessage message);
-            public delegate void MessageHandlerDelegate<TPayload>(TPayload payload);
+            public delegate void MessageHandlerDelegate<TPayload>(ref TPayload payload);
 
             public static void RegisterMessageHandler<TPayload>(MessageHandlerDelegate<TPayload> handler)
             {
@@ -62,7 +62,7 @@ namespace MNet
                 {
                     var payload = message.Read<TPayload>();
 
-                    handler(payload);
+                    handler(ref payload);
                 }
             }
             #endregion
@@ -170,7 +170,7 @@ namespace MNet
 
             public delegate void RegisterDelegate(RegisterClientResponse response);
             public static event RegisterDelegate OnRegister;
-            static void RegisterCallback(RegisterClientResponse response)
+            static void RegisterCallback(ref RegisterClientResponse response)
             {
                 Self = new NetworkClient(response.ID, Profile);
 
@@ -196,7 +196,7 @@ namespace MNet
 
             public delegate void ReadyDelegate(ReadyClientResponse response);
             public static event ReadyDelegate OnReady;
-            static void ReadyCallback(ReadyClientResponse response)
+            static void ReadyCallback(ref ReadyClientResponse response)
             {
                 IsReady = true;
 

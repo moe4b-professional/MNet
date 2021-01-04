@@ -66,29 +66,29 @@ namespace MNet
 			static readonly object RealtimePauseLock = new object();
 
 			public static event LoadDelegate OnLoadBegin;
-			static void Load(LoadScenesCommand command)
+			static void Load(ref LoadScenesCommand command)
 			{
 				if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
 
-				GlobalCoroutine.Start(Procedure);
+				var scenes = command.Scenes;
+				var mode = ConvertLoadMode(command.Mode);
 
-				IEnumerator Procedure()
-                {
-					var scenes = command.Scenes;
-					var mode = ConvertLoadMode(command.Mode);
+				GlobalCoroutine.Start(Load(scenes, mode));
+			}
 
-					IsLoading = true;
-					Realtime.Pause.AddLock(RealtimePauseLock);
-					OnLoadBegin?.Invoke(scenes, mode);
+			static IEnumerator Load(byte[] scenes, LoadSceneMode mode)
+			{
+				IsLoading = true;
+				Realtime.Pause.AddLock(RealtimePauseLock);
+				OnLoadBegin?.Invoke(scenes, mode);
 
-					if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
+				if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
 
-					yield return LoadMethod(scenes, mode);
+				yield return LoadMethod(scenes, mode);
 
-					IsLoading = false;
-					Realtime.Pause.RemoveLock(RealtimePauseLock);
-					OnLoadEnd?.Invoke(scenes, mode);
-				}
+				IsLoading = false;
+				Realtime.Pause.RemoveLock(RealtimePauseLock);
+				OnLoadEnd?.Invoke(scenes, mode);
 			}
 			public static event LoadDelegate OnLoadEnd;
 

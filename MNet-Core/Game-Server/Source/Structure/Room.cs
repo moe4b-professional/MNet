@@ -134,7 +134,7 @@ namespace MNet
         Dictionary<Type, MessageCallbackDelegate> MessageDispatcher;
         public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkMessage message, DeliveryMode mode);
 
-        public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, TPayload payload, DeliveryMode mode);
+        public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode);
         public void RegisterMessageHandler<TPayload>(MessageHandler1Delegate<TPayload> handler)
         {
             var type = typeof(TPayload);
@@ -145,11 +145,11 @@ namespace MNet
             {
                 var payload = message.Read<TPayload>();
 
-                handler.Invoke(sender, payload, mode);
+                handler.Invoke(sender, ref payload, mode);
             }
         }
 
-        public delegate void MessageHandler2Delegate<TPayload>(NetworkClient sender, TPayload payload);
+        public delegate void MessageHandler2Delegate<TPayload>(NetworkClient sender, ref TPayload payload);
         public void RegisterMessageHandler<TPayload>(MessageHandler2Delegate<TPayload> handler)
         {
             var type = typeof(TPayload);
@@ -160,7 +160,7 @@ namespace MNet
             {
                 var payload = message.Read<TPayload>();
 
-                handler.Invoke(sender, payload);
+                handler.Invoke(sender, ref payload);
             }
         }
 
@@ -368,7 +368,7 @@ namespace MNet
         }
         #endregion
 
-        void ReadyClient(NetworkClient client, ReadyClientRequest request)
+        void ReadyClient(NetworkClient client, ref ReadyClientRequest request)
         {
             client.SetReady();
 
@@ -393,7 +393,7 @@ namespace MNet
         }
 
         #region RPC
-        void InvokeRPC(NetworkClient sender, RpcRequest request, DeliveryMode mode)
+        void InvokeRPC(NetworkClient sender, ref RpcRequest request, DeliveryMode mode)
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
@@ -472,7 +472,7 @@ namespace MNet
         #endregion
 
         #region SyncVar
-        void InvokeSyncVar(NetworkClient sender, SyncVarRequest request, DeliveryMode mode)
+        void InvokeSyncVar(NetworkClient sender, ref SyncVarRequest request, DeliveryMode mode)
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
@@ -488,21 +488,21 @@ namespace MNet
         }
         #endregion
 
-        void ProcessTimeRequest(NetworkClient sender, RoomTimeRequest request)
+        void ProcessTimeRequest(NetworkClient sender, ref RoomTimeRequest request)
         {
             var response = new RoomTimeResponse(time, request.Timestamp);
 
             Send(response, sender);
         }
 
-        void ProcessPingRequest(NetworkClient sender, PingRequest request)
+        void ProcessPingRequest(NetworkClient sender, ref PingRequest request)
         {
             var response = new PingResponse(request);
 
             Send(response, sender);
         }
 
-        void LoadScenes(NetworkClient sender, LoadScenesRequest request)
+        void LoadScenes(NetworkClient sender, ref LoadScenesRequest request)
         {
             if (sender != Master)
             {
@@ -537,7 +537,7 @@ namespace MNet
         }
 
         #region Entity
-        void SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
+        void SpawnEntity(NetworkClient sender, ref SpawnEntityRequest request)
         {
             if (request.Type == NetworkEntityType.SceneObject && sender != Master)
             {
@@ -581,7 +581,7 @@ namespace MNet
             BufferMessage(entity.SpawnMessage);
         }
 
-        void ChangeEntityOwner(NetworkClient sender, ChangeEntityOwnerRequest request)
+        void ChangeEntityOwner(NetworkClient sender, ref ChangeEntityOwnerRequest request)
         {
             if (Clients.TryGetValue(request.Client, out var owner) == false)
             {
@@ -629,7 +629,7 @@ namespace MNet
             MessageBuffer.Set(bufferIndex, message);
         }
 
-        void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
+        void DestroyEntity(NetworkClient sender, ref DestroyEntityRequest request)
         {
             if (Entities.TryGetValue(request.ID, out var entity) == false)
             {

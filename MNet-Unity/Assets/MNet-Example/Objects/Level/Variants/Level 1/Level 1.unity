@@ -962,7 +962,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6de92054a7ebe7a4caaf83c693930da3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  count: 4000
+  count: 8000
   area: 50
 --- !u!1 &411091175
 GameObject:

@@ -68,7 +68,7 @@ namespace MNet
                 SendLock = true;
             }
 
-            static void Register(PingResponse response)
+            static void Register(ref PingResponse response)
             {
                 var span = response.GetTimeSpan();
 

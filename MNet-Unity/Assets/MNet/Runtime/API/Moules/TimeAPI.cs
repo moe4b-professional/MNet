@@ -86,7 +86,7 @@ namespace MNet
                 Client.Send(payload, DeliveryMode.Reliable);
             }
 
-            static void Set(RoomTimeResponse response)
+            static void Set(ref RoomTimeResponse response)
             {
                 var rtt = DateTime.UtcNow - response.RequestTimestamp;
 
@@ -129,7 +129,12 @@ namespace MNet
             }
 
             #region Callbacks
-            static void ClientReadyCallback(ReadyClientResponse response) => Set(response.Time);
+            static void ClientReadyCallback(ReadyClientResponse response)
+            {
+                var time = response.Time;
+
+                Set(ref time);
+            }
 
             static void DisconnectCallback(DisconnectCode code) => Clear();
             #endregion
