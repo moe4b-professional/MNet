@@ -8,7 +8,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct NetworkTimeSpan : INetworkSerializable
+    public struct NetworkTimeSpan : IManualNetworkSerializable
     {
         long ticks;
         public long Ticks => ticks;
@@ -16,9 +16,14 @@ namespace MNet
         public float Millisecond => ticks / 1f / TimeSpan.TicksPerMillisecond;
         public float Seconds => ticks / 1f / TimeSpan.TicksPerSecond;
 
-        public void Select(ref NetworkSerializationContext context)
+        public void Serialize(NetworkWriter writer)
         {
-            context.Select(ref ticks);
+            writer.Write(ticks);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out ticks);
         }
 
         public NetworkTimeSpan(long ticks)

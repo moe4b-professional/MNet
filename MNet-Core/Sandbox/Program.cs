@@ -13,24 +13,28 @@ namespace MNet
 {
     static class Program
     {
-        public const int Count = 10_000_000;
+        public const int Count = 1_000_000;
 
         public static int data = 42;
 
         public static void Main(string[] args)
         {
-            DynamicNetworkSerialization.Enabled = true;
+            for (int i = 0; i < 5; i++)
+                Measure(Serialization);
 
-            ThreadMan.Run();
-            
-            Log.Info("Complete");
-
-            while (true) Console.ReadKey();
+            Console.ReadLine();
         }
 
-        class C
+        static void Serialization()
         {
+            var request = RpcRequest.WriteBroadcast(default, default, default, default, 1, 2, 3, 4);
 
+            request.Except(default);
+
+            for (int i = 0; i < Count; i++)
+            {
+                NetworkSerializer.Serialize(request);
+            }
         }
 
         public static void Measure(Action action)
@@ -42,47 +46,6 @@ namespace MNet
             stopwatch.Stop();
 
             Log.Info($"{action.Method.Name} Toook {stopwatch.Elapsed.TotalMilliseconds.ToString("N")}");
-        }
-    }
-
-    public static class ThreadMan
-    {
-        static LobbyInfo info;
-
-        public static void Run()
-        {
-            var server = new GameServerID(IPAddress.Parse("10.4.4.2"));
-
-            var attributes = new AttributesCollection();
-
-            attributes.Set(0, "Level 1");
-
-            var rooms = new List<RoomBasicInfo>()
-            {
-                new RoomBasicInfo(new RoomID(0), "Game Room #1", 10, 5, attributes),
-                new RoomBasicInfo(new RoomID(1), "Game Room #2", 10, 5, attributes),
-            };
-
-            info = new LobbyInfo(server, rooms);
-
-            for (int i = 0; i < 40; i++) new Thread(Test).Start();
-        }
-
-        static void Test()
-        {
-            for (int i = 0; i < 20_000; i++)
-            {
-                try
-                {
-                    var clone = NetworkSerializer.Clone(info);
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-            }
-
-            Log.Info("Complete");
         }
     }
 

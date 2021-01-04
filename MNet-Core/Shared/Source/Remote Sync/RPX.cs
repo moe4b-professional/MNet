@@ -17,22 +17,21 @@ namespace MNet
         Response
     }
 
-    [Serializable]
-    public enum RpcBufferMode : byte
-    {
-        None, Last, All
-    }
-
     [Preserve]
     [Serializable]
-    public struct RpcMethodID : INetworkSerializable
+    public struct RpcMethodID : IManualNetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }
 
-        public void Select(ref NetworkSerializationContext context)
+        public void Serialize(NetworkWriter writer)
         {
-            context.Select(ref value);
+            writer.Insert(value);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            value = reader.Next();
         }
 
         public RpcMethodID(byte value)
@@ -58,7 +57,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct RpcRequest : INetworkSerializable
+    public struct RpcRequest : IManualNetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -75,8 +74,8 @@ namespace MNet
         RpcType type;
         public RpcType Type => type;
 
-        RpcBufferMode bufferMode;
-        public RpcBufferMode BufferMode => bufferMode;
+        RemoteBufferMode bufferMode;
+        public RemoteBufferMode BufferMode => bufferMode;
 
         NetworkClientID target;
         public NetworkClientID Target => target;
@@ -113,6 +112,7 @@ namespace MNet
             context.Select(ref entity);
             context.Select(ref behaviour);
             context.Select(ref method);
+
             context.Select(ref raw);
 
             context.Select(ref type);
@@ -143,6 +143,78 @@ namespace MNet
             }
         }
 
+        public void Serialize(NetworkWriter writer)
+        {
+            entity.Serialize(writer);
+            behaviour.Serialize(writer);
+            method.Serialize(writer);
+
+            writer.Write(raw);
+
+            writer.Write(type);
+
+            switch (type)
+            {
+                case RpcType.Broadcast:
+                    writer.Write(bufferMode);
+                    writer.Write(exception);
+                    break;
+
+                case RpcType.Target:
+                    target.Serialize(writer);
+                    break;
+
+                case RpcType.Response:
+                    target.Serialize(writer);
+                    break;
+
+                case RpcType.Query:
+                    target.Serialize(writer);
+                    callback.Serialize(writer);
+                    break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
+            }
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            entity.Deserialize(reader);
+            behaviour.Deserialize(reader);
+            method.Deserialize(reader);
+
+            reader.Read(out raw);
+
+            reader.Read(out type);
+
+            switch (type)
+            {
+                case RpcType.Broadcast:
+                    reader.Read(out bufferMode);
+                    reader.Read(out exception);
+                    break;
+
+                case RpcType.Target:
+                    target.Deserialize(reader);
+                    break;
+
+                case RpcType.Response:
+                    target.Deserialize(reader);
+                    break;
+
+                case RpcType.Query:
+                    target.Deserialize(reader);
+                    callback.Deserialize(reader);
+                    break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
+            }
+        }
+
         public override string ToString() => $"RPC Request: {method}";
 
         //Static Utility
@@ -161,7 +233,7 @@ namespace MNet
             return raw;
         }
 
-        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RpcBufferMode bufferMode, params object[] arguments)
+        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RemoteBufferMode bufferMode, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -233,7 +305,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct RpcCommand : INetworkSerializable
+    public struct RpcCommand : IManualNetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
@@ -271,7 +343,7 @@ namespace MNet
 
                 results[i] = value;
 
-                if (i == 0 && value is RprResult rpr && rpr != RprResult.Success && parameters.Count > 1)
+                if (i == 0 && value is RemoteResponseType rpr && rpr != RemoteResponseType.Success && parameters.Count > 1)
                 {
                     results[i + 1] = null;
                     break;
@@ -314,6 +386,72 @@ namespace MNet
             }
         }
 
+        public void Serialize(NetworkWriter writer)
+        {
+            sender.Serialize(writer);
+            entity.Serialize(writer);
+            behaviour.Serialize(writer);
+            method.Serialize(writer);
+            time.Serialize(writer);
+
+            writer.Write(raw);
+
+            writer.Write(type);
+
+            switch (type)
+            {
+                case RpcType.Broadcast:
+                    break;
+
+                case RpcType.Target:
+                    break;
+
+                case RpcType.Query:
+                    callback.Serialize(writer);
+                    break;
+
+                case RpcType.Response:
+                    break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
+            }
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            sender.Deserialize(reader);
+            entity.Deserialize(reader);
+            behaviour.Deserialize(reader);
+            method.Deserialize(reader);
+            time.Deserialize(reader);
+
+            reader.Read(out raw);
+
+            reader.Read(out type);
+
+            switch (type)
+            {
+                case RpcType.Broadcast:
+                    break;
+
+                case RpcType.Target:
+                    break;
+
+                case RpcType.Query:
+                    callback.Deserialize(reader);
+                    break;
+
+                case RpcType.Response:
+                    break;
+
+                default:
+                    Log.Error($"No Case Defined for {type} in {GetType()}");
+                    break;
+            }
+        }
+
         public static RpcCommand Write(NetworkClientID sender, RpcRequest request, NetworkTimeSpan time)
         {
             var command = new RpcCommand()
@@ -331,7 +469,7 @@ namespace MNet
             return command;
         }
 
-        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RprResult result, NetworkTimeSpan time)
+        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RemoteResponseType result, NetworkTimeSpan time)
         {
             var raw = NetworkSerializer.Serialize(result);
 
@@ -351,13 +489,17 @@ namespace MNet
     }
     #endregion
 
-    #region RPR
-    public enum RprResult : byte
+    [Serializable]
+    public enum RemoteBufferMode : byte
+    {
+        None, Last, All
+    }
+
+    public enum RemoteResponseType : byte
     {
         Success,
         Disconnected,
         InvalidClient,
         InvalidEntity,
     }
-    #endregion
 }

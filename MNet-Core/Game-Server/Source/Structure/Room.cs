@@ -397,7 +397,7 @@ namespace MNet
             {
                 Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
 
-                if (request.Type == RpcType.Query) ResolveRPR(sender, request, RprResult.InvalidEntity);
+                if (request.Type == RpcType.Query) ResolveRPR(sender, request, RemoteResponseType.InvalidEntity);
 
                 return;
             }
@@ -433,7 +433,7 @@ namespace MNet
             {
                 Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
 
-                if (request.Type == RpcType.Query) ResolveRPR(sender, request, RprResult.InvalidClient);
+                if (request.Type == RpcType.Query) ResolveRPR(sender, request, RemoteResponseType.InvalidClient);
 
                 return;
             }
@@ -454,14 +454,14 @@ namespace MNet
         #endregion
 
         #region RPR
-        void ResolveRPR(NetworkClient requester, RpcRequest request, RprResult result)
+        void ResolveRPR(NetworkClient requester, RpcRequest request, RemoteResponseType result)
         {
             var command = RpcCommand.Write(Master.ID, request.Entity, request.Behaviour, request.Callback, result, time);
 
             Send(command, requester);
         }
 
-        void ResolveRPR(RprPromise promise, RprResult result)
+        void ResolveRPR(RprPromise promise, RemoteResponseType result)
         {
             var command = RpcCommand.Write(Master.ID, promise.Entity.ID, promise.Behaviour, promise.Callback, result, time);
 
@@ -692,7 +692,7 @@ namespace MNet
             {
                 Log.Info($"Resolving RPR Promise For Disconnecting Client: {client}, Requested by {client.RprCache[i].Requester}");
 
-                ResolveRPR(client.RprCache[i], RprResult.Disconnected);
+                ResolveRPR(client.RprCache[i], RemoteResponseType.Disconnected);
             }
 
             Clients.Remove(client.ID);

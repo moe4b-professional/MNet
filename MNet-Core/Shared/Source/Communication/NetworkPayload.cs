@@ -157,7 +157,7 @@ namespace MNet
 
             Register<RpcRequest>(26);
             Register<RpcCommand>(27);
-            Register<RpcBufferMode>(28);
+            Register<RemoteBufferMode>(28);
 
             Register<AttributesCollection>(29);
 

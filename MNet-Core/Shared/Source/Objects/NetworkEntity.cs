@@ -43,14 +43,19 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct NetworkEntityID : INetworkSerializable
+    public struct NetworkEntityID : IManualNetworkSerializable
     {
         ushort value;
         public ushort Value { get { return value; } }
 
-        public void Select(ref NetworkSerializationContext context)
+        public void Serialize(NetworkWriter writer)
         {
-            context.Select(ref value);
+            writer.Write(value);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            reader.Read(out value);
         }
 
         public NetworkEntityID(ushort value)

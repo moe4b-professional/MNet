@@ -249,7 +249,7 @@ namespace MNet
 
             var raw = writer.Flush();
 
-            BroadcastRPC(Sync, raw, buffer: RpcBufferMode.Last, exception: Entity.Owner);
+            BroadcastRPC(Sync, raw, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master, Delivery = DeliveryMode.Unreliable)]

@@ -175,7 +175,7 @@ namespace MNet
         }
 
         #region Methods
-        protected bool BroadcastRPC(string method, RpcBufferMode buffer = RpcBufferMode.None, NetworkClient exception = null, params object[] arguments)
+        protected bool BroadcastRPC(string method, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -300,7 +300,7 @@ namespace MNet
                 return;
             }
 
-            if (command.Type == RpcType.Query) ResponseRPC(command.Callback, command.Sender, RprResult.Success, result);
+            if (command.Type == RpcType.Query) ResponseRPC(command.Callback, command.Sender, RemoteResponseType.Success, result);
         }
         #endregion
 

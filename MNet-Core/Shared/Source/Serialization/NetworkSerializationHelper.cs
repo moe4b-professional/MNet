@@ -98,7 +98,8 @@ namespace MNet
                 writer.Write(length);
             }
 
-            public static void Read(NetworkReader reader, out ushort length) => reader.Read(out length);
+            public static void Read(NetworkReader reader, out ushort length) => length = Read(reader);
+            public static ushort Read(NetworkReader reader) => reader.Read<ushort>();
         }
 
         public static class GenericArguments

@@ -24,7 +24,7 @@ namespace MNet
                 return;
             }
 
-            if (request.BufferMode == RpcBufferMode.None) return;
+            if (request.BufferMode == RemoteBufferMode.None) return;
 
             var key = (request.Behaviour, request.Method);
 
@@ -35,7 +35,7 @@ namespace MNet
                 Dictionary.Add(key, collection);
             }
 
-            if (request.BufferMode == RpcBufferMode.Last)
+            if (request.BufferMode == RemoteBufferMode.Last)
             {
                 unbuffer(collection.HashSet);
 

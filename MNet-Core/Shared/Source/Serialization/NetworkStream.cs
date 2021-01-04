@@ -143,7 +143,8 @@ namespace MNet
 
             if (ResolveExplicit(value)) return;
 
-            if (ResolveImplicit(value)) return;
+            var type = typeof(T);
+            if (ResolveImplicit(value, type)) return;
 
             throw FormatResolverException<T>();
         }
@@ -169,11 +170,11 @@ namespace MNet
         {
             if (value == null)
             {
-                Write(true); //Is Null Flag Value
+                Insert(1); //Is Null Flag Value
                 return true;
             }
 
-            if (NetworkSerializationHelper.Nullable.Generic<T>.Is) Write(false); //Is Not Null Flag
+            if (NetworkSerializationHelper.Nullable.Generic<T>.Is) Insert(0); //Is Not Null Flag
 
             return false;
         }
@@ -181,11 +182,11 @@ namespace MNet
         {
             if (value == null)
             {
-                Write(true); //Is Null Flag Value
+                Insert(1); //Is Null Flag Value
                 return true;
             }
 
-            if (NetworkSerializationHelper.Nullable.Any.Check(type)) Write(false); //Is Not Null Flag
+            if (NetworkSerializationHelper.Nullable.Any.Check(type)) Insert(0); //Is Not Null Flag
 
             return false;
         }
@@ -200,10 +201,8 @@ namespace MNet
             return true;
         }
 
-        bool ResolveImplicit(object value)
+        bool ResolveImplicit(object value, Type type)
         {
-            var type = value.GetType();
-
             var resolver = NetworkSerializationResolver.Retrive(type);
 
             if (resolver == null) return false;
@@ -238,7 +237,7 @@ namespace MNet
 
     public class NetworkReader : NetworkStream
     {
-        public virtual byte[] BlockCopy(int length)
+        public byte[] BlockCopy(int length)
         {
             var destination = new byte[length];
 
@@ -247,6 +246,13 @@ namespace MNet
             Position += length;
 
             return destination;
+        }
+
+        public byte Next()
+        {
+            Position += 1;
+
+            return data[Position - 1];
         }
 
         public void Set(byte[] data)
@@ -270,7 +276,7 @@ namespace MNet
 
             throw FormatResolverException<T>();
         }
-        
+
         public object Read(Type type)
         {
             if (ResolveNull(type)) return null;
@@ -286,17 +292,13 @@ namespace MNet
         {
             if (NetworkSerializationHelper.Nullable.Generic<T>.Is == false) return false;
 
-            Read(out bool isNull);
-
-            return isNull;
+            return Next() == 1 ? true : false;
         }
         bool ResolveNull(Type type)
         {
             if (NetworkSerializationHelper.Nullable.Any.Check(type) == false) return false;
 
-            Read(out bool isNull);
-
-            return isNull;
+            return Next() == 1 ? true : false;
         }
 
         bool ResolveExplicit<T>(ref T value)

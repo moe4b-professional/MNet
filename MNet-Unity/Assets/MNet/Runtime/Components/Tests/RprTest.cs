@@ -34,17 +34,14 @@ namespace MNet
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Any)]
-        string Call(RpcInfo info)
-        {
-            return Payload;
-        }
+        string Call(RpcInfo info) => Payload;
 
         [NetworkRPC]
-        void Return(RprResult result, string value)
+        void Return(RemoteResponseType response, string value)
         {
-            if(result != RprResult.Success)
+            if (response != RemoteResponseType.Success)
             {
-                Debug.LogError("RPR Test Failed: " + result);
+                Debug.LogError("RPR Test Failed, Response: " + response);
                 return;
             }
 

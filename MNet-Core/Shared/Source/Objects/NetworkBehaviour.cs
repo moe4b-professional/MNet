@@ -8,14 +8,19 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct NetworkBehaviourID : INetworkSerializable
+    public struct NetworkBehaviourID : IManualNetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }
 
-        public void Select(ref NetworkSerializationContext context)
+        public void Serialize(NetworkWriter writer)
         {
-            context.Select(ref value);
+            writer.Insert(Value);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            value = reader.Next();
         }
 
         public NetworkBehaviourID(byte value)
