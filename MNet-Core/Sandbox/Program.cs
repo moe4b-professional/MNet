@@ -13,71 +13,23 @@ namespace MNet
 {
     static class Program
     {
-        public const int Count = 10_000_000;
-
-        public static List<string> list;
+        public const int Count = 1_000_000;
 
         public static void Main(string[] args)
         {
-            list = new List<string>();
+            DynamicNetworkSerialization.Enabled = true;
 
-            for (int i = 0; i < Count; i++)
-            {
-                list.Add("Hello World " + i);
-            }
+            Setup();
 
             for (int i = 0; i < 20; i++)
-            {
-                Measure(Foreach);
-                Measure(For);
-
-                Console.WriteLine();
-            }
-
-            Console.ReadKey();
-
-            for (int i = 0; i < 20; i++)
-                Measure(Serialization);
+                PerformanceTools.Measure(Serialization);
 
             Console.ReadLine();
-
-            for (int i = 0; i < 10; i++)
-            {
-                Measure(Foreach);
-                Measure(For);
-
-                Console.WriteLine();
-            }
-
-            Console.ReadLine();
-        }
-
-        static void Foreach()
-        {
-            foreach (var item in list)
-            {
-                Pass(item);
-            }
-        }
-
-        static void For()
-        {
-            for (int i = 0; i < list.Count; i++)
-            {
-                Pass(list[i]);
-            }
-        }
-
-        static void Pass<T>(T value)
-        {
-
         }
 
         static void Serialization()
         {
             var request = RpcRequest.WriteBroadcast(default, default, default, default, 1, 2, 3, 4);
-
-            request.Except(default);
 
             for (int i = 0; i < Count; i++)
             {
@@ -85,7 +37,21 @@ namespace MNet
             }
         }
 
-        public static void Measure(Action action)
+        static void Setup()
+        {
+            var request = RpcRequest.WriteBroadcast(default, default, default, default, 1, 2, 3, 4);
+
+            for (int i = 0; i < 100; i++)
+            {
+                NetworkSerializer.Serialize(request);
+            }
+        }
+    }
+
+    static class PerformanceTools
+    {
+        public static void Measure(Action action) => Measure(action, action.Method.Name);
+        public static void Measure(Action action, string name)
         {
             var stopwatch = Stopwatch.StartNew();
 
@@ -93,54 +59,9 @@ namespace MNet
 
             stopwatch.Stop();
 
-            Log.Info($"{action.Method.Name} Toook {stopwatch.Elapsed.TotalMilliseconds.ToString("N")}");
+            Log.Info($"{action.Method.Name} Took {stopwatch.Elapsed.TotalMilliseconds.ToString("N")}");
         }
+
+        static void Consume<T>(T value) { }
     }
-
-    /*
-    public static class Serialization
-    {
-        public const int Count = 10_000_000;
-
-        public static int data = 42;
-
-        static void Start()
-        {
-            Prepare();
-
-            Program.Measure(ResolveDeserialize);
-            Program.Measure(ResolvedSerialize);
-        }
-
-        static void Prepare()
-        {
-            NetworkSerializer.Clone(data);
-
-            var request = RpcRequest.Write(default, default, new RpcMethodID(0), default, 42, 42);
-            var command = RpcCommand.Write(default, request, default);
-            NetworkSerializer.Serialize(command);
-        }
-
-        static void SerializeRPC()
-        {
-            var request = RpcRequest.Write(default, default, new RpcMethodID(0), default, 42, 42);
-
-            var command = RpcCommand.Write(default, request, default);
-
-            for (int i = 0; i < 8000; i++) NetworkSerializer.Serialize(command);
-        }
-
-        static void ResolveDeserialize()
-        {
-            var binary = new byte[] { 42, 0, 0, 0 };
-
-            for (int i = 0; i < Count; i++) NetworkSerializer.Deserialize<int>(binary);
-        }
-
-        static void ResolvedSerialize()
-        {
-            for (int i = 0; i < Count; i++) NetworkSerializer.Serialize(data);
-        }
-    }
-    */
 }

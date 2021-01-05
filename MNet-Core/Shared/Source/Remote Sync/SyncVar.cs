@@ -125,15 +125,6 @@ namespace MNet
             return value;
         }
 
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref sender);
-            context.Select(ref entity);
-            context.Select(ref behaviour);
-            context.Select(ref field);
-            context.Select(ref raw);
-        }
-
         public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);

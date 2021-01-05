@@ -667,11 +667,11 @@ PlayerSettings:
   platformArchitecture: {}
   scriptingBackend:
     Android: 0
-    Standalone: 1
+    Standalone: 0
   il2cppCompilerConfiguration:
     WebGL: 1
   managedStrippingLevel:
-    Standalone: 3
+    Standalone: 0
     WebGL: 3
   incrementalIl2cppBuild: {}
   allowUnsafeCode: 0

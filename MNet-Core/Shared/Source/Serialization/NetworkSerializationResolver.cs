@@ -318,7 +318,7 @@ namespace MNet
     [Preserve]
     public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
     {
-        public static NetworkSerializationExplicitResolver<T> Instance { get; protected set; }
+        public static NetworkSerializationExplicitResolver<T> Instance;
 
         public static Type Type => typeof(T);
 
@@ -934,37 +934,53 @@ namespace MNet
     public sealed class EnumNetworkSerializationResolver<TType, TBacking> : NetworkSerializationGenericResolver<TType>
         where TType : struct, Enum
     {
-        public ConcurrentDictionary<TBacking, TType> Types { get; private set; }
-        public ConcurrentDictionary<TType, TBacking> Values { get; private set; }
+        ConcurrentDictionary<TBacking, TType> values;
+        ConcurrentDictionary<TType, TBacking> backings;
 
         public override void Serialize(NetworkWriter writer, TType instance)
         {
-            if (Values.TryGetValue(instance, out var value) == false)
+            if (backings.TryGetValue(instance, out var backing) == false)
             {
-                value = (TBacking)Convert.ChangeType(instance, typeof(TBacking));
-                Values.TryAdd(instance, value);
+                backing = ChangeType<TBacking>(instance);
+                Register(backing, instance);
             }
 
-            writer.Write(value);
+            writer.Write(backing);
         }
 
         public override TType Deserialize(NetworkReader reader)
         {
-            var value = reader.Read<TBacking>();
+            var backing = reader.Read<TBacking>();
 
-            if (Types.TryGetValue(value, out var instance) == false)
+            if (values.TryGetValue(backing, out var instance) == false)
             {
-                instance = (TType)Enum.ToObject(typeof(TType), value);
-                Types.TryAdd(value, instance);
+                instance = ToEnum<TType>(backing);
+                Register(backing, instance);
             }
 
             return instance;
         }
 
+        void Register(TBacking backing, TType type)
+        {
+            values.TryAdd(backing, type);
+            backings.TryAdd(type, backing);
+        }
+
+        public static T ToEnum<T>(object source) => (T)Enum.ToObject(typeof(T), source);
+        public static T ChangeType<T>(object source) => (T)Convert.ChangeType(source, typeof(T));
+
         public EnumNetworkSerializationResolver()
         {
-            Types = new ConcurrentDictionary<TBacking, TType>();
-            Values = new ConcurrentDictionary<TType, TBacking>();
+            values = new ConcurrentDictionary<TBacking, TType>();
+            backings = new ConcurrentDictionary<TType, TBacking>();
+
+            foreach (TType instance in Enum.GetValues(typeof(TType)))
+            {
+                var backing = ChangeType<TBacking>(instance);
+
+                Register(backing, instance);
+            }
         }
     }
 
