@@ -450,20 +450,13 @@ namespace MNet
         {
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
-                Log.Warning($"Couldn't Find RPR Target {request.Target}, Could've Disconnected Before Getting Answer");
+                Log.Warning($"Couldn't Find RPR Target {request.Target}, Most Likely Disconnected Before Getting Answer");
                 return;
             }
 
             if (sender.RprCache.Unregister(target, request.Channel, out var promise) == false)
             {
                 Log.Info($"Client {target} Has no Requested RPR with for (target: {target}, channel: {request.Channel})");
-                return;
-            }
-
-            if (target != promise.Requester)
-            {
-                ///Original requester disconnected but a new client connected and got their ID
-                ///Just Return
                 return;
             }
 
