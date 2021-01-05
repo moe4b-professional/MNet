@@ -180,6 +180,7 @@ namespace MNet
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to Invoke RPC");
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }
 

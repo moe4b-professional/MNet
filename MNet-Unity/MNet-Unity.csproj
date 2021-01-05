@@ -96,6 +96,7 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\HideUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\ShowUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\NetworkTimeSinExample.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\ScenesLoad.cs" />
      <Compile Include="Assets\MNet-Example\Utility\AutoJoinProtocol.cs" />
@@ -748,6 +749,10 @@
     <ProjectReference Include="LiteNetLib.csproj">
       <Project>{1B4927FD-1A71-E482-79DE-F153996F9CDF}</Project>
       <Name>LiteNetLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="UniTask.csproj">
+      <Project>{B60007EA-AA24-7FC0-AE70-F8D0709B181F}</Project>
+      <Name>UniTask</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

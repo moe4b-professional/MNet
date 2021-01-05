@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using System.Reflection;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     public abstract partial class NetworkBehaviour : MonoBehaviour
@@ -148,7 +150,7 @@ namespace MNet
         #endregion
 
         #region RPC
-        protected DualDictionary<RpcMethodID, string, RpcBind> RPCs { get; private set; }
+        protected DualDictionary<RpxMethodID, string, RpcBind> RPCs { get; private set; }
 
         void ParseRPCs()
         {
@@ -203,36 +205,29 @@ namespace MNet
             return SendRPC(bind, payload);
         }
 
-        protected bool QueryRPC(string method, NetworkClient target, string result, params object[] arguments)
+        protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
                 Debug.LogError($"No RPC With Name '{method}' Found on Entity '{Entity}'");
-                return false;
+                return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
             }
 
-            if (RPCs.TryGetValue(result, out var callback) == false)
+            var promise = NetworkAPI.Client.RPR.Promise(target);
+
+            var payload = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, arguments);
+
+            if (SendRPC(bind, payload) == false)
             {
-                Debug.LogError($"No RPC With Name '{result}' Found on Entity '{Entity}' to use for Return, Please Define all Return Methods as RPCs");
-                return false;
+                Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
+                return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
             }
 
-            var payload = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, callback.MethodID, arguments);
+            await UniTask.WaitUntil(promise.IsComplete);
 
-            return SendRPC(bind, payload);
-        }
+            var answer = new RprAnswer<TResult>(promise);
 
-        protected bool ResponseRPC(RpcMethodID method, NetworkClientID target, params object[] arguments)
-        {
-            if (RPCs.TryGetValue(method, out var bind) == false)
-            {
-                Debug.LogWarning($"No RPC Found With Name {method}");
-                return false;
-            }
-
-            var payload = RpcRequest.WriteResponse(Entity.ID, ID, bind.MethodID, target, arguments);
-
-            return SendRPC(bind, payload);
+            return answer;
         }
         #endregion
 
@@ -257,13 +252,15 @@ namespace MNet
         {
             if (RPCs.TryGetValue(command.Method, out var bind) == false)
             {
-                Debug.LogWarning($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
+                Debug.LogError($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
                 Debug.LogWarning($"RPC '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }
 
@@ -278,7 +275,8 @@ namespace MNet
                     $"Exception: \n" +
                     $"{e}";
 
-                Debug.LogWarning(text, this);
+                Debug.LogError(text, this);
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }
 
@@ -289,6 +287,7 @@ namespace MNet
             }
             catch (TargetInvocationException)
             {
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 throw;
             }
             catch (Exception)
@@ -296,11 +295,12 @@ namespace MNet
                 var text = $"Error Trying to Invoke RPC {bind}', " +
                     $"Please Ensure Method is Implemented And Invoked Correctly";
 
-                Debug.LogWarning(text, this);
+                Debug.LogError(text, this);
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }
 
-            if (command.Type == RpcType.Query) ResponseRPC(command.Callback, command.Sender, RemoteResponseType.Success, result);
+            if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, result, bind.ReturnType);
         }
         #endregion
 
@@ -447,7 +447,7 @@ namespace MNet
 
         public NetworkBehaviour()
         {
-            RPCs = new DualDictionary<RpcMethodID, string, RpcBind>();
+            RPCs = new DualDictionary<RpxMethodID, string, RpcBind>();
 
             SyncVars = new DualDictionary<SyncVarFieldID, string, SyncVarBind>();
         }

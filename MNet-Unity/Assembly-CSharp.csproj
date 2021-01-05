@@ -609,6 +609,26 @@
       <Project>{1B4927FD-1A71-E482-79DE-F153996F9CDF}</Project>
       <Name>LiteNetLib</Name>
     </ProjectReference>
+    <ProjectReference Include="UniTask.Addressables.csproj">
+      <Project>{EA3A808F-634A-4845-5A06-3B5E4A2D56C5}</Project>
+      <Name>UniTask.Addressables</Name>
+    </ProjectReference>
+    <ProjectReference Include="UniTask.csproj">
+      <Project>{B60007EA-AA24-7FC0-AE70-F8D0709B181F}</Project>
+      <Name>UniTask</Name>
+    </ProjectReference>
+    <ProjectReference Include="UniTask.DOTween.csproj">
+      <Project>{6A6EE66D-06FA-AFAA-F0DB-28CFA14A585F}</Project>
+      <Name>UniTask.DOTween</Name>
+    </ProjectReference>
+    <ProjectReference Include="UniTask.TextMeshPro.csproj">
+      <Project>{3DCC2573-0996-5E0D-3748-B205DCE8AC88}</Project>
+      <Name>UniTask.TextMeshPro</Name>
+    </ProjectReference>
+    <ProjectReference Include="UniTask.Linq.csproj">
+      <Project>{FA0D0E67-84EB-4DF3-172C-099AE7BBD5CC}</Project>
+      <Name>UniTask.Linq</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

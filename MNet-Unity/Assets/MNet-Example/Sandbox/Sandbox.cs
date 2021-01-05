@@ -20,25 +20,16 @@ using Random = UnityEngine.Random;
 using System.Reflection;
 using System.Reflection.Emit;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet.Example
 {
     public class Sandbox : MonoBehaviour
     {
-        public float range = 5f;
-
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
-            
-        }
 
-        void Update()
-        {
-            var sin = Mathf.Sin(NetworkAPI.Time.Seconds);
-
-            var position = transform.position;
-            position.x = sin * range;
-            transform.position = position;
         }
     }
 }

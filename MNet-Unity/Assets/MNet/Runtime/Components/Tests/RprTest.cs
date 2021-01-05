@@ -17,35 +17,35 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     [AddComponentMenu(Constants.Path + "Tests/" + "RPR Test")]
     public class RprTest : NetworkBehaviour
     {
-        public const string Payload = "Hello World";
+        public string value;
 
         public bool success = false;
 
-        protected override void OnSpawn()
+        protected async override void OnSpawn()
         {
             base.OnSpawn();
 
-            QueryRPC(Call, NetworkAPI.Room.Master, Return);
+            var answer = await QueryRPC(Call, NetworkAPI.Room.Master);
+
+            success = answer.Success;
+
+            if (answer.Success)
+                value = answer.Value;
+            else
+                Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Any)]
-        string Call(RpcInfo info) => Payload;
-
-        [NetworkRPC]
-        void Return(RemoteResponseType response, string value)
+        string Call(RpcInfo info)
         {
-            if (response != RemoteResponseType.Success)
-            {
-                Debug.LogError("RPR Test Failed, Response: " + response);
-                return;
-            }
-
-            success = value == Payload;
+            return NetworkAPI.Client.Profile.Name;
         }
     }
 }

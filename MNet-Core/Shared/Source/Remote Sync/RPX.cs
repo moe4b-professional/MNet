@@ -8,18 +8,9 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
-    #region RPC
-    public enum RpcType : byte
-    {
-        Broadcast,
-        Target,
-        Query,
-        Response
-    }
-
     [Preserve]
     [Serializable]
-    public struct RpcMethodID : IManualNetworkSerializable
+    public struct RpxMethodID : IManualNetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }
@@ -34,29 +25,51 @@ namespace MNet
             value = reader.Next();
         }
 
-        public RpcMethodID(byte value)
+        public RpxMethodID(byte value)
         {
             this.value = value;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is RpcMethodID target) return Equals(target);
+            if (obj is RpxMethodID target) return Equals(target);
 
             return false;
         }
-        public bool Equals(RpcMethodID target) => Equals(value, target.value);
+        public bool Equals(RpxMethodID target) => Equals(value, target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
 
-        public static bool operator ==(RpcMethodID a, RpcMethodID b) => a.Equals(b);
-        public static bool operator !=(RpcMethodID a, RpcMethodID b) => !a.Equals(b);
+        public static bool operator ==(RpxMethodID a, RpxMethodID b) => a.Equals(b);
+        public static bool operator !=(RpxMethodID a, RpxMethodID b) => !a.Equals(b);
+    }
+
+    [Serializable]
+    public enum RemoteBufferMode : byte
+    {
+        None, Last, All
+    }
+
+    public enum RemoteResponseType : byte
+    {
+        Success,
+        Disconnect,
+        InvalidClient,
+        InvalidEntity,
+        FatalFailure,
+    }
+
+    #region RPC
+    public enum RpcType : byte
+    {
+        Broadcast,
+        Target,
+        Query,
     }
 
     [Preserve]
-    [Serializable]
     public struct RpcRequest : IManualNetworkSerializable
     {
         NetworkEntityID entity;
@@ -65,8 +78,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpxMethodID method;
+        public RpxMethodID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -88,8 +101,8 @@ namespace MNet
             exception = client;
         }
 
-        RpcMethodID callback;
-        public RpcMethodID Callback => callback;
+        RprChannelID returnChannel;
+        public RprChannelID ReturnChannel => returnChannel;
 
         public object[] Read(IList<ParameterInfo> parameters)
         {
@@ -128,13 +141,9 @@ namespace MNet
                     context.Select(ref target);
                     break;
 
-                case RpcType.Response:
-                    context.Select(ref target);
-                    break;
-
                 case RpcType.Query:
                     context.Select(ref target);
-                    context.Select(ref callback);
+                    context.Select(ref returnChannel);
                     break;
 
                 default:
@@ -164,13 +173,9 @@ namespace MNet
                     target.Serialize(writer);
                     break;
 
-                case RpcType.Response:
-                    target.Serialize(writer);
-                    break;
-
                 case RpcType.Query:
                     target.Serialize(writer);
-                    callback.Serialize(writer);
+                    returnChannel.Serialize(writer);
                     break;
 
                 default:
@@ -200,13 +205,9 @@ namespace MNet
                     target.Deserialize(reader);
                     break;
 
-                case RpcType.Response:
-                    target.Deserialize(reader);
-                    break;
-
                 case RpcType.Query:
                     target.Deserialize(reader);
-                    callback.Deserialize(reader);
+                    returnChannel.Deserialize(reader);
                     break;
 
                 default:
@@ -233,7 +234,7 @@ namespace MNet
             return raw;
         }
 
-        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RemoteBufferMode bufferMode, params object[] arguments)
+        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RemoteBufferMode bufferMode, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -250,7 +251,7 @@ namespace MNet
             return request;
         }
 
-        public static RpcRequest WriteTarget(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, params object[] arguments)
+        public static RpcRequest WriteTarget(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -267,7 +268,7 @@ namespace MNet
             return request;
         }
 
-        public static RpcRequest WriteQuery(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, RpcMethodID callback, params object[] arguments)
+        public static RpcRequest WriteQuery(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, RprChannelID returnChannel, params object[] arguments)
         {
             var raw = Serialize(arguments);
 
@@ -279,24 +280,7 @@ namespace MNet
                 raw = raw,
                 type = RpcType.Query,
                 target = target,
-                callback = callback,
-            };
-
-            return request;
-        }
-
-        public static RpcRequest WriteResponse(NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, NetworkClientID target, params object[] arguments)
-        {
-            var raw = Serialize(arguments);
-
-            var request = new RpcRequest()
-            {
-                entity = entity,
-                behaviour = behaviour,
-                method = method,
-                raw = raw,
-                type = RpcType.Response,
-                target = target,
+                returnChannel = returnChannel,
             };
 
             return request;
@@ -304,7 +288,6 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
     public struct RpcCommand : IManualNetworkSerializable
     {
         NetworkClientID sender;
@@ -316,8 +299,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpxMethodID method;
+        public RpxMethodID Method { get { return method; } }
 
         NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
@@ -328,8 +311,8 @@ namespace MNet
         RpcType type;
         public RpcType Type => type;
 
-        RpcMethodID callback;
-        public RpcMethodID Callback => callback;
+        RprChannelID returnChannel;
+        public RprChannelID ReturnChannel => returnChannel;
 
         public object[] Read(IList<ParameterInfo> parameters, int optional)
         {
@@ -374,10 +357,7 @@ namespace MNet
                     break;
 
                 case RpcType.Query:
-                    callback.Serialize(writer);
-                    break;
-
-                case RpcType.Response:
+                    returnChannel.Serialize(writer);
                     break;
 
                 default:
@@ -407,10 +387,7 @@ namespace MNet
                     break;
 
                 case RpcType.Query:
-                    callback.Deserialize(reader);
-                    break;
-
-                case RpcType.Response:
+                    returnChannel.Deserialize(reader);
                     break;
 
                 default:
@@ -431,14 +408,14 @@ namespace MNet
                 method = request.Method,
                 raw = request.Raw,
                 type = request.Type,
-                callback = request.Callback,
+                returnChannel = request.ReturnChannel,
                 time = time,
             };
 
             return command;
         }
 
-        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, RpcMethodID method, RemoteResponseType result, NetworkTimeSpan time)
+        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RemoteResponseType result, NetworkTimeSpan time)
         {
             var raw = NetworkSerializer.Serialize(result);
 
@@ -458,17 +435,142 @@ namespace MNet
     }
     #endregion
 
-    [Serializable]
-    public enum RemoteBufferMode : byte
+    #region RPR
+    [Preserve]
+    public struct RprChannelID : IManualNetworkSerializable
     {
-        None, Last, All
+        byte value;
+        public byte Value { get { return value; } }
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Insert(value);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            value = reader.Next();
+        }
+
+        public RprChannelID(byte value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is RprChannelID target) return Equals(target);
+
+            return false;
+        }
+        public bool Equals(RprChannelID target) => Equals(value, target.value);
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(RprChannelID a, RprChannelID b) => a.Equals(b);
+        public static bool operator !=(RprChannelID a, RprChannelID b) => !a.Equals(b);
+
+        public static RprChannelID Increment(RprChannelID channel) => new RprChannelID((byte)(channel.value + 1));
     }
 
-    public enum RemoteResponseType : byte
+    [Preserve]
+    public struct RprRequest : IManualNetworkSerializable
     {
-        Success,
-        Disconnected,
-        InvalidClient,
-        InvalidEntity,
+        NetworkClientID target;
+        public NetworkClientID Target => target;
+
+        RprChannelID channel;
+        public RprChannelID Channel => channel;
+
+        RemoteResponseType response;
+        public RemoteResponseType Response => response;
+
+        byte[] raw;
+        public byte[] Raw => raw;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            target.Serialize(writer);
+            channel.Serialize(writer);
+            writer.Write(response);
+            writer.Write(raw);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            target.Deserialize(reader);
+            channel.Deserialize(reader);
+            reader.Read(out response);
+            reader.Read(out raw);
+        }
+
+        public RprRequest(NetworkClientID target, RprChannelID channel, RemoteResponseType response, byte[] raw)
+        {
+            this.target = target;
+            this.channel = channel;
+            this.response = response;
+            this.raw = raw;
+        }
+
+        public static RprRequest Write(NetworkClientID target, RprChannelID channel, object result, Type type)
+        {
+            var raw = NetworkSerializer.Serialize(result, type);
+
+            var request = new RprRequest(target, channel, RemoteResponseType.Success, raw);
+            return request;
+        }
+
+        public static RprRequest Write(NetworkClientID target, RprChannelID channel, RemoteResponseType response)
+        {
+            var request = new RprRequest(target, channel, response, new byte[0]);
+            return request;
+        }
     }
+
+    [Preserve]
+    public struct RprCommand : IManualNetworkSerializable
+    {
+        RprChannelID channel;
+        public RprChannelID Channel => channel;
+
+        RemoteResponseType response;
+        public RemoteResponseType Response => response;
+
+        byte[] raw;
+        public byte[] Raw => raw;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            channel.Serialize(writer);
+            writer.Write(response);
+            writer.Write(raw);
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            channel.Deserialize(reader);
+            reader.Read(out response);
+            reader.Read(out raw);
+        }
+
+        public RprCommand(RprChannelID channel, RemoteResponseType response, byte[] raw)
+        {
+            this.channel = channel;
+            this.response = response;
+            this.raw = raw;
+        }
+
+        public static RprCommand Write(RprRequest request)
+        {
+            var command = new RprCommand(request.Channel, request.Response, request.Raw);
+            return command;
+        }
+
+        public static RprCommand Write(RprChannelID channel, RemoteResponseType response)
+        {
+            var request = new RprCommand(channel, response, new byte[0]);
+            return request;
+        }
+    }
+    #endregion
 }

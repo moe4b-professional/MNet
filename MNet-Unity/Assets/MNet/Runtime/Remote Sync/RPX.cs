@@ -32,7 +32,7 @@ namespace MNet
         public DeliveryMode DeliveryMode => Attribute.Delivery;
 
         public MethodInfo MethodInfo { get; protected set; }
-        public RpcMethodID MethodID { get; protected set; }
+        public RpxMethodID MethodID { get; protected set; }
 
         public string Name { get; protected set; }
 
@@ -73,7 +73,7 @@ namespace MNet
 
             MethodInfo = method;
             Name = GetName(MethodInfo);
-            MethodID = new RpcMethodID(index);
+            MethodID = new RpxMethodID(index);
 
             ParametersInfo = method.GetParameters();
 
@@ -123,6 +123,56 @@ namespace MNet
     #endregion
 
     #region Return
+    public class RprPromise
+    {
+        public NetworkClient Target { get; protected set; }
+        public RprChannelID Channel { get; protected set; }
+
+        public bool Complete { get; protected set; }
+        public bool IsComplete() => Complete;
+
+        public RemoteResponseType Response { get; protected set; }
+
+        public byte[] Raw { get; protected set; }
+        internal T Read<T>() => Response == RemoteResponseType.Success ? NetworkSerializer.Deserialize<T>(Raw) : default;
+
+        internal void Fullfil(RprCommand command)
+        {
+            Complete = true;
+
+            Response = command.Response;
+            Raw = command.Raw;
+        }
+
+        public RprPromise(NetworkClient target, RprChannelID channel)
+        {
+            this.Target = target;
+            this.Channel = channel;
+
+            Complete = false;
+        }
+    }
+
+    public struct RprAnswer<T>
+    {
+        public RemoteResponseType Response { get; private set; }
+        public bool Success => Response == RemoteResponseType.Success;
+
+        public T Value { get; private set; }
+
+        internal RprAnswer(RemoteResponseType response)
+        {
+            this.Response = response;
+            Value = default;
+        }
+
+        internal RprAnswer(RprPromise promise)
+        {
+            Response = promise.Response;
+            Value = promise.Read<T>();
+        }
+    }
+
     public delegate void RprCallback<T>(RemoteResponseType response, T value);
 
     public delegate TResult RpcQueryMethod<TResult>(RpcInfo info);

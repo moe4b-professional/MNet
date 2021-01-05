@@ -76,6 +76,8 @@ namespace MNet
                 RegisterMessageHandler<RegisterClientResponse>(RegisterCallback);
                 RegisterMessageHandler<ReadyClientResponse>(ReadyCallback);
 
+                RPR.Configure();
+
                 NetworkAPI.OnProcess += Process;
 
                 Realtime.OnConnect += ConnectCallback;
@@ -262,6 +264,58 @@ namespace MNet
                 OnSpawnEntity?.Invoke(entity);
             }
             #endregion
+
+            public static class RPR
+            {
+                static AutoKeyDictionary<RprChannelID, RprPromise> promises;
+
+                internal static void Configure()
+                {
+                    promises = new AutoKeyDictionary<RprChannelID, RprPromise>(RprChannelID.Increment);
+
+                    Client.RegisterMessageHandler<RprCommand>(Command);
+                }
+
+                static void Command(ref RprCommand command)
+                {
+                    if (promises.TryGetValue(command.Channel, out var promise) == false)
+                    {
+                        Debug.LogWarning($"Recieved RPR Command for Channel {command.Channel} But that Command Doesn't Exist");
+                        return;
+                    }
+
+                    promise.Fullfil(command);
+
+                    promises.Remove(promise.Channel);
+                }
+
+                public static RprPromise Promise(NetworkClient target)
+                {
+                    var channel = promises.Reserve();
+
+                    var promise = new RprPromise(target, channel);
+
+                    promises.Assign(channel, promise);
+
+                    return promise;
+                }
+
+                #region Respond
+                public static bool Respond(RpcCommand command, RemoteResponseType response) => Respond(command.Sender, command.ReturnChannel, response);
+
+                public static bool Respond(NetworkClientID target, RprChannelID channel, object value, Type type)
+                {
+                    var request = RprRequest.Write(target, channel, value, type);
+                    return Send(request);
+                }
+
+                public static bool Respond(NetworkClientID target, RprChannelID channel, RemoteResponseType response)
+                {
+                    var request = RprRequest.Write(target, channel, response);
+                    return Send(request);
+                }
+                #endregion
+            }
 
             #region Destroy Entity
             public static void DestroyEntity(NetworkEntity entity) => DestroyEntity(entity.ID);

@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     public partial class NetworkBehaviour
@@ -56,20 +58,20 @@ namespace MNet
         #endregion
 
         #region RPR
-        public void QueryRPC<TResult>(RpcQueryMethod<TResult> method, NetworkClient target, RprCallback<TResult> callback)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name);
-        public void QueryRPC<TResult, T1>(RpcQueryMethod<TResult, T1> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name, arg1);
-        public void QueryRPC<TResult, T1, T2>(RpcQueryMethod<TResult, T1, T2> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name, arg1, arg2);
-        public void QueryRPC<TResult, T1, T2, T3>(RpcQueryMethod<TResult, T1, T2, T3> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name, arg1, arg2, arg3);
-        public void QueryRPC<TResult, T1, T2, T3, T4>(RpcQueryMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name, arg1, arg2, arg3, arg4);
-        public void QueryRPC<TResult, T1, T2, T3, T4, T5>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name, arg1, arg2, arg3, arg4, arg5);
-        public void QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, RprCallback<TResult> callback, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => QueryRPC(method.Method.Name, target, callback.Method.Name, arg1, arg2, arg3, arg4, arg5, arg6);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult>(RpcQueryMethod<TResult> method, NetworkClient target)
+            => QueryRPC<TResult>(method.Method.Name, target);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1>(RpcQueryMethod<TResult, T1> method, NetworkClient target, T1 arg1)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2>(RpcQueryMethod<TResult, T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3>(RpcQueryMethod<TResult, T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4>(RpcQueryMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5);
+        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
     }
 }

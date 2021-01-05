@@ -182,6 +182,7 @@ namespace MNet
 
             RegisterMessageHandler<RpcRequest>(InvokeRPC);
             RegisterMessageHandler<SyncVarRequest>(InvokeSyncVar);
+            RegisterMessageHandler<RprRequest>(InvokeRPR);
 
             RegisterMessageHandler<RoomTimeRequest>(ProcessTimeRequest);
             RegisterMessageHandler<PingRequest>(ProcessPingRequest);
@@ -251,14 +252,12 @@ namespace MNet
             if (ClientSendQueue.Contains(target) == false) ClientSendQueue.Add(target);
         }
 
-        HashQueue<NetworkClient> ClientSendQueue;
+        HashSet<NetworkClient> ClientSendQueue;
 
-        void ResolveSendQueues()
+        void ResolveSendQueue()
         {
-            while (ClientSendQueue.Count > 0)
+            foreach (var client in ClientSendQueue)
             {
-                var client = ClientSendQueue.Dequeue();
-
                 var deliveries = client.SendQueue.Deliveries;
 
                 for (int d = 0; d < deliveries.Count; d++)
@@ -273,6 +272,8 @@ namespace MNet
                     deliveries[d].Clear();
                 }
             }
+
+            ClientSendQueue.Clear();
         }
         #endregion
 
@@ -311,7 +312,7 @@ namespace MNet
 
             if (scheduler.Running == false) return;
 
-            if (QueueMessages) ResolveSendQueues();
+            if (QueueMessages) ResolveSendQueue();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
@@ -398,9 +399,7 @@ namespace MNet
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
                 Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
-
                 if (request.Type == RpcType.Query) ResolveRPR(sender, request, RemoteResponseType.InvalidEntity);
-
                 return;
             }
 
@@ -412,7 +411,6 @@ namespace MNet
 
                 case RpcType.Target:
                 case RpcType.Query:
-                case RpcType.Response:
                     InvokeDirectRPC(sender, request, entity, mode);
                     break;
             }
@@ -434,21 +432,13 @@ namespace MNet
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
                 Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
-
                 if (request.Type == RpcType.Query) ResolveRPR(sender, request, RemoteResponseType.InvalidClient);
-
                 return;
             }
 
             if (request.Type == RpcType.Query)
             {
-                target.RprCache.Register(sender, entity, request.Behaviour, request.Callback);
-            }
-
-            if (request.Type == RpcType.Response)
-            {
-                if (sender.RprCache.Unregister(target, entity, request.Behaviour, request.Method) == false)
-                    Log.Warning($"Client {sender} Sending Response to Client {target} On '{entity.ID}->{request.Behaviour}' But no Cached RPC Was Registerd There");
+                target.RprCache.Register(sender, request.ReturnChannel);
             }
 
             Send(command, target, mode);
@@ -456,18 +446,44 @@ namespace MNet
         #endregion
 
         #region RPR
-        void ResolveRPR(NetworkClient requester, RpcRequest request, RemoteResponseType result)
+        void InvokeRPR(NetworkClient sender, ref RprRequest request)
         {
-            var command = RpcCommand.Write(Master.ID, request.Entity, request.Behaviour, request.Callback, result, time);
+            if (Clients.TryGetValue(request.Target, out var target) == false)
+            {
+                Log.Warning($"Couldn't Find RPR Target {request.Target}, Could've Disconnected Before Getting Answer");
+                return;
+            }
 
-            Send(command, requester);
+            if (sender.RprCache.Unregister(target, request.Channel, out var promise) == false)
+            {
+                Log.Info($"Client {target} Has no Requested RPR with for (target: {target}, channel: {request.Channel})");
+                return;
+            }
+
+            if (target != promise.Requester)
+            {
+                ///Original requester disconnected but a new client connected and got their ID
+                ///Just Return
+                return;
+            }
+
+            var command = RprCommand.Write(request);
+            Send(command, target);
         }
 
-        void ResolveRPR(RprPromise promise, RemoteResponseType result)
+        void ResolveRPR(NetworkClient requester, RpcRequest request, RemoteResponseType response) => ResolveRPR(requester, request.ReturnChannel, response);
+        void ResolveRPR(RprPromise promise, RemoteResponseType response) => ResolveRPR(promise.Requester, promise.Channel, response);
+        void ResolveRPR(NetworkClient requester, RprChannelID channel, RemoteResponseType response)
         {
-            var command = RpcCommand.Write(Master.ID, promise.Entity.ID, promise.Behaviour, promise.Callback, result, time);
+            if (Clients.ContainsValue(requester) == false)
+            {
+                ///Original requester no longer in the room
+                ///Silently Ignore
+                return;
+            }
 
-            Send(command, promise.Requester);
+            var command = RprCommand.Write(channel, response);
+            Send(command, requester);
         }
         #endregion
 
@@ -694,10 +710,12 @@ namespace MNet
             {
                 Log.Info($"Resolving RPR Promise For Disconnecting Client: {client}, Requested by {client.RprCache[i].Requester}");
 
-                ResolveRPR(client.RprCache[i], RemoteResponseType.Disconnected);
+                ResolveRPR(client.RprCache[i], RemoteResponseType.Disconnect);
             }
 
             Clients.Remove(client.ID);
+
+            ClientSendQueue.Remove(client);
 
             if (client == Master) ChangeMaster();
 
@@ -743,7 +761,7 @@ namespace MNet
 
             LoadScenesMessages = new List<NetworkMessage>();
 
-            ClientSendQueue = new HashQueue<NetworkClient>(capacity);
+            ClientSendQueue = new HashSet<NetworkClient>(capacity);
         }
     }
 }

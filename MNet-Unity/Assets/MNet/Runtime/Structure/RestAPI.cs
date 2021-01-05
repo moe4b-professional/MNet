@@ -64,7 +64,6 @@ namespace MNet
             ReadResult(request, out TResult result, out var error);
 
             if (error != null) Log.Error(error);
-            if (error != null) Log.Error(request.url);
 
             request.Dispose();
 

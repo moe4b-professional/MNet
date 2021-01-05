@@ -9,14 +9,14 @@ namespace MNet
 {
     class RpcBuffer
     {
-        public Dictionary<(NetworkBehaviourID behaviour, RpcMethodID method), NetworkMessageCollection> Dictionary { get; protected set; }
+        public Dictionary<(NetworkBehaviourID behaviour, RpxMethodID method), NetworkMessageCollection> Dictionary { get; protected set; }
 
         public HashSet<NetworkMessage> Hash { get; protected set; }
 
         public delegate void BufferDelegate(NetworkMessage message);
         public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> collection);
 
-        public void Set(NetworkMessage message, RpcType type, RemoteBufferMode mode, NetworkBehaviourID behaviour, RpcMethodID method, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
+        public void Set(NetworkMessage message, RpcType type, RemoteBufferMode mode, NetworkBehaviourID behaviour, RpxMethodID method, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
         {
             if (type != RpcType.Broadcast)
             {
@@ -59,7 +59,7 @@ namespace MNet
 
         public RpcBuffer()
         {
-            Dictionary = new Dictionary<(NetworkBehaviourID, RpcMethodID), NetworkMessageCollection>();
+            Dictionary = new Dictionary<(NetworkBehaviourID, RpxMethodID), NetworkMessageCollection>();
 
             Hash = new HashSet<NetworkMessage>();
         }
@@ -73,24 +73,26 @@ namespace MNet
 
         public RprPromise this[int index] => Promises[index];
 
-        public void Register(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
+        public void Register(NetworkClient requester, RprChannelID channel)
         {
-            var promise = new RprPromise(requester, entity, behaviour, callback);
+            var promise = new RprPromise(requester, channel);
 
             Promises.Add(promise);
         }
 
-        public bool Unregister(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
+        public bool Unregister(NetworkClient requester, RprChannelID channel, out RprPromise promise)
         {
             for (int i = 0; i < Promises.Count; i++)
             {
-                if (Promises[i].Equals(requester, entity, behaviour, callback))
+                if (Promises[i].Equals(requester, channel))
                 {
+                    promise = Promises[i];
                     Promises.RemoveAt(i);
                     return true;
                 }
             }
 
+            promise = default;
             return false;
         }
 
@@ -100,32 +102,26 @@ namespace MNet
         }
     }
 
-    class RprPromise
+    struct RprPromise
     {
-        public NetworkClient Requester { get; protected set; }
+        public NetworkClient Requester { get; private set; }
 
-        public NetworkEntity Entity { get; protected set; }
+        public RprChannelID Channel { get; private set; }
 
-        public NetworkBehaviourID Behaviour { get; protected set; }
-
-        public RpcMethodID Callback { get; protected set; }
-
-        public bool Equals(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
+        public bool Equals(NetworkClient requester, RprChannelID channel)
         {
             if (this.Requester != requester) return false;
-            if (this.Entity != entity) return false;
-            if (this.Behaviour != behaviour) return false;
-            if (this.Callback != callback) return false;
+            if (this.Channel != channel) return false;
 
             return true;
         }
 
-        public RprPromise(NetworkClient requester, NetworkEntity entity, NetworkBehaviourID behaviour, RpcMethodID callback)
+        public override int GetHashCode() => (Requester, Channel).GetHashCode();
+
+        public RprPromise(NetworkClient requester, RprChannelID channel)
         {
             this.Requester = requester;
-            this.Entity = entity;
-            this.Behaviour = behaviour;
-            this.Callback = callback;
+            this.Channel = channel;
         }
     }
 }
