@@ -32,7 +32,7 @@ namespace MNet
         {
             base.OnSpawn();
 
-            var answer = await QueryRPC(Call, NetworkAPI.Room.Master);
+            var answer = await QueryAsyncRPC(Call, NetworkAPI.Room.Master);
 
             success = answer.Success;
 
@@ -43,8 +43,10 @@ namespace MNet
         }
 
         [NetworkRPC(Authority = RemoteAuthority.Any)]
-        string Call(RpcInfo info)
+        async UniTask<string> Call(RpcInfo info)
         {
+            await UniTask.Delay(2000);
+
             return NetworkAPI.Client.Profile.Name;
         }
     }

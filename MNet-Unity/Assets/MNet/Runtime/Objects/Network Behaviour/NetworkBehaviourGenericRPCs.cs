@@ -73,5 +73,22 @@ namespace MNet
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
+
+        #region Query Async
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult>(AsyncRpcQueryMethod<TResult> method, NetworkClient target)
+            => QueryRPC<TResult>(method.Method.Name, target);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1>(AsyncRpcQueryMethod<TResult, T1> method, NetworkClient target, T1 arg1)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2>(AsyncRpcQueryMethod<TResult, T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3>(AsyncRpcQueryMethod<TResult, T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4>(AsyncRpcQueryMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5>(AsyncRpcQueryMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5, T6>(AsyncRpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
+        #endregion
     }
 }

@@ -29,25 +29,25 @@ namespace MNet.Example
 		public Rigidbody rigidbody { get; protected set; }
 
 		public Vector3 Velocity
-        {
+		{
 			get => rigidbody.velocity;
 			set => rigidbody.velocity = value;
-        }
+		}
 
 		public Vector3 Position
-        {
+		{
 			get => transform.position;
 			set => transform.position = value;
-        }
+		}
 
 		public class Behaviour : NetworkBehaviour
-        {
+		{
 			public Player Player { get; protected set; }
 			public void Set(Player reference) => Player = reference;
-        }
+		}
 
 		void Awake()
-        {
+		{
 			rigidbody = GetComponent<Rigidbody>();
 
 			Movement = GetComponentInChildren<PlayerMovement>();
@@ -57,12 +57,12 @@ namespace MNet.Example
 			Rotation.Set(this);
 		}
 
-        protected override void OnOwnerSet(NetworkClient client)
+		protected override void OnOwnerSet(NetworkClient client)
 		{
 			base.OnOwnerSet(client);
 
 			rigidbody.isKinematic = Entity.IsMine == false;
 		}
-    }
+	}
 #pragma warning restore CS0108
 }

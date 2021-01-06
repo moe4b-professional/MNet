@@ -300,7 +300,26 @@ namespace MNet
                 return;
             }
 
-            if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, result, bind.ReturnType);
+            if (command.Type == RpcType.Query)
+            {
+                if (bind.IsAsync)
+                    AwaitAsyncQueryRPC(result as IUniTask, command).Forget();
+                else
+                    NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, result, bind.ReturnType);
+            }
+        }
+
+        internal async UniTask AwaitAsyncQueryRPC(IUniTask task, RpcCommand command)
+        {
+            while (task.Status == UniTaskStatus.Pending) await UniTask.Yield();
+
+            if (task.Status != UniTaskStatus.Succeeded)
+            {
+                NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                return;
+            }
+
+            NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, task.Result, task.Type);
         }
         #endregion
 

@@ -36,13 +36,13 @@ namespace MNet.Example
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void Call(string arg, RpcInfo infp)
-        {
+		{
 
-        }
+		}
 
 		void Start()
 		{
-			if(Entity.IsMine) StartCoroutine(Procedure());
+			if (Entity.IsMine) StartCoroutine(Procedure());
 		}
 
 		IEnumerator Procedure()

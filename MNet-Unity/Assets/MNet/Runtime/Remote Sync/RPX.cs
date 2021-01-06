@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using System.Reflection;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     #region Call
@@ -37,10 +39,16 @@ namespace MNet
         public string Name { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
+        public bool HasInfoParameter { get; protected set; }
 
         public Type ReturnType => MethodInfo.ReturnType;
 
-        public bool HasInfoParameter { get; protected set; }
+        public bool IsAsync { get; protected set; }
+
+        public object Invoke(params object[] arguments)
+        {
+            return MethodInfo.Invoke(Behaviour, arguments);
+        }
 
         public object[] ParseArguments(RpcCommand command)
         {
@@ -58,11 +66,6 @@ namespace MNet
             return arguments;
         }
 
-        public object Invoke(params object[] arguments)
-        {
-            return MethodInfo.Invoke(Behaviour, arguments);
-        }
-
         public override string ToString() => $"{Entity}->{Name}";
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index)
@@ -74,10 +77,10 @@ namespace MNet
             MethodInfo = method;
             Name = GetName(MethodInfo);
             MethodID = new RpxMethodID(index);
-
             ParametersInfo = method.GetParameters();
-
             HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
+
+            IsAsync = typeof(IUniTask).IsAssignableFrom(ReturnType);
         }
 
         public static string GetName(MethodInfo method) => method.Name;
@@ -162,20 +165,14 @@ namespace MNet
 
         public T Value { get; private set; }
 
-        internal RprAnswer(RemoteResponseType response)
+        internal RprAnswer(RemoteResponseType response, T value)
         {
             this.Response = response;
-            Value = default;
+            this.Value = value;
         }
-
-        internal RprAnswer(RprPromise promise)
-        {
-            Response = promise.Response;
-            Value = promise.Read<T>();
-        }
+        internal RprAnswer(RemoteResponseType response) : this(response, default) { }
+        internal RprAnswer(RprPromise promise) : this(promise.Response, promise.Read<T>()) { }
     }
-
-    public delegate void RprCallback<T>(RemoteResponseType response, T value);
 
     public delegate TResult RpcQueryMethod<TResult>(RpcInfo info);
     public delegate TResult RpcQueryMethod<TResult, T1>(T1 arg1, RpcInfo info);
@@ -184,5 +181,13 @@ namespace MNet
     public delegate TResult RpcQueryMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
     public delegate TResult RpcQueryMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
     public delegate TResult RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
+
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult>(RpcInfo info);
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1>(T1 arg1, RpcInfo info);
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
+    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
     #endregion
 }
