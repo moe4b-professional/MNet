@@ -103,7 +103,7 @@ namespace MNet
 
             static void Setup()
             {
-                
+
             }
 
             static void Register(RegisterClientResponse response)
@@ -307,13 +307,13 @@ namespace MNet
 
             static void ChangeEntityOwner(ref ChangeEntityOwnerCommand command)
             {
-                if(Clients.TryGetValue(command.Client, out var owner) == false)
+                if (Clients.TryGetValue(command.Client, out var owner) == false)
                 {
                     Debug.LogWarning($"No Client {command.Client} Found to Takeover Entity {command.Entity}");
                     return;
                 }
 
-                if(Entities.TryGetValue(command.Entity, out var entity) == false)
+                if (Entities.TryGetValue(command.Entity, out var entity) == false)
                 {
                     Debug.LogWarning($"No Entity {command.Entity} To be Taken Over by Client {owner}");
                     return;

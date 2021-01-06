@@ -24,53 +24,53 @@ namespace MNet
     public partial class NetworkBehaviour
     {
         #region Broadcast
-        public void BroadcastRPC(RpcMethod method, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC(RpcMethod method, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception);
-        public void BroadcastRPC<T1>(RpcMethod<T1> method, T1 arg1, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC<T1>(RpcMethod<T1> method, T1 arg1, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1);
-        public void BroadcastRPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC<T1, T2>(RpcMethod<T1, T2> method, T1 arg1, T2 arg2, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2);
-        public void BroadcastRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, T1 arg1, T2 arg2, T3 arg3, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3);
-        public void BroadcastRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4);
-        public void BroadcastRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5);
-        public void BroadcastRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
+        protected void BroadcastRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
             => BroadcastRPC(method.Method.Name, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
-        #region Targeted
-        public void TargetRPC(RpcMethod method, NetworkClient target)
+        #region Target
+        protected void TargetRPC(RpcMethod method, NetworkClient target)
             => TargetRPC(method.Method.Name, target.ID);
-        public void TargetRPC<T1>(RpcMethod<T1> method, NetworkClient target, T1 arg1)
+        protected void TargetRPC<T1>(RpcMethod<T1> method, NetworkClient target, T1 arg1)
             => TargetRPC(method.Method.Name, target.ID, arg1);
-        public void TargetRPC<T1, T2>(RpcMethod<T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
+        protected void TargetRPC<T1, T2>(RpcMethod<T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
             => TargetRPC(method.Method.Name, target.ID, arg1, arg2);
-        public void TargetRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
+        protected void TargetRPC<T1, T2, T3>(RpcMethod<T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
             => TargetRPC(method.Method.Name, target.ID, arg1, arg2, arg3);
-        public void TargetRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        protected void TargetRPC<T1, T2, T3, T4>(RpcMethod<T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             => TargetRPC(method.Method.Name, target.ID, arg1, arg2, arg3, arg4);
-        public void TargetRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        protected void TargetRPC<T1, T2, T3, T4, T5>(RpcMethod<T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             => TargetRPC(method.Method.Name, target.ID, arg1, arg2, arg3, arg4, arg5);
-        public void TargetRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        protected void TargetRPC<T1, T2, T3, T4, T5, T6>(RpcMethod<T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => TargetRPC(method.Method.Name, target.ID, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
 
-        #region RPR
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult>(RpcQueryMethod<TResult> method, NetworkClient target)
+        #region Query
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(RpcQueryMethod<TResult> method, NetworkClient target)
             => QueryRPC<TResult>(method.Method.Name, target);
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1>(RpcQueryMethod<TResult, T1> method, NetworkClient target, T1 arg1)
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1>(RpcQueryMethod<TResult, T1> method, NetworkClient target, T1 arg1)
             => QueryRPC<TResult>(method.Method.Name, target, arg1);
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2>(RpcQueryMethod<TResult, T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2>(RpcQueryMethod<TResult, T1, T2> method, NetworkClient target, T1 arg1, T2 arg2)
             => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2);
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3>(RpcQueryMethod<TResult, T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3>(RpcQueryMethod<TResult, T1, T2, T3> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
             => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3);
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4>(RpcQueryMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4>(RpcQueryMethod<TResult, T1, T2, T3, T4> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4);
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5);
-        public UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6> method, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             => QueryRPC<TResult>(method.Method.Name, target, arg1, arg2, arg3, arg4, arg5, arg6);
         #endregion
     }

@@ -156,7 +156,9 @@ namespace MNet
     public struct RprAnswer<T>
     {
         public RemoteResponseType Response { get; private set; }
+
         public bool Success => Response == RemoteResponseType.Success;
+        public bool Fail => Response != RemoteResponseType.Success;
 
         public T Value { get; private set; }
 

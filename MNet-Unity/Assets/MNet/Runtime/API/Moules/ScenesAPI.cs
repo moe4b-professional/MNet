@@ -37,11 +37,11 @@ namespace MNet
 			#region Load
 			public static bool IsLoading { get; private set; } = false;
 
-            /// <summary>
-            /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
-            /// no need to pause realtime or any of that in custom method, just load the scenes
-            /// </summary>
-            public static LoadMethodDeleagate LoadMethod { get; set; }
+			/// <summary>
+			/// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
+			/// no need to pause realtime or any of that in custom method, just load the scenes
+			/// </summary>
+			public static LoadMethodDeleagate LoadMethod { get; set; }
 			public delegate UniTask LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
 
 			public static async UniTask DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
