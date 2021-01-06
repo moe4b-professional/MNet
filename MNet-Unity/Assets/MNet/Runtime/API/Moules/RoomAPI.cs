@@ -18,6 +18,8 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 using UnityEngine.Networking;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     public static partial class NetworkAPI
@@ -116,7 +118,7 @@ namespace MNet
                 AddClients(response.Clients);
                 AssignMaster(response.Master);
 
-                Realtime.ApplyBuffer(response.Buffer);
+                Realtime.ApplyBuffer(response.Buffer).Forget();
 
                 OnReady?.Invoke(response);
             }

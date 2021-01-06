@@ -20,7 +20,8 @@ using Random = UnityEngine.Random;
 using System.Net;
 
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
+
+using Cysharp.Threading.Tasks;
 
 namespace MNet
 {
@@ -35,32 +36,27 @@ namespace MNet
             #region Buffer
             public static bool IsOnBuffer { get; private set; } = false;
 
-            public static event Action OnBufferBegin;
-
-            internal static void ApplyBuffer(IList<NetworkMessage> list)
+            public static event BufferDelegate OnBufferBegin;
+            internal static async UniTask ApplyBuffer(IList<NetworkMessage> list)
             {
                 if (IsOnBuffer) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
 
-                GlobalCoroutine.Start(Procedure);
+                IsOnBuffer = true;
+                OnBufferBegin?.Invoke(list);
 
-                IEnumerator Procedure()
+                for (int i = 0; i < list.Count; i++)
                 {
-                    IsOnBuffer = true;
-                    OnBufferBegin?.Invoke();
+                    while (Pause.Value) await UniTask.WaitWhile(Pause.IsOn);
 
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        while (Pause.Value) yield return new WaitForEndOfFrame();
-
-                        MessageCallback(list[i], DeliveryMode.Reliable);
-                    }
-
-                    IsOnBuffer = false;
-                    OnBufferEnd?.Invoke();
+                    MessageCallback(list[i], DeliveryMode.Reliable);
                 }
-            }
 
-            public static event Action OnBufferEnd;
+                IsOnBuffer = false;
+                OnBufferEnd?.Invoke(list);
+            }
+            public static event BufferDelegate OnBufferEnd;
+
+            public delegate void BufferDelegate(IList<NetworkMessage> list);
             #endregion
 
             public static ConcurrentQueue<Action> InputQueue { get; private set; }
@@ -70,6 +66,9 @@ namespace MNet
                 static HashSet<object> locks;
 
                 public static bool Value => locks.Count > 0;
+
+                public static bool IsOn() => Value == true;
+                public static bool IsOff() => Value == false;
 
                 internal static void Configure()
                 {

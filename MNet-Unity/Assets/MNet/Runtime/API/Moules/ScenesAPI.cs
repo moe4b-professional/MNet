@@ -17,7 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace MNet
 {
@@ -28,7 +28,7 @@ namespace MNet
 			public static Scene Active => SceneManager.GetActiveScene();
 
 			internal static void Configure()
-            {
+			{
 				Client.RegisterMessageHandler<LoadScenesCommand>(Load);
 
 				LoadMethod = DefaultLoadMethod;
@@ -37,14 +37,14 @@ namespace MNet
 			#region Load
 			public static bool IsLoading { get; private set; } = false;
 
-			/// <summary>
-			/// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
-			/// no need to pause realtime or any of that in custom method, just load the scenes
-			/// </summary>
-			public static LoadMethodDeleagate LoadMethod { get; set; }
-			public delegate IEnumerator LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
+            /// <summary>
+            /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
+            /// no need to pause realtime or any of that in custom method, just load the scenes
+            /// </summary>
+            public static LoadMethodDeleagate LoadMethod { get; set; }
+			public delegate UniTask LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
 
-			public static IEnumerator DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
+			public static async UniTask DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
 			{
 				for (int i = 0; i < scenes.Length; i++)
 				{
@@ -57,15 +57,12 @@ namespace MNet
 						continue;
 					}
 
-					yield return SceneManager.LoadSceneAsync(scenes[i], mode);
+					await SceneManager.LoadSceneAsync(scenes[i], mode);
 
 					if (i == 0) mode = LoadSceneMode.Additive;
 				}
 			}
 
-			static readonly object RealtimePauseLock = new object();
-
-			public static event LoadDelegate OnLoadBegin;
 			static void Load(ref LoadScenesCommand command)
 			{
 				if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
@@ -73,21 +70,22 @@ namespace MNet
 				var scenes = command.Scenes;
 				var mode = ConvertLoadMode(command.Mode);
 
-				GlobalCoroutine.Start(Load(scenes, mode));
+				Load(scenes, mode).Forget();
 			}
 
-			static IEnumerator Load(byte[] scenes, LoadSceneMode mode)
+			public static event LoadDelegate OnLoadBegin;
+			static async UniTask Load(byte[] scenes, LoadSceneMode mode)
 			{
 				IsLoading = true;
-				Realtime.Pause.AddLock(RealtimePauseLock);
+				var pauseLock = Realtime.Pause.AddLock();
 				OnLoadBegin?.Invoke(scenes, mode);
 
 				if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
 
-				yield return LoadMethod(scenes, mode);
+				await LoadMethod(scenes, mode);
 
 				IsLoading = false;
-				Realtime.Pause.RemoveLock(RealtimePauseLock);
+				Realtime.Pause.RemoveLock(pauseLock);
 				OnLoadEnd?.Invoke(scenes, mode);
 			}
 			public static event LoadDelegate OnLoadEnd;
@@ -107,8 +105,8 @@ namespace MNet
 				}
 			}
 
-            #region Request
-            public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
+			#region Request
+			public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
 			public static void Load(LoadSceneMode mode, params GameScene[] scenes)
 			{
 				var indexes = Array.ConvertAll(scenes, Convert);
@@ -137,9 +135,9 @@ namespace MNet
 
 				Client.Send(request);
 			}
-            #endregion
+			#endregion
 
-            static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
+			static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
 			static LoadSceneMode ConvertLoadMode(NetworkSceneLoadMode mode) => (LoadSceneMode)mode;
 
 			internal static void MoveToActive(Component target) => MoveToActive(target.gameObject);

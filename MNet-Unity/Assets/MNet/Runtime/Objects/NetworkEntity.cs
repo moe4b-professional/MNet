@@ -152,7 +152,7 @@ namespace MNet
         {
             NetworkAPI.Realtime.OnBufferEnd += AppliedBufferCallback;
         }
-        void AppliedBufferCallback()
+        void AppliedBufferCallback(IList<NetworkMessage> list)
         {
             NetworkAPI.Realtime.OnBufferEnd -= AppliedBufferCallback;
 
