@@ -55,8 +55,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Plugins\UniTask\Runtime\External\Addressables\AddressablesAsyncExtensions.cs" />
-     <None Include="Assets\Plugins\UniTask\Runtime\External\Addressables\UniTask.Addressables.asmdef" />
+     <Compile Include="Assets\MNet\Third Party\UniTask\Runtime\External\Addressables\AddressablesAsyncExtensions.cs" />
+     <None Include="Assets\MNet\Third Party\UniTask\Runtime\External\Addressables\UniTask.Addressables.asmdef" />
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
  </Reference>

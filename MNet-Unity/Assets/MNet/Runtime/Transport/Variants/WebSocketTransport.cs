@@ -136,7 +136,7 @@ namespace MNet
 
         public override void Send(byte[] raw, DeliveryMode mode) => Socket.Send(raw);
 
-        public override void Close() => Socket.CloseAsync(CloseStatusCode.Normal);
+        public override void Close() => Socket.Close(CloseStatusCode.Normal);
 
         public WebSocketTransport() : base()
         {

@@ -26,17 +26,23 @@ namespace MNet
     #region Call
     public class RpcBind
     {
+        public string Name { get; protected set; }
+
+        public Type ParentType { get; protected set; }
+
         public NetworkBehaviour Behaviour { get; protected set; }
         public NetworkEntity Entity => Behaviour.Entity;
 
+        #region Attribute
         public NetworkRPCAttribute Attribute { get; protected set; }
         public RemoteAuthority Authority => Attribute.Authority;
         public DeliveryMode DeliveryMode => Attribute.Delivery;
+        #endregion
 
+        #region Method
         public MethodInfo MethodInfo { get; protected set; }
-        public RpxMethodID MethodID { get; protected set; }
 
-        public string Name { get; protected set; }
+        public RpxMethodID MethodID { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
         public bool HasInfoParameter { get; protected set; }
@@ -44,6 +50,8 @@ namespace MNet
         public Type ReturnType => MethodInfo.ReturnType;
 
         public bool IsAsync { get; protected set; }
+        public bool IsCoroutine { get; protected set; }
+        #endregion
 
         public object Invoke(params object[] arguments)
         {
@@ -66,21 +74,26 @@ namespace MNet
             return arguments;
         }
 
-        public override string ToString() => $"{Entity}->{Name}";
+        public override string ToString() => $"{ParentType}->{Name}";
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index)
         {
             Behaviour = behaviour;
 
+            ParentType = behaviour.GetType();
+
             Attribute = attribute;
 
             MethodInfo = method;
-            Name = GetName(MethodInfo);
             MethodID = new RpxMethodID(index);
+
             ParametersInfo = method.GetParameters();
             HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
 
+            Name = GetName(MethodInfo);
+
             IsAsync = typeof(IUniTask).IsAssignableFrom(ReturnType);
+            IsCoroutine = ReturnType == typeof(IEnumerator);
         }
 
         public static string GetName(MethodInfo method) => method.Name;
@@ -115,14 +128,6 @@ namespace MNet
 
         public static bool Defined(MethodInfo info) => Retrieve(info) != null;
     }
-
-    public delegate void RpcMethod(RpcInfo info);
-    public delegate void RpcMethod<T1>(T1 arg1, RpcInfo info);
-    public delegate void RpcMethod<T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
-    public delegate void RpcMethod<T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
     #endregion
 
     #region Return
@@ -173,21 +178,5 @@ namespace MNet
         internal RprAnswer(RemoteResponseType response) : this(response, default) { }
         internal RprAnswer(RprPromise promise) : this(promise.Response, promise.Read<T>()) { }
     }
-
-    public delegate TResult RpcQueryMethod<TResult>(RpcInfo info);
-    public delegate TResult RpcQueryMethod<TResult, T1>(T1 arg1, RpcInfo info);
-    public delegate TResult RpcQueryMethod<TResult, T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
-    public delegate TResult RpcQueryMethod<TResult, T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
-    public delegate TResult RpcQueryMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
-    public delegate TResult RpcQueryMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
-    public delegate TResult RpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
-
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult>(RpcInfo info);
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1>(T1 arg1, RpcInfo info);
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2>(T1 arg1, T2 arg2, RpcInfo info);
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3>(T1 arg1, T2 arg2, T3 arg3, RpcInfo info);
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3, T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, RpcInfo info);
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3, T4, T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RpcInfo info);
-    public delegate UniTask<TResult> AsyncRpcQueryMethod<TResult, T1, T2, T3, T4, T5, T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RpcInfo info);
     #endregion
 }

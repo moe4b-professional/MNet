@@ -21,6 +21,8 @@ using System.Reflection;
 
 using Cysharp.Threading.Tasks;
 
+using System.Threading;
+
 namespace MNet
 {
     public abstract partial class NetworkBehaviour : MonoBehaviour
@@ -39,23 +41,17 @@ namespace MNet
 
         bool initialEnableState;
 
-#if UNITY_EDITOR
+        /// <summary>
+        /// Async Token to use for cancelling UniTasks on Despawn
+        /// </summary>
+        protected CancellationTokenSource DespawnCancellation { get; private set; }
+
         protected virtual void Reset()
         {
+#if UNITY_EDITOR
             ResolveEntity();
-        }
-
-        void ResolveEntity()
-        {
-            var entity = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
-
-            if (entity == null)
-            {
-                entity = gameObject.AddComponent<NetworkEntity>();
-                ComponentUtility.MoveComponentUp(entity);
-            }
-        }
 #endif
+        }
 
         #region Setup
         internal void Setup(NetworkEntity entity, NetworkBehaviourID id)
@@ -65,6 +61,8 @@ namespace MNet
             this.Entity = entity;
 
             initialEnableState = enabled;
+
+            DespawnCancellation = new CancellationTokenSource();
 
             ParseRPCs();
             ParseSyncVars();
@@ -140,6 +138,9 @@ namespace MNet
         {
             UpdateReadyState();
 
+            DespawnCancellation.Cancel();
+            DespawnCancellation.Dispose();
+
             OnDespawn();
         }
 
@@ -177,7 +178,13 @@ namespace MNet
         }
 
         #region Methods
-        protected bool BroadcastRPC(string method, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null, params object[] arguments)
+        protected bool BroadcastRPC(MethodInfo method, RemoteBufferMode buffer, NetworkClient exception, params object[] arguments)
+        {
+            var name = RpcBind.GetName(method);
+
+            return BroadcastRPC(name, buffer, exception, arguments);
+        }
+        protected bool BroadcastRPC(string method, RemoteBufferMode buffer, NetworkClient exception, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -192,7 +199,13 @@ namespace MNet
             return SendRPC(bind, payload);
         }
 
-        protected bool TargetRPC(string method, NetworkClientID target, params object[] arguments)
+        protected bool TargetRPC(MethodInfo method, NetworkClient target, params object[] arguments)
+        {
+            var name = RpcBind.GetName(method);
+
+            return TargetRPC(name, target, arguments);
+        }
+        protected bool TargetRPC(string method, NetworkClient target, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -200,11 +213,17 @@ namespace MNet
                 return false;
             }
 
-            var payload = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target, arguments);
+            var payload = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, arguments);
 
             return SendRPC(bind, payload);
         }
 
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(MethodInfo method, NetworkClient target, params object[] arguments)
+        {
+            var name = RpcBind.GetName(method);
+
+            return QueryRPC<TResult>(name, target, arguments);
+        }
         protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
@@ -229,7 +248,6 @@ namespace MNet
 
             return answer;
         }
-        #endregion
 
         internal bool SendRPC(RpcBind bind, RpcRequest request)
         {
@@ -247,6 +265,7 @@ namespace MNet
 
             return Send(request, bind.DeliveryMode);
         }
+        #endregion
 
         internal void InvokeRPC(RpcCommand command)
         {
@@ -303,15 +322,31 @@ namespace MNet
             if (command.Type == RpcType.Query)
             {
                 if (bind.IsAsync)
-                    AwaitAsyncQueryRPC(result as IUniTask, command).Forget();
+                    AwaitAsyncQueryRPC(result as IUniTask, command, bind).Forget();
                 else
                     NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, result, bind.ReturnType);
             }
+            else
+            {
+                if (bind.IsCoroutine)
+                    ExceuteCoroutineRPC(result as IEnumerator);
+            }
         }
 
-        internal async UniTask AwaitAsyncQueryRPC(IUniTask task, RpcCommand command)
+        void ExceuteCoroutineRPC(IEnumerator method)
+        {
+            StartCoroutine(method);
+        }
+
+        async UniTask AwaitAsyncQueryRPC(IUniTask task, RpcCommand command, RpcBind bind)
         {
             while (task.Status == UniTaskStatus.Pending) await UniTask.Yield();
+
+            if (NetworkAPI.Client.IsConnected == false)
+            {
+                //Debug.LogWarning($"Will not Respond to Async Query RPC {bind} Because Client Disconnected, The Server Will Provide a Default Response to the Requester");
+                return;
+            }
 
             if (task.Status != UniTaskStatus.Succeeded)
             {
@@ -463,6 +498,21 @@ namespace MNet
 
             return NetworkAPI.Client.Send(payload, mode);
         }
+
+        #region Editor
+#if UNITY_EDITOR
+        void ResolveEntity()
+        {
+            var entity = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
+
+            if (entity == null)
+            {
+                entity = gameObject.AddComponent<NetworkEntity>();
+                ComponentUtility.MoveComponentUp(entity);
+            }
+        }
+#endif
+        #endregion
 
         public NetworkBehaviour()
         {

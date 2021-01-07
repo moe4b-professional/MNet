@@ -438,7 +438,7 @@ namespace MNet
 
             if (request.Type == RpcType.Query)
             {
-                target.RprCache.Register(sender, request.ReturnChannel);
+                target.RprCache.Add(sender, request.ReturnChannel);
             }
 
             Send(command, target, mode);
@@ -454,7 +454,7 @@ namespace MNet
                 return;
             }
 
-            if (sender.RprCache.Unregister(target, request.Channel, out var promise) == false)
+            if (sender.RprCache.Remove(target, request.Channel, out var promise) == false)
             {
                 Log.Info($"Client {target} Has no Requested RPR with for (target: {target}, channel: {request.Channel})");
                 return;
@@ -699,11 +699,11 @@ namespace MNet
                 DestroyEntity(client.Entities[i], false);
             }
 
-            for (int i = 0; i < client.RprCache.Count; i++)
+            foreach (var rpr in client.RprCache.Values)
             {
-                Log.Info($"Resolving RPR Promise For Disconnecting Client: {client}, Requested by {client.RprCache[i].Requester}");
+                Log.Info($"Resolving RPR Promise For Disconnecting Client: {client}, Requested by {rpr.Requester}");
 
-                ResolveRPR(client.RprCache[i], RemoteResponseType.Disconnect);
+                ResolveRPR(rpr, RemoteResponseType.Disconnect);
             }
 
             Clients.Remove(client.ID);

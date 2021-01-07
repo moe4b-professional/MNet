@@ -19,6 +19,7 @@ using Random = UnityEngine.Random;
 
 using Cysharp.Threading.Tasks;
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MNet.Example

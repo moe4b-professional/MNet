@@ -32,7 +32,10 @@ namespace MNet
         {
             base.OnSpawn();
 
-            var answer = await QueryAsyncRPC(Call, NetworkAPI.Room.Master);
+            BroadcastRPC(CoroutineRPC);
+            BroadcastRPC(UniTaskRPC);
+
+            var answer = await QueryAsyncRPC(AsyncCall, NetworkAPI.Room.Master);
 
             success = answer.Success;
 
@@ -42,10 +45,26 @@ namespace MNet
                 Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
         }
 
-        [NetworkRPC(Authority = RemoteAuthority.Any)]
-        async UniTask<string> Call(RpcInfo info)
+        [NetworkRPC]
+        IEnumerator CoroutineRPC(RpcInfo info)
         {
-            await UniTask.Delay(2000);
+            yield return new WaitForSeconds(2f);
+
+            Debug.Log("Hello Coroutine");
+        }
+
+        [NetworkRPC]
+        async UniTask UniTaskRPC(RpcInfo info)
+        {
+            await UniTask.Delay(2000, cancellationToken: DespawnCancellation.Token);
+
+            Debug.Log("Hello UniTask");
+        }
+
+        [NetworkRPC]
+        async UniTask<string> AsyncCall(RpcInfo info)
+        {
+            await UniTask.Delay(4000, cancellationToken: DespawnCancellation.Token);
 
             return NetworkAPI.Client.Profile.Name;
         }

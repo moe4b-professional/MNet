@@ -4,6 +4,7 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace MNet
 {
@@ -67,38 +68,38 @@ namespace MNet
 
     class RprCache
     {
-        public List<RprPromise> Promises { get; protected set; }
+        public Dictionary<(NetworkClient client, RprChannelID channel), RprPromise> Promises { get; protected set; }
+
+        public ICollection<RprPromise> Values => Promises.Values;
 
         public int Count => Promises.Count;
 
-        public RprPromise this[int index] => Promises[index];
-
-        public void Register(NetworkClient requester, RprChannelID channel)
+        public void Add(NetworkClient requester, RprChannelID channel)
         {
+            var key = (requester, channel);
+
             var promise = new RprPromise(requester, channel);
 
-            Promises.Add(promise);
+            Promises.Add(key, promise);
         }
 
-        public bool Unregister(NetworkClient requester, RprChannelID channel, out RprPromise promise)
+        public bool TryGet(NetworkClient requester, RprChannelID channel, out RprPromise promise)
         {
-            for (int i = 0; i < Promises.Count; i++)
-            {
-                if (Promises[i].Equals(requester, channel))
-                {
-                    promise = Promises[i];
-                    Promises.RemoveAt(i);
-                    return true;
-                }
-            }
+            var key = (requester, channel);
 
-            promise = default;
-            return false;
+            return Promises.TryGetValue(key, out promise);
+        }
+
+        public bool Remove(NetworkClient requester, RprChannelID channel, out RprPromise promise)
+        {
+            var key = (requester, channel);
+
+            return Promises.Remove(key, out promise);
         }
 
         public RprCache()
         {
-            Promises = new List<RprPromise>();
+            Promises = new Dictionary<(NetworkClient, RprChannelID), RprPromise>();
         }
     }
 
