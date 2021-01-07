@@ -476,7 +476,7 @@ namespace MNet
     }
 
     [Preserve]
-    public struct RprRequest : IManualNetworkSerializable
+    public struct RprRequest : INetworkSerializable
     {
         NetworkClientID target;
         public NetworkClientID Target => target;
@@ -490,19 +490,12 @@ namespace MNet
         byte[] raw;
         public byte[] Raw => raw;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            target.Serialize(writer);
-            channel.Serialize(writer);
-            writer.Write(response);
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            target.Deserialize(reader);
-            channel.Deserialize(reader);
-            reader.Read(out response);
-            reader.Read(out raw);
+            context.Select(ref target);
+            context.Select(ref channel);
+            context.Select(ref response);
+            context.Select(ref raw);
         }
 
         public RprRequest(NetworkClientID target, RprChannelID channel, RemoteResponseType response, byte[] raw)
@@ -529,8 +522,11 @@ namespace MNet
     }
 
     [Preserve]
-    public struct RprCommand : IManualNetworkSerializable
+    public struct RprResponse : INetworkSerializable
     {
+        NetworkClientID sender;
+        public NetworkClientID Sender => sender;
+
         RprChannelID channel;
         public RprChannelID Channel => channel;
 
@@ -540,35 +536,53 @@ namespace MNet
         byte[] raw;
         public byte[] Raw => raw;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            channel.Serialize(writer);
-            writer.Write(response);
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            channel.Deserialize(reader);
-            reader.Read(out response);
-            reader.Read(out raw);
+            context.Select(ref sender);
+            context.Select(ref channel);
+            context.Select(ref response);
+            context.Select(ref raw);
         }
 
-        public RprCommand(RprChannelID channel, RemoteResponseType response, byte[] raw)
+        public RprResponse(NetworkClientID sender, RprChannelID channel, RemoteResponseType response, byte[] raw)
         {
+            this.sender = sender;
             this.channel = channel;
             this.response = response;
             this.raw = raw;
         }
 
-        public static RprCommand Write(RprRequest request)
+        public static RprResponse Write(NetworkClientID sender, RprRequest request)
         {
-            var command = new RprCommand(request.Channel, request.Response, request.Raw);
+            var command = new RprResponse(sender, request.Channel, request.Response, request.Raw);
             return command;
+        }
+    }
+
+    [Preserve]
+    public struct RprCommand : INetworkSerializable
+    {
+        RprChannelID channel;
+        public RprChannelID Channel => channel;
+
+        RemoteResponseType response;
+        public RemoteResponseType Response => response;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref channel);
+            context.Select(ref response);
+        }
+
+        public RprCommand(RprChannelID channel, RemoteResponseType response)
+        {
+            this.channel = channel;
+            this.response = response;
         }
 
         public static RprCommand Write(RprChannelID channel, RemoteResponseType response)
         {
-            var request = new RprCommand(channel, response, new byte[0]);
+            var request = new RprCommand(channel, response);
             return request;
         }
     }

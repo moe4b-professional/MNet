@@ -144,12 +144,12 @@ namespace MNet
         public byte[] Raw { get; protected set; }
         internal T Read<T>() => Response == RemoteResponseType.Success ? NetworkSerializer.Deserialize<T>(Raw) : default;
 
-        internal void Fullfil(RprCommand command)
+        internal void Fullfil(RemoteResponseType response, byte[] raw)
         {
             Complete = true;
 
-            Response = command.Response;
-            Raw = command.Raw;
+            this.Response = response;
+            this.Raw = raw;
         }
 
         public RprPromise(NetworkClient target, RprChannelID channel)

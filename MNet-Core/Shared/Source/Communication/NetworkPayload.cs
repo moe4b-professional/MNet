@@ -186,7 +186,8 @@ namespace MNet
             Register<LoadScenesCommand>(50);
 
             Register<RprRequest>(51);
-            Register<RprCommand>(52);
+            Register<RprResponse>(52);
+            Register<RprCommand>(53);
         }
 
         static NetworkPayload()

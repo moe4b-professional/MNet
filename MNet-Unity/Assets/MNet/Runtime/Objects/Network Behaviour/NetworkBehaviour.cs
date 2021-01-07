@@ -288,11 +288,11 @@ namespace MNet
             {
                 arguments = bind.ParseArguments(command);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
                 var text = $"Error trying to Parse RPC Arguments of {bind}', Invalid Data Sent Most Likely \n" +
                     $"Exception: \n" +
-                    $"{e}";
+                    $"{ex}";
 
                 Debug.LogError(text, this);
                 if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
@@ -304,15 +304,12 @@ namespace MNet
             {
                 result = bind.Invoke(arguments);
             }
-            catch (TargetInvocationException)
-            {
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                throw;
-            }
-            catch (Exception)
+            catch (Exception ex)
             {
                 var text = $"Error Trying to Invoke RPC {bind}', " +
-                    $"Please Ensure Method is Implemented And Invoked Correctly";
+                    $"Please Ensure Method is Implemented And Invoked Correctly\n" +
+                    $"Exception: \n" +
+                    $"{ex}";
 
                 Debug.LogError(text, this);
                 if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);

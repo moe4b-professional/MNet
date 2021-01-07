@@ -119,7 +119,7 @@ namespace MNet
 
             MessageBuffer.Add(message);
         }
-        
+
         public void UnbufferMessage(NetworkMessage message)
         {
             if (message == null) return;
@@ -134,7 +134,7 @@ namespace MNet
         Dictionary<Type, MessageCallbackDelegate> MessageDispatcher;
         public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkMessage message, DeliveryMode mode);
 
-        public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode);
+        public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, TPayload payload, DeliveryMode mode);
         public void RegisterMessageHandler<TPayload>(MessageHandler1Delegate<TPayload> handler)
         {
             var type = typeof(TPayload);
@@ -145,11 +145,11 @@ namespace MNet
             {
                 var payload = message.Read<TPayload>();
 
-                handler.Invoke(sender, ref payload, mode);
+                handler.Invoke(sender, payload, mode);
             }
         }
 
-        public delegate void MessageHandler2Delegate<TPayload>(NetworkClient sender, ref TPayload payload);
+        public delegate void MessageHandler2Delegate<TPayload>(NetworkClient sender, TPayload payload);
         public void RegisterMessageHandler<TPayload>(MessageHandler2Delegate<TPayload> handler)
         {
             var type = typeof(TPayload);
@@ -160,7 +160,7 @@ namespace MNet
             {
                 var payload = message.Read<TPayload>();
 
-                handler.Invoke(sender, ref payload);
+                handler.Invoke(sender, payload);
             }
         }
 
@@ -369,7 +369,7 @@ namespace MNet
         }
         #endregion
 
-        void ReadyClient(NetworkClient client, ref ReadyClientRequest request)
+        void ReadyClient(NetworkClient client, ReadyClientRequest request)
         {
             client.SetReady();
 
@@ -394,7 +394,7 @@ namespace MNet
         }
 
         #region RPC
-        void InvokeRPC(NetworkClient sender, ref RpcRequest request, DeliveryMode mode)
+        void InvokeRPC(NetworkClient sender, RpcRequest request, DeliveryMode mode)
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
@@ -406,17 +406,17 @@ namespace MNet
             switch (request.Type)
             {
                 case RpcType.Broadcast:
-                    InvokeBroadcastRPC(sender, request, entity, mode);
+                    InvokeBroadcastRPC(sender, entity, request, mode);
                     break;
 
                 case RpcType.Target:
                 case RpcType.Query:
-                    InvokeDirectRPC(sender, request, entity, mode);
+                    InvokeDirectRPC(sender, entity, request, mode);
                     break;
             }
         }
 
-        void InvokeBroadcastRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
+        void InvokeBroadcastRPC(NetworkClient sender, NetworkEntity entity, RpcRequest request, DeliveryMode mode)
         {
             var command = RpcCommand.Write(sender.ID, request, time);
 
@@ -425,10 +425,8 @@ namespace MNet
             entity.RpcBuffer.Set(message, request.Type, request.BufferMode, request.Behaviour, request.Method, BufferMessage, UnbufferMessages);
         }
 
-        void InvokeDirectRPC(NetworkClient sender, RpcRequest request, NetworkEntity entity, DeliveryMode mode)
+        void InvokeDirectRPC(NetworkClient sender, NetworkEntity entity, RpcRequest request, DeliveryMode mode)
         {
-            var command = RpcCommand.Write(sender.ID, request, time);
-
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
                 Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
@@ -436,17 +434,14 @@ namespace MNet
                 return;
             }
 
-            if (request.Type == RpcType.Query)
-            {
-                target.RprCache.Add(sender, request.ReturnChannel);
-            }
+            var command = RpcCommand.Write(sender.ID, request, time);
 
             Send(command, target, mode);
         }
         #endregion
 
         #region RPR
-        void InvokeRPR(NetworkClient sender, ref RprRequest request)
+        void InvokeRPR(NetworkClient sender, RprRequest request)
         {
             if (Clients.TryGetValue(request.Target, out var target) == false)
             {
@@ -454,34 +449,19 @@ namespace MNet
                 return;
             }
 
-            if (sender.RprCache.Remove(target, request.Channel, out var promise) == false)
-            {
-                Log.Info($"Client {target} Has no Requested RPR with for (target: {target}, channel: {request.Channel})");
-                return;
-            }
-
-            var command = RprCommand.Write(request);
+            var command = RprResponse.Write(sender.ID, request);
             Send(command, target);
         }
 
-        void ResolveRPR(NetworkClient requester, RpcRequest request, RemoteResponseType response) => ResolveRPR(requester, request.ReturnChannel, response);
-        void ResolveRPR(RprPromise promise, RemoteResponseType response) => ResolveRPR(promise.Requester, promise.Channel, response);
-        void ResolveRPR(NetworkClient requester, RprChannelID channel, RemoteResponseType response)
+        void ResolveRPR(NetworkClient requester, RpcRequest request, RemoteResponseType response)
         {
-            if (Clients.ContainsValue(requester) == false)
-            {
-                ///Original requester no longer in the room
-                ///Silently Ignore
-                return;
-            }
-
-            var command = RprCommand.Write(channel, response);
+            var command = RprCommand.Write(request.ReturnChannel, response);
             Send(command, requester);
         }
         #endregion
 
         #region SyncVar
-        void InvokeSyncVar(NetworkClient sender, ref SyncVarRequest request, DeliveryMode mode)
+        void InvokeSyncVar(NetworkClient sender, SyncVarRequest request, DeliveryMode mode)
         {
             if (Entities.TryGetValue(request.Entity, out var entity) == false)
             {
@@ -497,21 +477,21 @@ namespace MNet
         }
         #endregion
 
-        void ProcessTimeRequest(NetworkClient sender, ref RoomTimeRequest request)
+        void ProcessTimeRequest(NetworkClient sender, RoomTimeRequest request)
         {
             var response = new RoomTimeResponse(time, request.Timestamp);
 
             Send(response, sender);
         }
 
-        void ProcessPingRequest(NetworkClient sender, ref PingRequest request)
+        void ProcessPingRequest(NetworkClient sender, PingRequest request)
         {
             var response = new PingResponse(request);
 
             Send(response, sender);
         }
 
-        void LoadScenes(NetworkClient sender, ref LoadScenesRequest request)
+        void LoadScenes(NetworkClient sender, LoadScenesRequest request)
         {
             if (sender != Master)
             {
@@ -546,7 +526,7 @@ namespace MNet
         }
 
         #region Entity
-        void SpawnEntity(NetworkClient sender, ref SpawnEntityRequest request)
+        void SpawnEntity(NetworkClient sender, SpawnEntityRequest request)
         {
             if (request.Type == NetworkEntityType.SceneObject && sender != Master)
             {
@@ -590,7 +570,7 @@ namespace MNet
             BufferMessage(entity.SpawnMessage);
         }
 
-        void ChangeEntityOwner(NetworkClient sender, ref ChangeEntityOwnerRequest request)
+        void ChangeEntityOwner(NetworkClient sender, ChangeEntityOwnerRequest request)
         {
             if (Clients.TryGetValue(request.Client, out var owner) == false)
             {
@@ -638,7 +618,7 @@ namespace MNet
             MessageBuffer.Set(bufferIndex, message);
         }
 
-        void DestroyEntity(NetworkClient sender, ref DestroyEntityRequest request)
+        void DestroyEntity(NetworkClient sender, DestroyEntityRequest request)
         {
             if (Entities.TryGetValue(request.ID, out var entity) == false)
             {
@@ -697,13 +677,6 @@ namespace MNet
                 }
 
                 DestroyEntity(client.Entities[i], false);
-            }
-
-            foreach (var rpr in client.RprCache.Values)
-            {
-                Log.Info($"Resolving RPR Promise For Disconnecting Client: {client}, Requested by {rpr.Requester}");
-
-                ResolveRPR(rpr, RemoteResponseType.Disconnect);
             }
 
             Clients.Remove(client.ID);

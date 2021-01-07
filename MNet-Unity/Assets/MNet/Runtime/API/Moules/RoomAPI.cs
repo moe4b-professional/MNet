@@ -373,14 +373,22 @@ namespace MNet
             #region Remote Sync
             static void InvokeRPC(ref RpcCommand command)
             {
-                if (Entities.TryGetValue(command.Entity, out var target) == false)
+                try
                 {
-                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
-                    if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                    return;
-                }
+                    if (Entities.TryGetValue(command.Entity, out var target) == false)
+                    {
+                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
+                        if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                        return;
+                    }
 
-                target.InvokeRPC(command);
+                    target.InvokeRPC(command);
+                }
+                catch (Exception)
+                {
+                    if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                    throw;
+                }
             }
 
             static void InvokeSyncVar(ref SyncVarCommand command)

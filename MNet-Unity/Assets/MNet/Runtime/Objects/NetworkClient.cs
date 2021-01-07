@@ -20,8 +20,8 @@ using Random = UnityEngine.Random;
 namespace MNet
 {
     [Serializable]
-	public class NetworkClient
-	{
+    public class NetworkClient
+    {
         public NetworkClientID ID { get; protected set; }
         public bool IsMaster => this == NetworkAPI.Room.Master;
 

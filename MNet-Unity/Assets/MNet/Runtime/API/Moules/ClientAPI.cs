@@ -274,6 +274,32 @@ namespace MNet
                     promises = new AutoKeyDictionary<RprChannelID, RprPromise>(RprChannelID.Increment);
 
                     Client.RegisterMessageHandler<RprCommand>(Command);
+                    Client.RegisterMessageHandler<RprResponse>(Response);
+
+                    Room.OnRemoveClient += RemoveClientCallback;
+                }
+
+                static void Response(ref RprResponse response)
+                {
+                    if (promises.TryGetValue(response.Channel, out var promise) == false)
+                    {
+                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} But that Command Doesn't Exist");
+                        return;
+                    }
+
+                    if (Room.Clients.TryGetValue(response.Sender, out var sender) == false)
+                    {
+                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} from Unregistered Client {response.Sender}");
+                        return;
+                    }
+
+                    if (sender != promise.Target)
+                    {
+                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} from Client {sender} but That RPR was Targeted towards {promise.Target}");
+                        return;
+                    }
+
+                    Fullfil(promise, response.Response, response.Raw);
                 }
 
                 static void Command(ref RprCommand command)
@@ -284,8 +310,21 @@ namespace MNet
                         return;
                     }
 
-                    promise.Fullfil(command);
+                    Fullfil(promise, command.Response, null);
+                }
 
+                static void RemoveClientCallback(NetworkClient client)
+                {
+                    var selection = promises.Values.Where(IsClient).ToArray();
+
+                    foreach (var promise in selection) Fullfil(promise, RemoteResponseType.Disconnect, null);
+
+                    bool IsClient(RprPromise promise) => promise.Target == client;
+                }
+
+                static void Fullfil(RprPromise promise, RemoteResponseType response, byte[] raw)
+                {
+                    promise.Fullfil(response, raw);
                     promises.Remove(promise.Channel);
                 }
 
