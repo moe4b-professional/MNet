@@ -42,7 +42,7 @@ namespace MNet
         bool initialEnableState;
 
         /// <summary>
-        /// Async Token to use for cancelling UniTasks on Despawn
+        /// Token to use for cancelling Async Tasks on despawn
         /// </summary>
         protected CancellationTokenSource DespawnCancellation { get; private set; }
 

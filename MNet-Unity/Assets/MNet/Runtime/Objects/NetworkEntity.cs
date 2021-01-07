@@ -164,7 +164,9 @@ namespace MNet
         {
             OnSpawn?.Invoke();
         }
+        #endregion
 
+        #region Despawn
         public event Action OnDespawn;
         internal virtual void Despawn()
         {

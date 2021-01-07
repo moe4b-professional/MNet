@@ -28,10 +28,7 @@ namespace MNet.Example
 		public string Var
 		{
 			get => var;
-			set
-			{
-				var = value;
-			}
+			set => var = value;
 		}
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
@@ -49,7 +46,7 @@ namespace MNet.Example
 		{
 			while (Entity.IsConnected)
 			{
-				SyncVar("Var", Var, "Hello World");
+				SyncVar(nameof(Var), Var, "Hello World");
 				BroadcastRPC(Call, "Hello World");
 
 				yield return new WaitForSeconds(interval);

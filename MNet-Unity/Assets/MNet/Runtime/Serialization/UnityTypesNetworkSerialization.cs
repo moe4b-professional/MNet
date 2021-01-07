@@ -26,27 +26,34 @@ namespace MNet
         {
             public const ushort Start = NetworkPayload.MinCode;
 
-            public const ushort Vector3 = Start + 1;
-            public const ushort Quaternion = Vector3 + 1;
-            public const ushort Vector2 = Quaternion + 1;
-            public const ushort NetworkEntity = Vector2 + 1;
+            public const ushort Vector2 = Start + 1;
+            public const ushort Vector2Int = Vector2 + 1;
+
+            public const ushort Vector3 = Vector2Int + 1;
+            public const ushort Vector3Int = Vector3 + 1;
+
+            public const ushort Vector4 = Vector3Int + 1;
+
+            public const ushort Quaternion = Vector4 + 1;
+
+            public const ushort Color = Quaternion + 1;
+
+            public const ushort NetworkEntity = Color + 1;
             public const ushort NetworkBehaviour = NetworkEntity + 1;
-            public const ushort Vector4 = NetworkBehaviour + 1;
-            public const ushort Vector2Int = Vector4 + 1;
-            public const ushort Vector3Int = Vector2Int + 1;
-            public const ushort Color = Vector3Int + 1;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
-            NetworkPayload.Register<Quaternion>(IDs.Quaternion);
-
             NetworkPayload.Register<Vector2>(IDs.Vector2);
             NetworkPayload.Register<Vector2Int>(IDs.Vector2Int);
+
             NetworkPayload.Register<Vector3>(IDs.Vector3);
             NetworkPayload.Register<Vector3Int>(IDs.Vector3Int);
+
             NetworkPayload.Register<Vector4>(IDs.Vector4);
+
+            NetworkPayload.Register<Quaternion>(IDs.Quaternion);
 
             NetworkPayload.Register<Color>(IDs.Color);
 
@@ -73,6 +80,7 @@ namespace MNet
             return new Vector2(x, y);
         }
     }
+
     [Preserve]
     public class Vector2IntSerializationResolver : NetworkSerializationExplicitResolver<Vector2Int>
     {
@@ -112,6 +120,7 @@ namespace MNet
             return new Vector3(x, y, z);
         }
     }
+
     [Preserve]
     public class Vector3IntSerializationResolver : NetworkSerializationExplicitResolver<Vector3Int>
     {
@@ -206,51 +215,46 @@ namespace MNet
     {
         public override bool CanResolveDerivatives => true;
 
+        enum State : byte
+        {
+            Null, Unready, Ready
+        }
+
         public override void Serialize(NetworkWriter writer, NetworkEntity instance)
         {
-            Write(writer, instance);
-        }
-        public static bool Write(NetworkWriter writer, NetworkEntity entity)
-        {
-            writer.Write(entity.IsReady);
+            if (instance == null)
+            {
+                writer.Write(State.Null);
+                return;
+            }
 
-            if (entity.IsReady)
+            if (instance.IsReady == false)
             {
-                writer.Write(entity.ID);
-                return true;
+                writer.Write(State.Unready);
+                Debug.LogError($"Trying to Serialize Unready Entity {instance}, Please only Send Ready Entites Over The Network, Reciever will deserializer as null");
+                return;
             }
-            else
-            {
-                Debug.LogError("Trying to Serialize Unready Network Entity Across The Network, Recievers Will Deserialize as Null");
-                return false;
-            }
+
+            writer.Write(State.Ready);
+            writer.Write(instance.ID);
         }
 
         public override NetworkEntity Deserialize(NetworkReader reader)
         {
-            Read(reader, out var entity);
+            reader.Read(out State state);
 
-            return entity;
-        }
-        public static bool Read(NetworkReader reader, out NetworkEntity entity)
-        {
-            reader.Read(out bool isReady);
-
-            if (isReady == false)
-            {
-                entity = null;
-                return false;
-            }
+            if (state == State.Null || state == State.Unready)
+                return null;
 
             reader.Read(out NetworkEntityID id);
 
-            if (NetworkAPI.Room.Entities.TryGetValue(id, out entity) == false)
+            if (NetworkEntity.TryFind(id, out var entity) == false)
             {
                 Debug.LogWarning($"Network Entity {id} Couldn't be Found when Deserializing, Returning null");
-                return false;
+                return null;
             }
 
-            return true;
+            return entity;
         }
     }
 
@@ -261,20 +265,20 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, NetworkBehaviour instance)
         {
-            if (NetworkEntityNetworkSerializationResolver.Write(writer, instance.Entity) == false) return;
-
+            writer.Write(instance.Entity);
             writer.Write(instance.ID);
         }
 
         public override NetworkBehaviour Deserialize(NetworkReader reader)
         {
-            if (NetworkEntityNetworkSerializationResolver.Read(reader, out var entity) == false) return null;
+            reader.Read(out NetworkEntity entity);
+            reader.Read(out NetworkBehaviourID id);
 
-            reader.Read(out NetworkBehaviourID behaviourID);
+            if (entity == null) return null;
 
-            if (entity.Behaviours.TryGetValue(behaviourID, out var behaviour) == false)
+            if (entity.Behaviours.TryGetValue(id, out var behaviour) == false)
             {
-                Debug.LogWarning($"Network Behaviour {behaviourID} Couldn't be Found on Entity '{entity}' when Deserializing, Returning null");
+                Debug.LogWarning($"Network Behaviour {id} Couldn't be Found on Entity '{entity}' when Deserializing, Returning null");
                 return null;
             }
 

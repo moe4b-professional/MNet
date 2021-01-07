@@ -35,7 +35,7 @@ namespace MNet
             BroadcastRPC(CoroutineRPC);
             BroadcastRPC(UniTaskRPC);
 
-            var answer = await QueryAsyncRPC(AsyncCall, NetworkAPI.Room.Master);
+            var answer = await QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master);
 
             success = answer.Success;
 
@@ -62,7 +62,7 @@ namespace MNet
         }
 
         [NetworkRPC]
-        async UniTask<string> AsyncCall(RpcInfo info)
+        async UniTask<string> AsyncQueryRPC(RpcInfo info)
         {
             await UniTask.Delay(4000, cancellationToken: DespawnCancellation.Token);
 
