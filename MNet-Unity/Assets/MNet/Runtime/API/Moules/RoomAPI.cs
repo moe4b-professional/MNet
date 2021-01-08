@@ -96,7 +96,7 @@ namespace MNet
                 void Callback(RoomBasicInfo info, RestError error)
                 {
                     handler?.Invoke(info, error);
-                    OnCreate(info, error);
+                    OnCreate?.Invoke(info, error);
                 }
             }
             #endregion

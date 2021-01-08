@@ -22,9 +22,26 @@ namespace MNet
             Setup();
 
             for (int i = 0; i < 20; i++)
-                PerformanceTools.Measure(Serialization);
+                PerformanceTools.Measure(Insert);
 
             Console.ReadLine();
+        }
+
+        static void Insert()
+        {
+            var raw = new byte[256];
+
+            for (int i = 0; i < raw.Length; i++)
+                raw[i] = (byte)i;
+
+            var writer = new NetworkWriter(512);
+
+            for (int i = 0; i < Count; i++)
+            {
+                writer.Insert(raw);
+                PerformanceTools.Consume(writer.Position);
+                writer.Clear();
+            }
         }
 
         static void Serialization()
@@ -62,6 +79,6 @@ namespace MNet
             Log.Info($"{action.Method.Name} Took {stopwatch.Elapsed.TotalMilliseconds.ToString("N")}");
         }
 
-        static void Consume<T>(T value) { }
+        public static void Consume<T>(T value) { }
     }
 }

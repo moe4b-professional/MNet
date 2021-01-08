@@ -113,13 +113,11 @@ namespace MNet
 
         public void Insert(byte[] source)
         {
-            var count = source.Length;
+            if (source.Length > Remaining) ResizeToFit(source.Length);
 
-            if (count > Remaining) ResizeToFit(count);
+            Buffer.BlockCopy(source, 0, data, Position, source.Length);
 
-            Buffer.BlockCopy(source, 0, data, Position, count);
-
-            Position += count;
+            Position += source.Length;
         }
 
         public void Replace(byte[] source, int position)

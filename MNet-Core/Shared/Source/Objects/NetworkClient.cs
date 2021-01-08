@@ -30,15 +30,11 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(NetworkClientID))
-            {
-                var target = (NetworkClientID)obj;
-
-                return target.value == this.value;
-            }
+            if (obj is NetworkClientID id) return Equals(id);
 
             return false;
         }
+        public bool Equals(NetworkClientID id) => this.value == id.value;
 
         public override int GetHashCode() => value.GetHashCode();
 

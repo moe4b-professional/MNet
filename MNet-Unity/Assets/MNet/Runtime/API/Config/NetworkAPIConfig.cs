@@ -24,7 +24,10 @@ namespace MNet
     {
         [SerializeField]
         protected string address = "127.0.0.1";
-        public string Address => address;
+        public string Address => connectToLocal ? "127.0.0.1" : address;
+
+        [SerializeField]
+        bool connectToLocal = default;
 
         [SerializeField]
         protected string appID;

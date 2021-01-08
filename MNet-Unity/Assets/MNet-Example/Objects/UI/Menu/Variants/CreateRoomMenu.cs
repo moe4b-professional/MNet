@@ -65,17 +65,15 @@ namespace MNet.Example
 
 			attributes.Set(0, level.Name);
 
-			NetworkAPI.Room.OnCreate += CreateCallback;
-			NetworkAPI.Room.Create(name, capacity, attributes);
-		}
-		void CreateCallback(RoomBasicInfo room, RestError error)
-		{
-			NetworkAPI.Room.OnCreate -= CreateCallback;
+			NetworkAPI.Room.Create(name, capacity, attributes, handler: Callback);
 
-			if (error == null)
-				Join(room);
-			else
-				Popup.Show("Failed to Create Room", "Okay");
+			void Callback(RoomBasicInfo room, RestError error)
+			{
+				if (error == null)
+					Join(room);
+				else
+					Popup.Show("Failed to Create Room", "Okay");
+			}
 		}
 
 		void Join(RoomBasicInfo info)
