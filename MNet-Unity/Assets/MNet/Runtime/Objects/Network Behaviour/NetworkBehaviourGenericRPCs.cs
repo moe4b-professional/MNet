@@ -59,7 +59,7 @@ namespace MNet
 
         #region Target Void
         protected void TargetRPC(VoidRpcMethod rpc, NetworkClient target)
-            => TargetRPC(rpc, target);
+            => TargetRPC(rpc.Method, target);
         protected void TargetRPC<T1>(VoidRpcMethod<T1> rpc, NetworkClient target, T1 arg1)
             => TargetRPC(rpc.Method, target, arg1);
         protected void TargetRPC<T1, T2>(VoidRpcMethod<T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)

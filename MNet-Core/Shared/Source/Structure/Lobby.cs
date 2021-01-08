@@ -16,7 +16,7 @@ namespace MNet
         List<RoomBasicInfo> rooms;
         public List<RoomBasicInfo> Rooms { get { return rooms; } }
 
-        public int Size => rooms.Count;
+        public int Size => rooms == null ? 0 : rooms.Count;
 
         public RoomBasicInfo this[int index] => rooms[index];
 

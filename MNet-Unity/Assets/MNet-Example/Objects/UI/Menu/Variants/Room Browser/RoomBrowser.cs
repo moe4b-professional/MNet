@@ -67,6 +67,8 @@ namespace MNet.Example
         {
             Clear();
 
+            if (list == null) return;
+
             var entries = RoomBasicUITemplate.CreateAll(template, list, InitTemplate);
             templates.AddRange(entries);
         }

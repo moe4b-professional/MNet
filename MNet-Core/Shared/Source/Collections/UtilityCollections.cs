@@ -112,14 +112,15 @@ namespace MNet
 
         public bool Contains(TKey key) => hash.Contains(key);
 
-        public AutoKeyCollection(IncrementDelegate incrementor)
+        public AutoKeyCollection(IncrementDelegate incrementor, TKey initial)
         {
             hash = new HashSet<TKey>();
             vacant = new ConcurrentQueue<TKey>();
 
-            index = default;
+            index = initial;
             this.Incrementor = incrementor;
         }
+        public AutoKeyCollection(IncrementDelegate incrementor) : this(incrementor, default) { }
     }
 
     public class AutoKeyDictionary<TKey, TValue>
@@ -159,12 +160,13 @@ namespace MNet
             return removed;
         }
 
-        public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor)
+        public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor, TKey initial)
         {
             Dictionary = new Dictionary<TKey, TValue>();
 
-            Keys = new AutoKeyCollection<TKey>(incrementor);
+            Keys = new AutoKeyCollection<TKey>(incrementor, initial);
         }
+        public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor) : this(incrementor, default) { }
     }
 
     public class DualDictionary<TKey1, TKey2, TValue>

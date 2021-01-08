@@ -91,7 +91,10 @@ namespace MNet
         }
 
         /// <summary>
-        /// Called when Behaviour is loaded in the network, invoked after OnSetup
+        /// Called when Behaviour is loaded in the network, invoked after OnSetup,
+        /// by this point the behaviour should be ready to send and recieve network messages
+        /// but if this behaviour is buffered then it's buffered RPCs and SyncVars wouldn't be set yet,
+        /// Use OnSpawn for a callback where those will be set
         /// </summary>
         protected virtual void OnLoad() { }
         #endregion
@@ -128,7 +131,8 @@ namespace MNet
         }
 
         /// <summary>
-        /// Invoked when this behaviour is spawned and ready for use
+        /// Invoked when this behaviour is spawned and ready for use,
+        /// entity will have all its buffered data applied and ready
         /// </summary>
         protected virtual void OnSpawn() { }
         #endregion
@@ -278,7 +282,7 @@ namespace MNet
 
             if (ValidateAuthority(command.Sender, bind.Authority) == false)
             {
-                Debug.LogWarning($"RPC '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
+                Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
                 if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }

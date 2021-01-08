@@ -17,12 +17,17 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     [AddComponentMenu(Constants.Path + "Tests/" + "RPC Test")]
     public class RpcTest : NetworkBehaviour
     {
         public List<bool> results = new List<bool>();
+
+        public bool coroutine;
+        public bool uniTask;
 
         public bool success = false;
 
@@ -34,13 +39,20 @@ namespace MNet
 
             for (int i = 0; i < Count; i++) results.Add(false);
 
-            BroadcastRPC(Call0);
-            BroadcastRPC(Call1, 0);
-            BroadcastRPC(Call2, 0, 1);
-            BroadcastRPC(Call3, 0, 1, 2);
-            BroadcastRPC(Call4, 0, 1, 2, 3);
-            BroadcastRPC(Call5, 0, 1, 2, 3, 4);
-            BroadcastRPC(Call6, 0, 1, 2, 3, 4, 5);
+            coroutine = false;
+            uniTask = false;
+            success = false;
+
+            TargetRPC(Call0, NetworkAPI.Client.Self);
+            TargetRPC(Call1, NetworkAPI.Client.Self, 0);
+            TargetRPC(Call2, NetworkAPI.Client.Self, 0, 1);
+            TargetRPC(Call3, NetworkAPI.Client.Self, 0, 1, 2);
+            TargetRPC(Call4, NetworkAPI.Client.Self, 0, 1, 2, 3);
+            TargetRPC(Call5, NetworkAPI.Client.Self, 0, 1, 2, 3, 4);
+            TargetRPC(Call6, NetworkAPI.Client.Self, 0, 1, 2, 3, 4, 5);
+
+            TargetRPC(CoroutineRPC, NetworkAPI.Client.Self);
+            TargetRPC(UniTaskRPC, NetworkAPI.Client.Self);
         }
 
         [NetworkRPC] void Call0(RpcInfo info) => Call();
@@ -59,7 +71,32 @@ namespace MNet
 
             if (input == expectation) results[arguments.Length] = true;
 
-            success = results.Aggregate((x, z) => x & z);
+            UpdateState();
+        }
+
+        [NetworkRPC]
+        IEnumerator CoroutineRPC(RpcInfo info)
+        {
+            yield return new WaitForSeconds(2f);
+
+            coroutine = true;
+
+            UpdateState();
+        }
+
+        [NetworkRPC]
+        async UniTask UniTaskRPC(RpcInfo info)
+        {
+            await UniTask.Delay(2000, cancellationToken: DespawnCancellation.Token);
+
+            uniTask = true;
+
+            UpdateState();
+        }
+
+        void UpdateState()
+        {
+            success = results.All(x => x) && coroutine && uniTask;
         }
     }
 }
