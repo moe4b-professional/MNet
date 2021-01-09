@@ -106,6 +106,7 @@
      <Compile Include="Assets\MNet-Example\Utility\PlayerNameInputField.cs" />
      <Compile Include="Assets\MNet-Project-Utility\MNetProjectUtility.cs" />
      <Compile Include="Assets\MNet\Editor\NetworkAPIEditor.cs" />
+     <Compile Include="Assets\MNet\Refresh0.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Config\NetworkAPIConfig.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\AppAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\ClientAPI.cs" />
@@ -114,7 +115,6 @@
      <Compile Include="Assets\MNet\Runtime\API\Moules\PingAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RealtimeAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\RoomAPI.cs" />
-     <Compile Include="Assets\MNet\Runtime\API\Moules\ScenesAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\Modules\GameServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\Modules\MasterServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\ServerAPI.cs" />

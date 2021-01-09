@@ -65,9 +65,9 @@ namespace MNet.Example
 
 			attributes.Set(0, level.Name);
 
-			NetworkAPI.Room.Create(name, capacity, attributes, handler: Callback);
+			NetworkAPI.Room.Create(name, capacity, attributes: attributes, handler: Callback);
 
-			void Callback(RoomBasicInfo room, RestError error)
+			void Callback(RoomInfo room, RestError error)
 			{
 				if (error == null)
 					Join(room);
@@ -76,7 +76,7 @@ namespace MNet.Example
 			}
 		}
 
-		void Join(RoomBasicInfo info)
+		void Join(RoomInfo info)
         {
 			Popup.Show("Joining Room");
 

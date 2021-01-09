@@ -1,8 +1,11 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+
 using System.Linq;
 using System.Text;
+
+using System.Collections;
+using System.Collections.Generic;
+
 using System.Threading.Tasks;
 
 namespace MNet
@@ -35,7 +38,7 @@ namespace MNet
             var writer = NetworkWriter.Pool.Any;
 
             writer.Write(type);
-            writer.Write(value);
+            writer.Write(value, type);
 
             var raw = writer.ToArray();
 
@@ -45,11 +48,31 @@ namespace MNet
             objects[key] = value;
         }
 
+        public void CopyFrom(NetworkGenericDictionary<TKey> collection)
+        {
+            foreach (var key in collection.Keys)
+            {
+                objects.Remove(key);
+                payload[key] = collection.payload[key];
+            }
+        }
+
         public bool Remove(TKey key)
         {
             objects.Remove(key);
 
             return payload.Remove(key);
+        }
+
+        public int RemoveAll(IList<TKey> keys)
+        {
+            var count = 0;
+
+            for (int i = 0; i < keys.Count; i++)
+                if (Remove(keys[i]))
+                    count += 1;
+
+            return count;
         }
 
         public bool ContainsKey(TKey key) => payload.ContainsKey(key);

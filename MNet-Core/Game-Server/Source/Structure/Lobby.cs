@@ -16,21 +16,21 @@ namespace MNet
             public static Dictionary<AppID, AppCollection> Apps { get; private set; }
             public class AppCollection
             {
-                public Dictionary<Version, Collection> Versions { get; protected set; }
-                public class Collection
+                public Dictionary<Version, VersionCollection> Versions { get; protected set; }
+                public class VersionCollection
                 {
-                    public Dictionary<RoomID, Room> Dictionary { get; protected set; }
+                    public Dictionary<RoomID, Room> Rooms { get; protected set; }
 
-                    public IReadOnlyCollection<RoomID> Keys => Dictionary.Keys;
-                    public IReadOnlyCollection<Room> Values => Dictionary.Values;
+                    public IReadOnlyCollection<RoomID> Keys => Rooms.Keys;
+                    public IReadOnlyCollection<Room> Values => Rooms.Values;
 
-                    public void Add(Room room) => Dictionary.Add(room.ID, room);
+                    public void Add(Room room) => Rooms.Add(room.ID, room);
 
-                    public bool Remove(Room room) => Dictionary.Remove(room.ID);
+                    public bool Remove(Room room) => Rooms.Remove(room.ID);
 
-                    public Collection()
+                    public VersionCollection()
                     {
-                        Dictionary = new Dictionary<RoomID, Room>();
+                        Rooms = new Dictionary<RoomID, Room>();
                     }
                 }
 
@@ -38,7 +38,7 @@ namespace MNet
                 {
                     if (Versions.TryGetValue(room.Version, out var collection) == false)
                     {
-                        collection = new Collection();
+                        collection = new VersionCollection();
 
                         Versions.Add(room.Version, collection);
                     }
@@ -64,7 +64,7 @@ namespace MNet
 
                 public AppCollection()
                 {
-                    Versions = new Dictionary<Version, Collection>();
+                    Versions = new Dictionary<Version, VersionCollection>();
                 }
             }
 
@@ -122,18 +122,18 @@ namespace MNet
                     return;
                 }
 
-                var room = Create(app, payload.Version, payload.Name, payload.Capacity, payload.Attributes);
-                var info = room.GetBasicInfo();
+                var room = Create(app, payload.Version, payload.Name, payload.Capacity, payload.Visibile, payload.Attributes);
+                var info = room.GetInfo();
 
                 RestServerAPI.Write(response, info);
             }
-            public static Room Create(AppConfig app, Version version, string name, byte capacity, AttributesCollection attributes)
+            public static Room Create(AppConfig app, Version version, string name, byte capacity, bool visibile, AttributesCollection attributes)
             {
                 Log.Info($"Creating Room '{name}'");
 
                 var id = Reserve();
 
-                var room = new Room(id, app, version, name, capacity, attributes);
+                var room = new Room(id, app, version, name, capacity, visibile, attributes);
 
                 Add(room);
 
@@ -146,16 +146,27 @@ namespace MNet
 
             static void StopCallback(Room room) => Remove(room);
 
-            public static List<RoomBasicInfo> QueryInfo(AppID appID, Version version)
+            public static List<RoomInfo> QueryInfo(AppID appID, Version version)
             {
                 if (Apps.TryGetValue(appID, out var app) == false)
                     return null;
 
-                IReadOnlyCollection<Room> target;
+                IReadOnlyCollection<Room> targets;
 
-                lock (SyncLock) target = app.Query(version);
+                lock (SyncLock) targets = app.Query(version);
 
-                return target.ToList(Room.GetBasicInfo);
+                var list = new List<RoomInfo>(targets.Count);
+
+                foreach (var room in targets)
+                {
+                    if (room.Visibile == false) continue;
+
+                    var info = room.GetInfo();
+
+                    list.Add(info);
+                }
+
+                return list;
             }
         }
 

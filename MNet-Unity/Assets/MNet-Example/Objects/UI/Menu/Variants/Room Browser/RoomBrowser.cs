@@ -63,7 +63,7 @@ namespace MNet.Example
             }
         }
 
-        void Populate(IList<RoomBasicInfo> list)
+        void Populate(IList<RoomInfo> list)
         {
             Clear();
 

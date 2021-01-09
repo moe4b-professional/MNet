@@ -20,7 +20,7 @@ using Random = UnityEngine.Random;
 namespace MNet.Example
 {
     [RequireComponent(typeof(Button))]
-    public class RoomBasicUITemplate : UITemplate<RoomBasicUITemplate, RoomBasicInfo>
+    public class RoomBasicUITemplate : UITemplate<RoomBasicUITemplate, RoomInfo>
 	{
         [SerializeField]
         Text title = default;
@@ -56,7 +56,7 @@ namespace MNet.Example
             OnClick?.Invoke(this);
         }
 
-        public override void SetData(RoomBasicInfo data)
+        public override void SetData(RoomInfo data)
         {
             base.SetData(data);
 

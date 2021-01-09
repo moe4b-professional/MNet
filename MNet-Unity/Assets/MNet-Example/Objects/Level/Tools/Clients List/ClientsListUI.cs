@@ -84,7 +84,7 @@ namespace MNet.Example
 
 		void UpdateState()
 		{
-			count.text = $"{NetworkAPI.Room.Clients.Count}/{NetworkAPI.Room.Info.Basic.Capacity}";
+			count.text = $"{NetworkAPI.Room.Clients.Count}/{NetworkAPI.Room.Info.Capacity}";
 		}
 
 		void Populate()

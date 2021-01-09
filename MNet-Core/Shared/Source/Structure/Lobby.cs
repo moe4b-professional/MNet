@@ -13,12 +13,12 @@ namespace MNet
         GameServerID server;
         public GameServerID Server => server;
 
-        List<RoomBasicInfo> rooms;
-        public List<RoomBasicInfo> Rooms { get { return rooms; } }
+        List<RoomInfo> rooms;
+        public List<RoomInfo> Rooms { get { return rooms; } }
 
         public int Size => rooms == null ? 0 : rooms.Count;
 
-        public RoomBasicInfo this[int index] => rooms[index];
+        public RoomInfo this[int index] => rooms[index];
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -26,7 +26,7 @@ namespace MNet
             context.Select(ref rooms);
         }
 
-        public LobbyInfo(GameServerID server, List<RoomBasicInfo> rooms)
+        public LobbyInfo(GameServerID server, List<RoomInfo> rooms)
         {
             this.server = server;
             this.rooms = rooms;

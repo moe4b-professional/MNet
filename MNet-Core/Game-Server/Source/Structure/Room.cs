@@ -30,25 +30,15 @@ namespace MNet
 
         public bool IsFull => Occupancy >= Capacity;
 
+        public bool Visibile { get; protected set; }
+
         public AttributesCollection Attributes { get; protected set; }
 
         #region Read
-        public RoomBasicInfo GetBasicInfo() => new RoomBasicInfo(ID, Name, Capacity, Occupancy, Attributes);
-        public static RoomBasicInfo GetBasicInfo(Room room) => room.GetBasicInfo();
+        public RoomInfo GetInfo() => new RoomInfo(ID, Name, Capacity, Occupancy, Visibile, Attributes);
+        public static RoomInfo GetBasicInfo(Room room) => room.GetInfo();
 
-        public RoomInnerInfo GetInnerInfo() => new RoomInnerInfo(TickDelay);
-        public static RoomInnerInfo GetInnerInfo(Room room) => room.GetInnerInfo();
-
-        public RoomInfo GetInfo()
-        {
-            var basic = GetBasicInfo();
-            var inner = GetInnerInfo();
-
-            return new RoomInfo(basic, inner);
-        }
-        public static RoomInfo GetInfo(Room room) => room.GetInfo();
-
-        public NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
+        NetworkClientInfo[] GetClientsInfo() => Clients.ToArray(NetworkClient.ReadInfo);
         #endregion
         #endregion
 
@@ -171,24 +161,6 @@ namespace MNet
 
             MessageDispatcher.Add(type, callback);
         }
-
-        void RegisterInternalMessageHandlers()
-        {
-            RegisterMessageHandler<ReadyClientRequest>(ReadyClient);
-
-            RegisterMessageHandler<SpawnEntityRequest>(SpawnEntity);
-            RegisterMessageHandler<ChangeEntityOwnerRequest>(ChangeEntityOwner);
-            RegisterMessageHandler<DestroyEntityRequest>(DestroyEntity);
-
-            RegisterMessageHandler<RpcRequest>(InvokeRPC);
-            RegisterMessageHandler<SyncVarRequest>(InvokeSyncVar);
-            RegisterMessageHandler<RprRequest>(InvokeRPR);
-
-            RegisterMessageHandler<RoomTimeRequest>(ProcessTimeRequest);
-            RegisterMessageHandler<PingRequest>(ProcessPingRequest);
-
-            RegisterMessageHandler<LoadScenesRequest>(LoadScenes);
-        }
         #endregion
 
         #region Communication
@@ -298,14 +270,33 @@ namespace MNet
             OnTick += VoidRoomClearProcedure;
         }
 
+        void RegisterInternalMessageHandlers()
+        {
+            RegisterMessageHandler<ReadyClientRequest>(ReadyClient);
+
+            RegisterMessageHandler<SpawnEntityRequest>(SpawnEntity);
+            RegisterMessageHandler<ChangeEntityOwnerRequest>(ChangeEntityOwner);
+            RegisterMessageHandler<DestroyEntityRequest>(DestroyEntity);
+
+            RegisterMessageHandler<RpcRequest>(InvokeRPC);
+            RegisterMessageHandler<SyncVarRequest>(InvokeSyncVar);
+            RegisterMessageHandler<RprRequest>(InvokeRPR);
+
+            RegisterMessageHandler<RoomTimeRequest>(ProcessTimeRequest);
+            RegisterMessageHandler<PingRequest>(ProcessPingRequest);
+
+            RegisterMessageHandler<LoadScenesRequest>(LoadScenes);
+
+            RegisterMessageHandler<ChangeRoomInfoPayload>(ChangeInfo);
+        }
+
         void VoidRoomClearProcedure()
         {
             if (scheduler.ElapsedTime > 10 * 1000)
             {
                 OnTick -= VoidRoomClearProcedure;
 
-                if (Occupancy == 0)
-                    Stop();
+                if (Occupancy == 0) Stop();
             }
         }
 
@@ -367,9 +358,8 @@ namespace MNet
             Clients.Add(id, client);
 
             Log.Info($"Room {this.ID}: Client {id} Registerd");
-
-            var room = GetInfo();
-            var response = new RegisterClientResponse(id, room);
+            
+            var response = new RegisterClientResponse(id);
             Send(response, client);
 
             var payload = new ClientConnectedPayload(info);
@@ -393,11 +383,25 @@ namespace MNet
             ///And yeah ... don't ask me how I know :P
             var buffer = MessageBuffer.List.ToArray();
 
-            var response = new ReadyClientResponse(GetClientsInfo(), Master.ID, buffer, time);
+            var room = GetInfo();
+            var clients = GetClientsInfo();
+
+            var response = new ReadyClientResponse(room, clients, Master.ID, buffer, time);
 
             Send(response, client);
 
             Log.Info($"Room {this.ID}: Client {client.ID} Set Ready");
+        }
+
+        void ChangeInfo(NetworkClient sender, ref ChangeRoomInfoPayload payload, DeliveryMode mode)
+        {
+            if (payload.ModifyVisiblity) Visibile = payload.Visibile;
+
+            if (payload.ModifyAttributes) Attributes.CopyFrom(payload.ModifiedAttributes);
+
+            if (payload.RemoveAttributes) Attributes.RemoveAll(payload.RemovedAttributes);
+
+            Broadcast(payload, condition: NetworkClient.IsReady);
         }
 
         #region RPC
@@ -710,7 +714,7 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, AppConfig app, Version version, string name, byte capacity, AttributesCollection attributes)
+        public Room(RoomID id, AppConfig app, Version version, string name, byte capacity, bool visibile, AttributesCollection attributes)
         {
             this.ID = id;
 
@@ -720,6 +724,8 @@ namespace MNet
             this.Name = name;
 
             this.Capacity = capacity;
+
+            this.Visibile = visibile;
 
             this.Attributes = attributes;
 

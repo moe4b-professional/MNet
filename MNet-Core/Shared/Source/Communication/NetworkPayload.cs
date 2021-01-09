@@ -149,8 +149,7 @@ namespace MNet
             Register<ClientConnectedPayload>(19);
             Register<ClientDisconnectPayload>(20);
 
-            Register<RoomBasicInfo>(22);
-            Register<RoomInnerInfo>(23);
+            Register<RoomInfo>(22);
 
             Register<NetworkClientInfo>(24);
             Register<NetworkClientProfile>(25);
@@ -188,6 +187,8 @@ namespace MNet
             Register<RprRequest>(51);
             Register<RprResponse>(52);
             Register<RprCommand>(53);
+
+            Register<ChangeRoomInfoPayload>(54);
         }
 
         static NetworkPayload()
@@ -218,6 +219,9 @@ namespace MNet
         byte capacity;
         public byte Capacity => capacity;
 
+        bool visibile;
+        public bool Visibile => visibile;
+
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
@@ -225,17 +229,23 @@ namespace MNet
         {
             context.Select(ref appID);
             context.Select(ref version);
+
             context.Select(ref name);
+
             context.Select(ref capacity);
+
+            context.Select(ref visibile);
+
             context.Select(ref attributes);
         }
 
-        public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, AttributesCollection attributes)
+        public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, bool visibile, AttributesCollection attributes)
         {
             this.appID = appID;
+            this.version = version;
             this.name = name;
             this.capacity = capacity;
-            this.version = version;
+            this.visibile = visibile;
             this.attributes = attributes;
         }
     }
@@ -375,19 +385,14 @@ namespace MNet
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        RoomInfo room;
-        public RoomInfo Room => room;
-
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref id);
-            context.Select(ref room);
         }
 
-        public RegisterClientResponse(NetworkClientID id, RoomInfo room)
+        public RegisterClientResponse(NetworkClientID id)
         {
             this.id = id;
-            this.room = room;
         }
     }
     #endregion
@@ -417,6 +422,9 @@ namespace MNet
     [Serializable]
     public struct ReadyClientResponse : INetworkSerializable
     {
+        RoomInfo room;
+        public RoomInfo Room => room;
+
         NetworkClientInfo[] clients;
         public NetworkClientInfo[] Clients => clients;
 
@@ -431,14 +439,16 @@ namespace MNet
 
         public void Select(ref NetworkSerializationContext context)
         {
+            context.Select(ref room);
             context.Select(ref clients);
             context.Select(ref buffer);
             context.Select(ref master);
             context.Select(ref time);
         }
 
-        public ReadyClientResponse(NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, RoomTimeResponse time)
+        public ReadyClientResponse(RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, RoomTimeResponse time)
         {
+            this.room = room;
             this.clients = clients;
             this.master = master;
             this.buffer = buffer;
@@ -599,6 +609,52 @@ namespace MNet
             };
 
             return command;
+        }
+    }
+    #endregion
+
+    #region Takeover Entity
+    [Preserve]
+    public struct ChangeEntityOwnerRequest : INetworkSerializable
+    {
+        NetworkClientID client;
+        public NetworkClientID Client => client;
+
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref client);
+            context.Select(ref entity);
+        }
+
+        public ChangeEntityOwnerRequest(NetworkClientID client, NetworkEntityID entity)
+        {
+            this.client = client;
+            this.entity = entity;
+        }
+    }
+
+    [Preserve]
+    public struct ChangeEntityOwnerCommand : INetworkSerializable
+    {
+        NetworkClientID client;
+        public NetworkClientID Client => client;
+
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref client);
+            context.Select(ref entity);
+        }
+
+        public ChangeEntityOwnerCommand(NetworkClientID client, NetworkEntityID entity)
+        {
+            this.client = client;
+            this.entity = entity;
         }
     }
     #endregion
@@ -789,50 +845,43 @@ namespace MNet
     }
     #endregion
 
-    #region Takeover Entity
-    [Preserve]
-    public struct ChangeEntityOwnerRequest : INetworkSerializable
+    [Flags]
+    public enum RoomInfoTarget : int
     {
-        NetworkClientID client;
-        public NetworkClientID Client => client;
-
-        NetworkEntityID entity;
-        public NetworkEntityID Entity => entity;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref client);
-            context.Select(ref entity);
-        }
-
-        public ChangeEntityOwnerRequest(NetworkClientID client, NetworkEntityID entity)
-        {
-            this.client = client;
-            this.entity = entity;
-        }
+        Visiblity = 1 << 0,
+        ModifyAttributes = 1 << 1,
+        RemoveAttributes = 1 << 2,
     }
 
     [Preserve]
-    public struct ChangeEntityOwnerCommand : INetworkSerializable
+    public struct ChangeRoomInfoPayload : INetworkSerializable
     {
-        NetworkClientID client;
-        public NetworkClientID Client => client;
+        RoomInfoTarget targets;
 
-        NetworkEntityID entity;
-        public NetworkEntityID Entity => entity;
+        public bool ModifyVisiblity => targets.HasFlag(RoomInfoTarget.Visiblity);
+        public bool Visibile;
+
+        public bool ModifyAttributes => targets.HasFlag(RoomInfoTarget.ModifyAttributes);
+        public AttributesCollection ModifiedAttributes;
+
+        public bool RemoveAttributes => targets.HasFlag(RoomInfoTarget.RemoveAttributes);
+        public ushort[] RemovedAttributes;
 
         public void Select(ref NetworkSerializationContext context)
         {
-            context.Select(ref client);
-            context.Select(ref entity);
+            context.Select(ref targets);
+
+            if (ModifyVisiblity) context.Select(ref Visibile);
+
+            if (ModifyAttributes) context.Select(ref ModifiedAttributes);
+
+            if (RemoveAttributes) context.Select(ref RemovedAttributes);
         }
 
-        public ChangeEntityOwnerCommand(NetworkClientID client, NetworkEntityID entity)
+        public ChangeRoomInfoPayload(RoomInfoTarget targets) : this()
         {
-            this.client = client;
-            this.entity = entity;
+            this.targets = targets;
         }
     }
-    #endregion
     #endregion
 }

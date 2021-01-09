@@ -9,7 +9,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct RoomBasicInfo : INetworkSerializable
+    public struct RoomInfo : INetworkSerializable
     {
         RoomID id;
         public RoomID ID { get { return id; } }
@@ -23,6 +23,9 @@ namespace MNet
         byte occupancy;
         public byte Occupancy { get { return occupancy; } }
 
+        bool visibile;
+        public bool Visibile => visibile;
+
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
@@ -34,10 +37,12 @@ namespace MNet
             context.Select(ref capacity);
             context.Select(ref occupancy);
 
+            context.Select(ref visibile);
+
             context.Select(ref attributes);
         }
 
-        public RoomBasicInfo(RoomID id, string name, byte capacity, byte occupancy, AttributesCollection attributes)
+        public RoomInfo(RoomID id, string name, byte capacity, byte occupancy, bool visibile, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
@@ -45,55 +50,17 @@ namespace MNet
             this.capacity = capacity;
             this.occupancy = occupancy;
 
+            this.visibile = visibile;
+
             this.attributes = attributes;
         }
 
         public override string ToString()
         {
-            return "ID: " + ID + Environment.NewLine +
-                "Name: " + Name + Environment.NewLine +
-                "MaxPlayers: " + Capacity + Environment.NewLine +
-                "PlayersCount: " + Occupancy + Environment.NewLine;
-        }
-    }
-
-    [Preserve]
-    [Serializable]
-    public struct RoomInnerInfo : INetworkSerializable
-    {
-        byte tickDelay;
-        public byte TickDelay => tickDelay;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref tickDelay);
-        }
-
-        public RoomInnerInfo(byte tickDelay)
-        {
-            this.tickDelay = tickDelay;
-        }
-    }
-
-    [Preserve]
-    public struct RoomInfo : INetworkSerializable
-    {
-        RoomBasicInfo basic;
-        public RoomBasicInfo Basic => basic;
-
-        RoomInnerInfo inner;
-        public RoomInnerInfo Inner => inner;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref basic);
-            context.Select(ref inner);
-        }
-
-        public RoomInfo(RoomBasicInfo basic, RoomInnerInfo inner)
-        {
-            this.basic = basic;
-            this.inner = inner;
+            return $"ID: {id}\n" +
+                $"Name: {name}\n" +
+                $"Capacity: {capacity}\n" +
+                $"Occupancy: {occupancy}";
         }
     }
 

@@ -178,11 +178,11 @@ namespace MNet.Example
 			{
 				if (NetworkAPI.Client.IsMaster)
 				{
-					var attributes = NetworkAPI.Room.Info.Basic.Attributes;
+					var attributes = NetworkAPI.Room.Info.Attributes;
 
 					var level = ReadLevel(attributes);
 
-					NetworkAPI.Scenes.Load(LoadSceneMode.Single, level.Scene);
+					NetworkAPI.Room.Scenes.Load(LoadSceneMode.Single, level.Scene);
 				}
 
 				Popup.Hide();
@@ -196,7 +196,7 @@ namespace MNet.Example
 				var data = Core.Levels.Find(name);
 
 				if (data == null)
-					throw new Exception("No Level Data found for Level with Name '{name}'");
+					throw new Exception($"No Level Data found for Level with Name '{name}'");
 
 				return data;
 			}

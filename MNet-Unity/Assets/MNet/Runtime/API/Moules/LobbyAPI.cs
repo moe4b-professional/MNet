@@ -28,7 +28,7 @@ namespace MNet
         {
             public static LobbyInfo Info { get; private set; }
 
-            public static IList<RoomBasicInfo> Rooms => Info.Rooms;
+            public static IList<RoomInfo> Rooms => Info.Rooms;
 
             public static int Size => Info.Size;
 

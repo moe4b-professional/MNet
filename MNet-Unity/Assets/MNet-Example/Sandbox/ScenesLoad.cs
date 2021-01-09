@@ -33,7 +33,7 @@ namespace MNet
 			{
 				yield return new WaitForSeconds(delay);
 
-				NetworkAPI.Scenes.Load(mode, scenes);
+				NetworkAPI.Room.Scenes.Load(mode, scenes);
 			}
 		}
 	}

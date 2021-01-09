@@ -26,7 +26,131 @@ namespace MNet
     {
         public static class Room
         {
-            public static RoomInfo Info { get; private set; }
+            public static class Info
+            {
+                static RoomID id;
+                public static RoomID ID { get { return id; } }
+
+                static string name;
+                public static string Name { get { return name; } }
+
+                static byte capacity;
+                public static byte Capacity { get { return capacity; } }
+
+                static byte occupancy;
+                public static byte Occupancy { get { return occupancy; } }
+
+                static bool visible;
+                public static bool Visible
+                {
+                    get
+                    {
+                        return visible;
+                    }
+                    set
+                    {
+                        if (CheckModificationAuthority() == false) return;
+
+                        var payload = new ChangeRoomInfoPayload(RoomInfoTarget.Visiblity) { Visibile = value };
+
+                        Client.Send(payload);
+                    }
+                }
+
+                static AttributesCollection attributes;
+                public static AttributesCollection Attributes => attributes;
+
+                public static void ModifyAttributes(AttributesCollection collection)
+                {
+                    if (CheckModificationAuthority() == false) return;
+
+                    var payload = new ChangeRoomInfoPayload(RoomInfoTarget.ModifyAttributes) { ModifiedAttributes = collection };
+
+                    Client.Send(payload);
+                }
+
+                public static void RemoveAttributes(params ushort[] keys)
+                {
+                    if (CheckModificationAuthority() == false) return;
+
+                    var payload = new ChangeRoomInfoPayload(RoomInfoTarget.RemoveAttributes) { RemovedAttributes = keys };
+
+                    Client.Send(payload);
+                }
+
+                /// <summary>
+                /// Invoked both OnLoad & OnChange
+                /// </summary>
+                public static event Action OnSet
+                {
+                    add
+                    {
+                        OnLoad += value;
+                        OnChange += value;
+                    }
+                    remove
+                    {
+                        OnLoad -= value;
+                        OnChange -= value;
+                    }
+                }
+
+                internal static void Configure()
+                {
+                    Client.RegisterMessageHandler<ChangeRoomInfoPayload>(Change);
+                }
+
+                /// <summary>
+                /// Invoked when the Room's info is first read
+                /// </summary>
+                public static event Action OnLoad;
+                internal static void Load(RoomInfo info)
+                {
+                    id = info.ID;
+                    name = info.Name;
+                    capacity = info.Capacity;
+                    occupancy = info.Occupancy;
+                    visible = info.Visibile;
+                    attributes = info.Attributes;
+
+                    OnLoad?.Invoke();
+                }
+
+                /// <summary>
+                /// Invoked on any small Room info Change after Load
+                /// </summary>
+                public static event Action OnChange;
+                static void Change(ref ChangeRoomInfoPayload payload)
+                {
+                    if (payload.ModifyVisiblity) visible = payload.Visibile;
+
+                    if (payload.ModifyAttributes) Attributes.CopyFrom(payload.ModifiedAttributes);
+
+                    if (payload.RemoveAttributes) Attributes.RemoveAll(payload.RemovedAttributes);
+
+                    OnChange?.Invoke();
+                }
+
+                internal static void Clear()
+                {
+                    id = default;
+                    name = default;
+                    capacity = default;
+                    occupancy = default;
+                    attributes = default;
+                }
+
+                static bool CheckModificationAuthority()
+                {
+                    if (Client.IsMaster == false)
+                    {
+                        Debug.LogError("Local Client cannot Change Room Info because They are Not Room Master");
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
 
             #region Master
             public static NetworkClient Master { get; private set; }
@@ -60,6 +184,9 @@ namespace MNet
                 Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
                 MasterObjects = new HashSet<NetworkEntity>();
 
+                Info.Configure();
+                Scenes.Configure();
+
                 Client.OnConnect += Setup;
                 Client.OnRegister += Register;
                 Client.OnReady += Ready;
@@ -80,20 +207,20 @@ namespace MNet
             }
 
             #region Join
-            public static void Join(RoomBasicInfo info) => Join(info.ID);
+            public static void Join(RoomInfo info) => Join(info.ID);
             public static void Join(RoomID id) => Realtime.Connect(Server.Game.ID, id);
             #endregion
 
             #region Create
-            public delegate void CreateDelegate(RoomBasicInfo room, RestError error);
+            public delegate void CreateDelegate(RoomInfo room, RestError error);
             public static event CreateDelegate OnCreate;
-            public static void Create(string name, byte capacity, AttributesCollection attributes = null, CreateDelegate handler = null)
+            public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, CreateDelegate handler = null)
             {
-                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, attributes);
+                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, visibile, attributes);
 
-                Server.Game.Rest.POST<CreateRoomRequest, RoomBasicInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
+                Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
 
-                void Callback(RoomBasicInfo info, RestError error)
+                void Callback(RoomInfo info, RestError error)
                 {
                     handler?.Invoke(info, error);
                     OnCreate?.Invoke(info, error);
@@ -108,13 +235,15 @@ namespace MNet
 
             static void Register(RegisterClientResponse response)
             {
-                Info = response.Room;
+                
             }
 
             public delegate void ReadyDelegate(ReadyClientResponse response);
             public static event ReadyDelegate OnReady;
             static void Ready(ReadyClientResponse response)
             {
+                Info.Load(response.Room);
+
                 AddClients(response.Clients);
                 AssignMaster(response.Master);
 
@@ -403,6 +532,127 @@ namespace MNet
             }
             #endregion
 
+            public static class Scenes
+            {
+                public static Scene Active => SceneManager.GetActiveScene();
+
+                internal static void Configure()
+                {
+                    Client.RegisterMessageHandler<LoadScenesCommand>(Load);
+
+                    LoadMethod = DefaultLoadMethod;
+                }
+
+                #region Load
+                public static bool IsLoading { get; private set; } = false;
+
+                /// <summary>
+                /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
+                /// no need to pause realtime or any of that in custom method, just load the scenes
+                /// </summary>
+                public static LoadMethodDeleagate LoadMethod { get; set; }
+                public delegate UniTask LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
+
+                public static async UniTask DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
+                {
+                    for (int i = 0; i < scenes.Length; i++)
+                    {
+                        var scene = SceneManager.GetSceneByBuildIndex(scenes[i]);
+
+                        if (scene.isLoaded)
+                        {
+                            Log.Warning($"Got Command to Load Scene at Index {scenes[i]} but That Scene is Already Loaded, " +
+                                $"Loading The Same Scene Multiple Times is not Supported, Ignoring");
+                            continue;
+                        }
+
+                        await SceneManager.LoadSceneAsync(scenes[i], mode);
+
+                        if (i == 0) mode = LoadSceneMode.Additive;
+                    }
+                }
+
+                static void Load(ref LoadScenesCommand command)
+                {
+                    if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
+
+                    var scenes = command.Scenes;
+                    var mode = ConvertLoadMode(command.Mode);
+
+                    Load(scenes, mode).Forget();
+                }
+
+                public static event LoadDelegate OnLoadBegin;
+                static async UniTask Load(byte[] scenes, LoadSceneMode mode)
+                {
+                    IsLoading = true;
+                    var pauseLock = Realtime.Pause.AddLock();
+                    OnLoadBegin?.Invoke(scenes, mode);
+
+                    if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
+
+                    await LoadMethod(scenes, mode);
+
+                    IsLoading = false;
+                    Realtime.Pause.RemoveLock(pauseLock);
+                    OnLoadEnd?.Invoke(scenes, mode);
+                }
+                public static event LoadDelegate OnLoadEnd;
+
+                public delegate void LoadDelegate(byte[] indexes, LoadSceneMode mode);
+                #endregion
+
+                static void DestoryNonPersistantEntities()
+                {
+                    var entities = Room.Entities.Values.ToArray();
+
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        if (entities[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
+
+                        Room.DestroyEntity(entities[i]);
+                    }
+                }
+
+                #region Request
+                public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
+                public static void Load(LoadSceneMode mode, params GameScene[] scenes)
+                {
+                    var indexes = Array.ConvertAll(scenes, Convert);
+
+                    byte Convert(GameScene element)
+                    {
+                        if (element.BuildIndex > byte.MaxValue)
+                            throw new Exception($"Trying to Load at Build Index {element.BuildIndex}, Maximum Allowed Build Index is {byte.MaxValue}");
+
+                        return (byte)element.BuildIndex;
+                    }
+
+                    Load(mode, indexes);
+                }
+
+                public static void Load(params byte[] indexes) => Load(LoadSceneMode.Single, indexes);
+                public static void Load(LoadSceneMode mode, params byte[] indexes)
+                {
+                    if (Client.IsMaster == false)
+                    {
+                        Debug.LogWarning($"Only the Master Client Can Load Scenes, Ignoring Request");
+                        return;
+                    }
+
+                    var request = new LoadScenesRequest(indexes, ConvertLoadMode(mode));
+
+                    Client.Send(request);
+                }
+                #endregion
+
+                static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
+                static LoadSceneMode ConvertLoadMode(NetworkSceneLoadMode mode) => (LoadSceneMode)mode;
+
+                internal static void MoveToActive(Component target) => MoveToActive(target.gameObject);
+                internal static void MoveToActive(GameObject gameObject) => SceneManager.MoveGameObjectToScene(gameObject, Active);
+            }
+
             public static void Leave() => Client.Disconnect();
 
             static void Disconnect(DisconnectCode code) => Clear();
@@ -420,7 +670,7 @@ namespace MNet
                     DespawnEntity(entity);
                 }
 
-                Info = default;
+                Info.Clear();
 
                 Master = default;
 
