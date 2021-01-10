@@ -52,18 +52,18 @@ namespace MNet.Example
 		{
 			var name = this.name.GetValueOrDefault("Game Room");
 			var capacity = this.capacity.GetOption(Core.Network.Capacities);
-			var level = this.level.GetOption(Core.Levels.List);
+			var level = this.level.value;
 
-			Create(name, capacity, level);
+			Create(name, capacity, (byte)level);
 		}
 
-		void Create(string name, byte capacity, LevelData level)
+		void Create(string name, byte capacity, byte level)
 		{
 			Popup.Show("Creating Room");
 
 			var attributes = new AttributesCollection();
 
-			attributes.Set(0, level.Name);
+			Core.Levels.WriteAttribute(attributes, level);
 
 			NetworkAPI.Room.Create(name, capacity, attributes: attributes, handler: Callback);
 

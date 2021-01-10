@@ -857,30 +857,62 @@ namespace MNet
     public struct ChangeRoomInfoPayload : INetworkSerializable
     {
         RoomInfoTarget targets;
+        public RoomInfoTarget Targets => targets;
+
+        void RegisterTarget(RoomInfoTarget value)
+        {
+            if (targets.HasFlag(value)) return;
+
+            targets |= value;
+        }
 
         public bool ModifyVisiblity => targets.HasFlag(RoomInfoTarget.Visiblity);
-        public bool Visibile;
+        bool visibile;
+        public bool Visibile
+        {
+            get => visibile;
+            set
+            {
+                RegisterTarget(RoomInfoTarget.Visiblity);
+
+                visibile = value;
+            }
+        }
 
         public bool ModifyAttributes => targets.HasFlag(RoomInfoTarget.ModifyAttributes);
-        public AttributesCollection ModifiedAttributes;
+        AttributesCollection modifiedAttributes;
+        public AttributesCollection ModifiedAttributes
+        {
+            get => modifiedAttributes;
+            set
+            {
+                RegisterTarget(RoomInfoTarget.ModifyAttributes);
+                modifiedAttributes = value;
+            }
+        }
 
         public bool RemoveAttributes => targets.HasFlag(RoomInfoTarget.RemoveAttributes);
-        public ushort[] RemovedAttributes;
+        ushort[] removedAttributes;
+        public ushort[] RemovedAttributes
+        {
+            get => removedAttributes;
+            set
+            {
+                RegisterTarget(RoomInfoTarget.RemoveAttributes);
+
+                removedAttributes = value;
+            }
+        }
 
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref targets);
 
-            if (ModifyVisiblity) context.Select(ref Visibile);
+            if (ModifyVisiblity) context.Select(ref visibile);
 
-            if (ModifyAttributes) context.Select(ref ModifiedAttributes);
+            if (ModifyAttributes) context.Select(ref modifiedAttributes);
 
-            if (RemoveAttributes) context.Select(ref RemovedAttributes);
-        }
-
-        public ChangeRoomInfoPayload(RoomInfoTarget targets) : this()
-        {
-            this.targets = targets;
+            if (RemoveAttributes) context.Select(ref removedAttributes);
         }
     }
     #endregion

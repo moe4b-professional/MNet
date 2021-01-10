@@ -103,8 +103,14 @@ namespace MNet
     {
         public NetworkClient Sender { get; private set; }
 
+        /// <summary>
+        /// Time this RPC Request was Invoked on the Server
+        /// </summary>
         public NetworkTimeSpan Time { get; private set; }
 
+        /// <summary>
+        /// Is this RPC Request the Result of the Room's Buffer
+        /// </summary>
         public bool IsBuffered { get; private set; }
 
         public RpcInfo(NetworkClient sender, NetworkTimeSpan time)

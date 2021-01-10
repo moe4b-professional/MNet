@@ -302,14 +302,14 @@ namespace MNet
         RpxMethodID method;
         public RpxMethodID Method { get { return method; } }
 
-        NetworkTimeSpan time;
-        public NetworkTimeSpan Time => time;
-
         byte[] raw;
         public byte[] Raw { get { return raw; } }
 
         RpcType type;
         public RpcType Type => type;
+
+        NetworkTimeSpan time;
+        public NetworkTimeSpan Time => time;
 
         RprChannelID returnChannel;
         public RprChannelID ReturnChannel => returnChannel;

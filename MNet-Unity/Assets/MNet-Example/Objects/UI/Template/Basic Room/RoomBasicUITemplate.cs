@@ -68,7 +68,7 @@ namespace MNet.Example
             base.UpdateState();
 
             title.text = Data.Name;
-            level.text = Core.Network.ReadLevel(Data.Attributes).Name;
+            level.text = Core.Levels.ReadAttribute(Data.Attributes).Name;
             capacity.text = $"{Data.Occupancy}/{Data.Capacity}";
         }
     }

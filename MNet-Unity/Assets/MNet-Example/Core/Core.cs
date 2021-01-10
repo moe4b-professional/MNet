@@ -66,6 +66,8 @@ namespace MNet.Example
 			LevelData[] list = new LevelData[] { };
 			public LevelData[] List => list;
 
+			public LevelData this[int index] => list[index];
+
 			public Dictionary<string, LevelData> Dictionary { get; protected set; }
 
 			protected override void Configure()
@@ -75,16 +77,25 @@ namespace MNet.Example
 				Dictionary = list.ToDictionary(LevelData.GetName);
 			}
 
-			public LevelData Find(string name)
-			{
-				if (Dictionary.TryGetValue(name, out var data))
-					return data;
-
-				return null;
+            #region Attribute
+            public void WriteAttribute(AttributesCollection attributes, byte index)
+            {
+				attributes.Set(0, index);
 			}
-		}
 
-		[SerializeField]
+			public LevelData ReadAttribute(AttributesCollection attributes)
+			{
+				if (attributes.TryGetValue<byte>(0, out var index) == false)
+					throw new Exception("Failed to Retrive Level from Room Attribute");
+
+				var data = Core.Levels[index];
+
+				return data;
+			}
+            #endregion
+        }
+
+        [SerializeField]
 		NetworkProperty network = new NetworkProperty();
 		public NetworkProperty Network => network;
 		[Serializable]
@@ -178,27 +189,12 @@ namespace MNet.Example
 			{
 				if (NetworkAPI.Client.IsMaster)
 				{
-					var attributes = NetworkAPI.Room.Info.Attributes;
-
-					var level = ReadLevel(attributes);
+					var level = Core.levels.ReadAttribute(NetworkAPI.Room.Info.Attributes);
 
 					NetworkAPI.Room.Scenes.Load(LoadSceneMode.Single, level.Scene);
 				}
 
 				Popup.Hide();
-			}
-
-			public LevelData ReadLevel(AttributesCollection attributes)
-			{
-				if (attributes.TryGetValue<string>(0, out var name) == false)
-					throw new Exception("Failed to Retrive Level from room Attribute");
-
-				var data = Core.Levels.Find(name);
-
-				if (data == null)
-					throw new Exception($"No Level Data found for Level with Name '{name}'");
-
-				return data;
 			}
 		}
 

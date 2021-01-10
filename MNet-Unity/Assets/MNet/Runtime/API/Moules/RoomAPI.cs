@@ -49,31 +49,45 @@ namespace MNet
                     }
                     set
                     {
-                        if (CheckModificationAuthority() == false) return;
+                        var payload = new ChangeRoomInfoPayload() { Visibile = value };
 
-                        var payload = new ChangeRoomInfoPayload(RoomInfoTarget.Visiblity) { Visibile = value };
-
-                        Client.Send(payload);
+                        Send(payload);
                     }
                 }
 
                 static AttributesCollection attributes;
                 public static AttributesCollection Attributes => attributes;
 
+                public static void ModifyAttribute<TValue>(ushort key, TValue value)
+                {
+                    var collection = new AttributesCollection();
+
+                    collection.Set(key, value);
+
+                    ModifyAttributes(collection);
+                }
+
                 public static void ModifyAttributes(AttributesCollection collection)
                 {
-                    if (CheckModificationAuthority() == false) return;
+                    var payload = new ChangeRoomInfoPayload() { ModifiedAttributes = collection };
 
-                    var payload = new ChangeRoomInfoPayload(RoomInfoTarget.ModifyAttributes) { ModifiedAttributes = collection };
-
-                    Client.Send(payload);
+                    Send(payload);
                 }
 
                 public static void RemoveAttributes(params ushort[] keys)
                 {
-                    if (CheckModificationAuthority() == false) return;
+                    var payload = new ChangeRoomInfoPayload() { RemovedAttributes = keys };
 
-                    var payload = new ChangeRoomInfoPayload(RoomInfoTarget.RemoveAttributes) { RemovedAttributes = keys };
+                    Send(payload);
+                }
+
+                public static void Send(ChangeRoomInfoPayload payload)
+                {
+                    if (Client.IsMaster == false)
+                    {
+                        Debug.LogError("Local Client cannot Change Room Info because They are Not Room Master");
+                        return;
+                    }
 
                     Client.Send(payload);
                 }
@@ -138,17 +152,6 @@ namespace MNet
                     capacity = default;
                     occupancy = default;
                     attributes = default;
-                }
-
-                static bool CheckModificationAuthority()
-                {
-                    if (Client.IsMaster == false)
-                    {
-                        Debug.LogError("Local Client cannot Change Room Info because They are Not Room Master");
-                        return false;
-                    }
-
-                    return true;
                 }
             }
 
