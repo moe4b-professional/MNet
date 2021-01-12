@@ -6,7 +6,7 @@ using System.Net;
 
 namespace MNet
 {
-    static class RealtimeAPI
+    static class Realtime
     {
         public static INetworkTransport Transport { get; private set; }
 

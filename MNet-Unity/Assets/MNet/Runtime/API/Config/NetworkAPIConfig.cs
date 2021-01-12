@@ -23,11 +23,11 @@ namespace MNet
     public class NetworkAPIConfig : ScriptableObject
     {
         [SerializeField]
-        protected string address = "127.0.0.1";
-        public string Address => connectToLocal ? "127.0.0.1" : address;
+        bool connectToLocal = default;
 
         [SerializeField]
-        bool connectToLocal = default;
+        protected string address = "127.0.0.1";
+        public string Address => connectToLocal ? "127.0.0.1" : address;
 
         [SerializeField]
         protected string appID;

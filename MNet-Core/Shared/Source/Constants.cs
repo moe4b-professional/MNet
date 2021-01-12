@@ -52,6 +52,8 @@ namespace MNet
                     {
                         static readonly string Path = "/";
 
+                        public static string Info { get; private set; } = Path + nameof(Info);
+
                         public static class Lobby
                         {
                             static readonly string Path = Requests.Path + $"{nameof(Lobby)}/";

@@ -63,7 +63,7 @@ namespace MNet
             {
                 var request = PingRequest.Write();
 
-                Client.Send(request, DeliveryMode.Reliable);
+                Client.Send(ref request, DeliveryMode.Reliable);
 
                 SendLock = true;
             }

@@ -106,7 +106,7 @@
      <Compile Include="Assets\MNet-Example\Utility\PlayerNameInputField.cs" />
      <Compile Include="Assets\MNet-Project-Utility\MNetProjectUtility.cs" />
      <Compile Include="Assets\MNet\Editor\NetworkAPIEditor.cs" />
-     <Compile Include="Assets\MNet\Refresh0.cs" />
+     <Compile Include="Assets\MNet\Refresh1.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Config\NetworkAPIConfig.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\AppAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\ClientAPI.cs" />

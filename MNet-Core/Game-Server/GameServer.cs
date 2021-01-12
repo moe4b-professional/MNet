@@ -11,22 +11,79 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 
+using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
+using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
+
 namespace MNet
 {
-    static class GameServer
+    static partial class GameServer
     {
-        public static Config Config { get; private set; }
-
-        public static GameServerID ID { get; private set; }
-        public static IPAddress Address
+        public static class Config
         {
-            get => ID.Value;
-            private set => ID = new GameServerID(value);
+            public static LocalConfig Local { get; private set; }
+
+            public static RemoteConfig Remote { get; private set; }
+
+            public static void Set(RemoteConfig config) => Remote = config;
+
+            public static void Configure()
+            {
+                Local = LocalConfig.Read();
+            }
+
+            public static IPAddress ResolveAddress()
+            {
+                if (Local.PublicAddress != null) return Local.PublicAddress;
+
+                if (Local.Region == GameServerRegion.Local) return IPAddress.Loopback;
+
+                Log.Info("Retrieving Public IP");
+                try
+                {
+                    return PublicIP.Retrieve();
+                }
+                catch (Exception)
+                {
+                    var text = $"Could not Retrieve Public IP for Server, " +
+                        $"Please Explicitly Set {nameof(Local.PublicAddress)} Property in {LocalConfig.FileName} Config File";
+
+                    Log.Error(text);
+
+                    throw;
+                }
+            }
         }
 
-        public static GameServerRegion Region => Config.Region;
+        public static class Info
+        {
+            public static GameServerID ID { get; private set; }
+            public static IPAddress Address
+            {
+                get => ID.Value;
+                private set => ID = new GameServerID(value);
+            }
 
-        public static GameServerInfo GetInfo() => new GameServerInfo(ID, Region);
+            public static GameServerRegion Region => Config.Local.Region;
+
+            public static GameServerInfo Read() => new GameServerInfo(ID, Region);
+
+            internal static void Configure()
+            {
+                Address = Config.ResolveAddress();
+
+                Log.Info($"Server ID: {ID}");
+                Log.Info($"Server Region: {Region}");
+
+                RestServerAPI.Router.Register(Constants.Server.Game.Rest.Requests.Info, Get);
+            }
+
+            static void Get(RestRequest request, RestResponse response)
+            {
+                var info = Read();
+
+                RestServerAPI.Write(response, info);
+            }
+        }
 
         static void Main()
         {
@@ -54,71 +111,18 @@ namespace MNet
 
             ApiKey.Read();
 
-            Config = Config.Read();
+            Config.Configure();
+            Info.Configure();
 
-            ResolveAddress();
+            MasterServer.Configure();
+            MasterServer.Register();
 
-            MasterServer.Configure(Config.MasterAddress);
-
-            if (RegisterOnMaster() == false) return;
-
-            Log.Info($"Server ID: {ID}");
-            Log.Info($"Server Region: {Region}");
-
-            RealtimeAPI.Configure(Config.Remote.Transport);
-            RealtimeAPI.Start();
-
+            Realtime.Configure(Config.Remote.Transport);
+            RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
             Lobby.Configure();
 
-            RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
+            Realtime.Start();
             RestServerAPI.Start();
-        }
-
-        static void ResolveAddress()
-        {
-            if (Config.PublicAddress != null)
-            {
-                Address = Config.PublicAddress;
-                return;
-            }
-
-            if (Config.Region == GameServerRegion.Local)
-            {
-                Address = IPAddress.Parse("127.0.0.1");
-                return;
-            }
-
-            Log.Info("Retrieving Public IP");
-            try
-            {
-                Address = PublicIP.Retrieve();
-            }
-            catch (Exception ex)
-            {
-                var text = $"Could not Retrieve Public IP for Server, " +
-                    $"Please Explicitly Set {nameof(Config.PublicAddress)} Property in {Config.FileName} Config File";
-
-                Log.Error(text);
-
-                Log.Error($"Public IP Retrieval Exception: {ex}");
-            }
-        }
-
-        static bool RegisterOnMaster()
-        {
-            if (MasterServer.Register(GetInfo(), ApiKey.Token, out var response) == false)
-            {
-                Log.Error("Server Registeration Failed");
-                return false;
-            }
-
-            Log.Info("Server Registeration Success");
-
-            Config.Set(response.RemoteConfig);
-
-            AppsAPI.Set(response.Apps);
-
-            return true;
         }
     }
 

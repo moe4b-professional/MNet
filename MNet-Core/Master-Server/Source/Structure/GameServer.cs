@@ -5,15 +5,17 @@ using System.Collections.Generic;
 namespace MNet
 {
     [Serializable]
-    public struct GameServer
+    public class GameServer
     {
         GameServerInfo info;
-        public GameServerInfo Info => info;
+        public GameServerInfo Info
+        {
+            get => info;
+            set => info = value;
+        }
 
         public GameServerID ID => info.ID;
         public GameServerRegion Region => info.Region;
-
-        public static GameServerInfo GetInfo(GameServer server) => server.Info;
 
         public override string ToString() => info.ToString();
 
@@ -21,5 +23,9 @@ namespace MNet
         {
             this.info = info;
         }
+
+        //Static Utility
+
+        public static GameServerInfo GetInfo(GameServer server) => server.Info;
     }
 }

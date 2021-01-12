@@ -15,35 +15,40 @@ namespace MNet
         public static RestClientAPI Rest { get; private set; }
 
         public static ushort Port => Constants.Server.Master.Rest.Port;
-        public static RestScheme Scheme => GameServer.Config.RestScheme;
+        public static RestScheme Scheme => GameServer.Config.Local.RestScheme;
 
-        public static void Configure(IPAddress address)
+        public static void Configure()
         {
             Rest = new RestClientAPI(Port, Scheme);
-            Rest.SetIP(address);
+            Rest.SetIP(GameServer.Config.Local.MasterAddress);
         }
 
-        public static bool Register(GameServerInfo info, string key, out RegisterGameServerResponse response)
+        public static void Register()
         {
-            var payload = new RegisterGameServerRequest(info, key);
+            var info = GameServer.Info.Read();
+
+            var payload = new RegisterGameServerRequest(info, ApiKey.Token);
+
+            RegisterGameServerResponse response;
 
             try
             {
                 response = Rest.POST<RegisterGameServerRequest, RegisterGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Register, payload).Result;
-                return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex);
-
-                response = default;
-                return false;
+                return;
             }
+
+            GameServer.Config.Set(response.RemoteConfig);
+
+            AppsAPI.Set(response.Apps);
         }
 
-        public static bool Remove(GameServerID id, string key, out RemoveGameServerResponse response)
+        public static bool Remove(out RemoveGameServerResponse response)
         {
-            var payload = new RemoveGameServerRequest(id, key);
+            var payload = new RemoveGameServerRequest(GameServer.Info.ID, ApiKey.Token);
 
             try
             {

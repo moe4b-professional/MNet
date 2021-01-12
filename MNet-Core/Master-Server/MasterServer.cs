@@ -1,27 +1,223 @@
 ﻿using System;
-using System.Net;
 using System.Collections.Generic;
 
-using System.Threading;
 using System.Linq;
 using System.IO;
 
 using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
 using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
 
+using System.Net;
+using System.Net.Http;
+
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace MNet
 {
     static class MasterServer
     {
-        public static Config Config { get; private set; }
+        public static class Config
+        {
+            public static LocalConfig Local { get; private set; }
 
-        public static RemoteConfig RemoteConfig { get; private set; }
+            public static RemoteConfig Remote { get; private set; }
 
-        public static Dictionary<AppID, AppConfig> Apps { get; private set; }
+            public static void Configure()
+            {
+                Local = LocalConfig.Read();
 
-        public static Dictionary<GameServerID, GameServer> Servers { get; private set; }
+                Remote = Local.GetRemoteConfig();
+            }
+        }
 
-        static readonly object SyncLock = new object();
+        public static class Apps
+        {
+            public static AppConfig[] Array { get; private set; }
+
+            public static Dictionary<AppID, AppConfig> Dictionary { get; private set; }
+
+            internal static void Configure()
+            {
+                Array = Config.Local.Apps;
+
+                Dictionary = Array.ToDictionary(AppConfig.SelectID);
+
+                Log.Info("Registered Apps:");
+                foreach (var app in Array) Log.Info(app);
+            }
+        }
+
+        public static class Servers
+        {
+            public static Dictionary<GameServerID, GameServer> Dictionary { get; private set; }
+
+            public static int Count => Dictionary.Count;
+
+            public static class Watchdog
+            {
+                static List<GameServer> list;
+
+                public const int CheckInterval = 1 * 1000;
+                public const int LookupsInterval = 5 * 1000;
+
+                public const int MaxRetries = 4;
+
+                public static async void Run()
+                {
+                    list = new List<GameServer>();
+
+                    while (true)
+                    {
+                        CloneTo(ref list);
+
+                        if (list.Count == 0)
+                        {
+                            await Task.Delay(CheckInterval);
+                            continue;
+                        }
+
+                        for (int i = 0; i < list.Count; i++)
+                            Lookup(list[i].ID);
+
+                        await Task.Delay(LookupsInterval);
+                    }
+                }
+
+                public static async void Lookup(GameServerID id)
+                {
+                    GameServerInfo info;
+
+                    for (int i = 0; i < MaxRetries; i++)
+                    {
+                        try
+                        {
+                            info = await Rest.GET<GameServerInfo>(id.Address, Constants.Server.Game.Rest.Requests.Info);
+                        }
+                        catch (Exception)
+                        {
+                            continue;
+                        }
+
+                        Update(info);
+                        return;
+                    }
+
+                    Remove(id);
+                }
+            }
+
+            static RestClientAPI Rest;
+
+            static readonly object SyncLock = new object();
+
+            internal static void Configure()
+            {
+                Dictionary = new Dictionary<GameServerID, GameServer>();
+
+                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, Register);
+                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, Remove);
+
+                Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, Config.Local.RestScheme);
+
+                Watchdog.Run();
+            }
+
+            public static GameServerInfo[] Query()
+            {
+                lock (SyncLock)
+                {
+                    var array = Dictionary.ToArray(GameServer.GetInfo);
+
+                    return array;
+                }
+            }
+
+            public static void CloneTo(ref List<GameServer> target)
+            {
+                target.Clear();
+
+                lock (SyncLock)
+                {
+                    target.AddRange(Dictionary.Values);
+                }
+            }
+
+            #region Register
+            static void Register(RestRequest request, RestResponse response)
+            {
+                if (RestServerAPI.TryRead(request, response, out RegisterGameServerRequest payload) == false) return;
+
+                if (payload.ApiVersion != Constants.ApiVersion)
+                {
+                    RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion);
+                    return;
+                }
+
+                if (payload.Key != ApiKey.Token)
+                {
+                    RestServerAPI.Write(response, RestStatusCode.InvalidApiKey);
+                    return;
+                }
+
+                Register(payload.Info);
+
+                var result = new RegisterGameServerResponse(Apps.Array, Config.Remote);
+                RestServerAPI.Write(response, result);
+            }
+
+            static GameServer Register(GameServerInfo info)
+            {
+                var server = new GameServer(info);
+
+                lock (SyncLock)
+                {
+                    Dictionary[info.ID] = server;
+                }
+
+                Log.Info($"Registering Server: {server}");
+
+                return server;
+            }
+            #endregion
+
+            static void Update(GameServerInfo info)
+            {
+                if (Dictionary.TryGetValue(info.ID, out var server) == false)
+                {
+                    Log.Warning($"No Server with ID {info.ID} Found to Update");
+                    return;
+                }
+
+                server.Info = info;
+            }
+
+            #region Remove
+            static void Remove(RestRequest request, RestResponse response)
+            {
+                if (RestServerAPI.TryRead(request, response, out RemoveGameServerRequest payload) == false) return;
+
+                Remove(payload.ID);
+
+                var result = new RemoveGameServerResponse(true);
+                RestServerAPI.Write(response, result);
+            }
+
+            static bool Remove(GameServerID id)
+            {
+                lock (SyncLock)
+                {
+                    if (Dictionary.Remove(id))
+                    {
+                        Log.Info($"Removing Server: {id}");
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            #endregion
+        }
 
         static void Main()
         {
@@ -47,26 +243,19 @@ namespace MNet
 
             ApiKey.Read();
 
-            Config = Config.Read();
-
-            RemoteConfig = new RemoteConfig(Config.Transport);
-
-            Apps = Config.Apps.ToDictionary(AppConfig.SelectID);
-
-            Log.Info("Registered Apps:");
-            foreach (var app in Apps.Values) Log.Info(app);
+            Config.Configure();
+            Apps.Configure();
+            Servers.Configure();
 
             RestServerAPI.Configure(Constants.Server.Master.Rest.Port);
 
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Scheme, SendScheme);
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, SendInfo);
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, RegisterServer);
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, RemoveServer);
+            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Scheme, GetScheme);
+            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
 
             RestServerAPI.Start();
         }
 
-        static void SendScheme(RestRequest request, RestResponse response)
+        static void GetScheme(RestRequest request, RestResponse response)
         {
             if (RestServerAPI.TryRead(request, response, out MasterServerSchemeRequest payload) == false) return;
 
@@ -78,7 +267,7 @@ namespace MNet
                 return;
             }
 
-            if (Apps.TryGetValue(payload.AppID, out var app) == false)
+            if (Apps.Dictionary.TryGetValue(payload.AppID, out var app) == false)
             {
                 RestServerAPI.Write(response, RestStatusCode.InvalidAppID, $"App ID '{payload.AppID}' Not Registered with Server");
                 return;
@@ -91,98 +280,20 @@ namespace MNet
                 return;
             }
 
-            var info = new MasterServerSchemeResponse(app, RemoteConfig);
+            var info = new MasterServerSchemeResponse(app, Config.Remote);
 
             RestServerAPI.Write(response, info);
         }
 
-        static void SendInfo(RestRequest request, RestResponse response)
+        static void GetInfo(RestRequest request, RestResponse response)
         {
             if (RestServerAPI.TryRead(request, response, out MasterServerInfoRequest payload) == false) return;
 
-            var servers = Query();
+            var servers = Servers.Query();
 
             var info = new MasterServerInfoResponse(servers);
 
             RestServerAPI.Write(response, info);
-        }
-
-        static GameServerInfo[] Query()
-        {
-            lock (SyncLock)
-            {
-                var list = Servers.ToArray(GameServer.GetInfo);
-
-                return list;
-            }
-        }
-
-        #region Register Server
-        static void RegisterServer(RestRequest request, RestResponse response)
-        {
-            if (RestServerAPI.TryRead(request, response, out RegisterGameServerRequest payload) == false) return;
-
-            if (payload.ApiVersion != Constants.ApiVersion)
-            {
-                RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion);
-                return;
-            }
-
-            if (payload.Key != ApiKey.Token)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidApiKey);
-                return;
-            }
-
-            RegisterServer(payload.Info);
-
-            var apps = Apps.Values.ToArray();
-
-            var result = new RegisterGameServerResponse(apps, RemoteConfig);
-            RestServerAPI.Write(response, result);
-        }
-
-        static GameServer RegisterServer(GameServerInfo info)
-        {
-            var server = new GameServer(info);
-
-            lock (SyncLock) Servers[info.ID] = server;
-
-            Log.Info($"Registering Server: {server}");
-
-            return server;
-        }
-        #endregion
-
-        #region Remove Server
-        static void RemoveServer(RestRequest request, RestResponse response)
-        {
-            if (RestServerAPI.TryRead(request, response, out RemoveGameServerRequest payload) == false) return;
-            
-            RemoveServer(payload.ID);
-
-            var result = new RemoveGameServerResponse(true);
-            RestServerAPI.Write(response, result);
-        }
-
-        static bool RemoveServer(GameServerID id)
-        {
-            lock (SyncLock)
-            {
-                if (Servers.Remove(id))
-                {
-                    Log.Info($"Removing Server: {id}");
-                    return true;
-                }
-            }
-
-            return false;
-        }
-        #endregion
-
-        static MasterServer()
-        {
-            Servers = new Dictionary<GameServerID, GameServer>();
         }
     }
 }

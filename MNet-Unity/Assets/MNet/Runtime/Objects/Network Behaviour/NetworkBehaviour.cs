@@ -267,7 +267,7 @@ namespace MNet
                 return false;
             }
 
-            return Send(request, bind.DeliveryMode);
+            return Send(ref request, bind.DeliveryMode);
         }
         #endregion
 
@@ -420,7 +420,7 @@ namespace MNet
                 return false;
             }
 
-            return Send(request, bind.DeliveryMode);
+            return Send(ref request, bind.DeliveryMode);
         }
 
         internal void InvokeSyncVar(SyncVarCommand command)
@@ -489,7 +489,7 @@ namespace MNet
             return false;
         }
 
-        protected virtual bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
+        protected virtual bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable)
         {
             if (Entity.IsReady == false)
             {
@@ -497,7 +497,7 @@ namespace MNet
                 return false;
             }
 
-            return NetworkAPI.Client.Send(payload, mode);
+            return NetworkAPI.Client.Send(ref payload, mode);
         }
 
         #region Editor

@@ -41,7 +41,7 @@ namespace MNet
 
             Entities = new List<NetworkEntity>();
 
-            SendQueue = new MessageSendQueue(RealtimeAPI.Transport.CheckMTU);
+            SendQueue = new MessageSendQueue(Realtime.Transport.CheckMTU);
         }
 
         //Static Utility

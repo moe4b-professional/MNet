@@ -27,7 +27,7 @@ namespace MNet
             {
                 var payload = "XOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXO";
 
-                var message = NetworkMessage.Write(payload);
+                var message = NetworkMessage.Write(ref payload);
                 original.Add(payload);
 
                 var binary = NetworkSerializer.Serialize(message);

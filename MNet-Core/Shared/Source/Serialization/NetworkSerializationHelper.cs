@@ -24,9 +24,14 @@ namespace MNet
 
                     value = Evaluate(type);
 
-                    Dictionary.TryAdd(type, value);
+                    Add(type, value);
 
                     return value;
+                }
+
+                public static void Add(Type type, bool value)
+                {
+                    Dictionary.TryAdd(type, value);
                 }
 
                 static Any()
@@ -46,7 +51,7 @@ namespace MNet
                         switch (value)
                         {
                             case -1:
-                                return Set();
+                                return Check();
                             case 0:
                                 return false;
                             case 1:
@@ -55,15 +60,24 @@ namespace MNet
 
                         return true;
                     }
+                    set
+                    {
+                        Set(value);
+                    }
                 }
 
-                static bool Set()
+                static bool Check()
                 {
                     var result = Evaluate<T>();
 
-                    value = result ? 1 : 0;
+                    return Set(result);
+                }
 
-                    return result;
+                public static bool Set(bool nullable)
+                {
+                    value = nullable ? 1 : 0;
+
+                    return nullable;
                 }
             }
 
@@ -83,6 +97,14 @@ namespace MNet
                 }
 
                 return true;
+            }
+
+            static void Add<T>(bool value)
+            {
+                var type = typeof(T);
+
+                Any.Add(type, value);
+                Generic<T>.Is = value;
             }
         }
 

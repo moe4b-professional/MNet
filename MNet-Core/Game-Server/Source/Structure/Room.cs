@@ -82,7 +82,7 @@ namespace MNet
 
             var command = new ChangeMasterCommand(Master.ID);
 
-            Broadcast(command, condition: NetworkClient.IsReady);
+            Broadcast(ref command, condition: NetworkClient.IsReady);
         }
 
         void ChangeMaster()
@@ -133,7 +133,19 @@ namespace MNet
 
             void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
             {
-                var payload = message.Read<TPayload>();
+                TPayload payload;
+
+                try
+                {
+                    payload = message.Read<TPayload>();
+
+                }
+                catch (Exception)
+                {
+                    Log.Error($"Exception Reading {typeof(TPayload)} from Client {sender.ID}");
+                    DisconnectClient(sender, DisconnectCode.InvalidData);
+                    return;
+                }
 
                 handler.Invoke(sender, ref payload, mode);
             }
@@ -148,7 +160,19 @@ namespace MNet
 
             void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
             {
-                var payload = message.Read<TPayload>();
+                TPayload payload;
+
+                try
+                {
+                    payload = message.Read<TPayload>();
+
+                }
+                catch (Exception)
+                {
+                    Log.Error($"Exception Reading {typeof(TPayload)} from Client {sender.ID}");
+                    DisconnectClient(sender, DisconnectCode.InvalidData);
+                    return;
+                }
 
                 handler.Invoke(sender, ref payload);
             }
@@ -164,11 +188,9 @@ namespace MNet
         #endregion
 
         #region Communication
-
-        #region Send
-        NetworkMessage Send<T>(T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.Reliable)
+        NetworkMessage Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.Reliable)
         {
-            var message = NetworkMessage.Write(payload);
+            var message = NetworkMessage.Write(ref payload);
 
             var raw = NetworkSerializer.Serialize(message);
 
@@ -179,12 +201,10 @@ namespace MNet
 
             return message;
         }
-        #endregion
 
-        #region Broadcast
-        NetworkMessage Broadcast<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception = null, BroadcastCondition condition = null)
+        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception = null, BroadcastCondition condition = null)
         {
-            var message = NetworkMessage.Write(payload);
+            var message = NetworkMessage.Write(ref payload);
 
             var raw = NetworkSerializer.Serialize(message);
 
@@ -192,9 +212,9 @@ namespace MNet
             {
                 foreach (var client in Clients.Values)
                 {
-                    if (exception != null && exception == client.ID) continue;
+                    if (exception == client.ID) continue;
 
-                    if (condition != null && condition(client) == false) continue;
+                    if (condition?.Invoke(client) == false) continue;
 
                     QueueMessage(raw, client, mode);
                 }
@@ -213,18 +233,15 @@ namespace MNet
 
             return message;
         }
-
         public delegate bool BroadcastCondition(NetworkClient client);
-        #endregion
 
+        HashSet<NetworkClient> ClientSendQueue;
         void QueueMessage(byte[] message, NetworkClient target, DeliveryMode mode)
         {
             target.SendQueue.Add(message, mode);
 
             if (ClientSendQueue.Contains(target) == false) ClientSendQueue.Add(target);
         }
-
-        HashSet<NetworkClient> ClientSendQueue;
 
         void ResolveSendQueue()
         {
@@ -259,7 +276,7 @@ namespace MNet
 
             RegisterInternalMessageHandlers();
 
-            TransportContext = RealtimeAPI.Register(ID.Value);
+            TransportContext = Realtime.Register(ID.Value);
 
             TransportContext.OnConnect += ClientConnected;
             TransportContext.OnMessage += MessageRecievedCallback;
@@ -358,12 +375,12 @@ namespace MNet
             Clients.Add(id, client);
 
             Log.Info($"Room {this.ID}: Client {id} Registerd");
-            
+
             var response = new RegisterClientResponse(id);
-            Send(response, client);
+            Send(ref response, client);
 
             var payload = new ClientConnectedPayload(info);
-            Broadcast(payload, condition: NetworkClient.IsReady);
+            Broadcast(ref payload, condition: NetworkClient.IsReady);
         }
 
         void ReadyClient(NetworkClient client, ref ReadyClientRequest request)
@@ -388,7 +405,7 @@ namespace MNet
 
             var response = new ReadyClientResponse(room, clients, Master.ID, buffer, time);
 
-            Send(response, client);
+            Send(ref response, client);
 
             Log.Info($"Room {this.ID}: Client {client.ID} Set Ready");
         }
@@ -401,7 +418,7 @@ namespace MNet
 
             if (payload.RemoveAttributes) Attributes.RemoveAll(payload.RemovedAttributes);
 
-            Broadcast(payload, condition: NetworkClient.IsReady);
+            Broadcast(ref payload, condition: NetworkClient.IsReady);
         }
 
         #region RPC
@@ -431,7 +448,7 @@ namespace MNet
         {
             var command = RpcCommand.Write(sender.ID, request, time);
 
-            var message = Broadcast(command, mode: mode, condition: NetworkClient.IsReady, exception: request.Exception);
+            var message = Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady, exception: request.Exception);
 
             entity.RpcBuffer.Set(message, ref request, BufferMessage, UnbufferMessages);
         }
@@ -447,7 +464,7 @@ namespace MNet
 
             var command = RpcCommand.Write(sender.ID, request, time);
 
-            Send(command, target, mode);
+            Send(ref command, target, mode);
         }
         #endregion
 
@@ -461,13 +478,13 @@ namespace MNet
             }
 
             var command = RprResponse.Write(sender.ID, request);
-            Send(command, target);
+            Send(ref command, target);
         }
 
         void ResolveRPR(NetworkClient requester, ref RpcRequest request, RemoteResponseType response)
         {
             var command = RprCommand.Write(request.ReturnChannel, response);
-            Send(command, requester);
+            Send(ref command, requester);
         }
         #endregion
 
@@ -482,7 +499,7 @@ namespace MNet
 
             var command = SyncVarCommand.Write(sender.ID, request);
 
-            var message = Broadcast(command, mode: mode, condition: NetworkClient.IsReady);
+            var message = Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady);
 
             entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }
@@ -493,14 +510,14 @@ namespace MNet
         {
             var response = new RoomTimeResponse(time, request.Timestamp);
 
-            Send(response, sender);
+            Send(ref response, sender);
         }
 
         void ProcessPingRequest(NetworkClient sender, ref PingRequest request)
         {
             var response = new PingResponse(request);
 
-            Send(response, sender);
+            Send(ref response, sender);
         }
         #endregion
 
@@ -525,7 +542,7 @@ namespace MNet
             }
 
             var command = LoadScenesCommand.Write(request);
-            var message = Broadcast(command, condition: NetworkClient.IsReady);
+            var message = Broadcast(ref command, condition: NetworkClient.IsReady);
 
             if (request.Mode == NetworkSceneLoadMode.Single)
             {
@@ -578,7 +595,7 @@ namespace MNet
             Log.Info($"Room {this.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
-            entity.SpawnMessage = Broadcast(command, condition: NetworkClient.IsReady);
+            entity.SpawnMessage = Broadcast(ref command, condition: NetworkClient.IsReady);
             BufferMessage(entity.SpawnMessage);
         }
 
@@ -608,7 +625,7 @@ namespace MNet
 
             UnbufferMessage(entity.OwnershipMessage);
             var command = new ChangeEntityOwnerCommand(owner.ID, request.Entity);
-            entity.OwnershipMessage = Broadcast(command, condition: NetworkClient.IsReady);
+            entity.OwnershipMessage = Broadcast(ref command, condition: NetworkClient.IsReady);
             BufferMessage(entity.OwnershipMessage);
         }
 
@@ -626,7 +643,7 @@ namespace MNet
             MasterObjects.Add(entity);
 
             var command = entity.SpawnMessage.Read<SpawnEntityCommand>().MakeOrphan();
-            var message = NetworkMessage.Write(command);
+            var message = NetworkMessage.Write(ref command);
             MessageBuffer.Set(bufferIndex, message);
         }
 
@@ -661,9 +678,16 @@ namespace MNet
             if (entity.IsMasterObject) MasterObjects.Remove(entity);
 
             var command = new DestroyEntityCommand(entity.ID);
-            if (broadcast) Broadcast(command, condition: NetworkClient.IsReady);
+            if (broadcast) Broadcast(ref command, condition: NetworkClient.IsReady);
         }
         #endregion
+
+        void DisconnectClient(NetworkClient client, DisconnectCode code)
+        {
+            Clients.Remove(client.ID);
+
+            TransportContext.Disconnect(client.ID, code);
+        }
 
         void ClientDisconnected(NetworkClientID id)
         {
@@ -698,7 +722,7 @@ namespace MNet
             if (client == Master) ChangeMaster();
 
             var payload = new ClientDisconnectPayload(client.ID);
-            Broadcast(payload, condition: NetworkClient.IsReady);
+            Broadcast(ref payload, condition: NetworkClient.IsReady);
         }
 
         public delegate void StopDelegate(Room room);
@@ -709,7 +733,7 @@ namespace MNet
 
             scheduler.Stop();
 
-            RealtimeAPI.Unregister(ID.Value);
+            Realtime.Unregister(ID.Value);
 
             OnStop?.Invoke(this);
         }

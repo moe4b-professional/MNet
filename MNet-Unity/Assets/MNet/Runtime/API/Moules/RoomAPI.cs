@@ -51,7 +51,7 @@ namespace MNet
                     {
                         var payload = new ChangeRoomInfoPayload() { Visibile = value };
 
-                        Send(payload);
+                        Send(ref payload);
                     }
                 }
 
@@ -71,17 +71,17 @@ namespace MNet
                 {
                     var payload = new ChangeRoomInfoPayload() { ModifiedAttributes = collection };
 
-                    Send(payload);
+                    Send(ref payload);
                 }
 
                 public static void RemoveAttributes(params ushort[] keys)
                 {
                     var payload = new ChangeRoomInfoPayload() { RemovedAttributes = keys };
 
-                    Send(payload);
+                    Send(ref payload);
                 }
 
-                public static void Send(ChangeRoomInfoPayload payload)
+                public static void Send(ref ChangeRoomInfoPayload payload)
                 {
                     if (Client.IsMaster == false)
                     {
@@ -89,7 +89,7 @@ namespace MNet
                         return;
                     }
 
-                    Client.Send(payload);
+                    Client.Send(ref payload);
                 }
 
                 /// <summary>
@@ -645,7 +645,7 @@ namespace MNet
 
                     var request = new LoadScenesRequest(indexes, ConvertLoadMode(mode));
 
-                    Client.Send(request);
+                    Client.Send(ref request);
                 }
                 #endregion
 

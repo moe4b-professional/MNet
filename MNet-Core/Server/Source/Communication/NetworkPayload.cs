@@ -6,7 +6,6 @@ namespace MNet
 {
     #region Register
     [Preserve]
-    [Serializable]
     public struct RegisterGameServerRequest : INetworkSerializable
     {
         Version apiVersion;
@@ -38,7 +37,6 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
     public struct RegisterGameServerResponse : INetworkSerializable
     {
         AppConfig[] apps;
@@ -63,7 +61,6 @@ namespace MNet
 
     #region Remove
     [Preserve]
-    [Serializable]
     public struct RemoveGameServerRequest : INetworkSerializable
     {
         GameServerID id;
@@ -86,7 +83,6 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
     public struct RemoveGameServerResponse : INetworkSerializable
     {
         bool success;

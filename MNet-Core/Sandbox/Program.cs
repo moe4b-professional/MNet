@@ -13,54 +13,71 @@ namespace MNet
 {
     static class Program
     {
-        public const int Count = 1_000_000;
+        public const long Count = 10_00_000_000;
 
         public static void Main(string[] args)
         {
-            DynamicNetworkSerialization.Enabled = true;
+            for (long i = 0; i < 50; i++)
+            {
+                PerformanceTools.Measure(StructTest);
+            }
 
-            Setup();
+            Console.Read();
 
-            for (int i = 0; i < 20; i++)
-                PerformanceTools.Measure(Insert);
+            for (long i = 0; i < 50; i++)
+            {
+                PerformanceTools.Measure(StructTest);
+                PerformanceTools.Measure(ClassTest);
+
+                Console.WriteLine();
+            }
 
             Console.ReadLine();
         }
 
-        static void Insert()
+        static void StructTest()
         {
-            var raw = new byte[256];
-
-            for (int i = 0; i < raw.Length; i++)
-                raw[i] = (byte)i;
-
-            var writer = new NetworkWriter(512);
-
-            for (int i = 0; i < Count; i++)
+            for (long i = 0; i < Count; i++)
             {
-                writer.Insert(raw);
-                PerformanceTools.Consume(writer.Position);
-                writer.Clear();
+                var sample = new StructSample(42, 420f);
+
+                PerformanceTools.Consume(sample.a);
+                PerformanceTools.Consume(sample.b);
+            }
+        }
+        struct StructSample
+        {
+            public int a { get; private set; }
+
+            public float b { get; private set; }
+
+            public StructSample(int a, float b)
+            {
+                this.a = a;
+                this.b = b;
             }
         }
 
-        static void Serialization()
+        static void ClassTest()
         {
-            var request = RpcRequest.WriteBroadcast(default, default, default, default, 1, 2, 3, 4);
-
-            for (int i = 0; i < Count; i++)
+            for (long i = 0; i < Count; i++)
             {
-                NetworkSerializer.Serialize(request);
+                var sample = new ClassSample(42, 420f);
+
+                PerformanceTools.Consume(sample.a);
+                PerformanceTools.Consume(sample.b);
             }
         }
-
-        static void Setup()
+        class ClassSample
         {
-            var request = RpcRequest.WriteBroadcast(default, default, default, default, 1, 2, 3, 4);
+            public int a { get; private set; }
 
-            for (int i = 0; i < 100; i++)
+            public float b { get; private set; }
+
+            public ClassSample(int a, float b)
             {
-                NetworkSerializer.Serialize(request);
+                this.a = a;
+                this.b = b;
             }
         }
     }

@@ -57,8 +57,6 @@ namespace MNet.Example
 
             Populate(info.Servers);
 
-            if (info.Servers.Length == 0) Popup.Show("No Game Servers Found on Master", "Refresh", Refresh);
-
             if (NetworkAPI.Server.Game.Selection == null) Show();
         }
 
@@ -80,6 +78,8 @@ namespace MNet.Example
         void Populate(ICollection<GameServerInfo> collection)
         {
             Clear();
+
+            if (collection.Count == 0) Popup.Show("No Game Servers Found on Master", "Refresh", Refresh);
 
             var entries = GameServerUITemplate.CreateAll(template, collection, InitTemplate);
             templates.AddRange(entries);

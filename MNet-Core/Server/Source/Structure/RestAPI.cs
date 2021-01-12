@@ -31,21 +31,44 @@ namespace MNet
 
         public string IP { get; protected set; }
         public void SetIP(IPAddress address) => SetIP(address.ToString());
-        public void SetIP(string address)
+        public void SetIP(string value)
         {
-            this.IP = address;
+            IP = value;
         }
 
-        public string FormatURL(string path) => $"{Scheme}://{IP}:{Port}{path}";
+        public string FormatURL(string ip, string path) => $"{Scheme}://{ip}:{Port}{path}";
 
         public HttpClient Client { get; protected set; }
 
         public delegate void ResponseDelegate<TResult>(TResult result, RestError error);
 
-        #region POST
-        public async Task<TResult> POST<TPayload, TResult>(string path, TPayload payload)
+        #region GET
+        public Task<TResult> GET<TResult>(string path)
         {
-            var url = FormatURL(path);
+            return GET<TResult>(IP, path);
+        }
+        public async Task<TResult> GET<TResult>(string ip, string path)
+        {
+            var url = FormatURL(ip, path);
+
+            var response = await Client.GetAsync(url);
+            EnsureSuccess(response);
+
+            var result = await ReadResult<TResult>(response);
+
+            return result;
+        }
+        #endregion
+
+        #region POST
+        public Task<TResult> POST<TPayload, TResult>(string path, TPayload payload)
+        {
+            return POST<TPayload, TResult>(IP, path, payload);
+        }
+
+        public async Task<TResult> POST<TPayload, TResult>(string ip, string path, TPayload payload)
+        {
+            var url = FormatURL(ip, path);
 
             var content = WriteContent(payload);
 
@@ -55,37 +78,6 @@ namespace MNet
             var result = await ReadResult<TResult>(response);
 
             return result;
-        }
-
-        /// <summary>
-        /// Callback won't be invoked if CancelPendingRequests is called, this is useful for usage in Unity
-        /// where we'd want to cancel all requests on Application Quit
-        /// </summary>
-        /// <typeparam name="TPayload"></typeparam>
-        /// <typeparam name="TResult"></typeparam>
-        /// <param name="path"></param>
-        /// <param name="payload"></param>
-        /// <param name="callback"></param>
-        public async void POST<TPayload, TResult>(string path, TPayload payload, ResponseDelegate<TResult> callback)
-        {
-            try
-            {
-                var result = await POST<TPayload, TResult>(path, payload);
-
-                callback(result, null);
-            }
-            catch (TaskCanceledException)
-            {
-                return;
-            }
-            catch (Exception ex)
-            {
-                var error = RestError.From(ex);
-
-                Log.Error(error);
-
-                callback(default, error);
-            }
         }
         #endregion
 

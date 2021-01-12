@@ -183,7 +183,7 @@ namespace MNet
 
             var list = Rooms.QueryInfo(payload.AppID, payload.Version);
 
-            var info = new LobbyInfo(GameServer.ID, list);
+            var info = new LobbyInfo(GameServer.Info.ID, list);
 
             RestServerAPI.Write(response, info);
         }

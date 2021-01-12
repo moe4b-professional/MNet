@@ -116,7 +116,7 @@ namespace MNet
                 }
             }
 
-            public static bool Send<T>(T payload, DeliveryMode mode = DeliveryMode.Reliable)
+            public static bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable)
             {
                 if (IsConnected == false)
                 {
@@ -124,7 +124,7 @@ namespace MNet
                     return false;
                 }
 
-                var message = NetworkMessage.Write(payload);
+                var message = NetworkMessage.Write(ref payload);
 
                 var raw = NetworkSerializer.Serialize(message);
 
@@ -167,7 +167,7 @@ namespace MNet
             {
                 var request = new RegisterClientRequest(Profile);
 
-                Send(request);
+                Send(ref request);
             }
 
             public delegate void RegisterDelegate(RegisterClientResponse response);
@@ -193,7 +193,7 @@ namespace MNet
             {
                 var request = ReadyClientRequest.Write();
 
-                Send(request);
+                Send(ref request);
             }
 
             public delegate void ReadyDelegate(ReadyClientResponse response);
@@ -235,7 +235,7 @@ namespace MNet
             {
                 var request = SpawnEntityRequest.Write(resource, persistance, attributes, owner);
 
-                Send(request);
+                Send(ref request);
             }
 
             #region Scene Object
@@ -251,7 +251,7 @@ namespace MNet
 
                 var request = SpawnEntityRequest.Write(resource, scene);
 
-                Send(request);
+                Send(ref request);
             }
             #endregion
 
@@ -345,13 +345,13 @@ namespace MNet
                 public static bool Respond(NetworkClientID target, RprChannelID channel, object value, Type type)
                 {
                     var request = RprRequest.Write(target, channel, value, type);
-                    return Send(request);
+                    return Send(ref request);
                 }
 
                 public static bool Respond(NetworkClientID target, RprChannelID channel, RemoteResponseType response)
                 {
                     var request = RprRequest.Write(target, channel, response);
-                    return Send(request);
+                    return Send(ref request);
                 }
                 #endregion
             }
@@ -362,7 +362,7 @@ namespace MNet
             {
                 var request = new DestroyEntityRequest(id);
 
-                Send(request);
+                Send(ref request);
             }
 
             public delegate void DestroyEntityDelegate(NetworkEntity entity);

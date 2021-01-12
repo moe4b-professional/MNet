@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 namespace MNet
 {
     [JsonObject]
-    public partial class Config : Config<Config>
+    public partial class LocalConfig : LocalConfig<LocalConfig>
     {
         [JsonProperty]
         public IPAddress PublicAddress { get; protected set; }
@@ -39,6 +39,6 @@ namespace MNet
 
         public virtual void Set(RemoteConfig instance) => Remote = instance;
 
-        public Config() { }
+        public LocalConfig() { }
     }
 }

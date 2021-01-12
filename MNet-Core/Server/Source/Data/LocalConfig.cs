@@ -8,8 +8,8 @@ using System.Text;
 
 namespace MNet
 {
-    public abstract class Config<T>
-        where T : Config<T>, new()
+    public abstract class LocalConfig<T>
+        where T : LocalConfig<T>, new()
     {
         public const string FileName = "Config.json";
 
@@ -23,7 +23,7 @@ namespace MNet
 
         }
 
-        public Config()
+        public LocalConfig()
         {
 
         }
@@ -55,7 +55,7 @@ namespace MNet
             return File.ReadAllText(FileName);
         }
 
-        static Config()
+        static LocalConfig()
         {
             SerializerSettings = new JsonSerializerSettings();
 

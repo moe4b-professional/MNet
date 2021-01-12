@@ -83,7 +83,7 @@ namespace MNet
             {
                 var payload = RoomTimeRequest.Write();
 
-                Client.Send(payload, DeliveryMode.Reliable);
+                Client.Send(ref payload, DeliveryMode.Reliable);
             }
 
             static void Set(ref RoomTimeResponse response)

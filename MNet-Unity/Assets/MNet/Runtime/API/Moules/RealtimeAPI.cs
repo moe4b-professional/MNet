@@ -151,7 +151,7 @@ namespace MNet
                 Transport.Connect(server, room);
             }
 
-            public static bool Send(byte[] raw, DeliveryMode mode)
+            internal static bool Send(byte[] raw, DeliveryMode mode)
             {
                 if (IsConnected == false)
                 {

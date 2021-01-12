@@ -15,10 +15,13 @@ namespace MNet
     [Serializable]
     public class NetworkMessage
     {
-        object payload;
-        public object Payload => payload;
+        Type type;
+        public Type Type => type;
 
-        public Type Type => payload.GetType();
+        byte[] raw = default;
+        public byte[] Raw => raw;
+
+        public int Size => raw.Length;
 
         public bool Is<TType>()
         {
@@ -31,52 +34,43 @@ namespace MNet
             return target == Type;
         }
 
-        public T Read<T>()
-        {
-            if (payload is T result)
-                return result;
-            else
-                throw new InvalidCastException($"Trying to read {Type} as {typeof(T)}");
-        }
-        public bool TryRead<T>(out T output)
-            where T : new()
-        {
-            if (payload is T result)
-            {
-                output = result;
-                return true;
-            }
-            else
-            {
-                output = default;
-                return false;
-            }
-        }
+        public T Read<T>() => NetworkSerializer.Deserialize<T>(raw);
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.Write(Type);
-            writer.Write(payload);
+            writer.Write(type);
+
+            var length = (ushort)raw.Length;
+
+            writer.Write(length);
+            writer.Insert(raw);
         }
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out Type type);
-            payload = reader.Read(type);
+            reader.Read(out type);
+
+            reader.Read(out ushort length);
+            raw = reader.BlockCopy(length);
         }
 
-        public override string ToString() => payload.ToString();
+        public override string ToString() => type.FullName;
 
         public NetworkMessage() { }
-        NetworkMessage(object payload)
+        NetworkMessage(Type type, byte[] raw)
         {
-            this.payload = payload;
+            this.type = type;
+            this.raw = raw;
         }
 
         //Static Utility
 
-        public static NetworkMessage Write<T>(T payload)
+        public static NetworkMessage Write<T>(ref T payload)
         {
-            var message = new NetworkMessage(payload);
+            var type = typeof(T);
+
+            var raw = NetworkSerializer.Serialize(payload);
+
+            var message = new NetworkMessage(type, raw);
 
             return message;
         }
@@ -93,5 +87,6 @@ namespace MNet
 
                 yield return message;
             }
-        }    }
+        }
+    }
 }
