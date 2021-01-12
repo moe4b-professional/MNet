@@ -219,7 +219,7 @@ namespace MNet
             public static event CreateDelegate OnCreate;
             public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, CreateDelegate handler = null)
             {
-                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.Version, name, capacity, visibile, attributes);
+                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, attributes);
 
                 Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
 

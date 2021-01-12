@@ -41,7 +41,7 @@ namespace MNet
                 public static event SchemeDelegate OnScheme;
                 public static void GetScheme(SchemeDelegate handler = null)
                 {
-                    var payload = new MasterServerSchemeRequest(NetworkAPI.AppID, NetworkAPI.Version);
+                    var payload = new MasterServerSchemeRequest(NetworkAPI.AppID, NetworkAPI.GameVersion);
 
                     Rest.POST<MasterServerSchemeRequest, MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload, Callback);
 

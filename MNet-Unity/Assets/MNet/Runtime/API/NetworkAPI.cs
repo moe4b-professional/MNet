@@ -21,11 +21,11 @@ namespace MNet
 
         public static NetworkSpawnableObjects SpawnableObjects { get; private set; }
 
-        public static string Address => Config.Address;
+        public static string Address => Config.MasterAddress;
 
         public static AppID AppID { get; private set; }
 
-        public static Version Version { get; private set; }
+        public static Version GameVersion { get; private set; }
 
         public static bool IsRunning { get; private set; }
 
@@ -59,7 +59,7 @@ namespace MNet
 
             ParseAppID();
 
-            Version = Config.Version;
+            GameVersion = Config.GameVersion;
 
             IsRunning = true;
 

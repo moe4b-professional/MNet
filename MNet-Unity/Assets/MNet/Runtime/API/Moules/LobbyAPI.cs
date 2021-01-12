@@ -36,7 +36,7 @@ namespace MNet
             public static event InfoDelegate OnInfo;
             public static void GetInfo(InfoDelegate handler = null)
             {
-                var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.Version);
+                var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.GameVersion);
 
                 Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, Callback);
 

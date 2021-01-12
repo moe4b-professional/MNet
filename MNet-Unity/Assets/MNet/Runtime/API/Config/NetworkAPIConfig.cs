@@ -23,11 +23,86 @@ namespace MNet
     public class NetworkAPIConfig : ScriptableObject
     {
         [SerializeField]
-        bool connectToLocal = default;
+        MasterAddressProperty masterAddress = default;
+        public string MasterAddress => masterAddress.Value;
+        [Serializable]
+        public class MasterAddressProperty
+        {
+            [SerializeField]
+            bool local = false;
+            public bool Local => local;
 
-        [SerializeField]
-        protected string address = "127.0.0.1";
-        public string Address => connectToLocal ? "127.0.0.1" : address;
+            [SerializeField]
+            protected string value = Default;
+
+            public const string Default = "127.0.0.1";
+
+            public string Value => local ? Default : value;
+
+#if UNITY_EDITOR
+#if UNITY_EDITOR
+            [CustomPropertyDrawer(typeof(MasterAddressProperty))]
+            public class Drawer : PropertyDrawer
+            {
+                SerializedProperty property;
+                SerializedProperty local;
+                SerializedProperty value;
+
+                public static GUIContent LocalGUIContent;
+
+                void Init(SerializedProperty property)
+                {
+                    if (this.property == property) return;
+
+                    this.property = property;
+
+                    value = property.FindPropertyRelative(nameof(MasterAddressProperty.value));
+                    local = property.FindPropertyRelative(nameof(MasterAddressProperty.local));
+
+                    LocalGUIContent = new GUIContent("Connect to Local", "Toggle On to Always Connect to Localhost, Usefult for Testing");
+                }
+
+                public static float LineHeight => EditorGUIUtility.singleLineHeight;
+
+                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+                {
+                    Init(property);
+
+                    return (local.boolValue ? 1 : 2) * LineHeight;
+                }
+
+                public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+                {
+                    Init(property);
+
+                    DrawLocal(ref position);
+
+                    if (local.boolValue == false) DrawValue(ref position);
+                }
+
+                void DrawLocal(ref Rect rect)
+                {
+                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                    local.boolValue = EditorGUI.Toggle(area, LocalGUIContent, local.boolValue);
+
+                    rect.y += LineHeight;
+                    rect.height -= LineHeight;
+                }
+
+                void DrawValue(ref Rect rect)
+                {
+                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                    value.stringValue = EditorGUI.TextField(area, "Master Address", value.stringValue);
+
+                    rect.y += LineHeight;
+                    rect.height -= LineHeight;
+                }
+            }
+#endif
+#endif
+        }
 
         [SerializeField]
         protected string appID;
@@ -38,34 +113,34 @@ namespace MNet
         public RestScheme RestScheme => restScheme;
 
         [SerializeField]
-        protected VersionProperty version = new VersionProperty("0.1");
-        public Version Version => version.Value;
+        protected GameVersionProperty gameVersion = new GameVersionProperty("0.1");
+        public Version GameVersion => gameVersion.Value;
         [Serializable]
-        public class VersionProperty
+        public class GameVersionProperty
         {
             [SerializeField]
-            string value;
+            bool infer;
 
             [SerializeField]
-            bool infer;
+            string value;
 
             public string Text => infer ? Application.version : value;
 
             public Version Value => Version.Parse(Text);
 
-            public VersionProperty(string value)
+            public GameVersionProperty(string value)
             {
                 this.value = value;
                 infer = true;
             }
 
 #if UNITY_EDITOR
-            [CustomPropertyDrawer(typeof(VersionProperty))]
+            [CustomPropertyDrawer(typeof(GameVersionProperty))]
             public class Drawer : PropertyDrawer
             {
                 SerializedProperty property;
-                SerializedProperty value;
                 SerializedProperty infer;
+                SerializedProperty value;
 
                 public static GUIContent InferGUIContent;
 
@@ -75,10 +150,10 @@ namespace MNet
 
                     this.property = property;
 
-                    value = property.FindPropertyRelative(nameof(VersionProperty.value));
-                    infer = property.FindPropertyRelative(nameof(VersionProperty.infer));
+                    value = property.FindPropertyRelative(nameof(GameVersionProperty.value));
+                    infer = property.FindPropertyRelative(nameof(GameVersionProperty.infer));
 
-                    InferGUIContent = new GUIContent("Infer Version", "Toggle On to Infer Version from the Project's Version");
+                    InferGUIContent = new GUIContent("Infer Game Version", "Toggle On to Infer Game Version from the Project's Version");
                 }
 
                 public static float LineHeight => EditorGUIUtility.singleLineHeight;
@@ -99,21 +174,21 @@ namespace MNet
                     if (infer.boolValue == false) DrawValue(ref position);
                 }
 
-                void DrawValue(ref Rect rect)
-                {
-                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
-
-                    value.stringValue = EditorGUI.TextField(area, "Version", value.stringValue);
-
-                    rect.y += LineHeight;
-                    rect.height -= LineHeight;
-                }
-
                 void DrawInfer(ref Rect rect)
                 {
                     var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
 
                     infer.boolValue = EditorGUI.Toggle(area, InferGUIContent, infer.boolValue);
+
+                    rect.y += LineHeight;
+                    rect.height -= LineHeight;
+                }
+
+                void DrawValue(ref Rect rect)
+                {
+                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                    value.stringValue = EditorGUI.TextField(area, "Game Version", value.stringValue);
 
                     rect.y += LineHeight;
                     rect.height -= LineHeight;
@@ -191,8 +266,6 @@ namespace MNet
 
             public override void OnInspectorGUI()
             {
-
-
                 EditorGUILayout.LabelField($"API Version: {Constants.ApiVersion}", VersionLabelStyle);
                 EditorGUILayout.Space();
                 base.OnInspectorGUI();
