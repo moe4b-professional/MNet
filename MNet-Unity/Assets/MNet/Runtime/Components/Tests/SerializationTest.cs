@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(Constants.Path + "Tests/" + "Serialization Test")]
+	[AddComponentMenu(Constants.Path + "Tests/" + "Serialization Test")]
 	public class SerializationTest : NetworkBehaviour
 	{
 		public bool success = false;

@@ -147,7 +147,10 @@ namespace MNet
 
         public void Write(object value)
         {
-            var type = value == null ? null : value.GetType();
+            if (value == null)
+                throw new Exception("Cannot Serialize Null Without Explicilty Defining the Type Parameter");
+
+            var type = value.GetType();
 
             Write(value, type);
         }

@@ -196,7 +196,9 @@ namespace MNet
                 return false;
             }
 
-            var payload = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, arguments);
+            var raw = bind.WriteArguments(arguments);
+
+            var payload = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, raw);
 
             if (exception != null) payload.Except(exception.ID);
 
@@ -217,7 +219,9 @@ namespace MNet
                 return false;
             }
 
-            var payload = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, arguments);
+            var raw = bind.WriteArguments(arguments);
+
+            var payload = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, raw);
 
             return SendRPC(bind, payload);
         }
@@ -238,7 +242,9 @@ namespace MNet
 
             var promise = NetworkAPI.Client.RPR.Promise(target);
 
-            var payload = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, arguments);
+            var raw = bind.WriteArguments(arguments);
+
+            var payload = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
 
             if (SendRPC(bind, payload) == false)
             {
@@ -290,7 +296,7 @@ namespace MNet
             object[] arguments;
             try
             {
-                arguments = bind.ParseArguments(command);
+                arguments = bind.ReadArguments(command);
             }
             catch (Exception ex)
             {

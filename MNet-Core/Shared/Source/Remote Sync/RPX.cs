@@ -233,24 +233,8 @@ namespace MNet
 
         //Static Utility
 
-        public static byte[] Serialize(params object[] arguments)
+        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RemoteBufferMode bufferMode, byte[] raw)
         {
-            var writer = NetworkWriter.Pool.Any;
-
-            for (int i = 0; i < arguments.Length; i++)
-                writer.Write(arguments[i]);
-
-            var raw = writer.ToArray();
-
-            NetworkWriter.Pool.Return(writer);
-
-            return raw;
-        }
-
-        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RemoteBufferMode bufferMode, params object[] arguments)
-        {
-            var raw = Serialize(arguments);
-
             var request = new RpcRequest()
             {
                 entity = entity,
@@ -264,10 +248,8 @@ namespace MNet
             return request;
         }
 
-        public static RpcRequest WriteTarget(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, params object[] arguments)
+        public static RpcRequest WriteTarget(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, byte[] raw)
         {
-            var raw = Serialize(arguments);
-
             var request = new RpcRequest()
             {
                 entity = entity,
@@ -281,10 +263,8 @@ namespace MNet
             return request;
         }
 
-        public static RpcRequest WriteQuery(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, RprChannelID returnChannel, params object[] arguments)
+        public static RpcRequest WriteQuery(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, RprChannelID returnChannel, byte[] raw)
         {
-            var raw = Serialize(arguments);
-
             var request = new RpcRequest()
             {
                 entity = entity,

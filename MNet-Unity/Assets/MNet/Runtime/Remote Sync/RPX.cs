@@ -28,8 +28,6 @@ namespace MNet
     {
         public string Name { get; protected set; }
 
-        public Type ParentType { get; protected set; }
-
         public NetworkBehaviour Behaviour { get; protected set; }
         public NetworkEntity Entity => Behaviour.Entity;
 
@@ -45,7 +43,6 @@ namespace MNet
         public RpxMethodID MethodID { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
-        public bool HasInfoParameter { get; protected set; }
 
         public Type ReturnType => MethodInfo.ReturnType;
 
@@ -58,37 +55,45 @@ namespace MNet
             return MethodInfo.Invoke(Behaviour, arguments);
         }
 
-        public object[] ParseArguments(RpcCommand command)
+        public byte[] WriteArguments(object[] arguments)
         {
-            var arguments = command.Read(ParametersInfo, HasInfoParameter ? 1 : 0);
+            var writer = NetworkWriter.Pool.Any;
+
+            for (int i = 0; i < arguments.Length; i++)
+                writer.Write(arguments[i], ParametersInfo[i].ParameterType);
+
+            var raw = writer.ToArray();
+
+            NetworkWriter.Pool.Return(writer);
+
+            return raw;
+        }
+
+        public object[] ReadArguments(RpcCommand command)
+        {
+            var arguments = command.Read(ParametersInfo, 1);
 
             NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
 
-            if (HasInfoParameter)
-            {
-                var info = new RpcInfo(sender, command.Time);
-
-                arguments[arguments.Length - 1] = info;
-            }
+            arguments[arguments.Length - 1] = new RpcInfo(sender, command.Time);
 
             return arguments;
         }
 
-        public override string ToString() => $"{ParentType}->{Name}";
+        public override string ToString() => $"{Behaviour}->{Name}";
 
         public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index)
         {
-            Behaviour = behaviour;
-
-            ParentType = behaviour.GetType();
-
-            Attribute = attribute;
+            this.Behaviour = behaviour;
+            this.Attribute = attribute;
 
             MethodInfo = method;
             MethodID = new RpxMethodID(index);
 
             ParametersInfo = method.GetParameters();
-            HasInfoParameter = ParametersInfo?.LastOrDefault()?.ParameterType == typeof(RpcInfo);
+
+            if (ParametersInfo.LastOrDefault()?.ParameterType != typeof(RpcInfo))
+                throw new Exception($"Cannot use '{Behaviour}->{MethodInfo.Name}' as RPC, the Last Parameter needs to be of Type {nameof(RpcInfo)} for it to be a Valid RPC");
 
             Name = GetName(MethodInfo);
 
@@ -97,6 +102,17 @@ namespace MNet
         }
 
         public static string GetName(MethodInfo method) => method.Name;
+
+        public static int Count(params bool[] list)
+        {
+            var count = 0;
+
+            for (int i = 0; i < list.Length; i++)
+                if (list[i])
+                    count += 1;
+
+            return count;
+        }
     }
 
     public struct RpcInfo
