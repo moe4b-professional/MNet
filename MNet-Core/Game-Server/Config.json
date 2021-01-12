@@ -1,6 +1,6 @@
 {
   "MasterAddress": "localhost",
-  "PublicAddress": null,
+  "PersonalAddress": null,
   "Region": "Local",
   "RestScheme": "HTTP"
 }

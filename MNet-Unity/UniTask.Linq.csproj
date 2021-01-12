@@ -683,11 +683,11 @@
  <Reference Include="System.Xml.Serialization">
  <HintPath>C:/Program Files/Unity/2019.4.7f1/Editor/Data/NetStandard/compat/2.0.0/shims/netfx/System.Xml.Serialization.dll</HintPath>
  </Reference>
- <Reference Include="UnityEngine.UI">
- <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
- </Reference>
  <Reference Include="UnityEditor.UI">
  <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEngine.UI">
+ <HintPath>C:/Projects/Monolith/MNet/MNet-Unity/Library/ScriptAssemblies/UnityEngine.UI.dll</HintPath>
  </Reference>
   </ItemGroup>
   <ItemGroup>

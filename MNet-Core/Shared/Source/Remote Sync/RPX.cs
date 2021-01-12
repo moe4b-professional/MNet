@@ -49,7 +49,20 @@ namespace MNet
     [Serializable]
     public enum RemoteBufferMode : byte
     {
-        None, Last, All
+        /// <summary>
+        /// No Buffering
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Buffers only the Latest Call
+        /// </summary>
+        Last,
+
+        /// <summary>
+        /// Buffers All Calls
+        /// </summary>
+        All
     }
 
     public enum RemoteResponseType : byte

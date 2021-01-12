@@ -31,9 +31,9 @@ namespace MNet
                 Local = LocalConfig.Read();
             }
 
-            public static IPAddress ResolveAddress()
+            public static IPAddress ResolvePersonalAddress()
             {
-                if (Local.PublicAddress != null) return Local.PublicAddress;
+                if (Local.PersonalAddress != null) return Local.PersonalAddress;
 
                 if (Local.Region == GameServerRegion.Local) return IPAddress.Loopback;
 
@@ -45,7 +45,7 @@ namespace MNet
                 catch (Exception)
                 {
                     var text = $"Could not Retrieve Public IP for Server, " +
-                        $"Please Explicitly Set {nameof(Local.PublicAddress)} Property in {LocalConfig.FileName} Config File";
+                        $"Please Explicitly Set {nameof(Local.PersonalAddress)} Property in {LocalConfig.FileName} Config File";
 
                     Log.Error(text);
 
@@ -65,11 +65,11 @@ namespace MNet
 
             public static GameServerRegion Region => Config.Local.Region;
 
-            public static GameServerInfo Read() => new GameServerInfo(ID, Region);
+            public static GameServerInfo Read() => new GameServerInfo(ID, Region, Statistics.Players.Count);
 
             internal static void Configure()
             {
-                Address = Config.ResolveAddress();
+                Address = Config.ResolvePersonalAddress();
 
                 Log.Info($"Server ID: {ID}");
                 Log.Info($"Server Region: {Region}");

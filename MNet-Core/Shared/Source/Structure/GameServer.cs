@@ -70,18 +70,23 @@ namespace MNet
         GameServerRegion region;
         public GameServerRegion Region => region;
 
+        ushort occupancy;
+        public int Occupancy => occupancy;
+
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref id);
             context.Select(ref region);
+            context.Select(ref occupancy);
         }
 
         public override string ToString() => $"[ {id} | {region} ]";
 
-        public GameServerInfo(GameServerID id, GameServerRegion region)
+        public GameServerInfo(GameServerID id, GameServerRegion region, ushort occupancy)
         {
             this.id = id;
             this.region = region;
+            this.occupancy = occupancy;
         }
     }
 }

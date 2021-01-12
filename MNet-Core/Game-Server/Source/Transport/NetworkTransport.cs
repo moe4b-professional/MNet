@@ -189,6 +189,8 @@ namespace MNet
         {
             Clients.TryAdd(id, client);
             Connections.TryAdd(connection, client);
+
+            Statistics.Players.Add();
         }
         #endregion
 
@@ -213,6 +215,8 @@ namespace MNet
             FreeClientID(client.ClientID);
 
             DestroyClient(client);
+
+            Statistics.Players.Remove();
         }
         #endregion
 

@@ -59,9 +59,10 @@ namespace MNet
                 static List<GameServer> list;
 
                 public const int CheckInterval = 1 * 1000;
+
                 public const int LookupsInterval = 5 * 1000;
 
-                public const int MaxRetries = 4;
+                public const int MaxRetries = 2;
 
                 public static async void Run()
                 {
@@ -69,13 +70,13 @@ namespace MNet
 
                     while (true)
                     {
-                        CloneTo(ref list);
-
-                        if (list.Count == 0)
+                        if (Count == 0)
                         {
                             await Task.Delay(CheckInterval);
                             continue;
                         }
+
+                        CloneTo(ref list);
 
                         for (int i = 0; i < list.Count; i++)
                             Lookup(list[i].ID);
@@ -88,7 +89,7 @@ namespace MNet
                 {
                     GameServerInfo info;
 
-                    for (int i = 0; i < MaxRetries; i++)
+                    for (int i = 1; i <= MaxRetries; i++)
                     {
                         try
                         {
@@ -96,7 +97,10 @@ namespace MNet
                         }
                         catch (Exception)
                         {
-                            continue;
+                            if (i == MaxRetries)
+                                break;
+                            else
+                                continue;
                         }
 
                         Update(info);

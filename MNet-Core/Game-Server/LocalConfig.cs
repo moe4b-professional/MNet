@@ -12,7 +12,7 @@ namespace MNet
     public partial class LocalConfig : LocalConfig<LocalConfig>
     {
         [JsonProperty]
-        public IPAddress PublicAddress { get; protected set; }
+        public IPAddress PersonalAddress { get; protected set; }
 
         [JsonProperty]
         public IPAddress MasterAddress { get; protected set; }
@@ -29,7 +29,7 @@ namespace MNet
         {
             base.WriteDefaults();
 
-            PublicAddress = null;
+            PersonalAddress = null;
             MasterAddress = null;
 
             Region = GameServerRegion.Local;

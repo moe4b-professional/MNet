@@ -61,7 +61,7 @@ namespace MNet.Example
         {
             base.UpdateState();
 
-            info.text = $"{Data.ID} @ {Data.Region}";
+            info.text = $"{Data.ID} @ {Data.Region} | {Data.Occupancy} Players";
         }
     }
 }
