@@ -98,10 +98,10 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\NetworkTimeSinExample.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
-     <Compile Include="Assets\MNet-Example\Sandbox\ScenesLoad.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\Scene Load\ScenesLoad.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\StressBehaviour.cs" />
      <Compile Include="Assets\MNet-Example\Utility\AutoJoinProtocol.cs" />
-     <Compile Include="Assets\MNet-Example\Utility\Entity Stresser\Entity\NetworkStressBehaviour.cs" />
+     <Compile Include="Assets\MNet-Example\Utility\Entity Stresser\Entity\StressEntity.cs" />
      <Compile Include="Assets\MNet-Example\Utility\Entity Stresser\NetworkEntityStresser.cs" />
      <Compile Include="Assets\MNet-Example\Utility\PlayerNameInputField.cs" />
      <Compile Include="Assets\MNet-Project-Utility\MNetProjectUtility.cs" />
@@ -120,7 +120,6 @@
      <Compile Include="Assets\MNet\Runtime\API\Moules\Server\ServerAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\Moules\TimeAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\API\NetworkAPI.cs" />
-     <Compile Include="Assets\MNet\Runtime\API\Objects\NetworkSpawnableObjects.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\NetworkScene.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\NetworkStatsInfo.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\SimpleNetworkTransform.cs" />

@@ -386,7 +386,7 @@ namespace MNet
             {
                 if (command.Type == NetworkEntityType.Dynamic || command.Type == NetworkEntityType.Orphan)
                 {
-                    var prefab = NetworkAPI.SpawnableObjects[command.Resource];
+                    var prefab = NetworkAPI.Config.SpawnableObjects[command.Resource];
 
                     if (prefab == null)
                         throw new Exception($"No Dynamic Network Spawnable Object with ID: {command.Resource} Found to Spawn");

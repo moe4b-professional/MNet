@@ -31,7 +31,7 @@ namespace MNet
         [SerializeField]
         VectorCoordinateProperty position = new VectorCoordinateProperty(true);
         public VectorCoordinateProperty Position => position;
-        
+
         [SerializeField]
         QuaternionCoordinateProperty rotation = new QuaternionCoordinateProperty();
         public QuaternionCoordinateProperty Rotation => rotation;
@@ -49,7 +49,11 @@ namespace MNet
         {
             public override float CalculateDistance(Vector3 target) => Vector3.Distance(value, target);
 
-            public override Vector3 MoveTowards(Vector3 current) => Vector3.Lerp(current, value, speed * Time.deltaTime);
+            public override Vector3 Translate(Vector3 current)
+            {
+                //TODO use a movement method more appropriate than lerp
+                return Vector3.Lerp(current, value, speed * Time.deltaTime);
+            }
 
             public override void WriteBinary(NetworkWriter writer)
             {
@@ -75,7 +79,7 @@ namespace MNet
         {
             public override float CalculateDistance(Quaternion target) => Quaternion.Angle(value, target);
 
-            public override Quaternion MoveTowards(Quaternion current) => Quaternion.Lerp(current, value, speed * Time.deltaTime);
+            public override Quaternion Translate(Quaternion current) => Quaternion.Lerp(current, value, speed * Time.deltaTime);
 
             public override void WriteBinary(NetworkWriter writer)
             {
@@ -126,17 +130,17 @@ namespace MNet
 
             public void Set(TValue value) => this.value = value;
 
-            public abstract TValue MoveTowards(TValue current);
+            public abstract TValue Translate(TValue current);
 
             public abstract float CalculateDistance(TValue target);
 
-            public bool Update(TValue target)
+            public bool Update(TValue current)
             {
-                if (this.target.Any == false) return false;
+                if (target.Any == false) return false;
 
-                if (CalculateDistance(target) < epsilon) return false;
+                if (CalculateDistance(current) < epsilon) return false;
 
-                value = target;
+                Set(current);
                 return true;
             }
 
@@ -194,14 +198,23 @@ namespace MNet
             writer = new NetworkWriter(position.Target.Size + rotation.Target.Size + scale.Target.Size);
             reader = new NetworkReader();
 
-            position.Set(transform.localPosition);
-            rotation.Set(transform.localRotation);
-            scale.Set(transform.localScale);
+            SetAll(); //Set All at first to read defaults
         }
 
         void Start()
         {
+            SetAll(); //Set All again to read any modifications that might've came from applying Entity attributes or the like
+
+            if (Entity.IsMine && forceSync) Debug.LogWarning($"Force Sync is Enabled for {this}, this is Useful for Stress Testing but Please Remember to Turn it Off!");
+
             StartCoroutine(Procedure());
+        }
+
+        void SetAll()
+        {
+            position.Set(transform.localPosition);
+            rotation.Set(transform.localRotation);
+            scale.Set(transform.localScale);
         }
 
         //Yes, I'm using coroutines, get off my back!
@@ -232,15 +245,6 @@ namespace MNet
             return new WaitForSeconds(syncInverval / 1000f);
         }
 
-        YieldInstruction RemoteProcedure()
-        {
-            if (position.Target.Any) transform.localPosition = position.MoveTowards(transform.localPosition);
-            if (rotation.Target.Any) transform.localRotation = rotation.MoveTowards(transform.localRotation);
-            if (scale.Target.Any) transform.localScale = scale.MoveTowards(transform.localScale);
-
-            return new WaitForEndOfFrame();
-        }
-
         void Broadcast()
         {
             position.WriteBinary(writer);
@@ -252,6 +256,22 @@ namespace MNet
             BroadcastRPC(Sync, raw, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
         }
 
+        YieldInstruction RemoteProcedure()
+        {
+            if (position.Target.Any) transform.localPosition = position.Translate(transform.localPosition);
+            if (rotation.Target.Any) transform.localRotation = rotation.Translate(transform.localRotation);
+            if (scale.Target.Any) transform.localScale = scale.Translate(transform.localScale);
+
+            return new WaitForEndOfFrame();
+        }
+
+        void Anchor()
+        {
+            transform.localPosition = position.Value;
+            transform.localRotation = rotation.Value;
+            transform.localScale = scale.Value;
+        }
+
         [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master, Delivery = DeliveryMode.Unreliable)]
         void Sync(byte[] binary, RpcInfo info)
         {
@@ -261,12 +281,7 @@ namespace MNet
             rotation.ReadBinary(reader);
             scale.ReadBinary(reader);
 
-            if(info.IsBuffered)
-            {
-                transform.localPosition = position.Value;
-                transform.localRotation = rotation.Value;
-                transform.localScale = scale.Value;
-            }
+            if (info.IsBuffered) Anchor();
         }
     }
 }

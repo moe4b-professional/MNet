@@ -41,7 +41,7 @@ namespace MNet.Example
 		{
 			var attributes = new AttributesCollection();
 
-			NetworkStressBehaviour.CalculateRandomCoords(area, out Vector3 position, out float angle);
+			StressEntity.CalculateRandomCoords(area, out Vector3 position, out float angle);
 
 			attributes.Set(0, position);
 			attributes.Set(1, angle);

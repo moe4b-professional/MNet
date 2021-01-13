@@ -211,7 +211,7 @@ namespace MNet
             #region Spawn Entity
             public static void SpawnEntity(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
-                if (NetworkAPI.SpawnableObjects.Prefabs.TryGetValue(prefab, out var resource) == false)
+                if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(prefab, out var resource) == false)
                 {
                     Debug.LogError($"Prefab '{prefab}' Not Registerd as a Network Spawnable Object");
                     return;
@@ -222,7 +222,7 @@ namespace MNet
 
             public static void SpawnEntity(string name, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
             {
-                if (NetworkAPI.SpawnableObjects.Names.TryGetValue(name, out var resource) == false)
+                if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(name, out var resource) == false)
                 {
                     Debug.LogError($"No Network Spawnable Objects Registerd with Name '{name}'");
                     return;

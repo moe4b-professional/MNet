@@ -53,16 +53,7 @@ namespace MNet.Example
 
 		void Start()
 		{
-			SpawnPlayer();
-		}
-
-		void SpawnPlayer()
-        {
-			var attributes = new AttributesCollection();
-
-			var persistance = PersistanceFlags.SceneLoad;
-
-			NetworkAPI.Client.SpawnEntity("Player", attributes: attributes, persistance: persistance);
+			Player.Spawn();
 		}
 
 		public void Quit()

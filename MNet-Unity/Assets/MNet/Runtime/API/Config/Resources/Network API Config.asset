@@ -27,3 +27,8 @@ MonoBehaviour:
     late:
       pre: 1
       post: 0
+  spawnableObjects:
+    autoUpdate: 1
+    list:
+    - {fileID: 573034543577270253, guid: 661d50abe5902ce44b108e0c7fed7072, type: 3}
+    - {fileID: 92370369000106702, guid: 66bf7db27409ae541af2939871d2dc8c, type: 3}

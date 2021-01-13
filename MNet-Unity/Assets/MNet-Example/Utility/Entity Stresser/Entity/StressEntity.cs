@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-    public class NetworkStressBehaviour : NetworkBehaviour
+    public class StressEntity : NetworkBehaviour
     {
         public int area;
 

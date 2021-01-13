@@ -30,7 +30,7 @@ namespace MNet.Example
         public override GameObject Target => panel;
 
         [SerializeField]
-        RectTransform layout = default;
+        ScrollRect scroll = default;
 
         List<GameServerUITemplate> templates;
 
@@ -89,7 +89,7 @@ namespace MNet.Example
         {
             Initializer.Perform(template);
 
-            template.SetParent(layout);
+            template.SetParent(scroll.content);
 
             template.OnClick += TemplateClickCallback;
         }

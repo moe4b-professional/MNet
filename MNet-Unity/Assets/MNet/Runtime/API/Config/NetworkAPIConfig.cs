@@ -233,6 +233,117 @@ namespace MNet
             public bool Any => early || normal || @fixed || late.Pre || late.Post;
         }
 
+        [SerializeField]
+        SpawnableObjectsProperty spawnableObjects = new SpawnableObjectsProperty();
+        public SpawnableObjectsProperty SpawnableObjects => spawnableObjects;
+        [Serializable]
+        public class SpawnableObjectsProperty
+        {
+            [SerializeField]
+            bool autoUpdate = true;
+            public bool AutoUpdate => autoUpdate;
+
+            [SerializeField]
+            List<GameObject> list;
+            public List<GameObject> List => list;
+
+            public int Count => list.Count;
+
+            public GameObject this[ushort index]
+            {
+                get
+                {
+                    if (index >= list.Count) return null;
+
+                    return list[index];
+                }
+            }
+
+            public Dictionary<GameObject, ushort> Prefabs { get; protected set; }
+            public bool TryGetIndex(GameObject prefab, out ushort index) => Prefabs.TryGetValue(prefab, out index);
+
+            public Dictionary<string, ushort> Names { get; protected set; }
+            public bool TryGetIndex(string name, out ushort index) => Names.TryGetValue(name, out index);
+
+            NetworkAPIConfig config;
+
+            internal void Configure(NetworkAPIConfig reference)
+            {
+                config = reference;
+
+#if UNITY_EDITOR
+                if (autoUpdate) Refresh();
+#endif
+
+                CheckForDuplicates();
+
+                Prefabs = new Dictionary<GameObject, ushort>();
+                Names = new Dictionary<string, ushort>();
+
+                for (ushort i = 0; i < list.Count; i++)
+                {
+                    if (list[i] == null) continue;
+
+                    Prefabs.Add(list[i].gameObject, i);
+                    Names.Add(list[i].name, i);
+                }
+            }
+
+            void CheckForDuplicates()
+            {
+                var hash = new HashSet<GameObject>();
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (hash.Contains(list[i]))
+                        throw new Exception($"Duplicate Network Spawnable Object '{list[i]}' Found at Index {i}");
+
+                    hash.Add(list[i]);
+                }
+            }
+
+            public SpawnableObjectsProperty()
+            {
+                list = new List<GameObject>();
+            }
+
+#if UNITY_EDITOR
+            void Refresh()
+            {
+                var hash = new HashSet<GameObject>(list);
+
+                foreach (var element in GetAll())
+                {
+                    if (hash.Contains(element.gameObject)) continue;
+
+                    list.Add(element.gameObject);
+                }
+
+                list.RemoveAll(x => x == null);
+
+                EditorUtility.SetDirty(config);
+            }
+
+            static IEnumerable<NetworkEntity> GetAll()
+            {
+                var guids = AssetDatabase.FindAssets($"t:{nameof(GameObject)}");
+
+                for (int i = 0; i < guids.Length; i++)
+                {
+                    var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+
+                    var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+                    var entity = asset.GetComponent<NetworkEntity>();
+
+                    if (entity == null) continue;
+
+                    yield return entity;
+                }
+            }
+#endif
+        }
+
         public static NetworkAPIConfig Load()
         {
             var assets = Resources.LoadAll<NetworkAPIConfig>("");
@@ -242,6 +353,11 @@ namespace MNet
             var instance = assets[0];
 
             return instance;
+        }
+
+        void OnEnable()
+        {
+            spawnableObjects.Configure(this);
         }
 
 #if UNITY_EDITOR

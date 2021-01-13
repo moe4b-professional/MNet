@@ -29,14 +29,6 @@ namespace MNet
 
             Selection.activeObject = asset;
         }
-
-        [MenuItem(Constants.Path + "Spawnable Objects", false, 1)]
-        static void SpawnableObjects()
-        {
-            var asset = NetworkSpawnableObjects.Load();
-
-            Selection.activeObject = asset;
-        }
     }
 }
 #endif

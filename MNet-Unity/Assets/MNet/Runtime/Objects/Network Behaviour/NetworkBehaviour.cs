@@ -91,10 +91,11 @@ namespace MNet
         }
 
         /// <summary>
-        /// Called when Behaviour is loaded in the network, invoked after OnSetup,
-        /// by this point the behaviour should be ready to send and recieve network messages
-        /// but if this behaviour is buffered then it's buffered RPCs and SyncVars wouldn't be set yet,
-        /// Use OnSpawn for a callback where those will be set
+        /// Called when Behaviour is loaded on the network, invoked after OnSetup,
+        /// by this point the behaviour is ready to send and recieve network messages
+        /// but if this behaviour is buffered then its buffered RPCs and SyncVars wouldn't be set yet,
+        /// this is useful for applying Entiy attributes,
+        /// use OnSpawn for a callback where SyncVars and RPCs will be set,
         /// </summary>
         protected virtual void OnLoad() { }
         #endregion
@@ -116,10 +117,7 @@ namespace MNet
         /// Invoked when entity owner is set, such as when the entity is spawned, made orphan, has its owner changed, ... etc
         /// </summary>
         /// <param name="client"></param>
-        protected virtual void OnOwnerSet(NetworkClient client)
-        {
-
-        }
+        protected virtual void OnOwnerSet(NetworkClient client) { }
         #endregion
 
         #region Spawn

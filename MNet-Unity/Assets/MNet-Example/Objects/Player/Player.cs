@@ -57,11 +57,51 @@ namespace MNet.Example
 			Rotation.Set(this);
 		}
 
+		protected override void OnLoad()
+		{
+			base.OnLoad();
+
+			ReadAttributes(Entity.Attributes, out var position, out var rotation);
+
+			transform.position = position;
+			transform.rotation = rotation;
+
+			transform.position += Vector3.up * 0.9f;
+		}
+
 		protected override void OnOwnerSet(NetworkClient client)
 		{
 			base.OnOwnerSet(client);
 
 			rigidbody.isKinematic = Entity.IsMine == false;
+		}
+
+		//Static Utility
+
+		public static void Spawn() => Spawn(Vector3.forward * 2 + Vector3.right * 4, Quaternion.identity);
+		public static void Spawn(Vector3 position, Quaternion rotation)
+        {
+			var attributes = WriteAttributes(position, rotation);
+
+			var persistance = PersistanceFlags.SceneLoad;
+
+			NetworkAPI.Client.SpawnEntity("Player", attributes: attributes, persistance: persistance);
+		}
+
+		public static AttributesCollection WriteAttributes(Vector3 position, Quaternion rotation)
+		{
+			var collection = new AttributesCollection();
+
+			collection.Set(0, position);
+			collection.Set(1, rotation);
+
+			return collection;
+		}
+
+		public static void ReadAttributes(AttributesCollection collection, out Vector3 position, out Quaternion rotation)
+		{
+			collection.TryGetValue(0, out position);
+			collection.TryGetValue(1, out rotation);
 		}
 	}
 #pragma warning restore CS0108
