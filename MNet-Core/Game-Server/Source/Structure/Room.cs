@@ -418,7 +418,7 @@ namespace MNet
 
             if (payload.RemoveAttributes) Attributes.RemoveAll(payload.RemovedAttributes);
 
-            Broadcast(ref payload, condition: NetworkClient.IsReady);
+            Broadcast(ref payload, condition: NetworkClient.IsReady, exception: sender.ID);
         }
 
         #region RPC

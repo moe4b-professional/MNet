@@ -44,7 +44,7 @@ namespace MNet
         /// <summary>
         /// Token to use for cancelling Async Tasks on despawn
         /// </summary>
-        protected CancellationTokenSource DespawnCancellation { get; private set; }
+        protected CancellationTokenSource ASyncDespawnCancellation { get; private set; }
 
         protected virtual void Reset()
         {
@@ -62,7 +62,7 @@ namespace MNet
 
             initialEnableState = enabled;
 
-            DespawnCancellation = new CancellationTokenSource();
+            ASyncDespawnCancellation = new CancellationTokenSource();
 
             ParseRPCs();
             ParseSyncVars();
@@ -140,8 +140,8 @@ namespace MNet
         {
             UpdateReadyState();
 
-            DespawnCancellation.Cancel();
-            DespawnCancellation.Dispose();
+            ASyncDespawnCancellation.Cancel();
+            ASyncDespawnCancellation.Dispose();
 
             OnDespawn();
         }

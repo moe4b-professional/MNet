@@ -89,6 +89,8 @@ namespace MNet
                         return;
                     }
 
+                    Change(ref payload);
+
                     Client.Send(ref payload);
                 }
 

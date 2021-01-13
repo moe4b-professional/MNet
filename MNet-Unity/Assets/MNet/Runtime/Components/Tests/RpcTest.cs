@@ -87,7 +87,7 @@ namespace MNet
         [NetworkRPC]
         async UniTask UniTaskRPC(RpcInfo info)
         {
-            await UniTask.Delay(2000, cancellationToken: DespawnCancellation.Token);
+            await UniTask.Delay(2000, cancellationToken: ASyncDespawnCancellation.Token);
 
             uniTask = true;
 

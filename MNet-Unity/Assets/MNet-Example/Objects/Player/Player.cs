@@ -78,7 +78,7 @@ namespace MNet.Example
 
 		//Static Utility
 
-		public static void Spawn() => Spawn(Vector3.forward * 2 + Vector3.right * 4, Quaternion.identity);
+		public static void Spawn() => Spawn(Vector3.zero, Quaternion.identity);
 		public static void Spawn(Vector3 position, Quaternion rotation)
         {
 			var attributes = WriteAttributes(position, rotation);

@@ -45,7 +45,7 @@ namespace MNet
         [NetworkRPC]
         async UniTask<string> AsyncQueryRPC(RpcInfo info)
         {
-            await UniTask.Delay(4000, cancellationToken: DespawnCancellation.Token);
+            await UniTask.Delay(4000, cancellationToken: ASyncDespawnCancellation.Token);
 
             return NetworkAPI.Client.Profile.Name;
         }
