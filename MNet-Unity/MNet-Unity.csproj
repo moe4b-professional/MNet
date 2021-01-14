@@ -85,6 +85,7 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Menu\Variants\Room Browser\RoomBrowser.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Menu\Variants\Room Browser\Utility\RoomBrowserRefreshButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\UIPanel.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Fader\FaderUI.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\PopupPanel.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Server Browser\ServerBrowser.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Server Browser\Utility\GameServerSelectionLabel.cs" />

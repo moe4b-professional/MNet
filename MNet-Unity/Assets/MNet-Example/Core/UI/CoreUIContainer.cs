@@ -24,5 +24,9 @@ namespace MNet.Example
 		[SerializeField]
 		PopupPanel popup = default;
 		public PopupPanel Popup => popup;
-	}
+
+		[SerializeField]
+        FaderUI fader = default;
+        public FaderUI Fader => fader;
+    }
 }

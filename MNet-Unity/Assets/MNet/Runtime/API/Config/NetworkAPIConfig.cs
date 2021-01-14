@@ -23,7 +23,7 @@ namespace MNet
     public class NetworkAPIConfig : ScriptableObject
     {
         [SerializeField]
-        MasterAddressProperty masterAddress = default;
+        MasterAddressProperty masterAddress = new MasterAddressProperty();
         public string MasterAddress => masterAddress.Value;
         [Serializable]
         public class MasterAddressProperty
@@ -39,7 +39,6 @@ namespace MNet
 
             public string Value => local ? Default : value;
 
-#if UNITY_EDITOR
 #if UNITY_EDITOR
             [CustomPropertyDrawer(typeof(MasterAddressProperty))]
             public class Drawer : PropertyDrawer
@@ -64,20 +63,14 @@ namespace MNet
 
                 public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-                {
-                    Init(property);
-
-                    return (local.boolValue ? 1 : 2) * LineHeight;
-                }
+                public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight * 2;
 
                 public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
                 {
                     Init(property);
 
+                    DrawValue(ref position);
                     DrawLocal(ref position);
-
-                    if (local.boolValue == false) DrawValue(ref position);
                 }
 
                 void DrawLocal(ref Rect rect)
@@ -92,45 +85,59 @@ namespace MNet
 
                 void DrawValue(ref Rect rect)
                 {
+                    if (local.boolValue) GUI.enabled = false;
+
                     var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
 
-                    value.stringValue = EditorGUI.TextField(area, "Master Address", value.stringValue);
+                    if (local.boolValue)
+                        EditorGUI.TextField(area, "Master Address", Default);
+                    else
+                        value.stringValue = EditorGUI.TextField(area, "Master Address", value.stringValue);
 
                     rect.y += LineHeight;
                     rect.height -= LineHeight;
+
+                    GUI.enabled = true;
                 }
             }
-#endif
 #endif
         }
 
         [SerializeField]
-        protected string appID;
-        public string AppID => appID;
+        protected string appID = "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"; //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHH
+        public AppID AppID { get; protected set; }
 
         [SerializeField]
         RestScheme restScheme = RestScheme.HTTP;
         public RestScheme RestScheme => restScheme;
 
         [SerializeField]
-        protected GameVersionProperty gameVersion = new GameVersionProperty("0.1");
-        public Version GameVersion => gameVersion.Value;
+        protected GameVersionProperty gameVersion = new GameVersionProperty();
+        public Version GameVersion { get; protected set; }
         [Serializable]
         public class GameVersionProperty
         {
             [SerializeField]
             bool infer;
+            public bool Infer => infer;
 
             [SerializeField]
-            string value;
+            byte major;
 
-            public string Text => infer ? Application.version : value;
+            [SerializeField]
+            byte minor;
 
-            public Version Value => Version.Parse(Text);
+            [SerializeField]
+            byte patch;
 
-            public GameVersionProperty(string value)
+            public Version Value => infer ? Version.Parse(Application.version) : new Version(major, minor, patch);
+
+            public GameVersionProperty()
             {
-                this.value = value;
+                major = 0;
+                minor = 1;
+                patch = 0;
+
                 infer = true;
             }
 
@@ -140,9 +147,17 @@ namespace MNet
             {
                 SerializedProperty property;
                 SerializedProperty infer;
-                SerializedProperty value;
+
+                SerializedProperty major;
+                SerializedProperty minor;
+                SerializedProperty patch;
 
                 public static GUIContent InferGUIContent;
+
+                public const int FieldWidth = 30;
+
+                public const int SeperatorWidth = 8;
+                public static GUIStyle SeperatorStyle;
 
                 void Init(SerializedProperty property)
                 {
@@ -150,28 +165,31 @@ namespace MNet
 
                     this.property = property;
 
-                    value = property.FindPropertyRelative(nameof(GameVersionProperty.value));
                     infer = property.FindPropertyRelative(nameof(GameVersionProperty.infer));
 
+                    major = property.FindPropertyRelative(nameof(GameVersionProperty.major));
+                    minor = property.FindPropertyRelative(nameof(GameVersionProperty.minor));
+                    patch = property.FindPropertyRelative(nameof(GameVersionProperty.patch));
+
                     InferGUIContent = new GUIContent("Infer Game Version", "Toggle On to Infer Game Version from the Project's Version");
+
+                    SeperatorStyle = new GUIStyle(GUI.skin.label)
+                    {
+                        fontSize = 20,
+                        fontStyle = FontStyle.Bold,
+                    };
                 }
 
                 public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-                {
-                    Init(property);
-
-                    return (infer.boolValue ? 1 : 2) * LineHeight;
-                }
+                public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight * 2;
 
                 public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
                 {
                     Init(property);
 
+                    DrawValue(ref position);
                     DrawInfer(ref position);
-
-                    if (infer.boolValue == false) DrawValue(ref position);
                 }
 
                 void DrawInfer(ref Rect rect)
@@ -186,19 +204,94 @@ namespace MNet
 
                 void DrawValue(ref Rect rect)
                 {
-                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+                    var x = rect.x;
+                    var width = rect.width;
 
-                    value.stringValue = EditorGUI.TextField(area, "Game Version", value.stringValue);
+                    DrawLabel(ref rect);
 
+                    if(infer.boolValue)
+                    {
+                        if (Version.TryParse(Application.version, out var version) == false)
+                        {
+                            var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                            EditorGUI.HelpBox(area, $"Game Version Cannot be Infered from '{Application.version}'", MessageType.Error);
+                        }
+                        else
+                        {
+                            GUI.enabled = false;
+
+                            DrawField(ref rect, version.Major);
+                            DrawSeperator(ref rect);
+                            DrawField(ref rect, version.Minor);
+                            DrawSeperator(ref rect);
+                            DrawField(ref rect, version.Patch);
+
+                            GUI.enabled = true;
+                        }
+                    }
+                    else
+                    {
+                        DrawField(ref rect, major);
+                        DrawSeperator(ref rect);
+                        DrawField(ref rect, minor);
+                        DrawSeperator(ref rect);
+                        DrawField(ref rect, patch);
+                    }
+
+                    rect.x = x;
+                    rect.width = width;
                     rect.y += LineHeight;
                     rect.height -= LineHeight;
+                }
+
+                void DrawLabel(ref Rect rect)
+                {
+                    var width = EditorGUIUtility.labelWidth;
+
+                    var area = new Rect(rect.x, rect.y, width, LineHeight);
+
+                    EditorGUI.LabelField(area, "Game Version");
+
+                    rect.width -= width;
+                    rect.x += width;
+                }
+
+                void DrawField(ref Rect rect, SerializedProperty property)
+                {
+                    var area = new Rect(rect.x, rect.y, FieldWidth, LineHeight);
+
+                    property.intValue = EditorGUI.IntField(area, property.intValue);
+
+                    rect.x += FieldWidth;
+                    rect.width -= FieldWidth;
+                }
+
+                void DrawField(ref Rect rect, byte value)
+                {
+                    var area = new Rect(rect.x, rect.y, FieldWidth, LineHeight);
+
+                    EditorGUI.IntField(area, value);
+
+                    rect.x += FieldWidth;
+                    rect.width -= FieldWidth;
+                }
+
+                void DrawSeperator(ref Rect rect)
+                {
+                    var area = new Rect(rect.x, rect.y, SeperatorWidth, LineHeight);
+
+                    EditorGUI.LabelField(area, ".", SeperatorStyle);
+
+                    rect.x += SeperatorWidth;
+                    rect.width -= SeperatorWidth;
                 }
             }
 #endif
         }
 
         [SerializeField]
-        UpdateMethodProperty updateMethod = default;
+        UpdateMethodProperty updateMethod = new UpdateMethodProperty();
         public UpdateMethodProperty UpdateMethod => updateMethod;
         [Serializable]
         public class UpdateMethodProperty
@@ -357,7 +450,40 @@ namespace MNet
 
         void OnEnable()
         {
+            ParseAppID();
+
+            ParseGameVersion();
+
             spawnableObjects.Configure(this);
+        }
+
+        void ParseAppID()
+        {
+            try
+            {
+                AppID = AppID.Parse(appID);
+            }
+            catch (Exception)
+            {
+                throw new Exception($"Couldn't Parse '{appID}' as App ID, Please Enter a Valid App ID in Network API Config");
+            }
+        }
+
+        void ParseGameVersion()
+        {
+            try
+            {
+                GameVersion = gameVersion.Value;
+            }
+            catch (Exception)
+            {
+                if (gameVersion.Infer)
+                    throw new Exception($"Game Version Cannot be Infered from '{Application.version}', " +
+                        $"Please Modify your Project Settings to have a valid Version in the Format of x.x.x");
+                else
+                    throw new Exception($"Game Version Cannot be Parsed from Current Network API Config, " +
+                        $"Please Modify your Config to have a valid Version in the Format of x.x.x");
+            }
         }
 
 #if UNITY_EDITOR

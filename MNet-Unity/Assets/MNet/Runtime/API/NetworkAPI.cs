@@ -21,9 +21,9 @@ namespace MNet
 
         public static string Address => Config.MasterAddress;
 
-        public static AppID AppID { get; private set; }
+        public static AppID AppID => Config.AppID;
 
-        public static Version GameVersion { get; private set; }
+        public static Version GameVersion => Config.GameVersion;
 
         public static bool IsRunning { get; private set; }
 
@@ -50,10 +50,6 @@ namespace MNet
             DynamicNetworkSerialization.Enabled = true;
 #endif
 
-            ParseAppID();
-
-            GameVersion = Config.GameVersion;
-
             IsRunning = true;
 
             Application.quitting += ApplicationQuitCallback;
@@ -70,17 +66,6 @@ namespace MNet
             RegisterUpdateMethods();
         }
 
-        static void ParseAppID()
-        {
-            if (string.IsNullOrEmpty(Config.AppID))
-                throw new Exception("Please Enter an App ID in Network API Config");
-
-            if (Guid.TryParse(Config.AppID, out var guid) == false)
-                throw new Exception($"Couldn't Parse '{Config.AppID}' as App ID, Please Enter a Valid App ID in Network API Config");
-
-            AppID = new AppID(guid);
-        }
-
         static void RegisterUpdateMethods()
         {
             if (Application.isEditor || Config.UpdateMethod.Early) RegisterPlayerLoop<EarlyUpdate>(EarlyUpdate);
@@ -92,6 +77,17 @@ namespace MNet
 
             if (Config.UpdateMethod.Any == false)
                 Debug.LogWarning("No Update Methods Selected in Network API Config, Network Message's Won't be Processed");
+        }
+
+        static void RegisterPlayerLoop<TType>(PlayerLoopSystem.UpdateFunction callback)
+        {
+            var loop = PlayerLoop.GetCurrentPlayerLoop();
+
+            for (int i = 0; i < loop.subSystemList.Length; ++i)
+                if (loop.subSystemList[i].type == typeof(TType))
+                    loop.subSystemList[i].updateDelegate += callback;
+
+            PlayerLoop.SetPlayerLoop(loop);
         }
 
         #region Updates
@@ -179,17 +175,6 @@ namespace MNet
             Application.quitting -= ApplicationQuitCallback;
 
             IsRunning = false;
-        }
-
-        static void RegisterPlayerLoop<TType>(PlayerLoopSystem.UpdateFunction callback)
-        {
-            var loop = PlayerLoop.GetCurrentPlayerLoop();
-
-            for (int i = 0; i < loop.subSystemList.Length; ++i)
-                if (loop.subSystemList[i].type == typeof(TType))
-                    loop.subSystemList[i].updateDelegate += callback;
-
-            PlayerLoop.SetPlayerLoop(loop);
         }
     }
 }

@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet.Example
 {
 	[RequireComponent(typeof(Button))]
@@ -32,6 +34,6 @@ namespace MNet.Example
 			button.onClick.AddListener(Action);
         }
 
-		void Action() => Level.Quit();
+		void Action() => Level.Quit().Forget();
 	}
 }

@@ -48,7 +48,7 @@ namespace MNet.Example
 
             Populate(NetworkAPI.Server.Game.Collection.Values);
 
-            if (NetworkAPI.Server.Game.Selection == null) Show();
+            Visible = NetworkAPI.Server.Game.Selection == null;
         }
 
         void MasterInfoCallback(MasterServerInfoResponse info, RestError error)
@@ -68,10 +68,16 @@ namespace MNet.Example
 
             void Callback(MasterServerInfoResponse info, RestError error)
             {
-                if (error == null)
-                    Popup.Hide();
-                else
+                if (error != null)
+                {
                     Popup.Show("Failed To Retrieve Servers", "Okay");
+                    return;
+                }
+
+                if (info.Servers.Length == 0)
+                    Popup.Show("No Game Servers Found on Master", "Okay");
+                else
+                    Popup.Hide();
             }
         }
 
@@ -79,10 +85,19 @@ namespace MNet.Example
         {
             Clear();
 
-            if (collection.Count == 0) Popup.Show("No Game Servers Found on Master", "Refresh", Refresh);
-
             var entries = GameServerUITemplate.CreateAll(template, collection, InitTemplate);
             templates.AddRange(entries);
+
+            StartCoroutine(ScrollToStart());
+            IEnumerator ScrollToStart()
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    scroll.verticalNormalizedPosition = 1f;
+
+                    yield return new WaitForEndOfFrame();
+                }
+            }
         }
 
         void InitTemplate(GameServerUITemplate template, int index)

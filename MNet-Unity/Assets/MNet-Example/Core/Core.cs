@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet.Example
 {
 	[CreateAssetMenu]
@@ -53,7 +55,40 @@ namespace MNet.Example
 			GameScene additiveScene = default;
 			public int AdditiveScene => additiveScene;
 
-			public virtual void LoadMainMenu() => SceneManager.LoadScene(mainMenu);
+			UIProperty UI => Core.UI;
+
+            protected override void Configure()
+            {
+                base.Configure();
+
+				NetworkAPI.Room.Scenes.LoadMethod = Load;
+            }
+
+			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
+
+			async UniTask Load(GameScene scene, LoadSceneMode mode)
+			{
+				var array = new byte[] { (byte)scene.BuildIndex };
+
+				await Load(array, mode);
+			}
+
+			async UniTask Load(byte[] scenes, LoadSceneMode mode)
+			{
+				if (mode == LoadSceneMode.Single)
+				{
+					await UI.Fader.Transition(1f, 0.2f);
+
+					await UniTask.Delay(400);
+				}
+
+				await NetworkAPI.Room.Scenes.DefaultLoadMethod(scenes, mode);
+
+				if (mode == LoadSceneMode.Single)
+				{
+					await UI.Fader.Transition(0f, 0.2f);
+				}
+			}
 		}
 
 		[SerializeField]
@@ -211,6 +246,8 @@ namespace MNet.Example
 
 			public PopupPanel Popup => Container.Popup;
 
+			public FaderUI Fader => Container.Fader;
+
 			protected override void Configure()
 			{
 				base.Configure();
@@ -253,6 +290,7 @@ namespace MNet.Example
 
 		public void ForAllProperties(Action<Property> action)
 		{
+			action(scenes);
 			action(levels);
 			action(network);
 			action(UI);

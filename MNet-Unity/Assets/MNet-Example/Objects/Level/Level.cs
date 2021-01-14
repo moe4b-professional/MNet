@@ -18,6 +18,8 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 using System.Net.Cache;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet.Example
 {
 	[DefaultExecutionOrder(ExecutionOrder)]
@@ -56,28 +58,22 @@ namespace MNet.Example
 			Player.Spawn();
 		}
 
-		public void Quit()
+		public async UniTask Quit()
 		{
 			if (NetworkAPI.Client.IsConnected)
 			{
 				Popup.Show("Disconnecting");
 
-				NetworkAPI.Client.OnDisconnect += Callback;
-				NetworkAPI.Client.Disconnect();
-			}
-			else
-			{
-				Core.Scenes.LoadMainMenu();
-			}
+				await UniTask.Delay(200);
 
-			void Callback(DisconnectCode code)
-			{
-				NetworkAPI.Client.OnDisconnect -= Callback;
+				NetworkAPI.Client.Disconnect();
+
+				await UniTask.Delay(500);
 
 				Popup.Hide();
-
-				Core.Scenes.LoadMainMenu();
 			}
+
+			Core.Scenes.LoadMainMenu();
 		}
 	}
 }

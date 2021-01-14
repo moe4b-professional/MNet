@@ -19,7 +19,9 @@ MonoBehaviour:
   restScheme: 0
   gameVersion:
     infer: 1
-    value: 0.1
+    major: 0
+    minor: 1
+    patch: 0
   updateMethod:
     early: 0
     normal: 1
