@@ -31,16 +31,18 @@ namespace MNet
 
         public bool IsConnected => NetworkAPI.Client.IsConnected;
 
-        public NetworkEntityType Type { get; internal set; }
+        #region Type
+        public EntityType Type { get; internal set; }
 
-        public bool IsSceneObject => Type == NetworkEntityType.SceneObject;
-        public bool IsDynamic => Type == NetworkEntityType.Dynamic;
-        public bool IsOrphan => Type == NetworkEntityType.Orphan;
+        public bool IsSceneObject => Type == EntityType.SceneObject;
+        public bool IsDynamic => Type == EntityType.Dynamic;
+        public bool IsOrphan => Type == EntityType.Orphan;
 
         /// <summary>
         /// Is this an entity that will always be owned by the master client? such as scene objects and orphans
         /// </summary>
-        public bool IsMasterObject => Type == NetworkEntityType.SceneObject | Type == NetworkEntityType.Orphan;
+        public bool IsMasterObject => Type == EntityType.SceneObject | Type == EntityType.Orphan;
+        #endregion
 
         public PersistanceFlags Persistance { get; protected set; }
 
@@ -57,6 +59,8 @@ namespace MNet
         internal void SetOwner(NetworkClient client)
         {
             Owner = client;
+
+            foreach (var behaviour in Behaviours.Values) behaviour.OwnerSetCallback(Owner);
 
             OnOwnerSet?.Invoke(Owner);
         }
@@ -88,7 +92,7 @@ namespace MNet
 
             var requst = new ChangeEntityOwnerRequest(reciever.ID, ID);
 
-            NetworkAPI.Room.ChangeEntityOwner(reciever, this);
+            NetworkAPI.Room.Entities.ChangeOwner(reciever, this);
 
             return NetworkAPI.Client.Send(ref requst);
         }
@@ -111,8 +115,13 @@ namespace MNet
             }
         }
 
-        internal void Setup()
+        internal void Setup(NetworkClient owner, EntityType type, PersistanceFlags persistance, AttributesCollection attributes)
         {
+            this.Type = type;
+            this.Persistance = persistance;
+            this.Attributes = attributes;
+            this.Owner = owner;
+
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
             var targets = GetComponentsInChildren<NetworkBehaviour>(true);
@@ -124,59 +133,61 @@ namespace MNet
             {
                 var id = new NetworkBehaviourID(i);
 
-                targets[i].Setup(this, id);
-
                 Behaviours[id] = targets[i];
+
+                targets[i].Setup(this, id);
             }
-        }
-
-        internal void Load(NetworkClient owner, NetworkEntityID id, AttributesCollection attributes, NetworkEntityType type, PersistanceFlags persistance)
-        {
-            IsReady = true;
-
-            this.ID = id;
-            this.Attributes = attributes;
-            this.Type = type;
-            this.Persistance = persistance;
 
             SetOwner(owner);
-
-            foreach (var behaviour in Behaviours.Values) behaviour.Load();
-
-            if (NetworkAPI.Realtime.IsOnBuffer)
-                SpawnAfterBuffer();
-            else
-                Spawn();
-        }
-
-        #region Spawn
-        void SpawnAfterBuffer()
-        {
-            NetworkAPI.Realtime.OnBufferEnd += AppliedBufferCallback;
-        }
-        void AppliedBufferCallback(IList<NetworkMessage> list)
-        {
-            NetworkAPI.Realtime.OnBufferEnd -= AppliedBufferCallback;
-
-            Spawn();
         }
 
         public event Action OnSpawn;
-        void Spawn()
+        internal void Spawn(NetworkEntityID id)
         {
+            this.ID = id;
+
+            IsReady = true;
+
+            foreach (var behaviour in Behaviours.Values) behaviour.Spawn();
+
             OnSpawn?.Invoke();
+
+            if (NetworkAPI.Realtime.IsOnBuffer)
+                ReadyAfterBuffer();
+            else
+                Ready();
+        }
+
+        #region Ready After Buffer
+        void ReadyAfterBuffer()
+        {
+            NetworkAPI.Realtime.OnBufferEnd += ReadyAfterBufferCallback;
+        }
+
+        void ReadyAfterBufferCallback(IList<NetworkMessage> list)
+        {
+            NetworkAPI.Realtime.OnBufferEnd -= ReadyAfterBufferCallback;
+            Ready();
         }
         #endregion
 
-        #region Despawn
+        public event Action OnReady;
+        void Ready()
+        {
+            foreach (var behaviour in Behaviours.Values) behaviour.Ready();
+
+            OnReady?.Invoke();
+        }
+
         public event Action OnDespawn;
         internal virtual void Despawn()
         {
             IsReady = false;
 
+            foreach (var behaviour in Behaviours.Values) behaviour.Despawn();
+
             OnDespawn?.Invoke();
         }
-        #endregion
 
         #region Remote Sync
         public void InvokeRPC(RpcCommand command)
@@ -205,9 +216,9 @@ namespace MNet
 
         protected virtual void OnDestroy()
         {
-            NetworkAPI.Realtime.OnBufferEnd -= AppliedBufferCallback;
-
             if (Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
+
+            NetworkAPI.Realtime.OnBufferEnd -= ReadyAfterBufferCallback;
         }
 
         //Static Utility
@@ -226,11 +237,11 @@ namespace MNet
                 return false;
             }
 
-            if (NetworkAPI.Room.Entities.TryGetValue(id, out entity)) return true;
+            if (NetworkAPI.Room.Entities.TryGet(id, out entity)) return true;
 
             return false;
         }
 
-        public static bool CheckIfMasterObject(NetworkEntityType type) => type == NetworkEntityType.SceneObject || type == NetworkEntityType.Orphan;
+        public static bool CheckIfMasterObject(EntityType type) => type == EntityType.SceneObject || type == EntityType.Orphan;
     }
 }

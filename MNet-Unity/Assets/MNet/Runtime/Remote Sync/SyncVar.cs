@@ -107,7 +107,7 @@ namespace MNet
         {
             value = command.Read(Type);
 
-            NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
+            NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
 
             info = new SyncVarInfo(sender);
         }

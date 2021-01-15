@@ -32,7 +32,7 @@ namespace MNet
         {
             base.OnSpawn();
 
-            var answer = await QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master);
+            var answer = await QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client);
 
             success = answer.Success;
 

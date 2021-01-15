@@ -33,12 +33,14 @@ namespace MNet.Example
 
 		}
 
-		void Start()
-		{
+        protected override void OnSpawn()
+        {
+            base.OnSpawn();
+
 			StartCoroutine(Procedure());
 		}
 
-		IEnumerator Procedure()
+        IEnumerator Procedure()
 		{
 			while (Entity.IsConnected)
 			{

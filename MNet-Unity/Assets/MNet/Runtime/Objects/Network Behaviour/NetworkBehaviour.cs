@@ -32,16 +32,6 @@ namespace MNet
         public NetworkEntity Entity { get; protected set; }
 
         /// <summary>
-        /// Reflects 'IsReady' to Component's 'enabled' Property,
-        /// set by default to match the Behaviour's initial enabled state,
-        /// ensures that (Start, Update, Fixed Update, ... etc) are only executed when the Entity is Spawned,
-        /// ovverride to False if normal Unity callback behaviour is desired
-        /// </summary>
-        public virtual bool ReflectReadyToEnable => initialEnableState;
-
-        bool initialEnableState;
-
-        /// <summary>
         /// Token to use for cancelling Async Tasks on despawn
         /// </summary>
         protected CancellationTokenSource ASyncDespawnCancellation { get; private set; }
@@ -57,58 +47,27 @@ namespace MNet
         internal void Setup(NetworkEntity entity, NetworkBehaviourID id)
         {
             this.ID = id;
-
             this.Entity = entity;
-
-            initialEnableState = enabled;
 
             ASyncDespawnCancellation = new CancellationTokenSource();
 
             ParseRPCs();
             ParseSyncVars();
 
-            UpdateReadyState();
-
-            Entity.OnOwnerSet += OwnerSetCallback;
-            Entity.OnSpawn += SpawnCallback;
-            Entity.OnDespawn += DespawnCallback;
-
             OnSetup();
         }
 
         /// <summary>
-        /// Simillar to Awake, invoked before OnLoad
+        /// Stage 1 on entity startup procedure,
+        /// called when behaviour has its properties set (owner, type, persistance, attributes ... etc),
+        /// entity still not ready to send and recieve messages and doesn't have a valid ID,
+        /// useful for applying attributes and the like
         /// </summary>
         protected virtual void OnSetup() { }
         #endregion
 
-        #region Load
-        internal void Load()
-        {
-            UpdateReadyState();
-
-            OnLoad();
-        }
-
-        /// <summary>
-        /// Called when Behaviour is loaded on the network, invoked after OnSetup,
-        /// by this point the behaviour is ready to send and recieve network messages
-        /// but if this behaviour is buffered then its buffered RPCs and SyncVars wouldn't be set yet,
-        /// this is useful for applying Entiy attributes,
-        /// use OnSpawn for a callback where SyncVars and RPCs will be set,
-        /// </summary>
-        protected virtual void OnLoad() { }
-        #endregion
-
-        void UpdateReadyState()
-        {
-            if (ReflectReadyToEnable == false) return;
-
-            enabled = Entity == null ? false : Entity.IsReady;
-        }
-
         #region Set Owner
-        void OwnerSetCallback(NetworkClient client)
+        internal void OwnerSetCallback(NetworkClient client)
         {
             OnOwnerSet(client);
         }
@@ -121,25 +80,37 @@ namespace MNet
         #endregion
 
         #region Spawn
-        void SpawnCallback()
+        internal void Spawn()
         {
-            UpdateReadyState();
-
             OnSpawn();
+        }
+
+        /// <summary>
+        /// Stage 2 on the entity startup procedure,
+        /// called when Behaviour is spawned on the network,
+        /// by this point the behaviour has a valid ID and is ready to send and recieve messages
+        /// but if this behaviour is buffered then its buffered RPCs and SyncVars wouldn't be set yet,
+        /// use OnReady for a callback where SyncVars and RPCs will be set
+        /// </summary>
+        protected virtual void OnSpawn() { }
+        #endregion
+
+        #region Ready
+        internal void Ready()
+        {
+            OnReady();
         }
 
         /// <summary>
         /// Invoked when this behaviour is spawned and ready for use,
         /// entity will have all its buffered data applied and ready
         /// </summary>
-        protected virtual void OnSpawn() { }
+        protected virtual void OnReady() { }
         #endregion
 
         #region Despawn
-        void DespawnCallback()
+        internal void Despawn()
         {
-            UpdateReadyState();
-
             ASyncDespawnCancellation.Cancel();
             ASyncDespawnCancellation.Dispose();
 
@@ -544,7 +515,7 @@ namespace MNet
 
             if (authority.HasFlag(RemoteAuthority.Master))
             {
-                if (sender == NetworkAPI.Room.Master?.ID)
+                if (sender == NetworkAPI.Room.Master.Client?.ID)
                     return true;
             }
 

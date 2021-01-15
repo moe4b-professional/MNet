@@ -57,9 +57,9 @@ namespace MNet.Example
 			Rotation.Set(this);
 		}
 
-		protected override void OnLoad()
+		protected override void OnSetup()
 		{
-			base.OnLoad();
+			base.OnSetup();
 
 			ReadAttributes(Entity.Attributes, out var position, out var rotation);
 
@@ -78,14 +78,14 @@ namespace MNet.Example
 
 		//Static Utility
 
-		public static void Spawn() => Spawn(Vector3.zero, Quaternion.identity);
-		public static void Spawn(Vector3 position, Quaternion rotation)
+		public static NetworkEntity Spawn() => Spawn(Vector3.zero, Quaternion.identity);
+		public static NetworkEntity Spawn(Vector3 position, Quaternion rotation)
 		{
 			var attributes = WriteAttributes(position, rotation);
 
 			var persistance = PersistanceFlags.SceneLoad;
 
-			NetworkAPI.Client.SpawnEntity("Player", attributes: attributes, persistance: persistance);
+			return NetworkAPI.Client.Entities.Spawn("Player", attributes: attributes, persistance: persistance);
 		}
 
 		public static AttributesCollection WriteAttributes(Vector3 position, Quaternion rotation)

@@ -73,7 +73,7 @@ namespace MNet
         {
             var arguments = command.Read(ParametersInfo, 1);
 
-            NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
+            NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
 
             arguments[arguments.Length - 1] = new RpcInfo(sender, command.Time);
 

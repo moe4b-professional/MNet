@@ -26,6 +26,66 @@ namespace MNet
     {
         public static class Room
         {
+            internal static void Configure()
+            {
+                Info.Configure();
+                Scenes.Configure();
+                RemoteSync.Configure();
+                Clients.Configure();
+                Master.Configure();
+                Entities.Configure();
+
+                Client.OnConnect += Setup;
+                Client.Register.OnCallback += Register;
+                Client.Ready.OnCallback += Ready;
+                Client.OnDisconnect += (code) => Clear();
+            }
+
+            #region Join
+            public static void Join(RoomInfo info) => Join(info.ID);
+            public static void Join(RoomID id) => Realtime.Connect(Server.Game.ID, id);
+            #endregion
+
+            #region Create
+            public delegate void CreateDelegate(RoomInfo room, RestError error);
+            public static event CreateDelegate OnCreate;
+            public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, CreateDelegate handler = null)
+            {
+                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, attributes);
+
+                Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
+
+                void Callback(RoomInfo info, RestError error)
+                {
+                    handler?.Invoke(info, error);
+                    OnCreate?.Invoke(info, error);
+                }
+            }
+            #endregion
+
+            static void Setup()
+            {
+
+            }
+
+            static void Register(RegisterClientResponse response)
+            {
+
+            }
+
+            public delegate void ReadyDelegate(ReadyClientResponse response);
+            public static event ReadyDelegate OnReady;
+            static void Ready(ReadyClientResponse response)
+            {
+                Info.Load(response.Room);
+                Clients.AddAll(response.Clients);
+                Master.Assign(response.Master);
+
+                Realtime.ApplyBuffer(response.Buffer).Forget();
+
+                OnReady?.Invoke(response);
+            }
+
             public static class Info
             {
                 static RoomID id;
@@ -113,7 +173,7 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    Client.RegisterMessageHandler<ChangeRoomInfoPayload>(Change);
+                    Client.MessageDispatcher.RegisterHandler<ChangeRoomInfoPayload>(Change);
                 }
 
                 /// <summary>
@@ -157,389 +217,428 @@ namespace MNet
                 }
             }
 
-            #region Master
-            public static NetworkClient Master { get; private set; }
-
-            static bool AssignMaster(NetworkClientID id)
+            public static class Master
             {
-                if (Clients.TryGetValue(id, out var target) == false)
-                    Debug.LogError($"No Master Client With ID {id} Could be Found, Assigning Null!");
+                public static NetworkClient Client { get; private set; }
 
-                Master = target;
-                Debug.Log($"Assigned {Master} as Master Client");
-
-                foreach (var entity in MasterObjects) entity.SetOwner(Master);
-
-                return true;
-            }
-
-            public delegate void ChangeMasterDelegate(NetworkClient client);
-            public static event ChangeMasterDelegate OnChangeMaster;
-            static void ChangeMaster(ref ChangeMasterCommand command)
-            {
-                AssignMaster(command.ID);
-
-                OnChangeMaster?.Invoke(Master);
-            }
-            #endregion
-
-            internal static void Configure()
-            {
-                Clients = new Dictionary<NetworkClientID, NetworkClient>();
-                Entities = new Dictionary<NetworkEntityID, NetworkEntity>();
-                MasterObjects = new HashSet<NetworkEntity>();
-
-                Info.Configure();
-                Scenes.Configure();
-
-                Client.OnConnect += Setup;
-                Client.OnRegister += Register;
-                Client.OnReady += Ready;
-                Client.OnDisconnect += Disconnect;
-
-                Client.RegisterMessageHandler<RpcCommand>(InvokeRPC);
-                Client.RegisterMessageHandler<SyncVarCommand>(InvokeSyncVar);
-
-                Client.RegisterMessageHandler<SpawnEntityCommand>(SpawnEntity);
-                Client.RegisterMessageHandler<DestroyEntityCommand>(DestroyEntity);
-
-                Client.RegisterMessageHandler<ClientConnectedPayload>(ClientConnected);
-                Client.RegisterMessageHandler<ClientDisconnectPayload>(ClientDisconnected);
-
-                Client.RegisterMessageHandler<ChangeMasterCommand>(ChangeMaster);
-
-                Client.RegisterMessageHandler<ChangeEntityOwnerCommand>(ChangeEntityOwner);
-            }
-
-            #region Join
-            public static void Join(RoomInfo info) => Join(info.ID);
-            public static void Join(RoomID id) => Realtime.Connect(Server.Game.ID, id);
-            #endregion
-
-            #region Create
-            public delegate void CreateDelegate(RoomInfo room, RestError error);
-            public static event CreateDelegate OnCreate;
-            public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, CreateDelegate handler = null)
-            {
-                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, attributes);
-
-                Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
-
-                void Callback(RoomInfo info, RestError error)
+                internal static void Configure()
                 {
-                    handler?.Invoke(info, error);
-                    OnCreate?.Invoke(info, error);
+                    NetworkAPI.Client.MessageDispatcher.RegisterHandler<ChangeMasterCommand>(Change);
+                }
+
+                internal static void Clear()
+                {
+                    Client = default;
+                }
+
+                internal static bool Assign(NetworkClientID id)
+                {
+                    if (Clients.TryGet(id, out var target) == false)
+                        Debug.LogError($"No Master Client With ID {id} Could be Found, Assigning Null!");
+
+                    Client = target;
+                    Debug.Log($"Assigned {Client} as Master Client");
+
+                    Entities.UpdateMaster(Client);
+
+                    return true;
+                }
+
+                public delegate void ChangeDelegate(NetworkClient client);
+                public static event ChangeDelegate OnChange;
+                static void Change(ref ChangeMasterCommand command)
+                {
+                    Assign(command.ID);
+
+                    OnChange?.Invoke(Client);
                 }
             }
-            #endregion
 
-            static void Setup()
+            public static class Clients
             {
+                public static Dictionary<NetworkClientID, NetworkClient> Dictionary { get; private set; }
 
-            }
+                public static int Count => Dictionary.Count;
 
-            static void Register(RegisterClientResponse response)
-            {
-                
-            }
+                public static IEnumerable<NetworkClient> List => Dictionary.Values;
 
-            public delegate void ReadyDelegate(ReadyClientResponse response);
-            public static event ReadyDelegate OnReady;
-            static void Ready(ReadyClientResponse response)
-            {
-                Info.Load(response.Room);
+                public static bool TryGet(NetworkClientID id, out NetworkClient client) => Dictionary.TryGetValue(id, out client);
 
-                AddClients(response.Clients);
-                AssignMaster(response.Master);
-
-                Realtime.ApplyBuffer(response.Buffer).Forget();
-
-                OnReady?.Invoke(response);
-            }
-
-            #region Clients
-            public static Dictionary<NetworkClientID, NetworkClient> Clients { get; private set; }
-
-            static void AddClients(IList<NetworkClientInfo> list)
-            {
-                for (int i = 0; i < list.Count; i++)
-                    AddClient(list[i]);
-            }
-
-            public delegate void AddClientDelegate(NetworkClient client);
-            public static event AddClientDelegate OnAddClient;
-            static NetworkClient AddClient(NetworkClientInfo info)
-            {
-                var client = CreateClient(info);
-
-                Clients.Add(client.ID, client);
-
-                OnAddClient?.Invoke(client);
-
-                return client;
-            }
-
-            static NetworkClient CreateClient(NetworkClientInfo info)
-            {
-                if (Client.Self?.ID == info.ID) return Client.Self;
-
-                return new NetworkClient(info);
-            }
-
-            public delegate void RemoveClientDelegate(NetworkClient client);
-            public static event RemoveClientDelegate OnRemoveClient;
-            static void RemoveClient(NetworkClient client)
-            {
-                Clients.Remove(client.ID);
-
-                var entities = client.Entities;
-
-                for (int i = 0; i < entities.Count; i++)
+                internal static void Configure()
                 {
-                    if (entities[i].Type == NetworkEntityType.SceneObject) continue;
+                    Dictionary = new Dictionary<NetworkClientID, NetworkClient>();
 
-                    if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                    Client.MessageDispatcher.RegisterHandler<ClientConnectedPayload>(Connect);
+                    Client.MessageDispatcher.RegisterHandler<ClientDisconnectPayload>(Disconnect);
+                }
+
+                internal static void Clear()
+                {
+                    Dictionary.Clear();
+                }
+
+                internal static void AddAll(IList<NetworkClientInfo> list)
+                {
+                    for (int i = 0; i < list.Count; i++)
+                        Add(list[i]);
+                }
+
+                public delegate void AddDelegate(NetworkClient client);
+                public static event AddDelegate OnAdd;
+                static NetworkClient Add(NetworkClientInfo info)
+                {
+                    var client = Create(info);
+
+                    Dictionary.Add(client.ID, client);
+
+                    OnAdd?.Invoke(client);
+
+                    return client;
+                }
+
+                static NetworkClient Create(NetworkClientInfo info)
+                {
+                    if (Client.Self?.ID == info.ID) return Client.Self;
+
+                    return new NetworkClient(info);
+                }
+
+                public delegate void RemoveDelegate(NetworkClient client);
+                public static event RemoveDelegate OnRemove;
+                static void Remove(NetworkClient client)
+                {
+                    Dictionary.Remove(client.ID);
+
+                    var entities = client.Entities;
+
+                    for (int i = 0; i < entities.Count; i++)
                     {
-                        MakeEntityOrphan(entities[i]);
-                        continue;
+                        if (entities[i].Type == EntityType.SceneObject) continue;
+
+                        if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                        {
+                            Entities.MakeOrphan(entities[i]);
+                            continue;
+                        }
+
+                        Entities.Destroy(entities[i]);
                     }
 
-                    DestroyEntity(entities[i]);
+                    OnRemove?.Invoke(client);
                 }
 
-                OnRemoveClient?.Invoke(client);
-            }
-
-            public delegate void ClientConnectedDelegate(NetworkClient client);
-            public static event ClientConnectedDelegate OnClientConnected;
-            static void ClientConnected(ref ClientConnectedPayload payload)
-            {
-                if (Clients.ContainsKey(payload.ID))
+                public delegate void ConnectedDelegate(NetworkClient client);
+                public static event ConnectedDelegate OnConnected;
+                static void Connect(ref ClientConnectedPayload payload)
                 {
-                    Debug.Log($"Connecting Client {payload.ID} Already Registered With Room");
-                    return;
-                }
-
-                var client = AddClient(payload.Info);
-
-                OnClientConnected?.Invoke(client);
-
-                Debug.Log($"Client {client.ID} Connected to Room");
-            }
-
-            public delegate void ClientDisconnectedDelegate(NetworkClient client);
-            public static event ClientDisconnectedDelegate OnClientDisconnected;
-            static void ClientDisconnected(ref ClientDisconnectPayload payload)
-            {
-                Debug.Log($"Client {payload.ID} Disconnected from Room");
-
-                if (Clients.TryGetValue(payload.ID, out var client) == false)
-                {
-                    Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
-                    return;
-                }
-
-                RemoveClient(client);
-
-                OnClientDisconnected?.Invoke(client);
-            }
-            #endregion
-
-            #region Entity
-            public static Dictionary<NetworkEntityID, NetworkEntity> Entities { get; private set; }
-
-            public static HashSet<NetworkEntity> MasterObjects { get; private set; }
-
-            public delegate void SpawnEntityDelegate(NetworkEntity entity);
-            public static event SpawnEntityDelegate OnSpawnEntity;
-            static void SpawnEntity(ref SpawnEntityCommand command)
-            {
-                var id = command.ID;
-                var type = command.Type;
-                var persistance = command.Persistance;
-                var attributes = command.Attributes;
-
-                var entity = AssimilateEntity(command);
-
-                var owner = FindOwner(command);
-
-                Debug.Log($"Spawned Entity '{entity.name}' with ID: {id}, Owned By Client {owner}");
-
-                if (owner == null)
-                    Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
-
-                owner?.Entities.Add(entity);
-
-                Entities.Add(id, entity);
-
-                if (NetworkEntity.CheckIfMasterObject(type)) MasterObjects.Add(entity);
-
-                if (persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
-
-                //Scene Objects are Setup on NetworkScene Awake
-                if (type != NetworkEntityType.SceneObject) entity.Setup();
-
-                entity.Load(owner, id, attributes, type, persistance);
-
-                OnSpawnEntity?.Invoke(entity);
-            }
-
-            static NetworkEntity AssimilateEntity(SpawnEntityCommand command)
-            {
-                if (command.Type == NetworkEntityType.Dynamic || command.Type == NetworkEntityType.Orphan)
-                {
-                    var prefab = NetworkAPI.Config.SpawnableObjects[command.Resource];
-
-                    if (prefab == null)
-                        throw new Exception($"No Dynamic Network Spawnable Object with ID: {command.Resource} Found to Spawn");
-
-                    var instance = Object.Instantiate(prefab);
-
-                    instance.name = $"{prefab.name} {command.ID}";
-
-                    var entity = instance.GetComponent<NetworkEntity>();
-                    if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {command.Resource}");
-
-                    return entity;
-                }
-
-                if (command.Type == NetworkEntityType.SceneObject)
-                {
-                    var scene = NetworkScene.Find(command.Scene);
-
-                    if (scene == null) throw new Exception($"Couldn't Find Scene {command.Scene} to Spawn Scene Object {command.Resource}");
-
-                    if (scene.Find(command.Resource, out var entity) == false)
-                        throw new Exception($"Couldn't Find NetworkBehaviour {command.Resource} In Scene {command.Scene}");
-
-                    return entity;
-                }
-
-                throw new NotImplementedException();
-            }
-
-            static NetworkClient FindOwner(SpawnEntityCommand command)
-            {
-                switch (command.Type)
-                {
-                    case NetworkEntityType.SceneObject:
-                        return Master;
-
-                    case NetworkEntityType.Dynamic:
-                        if (Clients.TryGetValue(command.Owner, out var owner))
-                            return owner;
-                        else
-                            return null;
-
-                    case NetworkEntityType.Orphan:
-                        return Master;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-
-            static void ChangeEntityOwner(ref ChangeEntityOwnerCommand command)
-            {
-                if (Clients.TryGetValue(command.Client, out var client) == false)
-                {
-                    Debug.LogWarning($"No Client {command.Client} Found to Takeover Entity {command.Entity}");
-                    return;
-                }
-
-                if (Entities.TryGetValue(command.Entity, out var entity) == false)
-                {
-                    Debug.LogWarning($"No Entity {command.Entity} To be Taken Over by Client {client}");
-                    return;
-                }
-
-                ChangeEntityOwner(client, entity);
-            }
-            internal static void ChangeEntityOwner(NetworkClient client, NetworkEntity entity)
-            {
-                entity.Owner?.Entities.Remove(entity);
-                entity.SetOwner(client);
-                entity.Owner?.Entities.Add(entity);
-            }
-
-            static void MakeEntityOrphan(NetworkEntity entity)
-            {
-                entity.Type = NetworkEntityType.Orphan;
-                entity.SetOwner(Master);
-
-                MasterObjects.Add(entity);
-            }
-
-            static void DestroyEntity(ref DestroyEntityCommand command)
-            {
-                if (Entities.TryGetValue(command.ID, out var entity) == false)
-                {
-                    Debug.LogError($"Couldn't Destroy Entity {command.ID} Because It's Not Registered in Room");
-                    return;
-                }
-
-                DestroyEntity(entity);
-            }
-
-            public delegate void DestroyEntityDelegate(NetworkEntity entity);
-            public static event DestroyEntityDelegate OnDestroyEntity;
-            internal static void DestroyEntity(NetworkEntity entity)
-            {
-                Debug.Log($"Destroying Entity '{entity.name}'");
-
-                entity.Owner?.Entities.Remove(entity);
-
-                Entities.Remove(entity.ID);
-
-                if (entity.IsMasterObject) MasterObjects.Remove(entity);
-
-                DespawnEntity(entity);
-
-                OnDestroyEntity?.Invoke(entity);
-
-                Object.Destroy(entity.gameObject);
-            }
-
-            internal static void DespawnEntity(NetworkEntity entity)
-            {
-                entity.Despawn();
-
-                if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Scenes.MoveToActive(entity);
-            }
-            #endregion
-
-            #region Remote Sync
-            static void InvokeRPC(ref RpcCommand command)
-            {
-                try
-                {
-                    if (Entities.TryGetValue(command.Entity, out var target) == false)
+                    if (Dictionary.ContainsKey(payload.ID))
                     {
-                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
-                        if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                        Debug.Log($"Connecting Client {payload.ID} Already Registered With Room");
                         return;
                     }
 
-                    target.InvokeRPC(command);
+                    var client = Add(payload.Info);
+
+                    OnConnected?.Invoke(client);
+
+                    Debug.Log($"Client {client.ID} Connected to Room");
                 }
-                catch (Exception)
+
+                public delegate void DisconnectedDelegate(NetworkClient client);
+                public static event DisconnectedDelegate OnDisconnected;
+                static void Disconnect(ref ClientDisconnectPayload payload)
                 {
-                    if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                    throw;
+                    Debug.Log($"Client {payload.ID} Disconnected from Room");
+
+                    if (Dictionary.TryGetValue(payload.ID, out var client) == false)
+                    {
+                        Debug.Log($"Disconnecting Client {payload.ID} Not Found In Room");
+                        return;
+                    }
+
+                    Remove(client);
+
+                    OnDisconnected?.Invoke(client);
                 }
             }
 
-            static void InvokeSyncVar(ref SyncVarCommand command)
+            public static class Entities
             {
-                if (Entities.TryGetValue(command.Entity, out var target) == false)
+                public static Dictionary<NetworkEntityID, NetworkEntity> Dictionary { get; private set; }
+
+                public static bool TryGet(NetworkEntityID id, out NetworkEntity entity) => Dictionary.TryGetValue(id, out entity);
+
+                public static HashSet<NetworkEntity> MasterObjects { get; private set; }
+
+                internal static void UpdateMaster(NetworkClient client)
                 {
-                    Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
-                    return;
+                    foreach (var entity in MasterObjects) entity.SetOwner(client);
                 }
 
-                target.InvokeSyncVar(command);
+                internal static void Configure()
+                {
+                    Dictionary = new Dictionary<NetworkEntityID, NetworkEntity>();
+                    MasterObjects = new HashSet<NetworkEntity>();
+
+                    Client.MessageDispatcher.RegisterHandler<SpawnEntityCommand>(SpawnRemote);
+                    Client.MessageDispatcher.RegisterHandler<ChangeEntityOwnerCommand>(ChangeOwner);
+                    Client.MessageDispatcher.RegisterHandler<DestroyEntityCommand>(Destroy);
+                }
+
+                internal static void SpawnSceneObject(ushort resource, Scene scene) => SpawnSceneObject(resource, (byte)scene.buildIndex);
+                internal static void SpawnSceneObject(ushort resource, byte scene)
+                {
+                    if (Client.IsMaster == false)
+                    {
+                        Debug.LogError("Only the Master Client May Spawn Scene Objects, Ignoring Request");
+                        return;
+                    }
+
+                    var request = SpawnEntityRequest.Write(resource, scene);
+
+                    Client.Send(ref request);
+                }
+
+                static void SpawnRemote(ref SpawnEntityCommand command)
+                {
+                    var id = command.ID;
+                    var type = command.Type;
+                    var persistance = command.Persistance;
+                    var attributes = command.Attributes;
+
+                    var entity = Assimilate(command);
+
+                    var owner = FindOwner(command);
+
+                    Debug.Log($"Spawning Entity '{entity.name}' with ID: {id}, Owned By Client {owner}");
+
+                    if (owner == null)
+                        Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
+
+                    entity.Setup(owner, type, persistance, attributes);
+
+                    Spawn(entity, id);
+                }
+
+                internal static void SpawnLocal(NetworkEntity entity, NetworkEntityID id)
+                {
+                    Spawn(entity, id);
+                }
+
+                public delegate void SpawnEntityDelegate(NetworkEntity entity);
+                public static event SpawnEntityDelegate OnSpawn;
+                static void Spawn(NetworkEntity entity, NetworkEntityID id)
+                {
+                    Dictionary.Add(id, entity);
+
+                    entity.Owner?.Entities.Add(entity);
+
+                    if (entity.IsMasterObject) MasterObjects.Add(entity);
+
+                    if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
+
+                    entity.Spawn(id);
+
+                    OnSpawn?.Invoke(entity);
+                }
+
+                static NetworkEntity Assimilate(SpawnEntityCommand command)
+                {
+                    if (command.Type == EntityType.Dynamic || command.Type == EntityType.Orphan)
+                    {
+                        var instance = Instantiate(command.Resource);
+
+                        return instance;
+                    }
+
+                    if (command.Type == EntityType.SceneObject)
+                    {
+                        var instance = NetworkScene.LocateEntity(command.Scene, command.Resource);
+
+                        return instance;
+                    }
+
+                    throw new NotImplementedException();
+                }
+
+                internal static NetworkEntity Instantiate(ushort resource)
+                {
+                    var prefab = NetworkAPI.Config.SpawnableObjects[resource];
+
+                    if (prefab == null)
+                        throw new Exception($"No Dynamic Network Spawnable Object with ID: {resource} Found to Spawn");
+
+                    var instance = Object.Instantiate(prefab);
+
+                    instance.name = prefab.name;
+
+                    var entity = instance.GetComponent<NetworkEntity>();
+                    if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {resource}");
+
+                    return entity;
+                }
+
+                static NetworkClient FindOwner(SpawnEntityCommand command)
+                {
+                    switch (command.Type)
+                    {
+                        case EntityType.SceneObject:
+                        case EntityType.Orphan:
+                            return Master.Client;
+
+                        case EntityType.Dynamic:
+                            if (Clients.TryGet(command.Owner, out var owner))
+                                return owner;
+                            else
+                                return null;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+                }
+
+                static void ChangeOwner(ref ChangeEntityOwnerCommand command)
+                {
+                    if (Clients.TryGet(command.Client, out var client) == false)
+                    {
+                        Debug.LogWarning($"No Client {command.Client} Found to Takeover Entity {command.Entity}");
+                        return;
+                    }
+
+                    if (Dictionary.TryGetValue(command.Entity, out var entity) == false)
+                    {
+                        Debug.LogWarning($"No Entity {command.Entity} To be Taken Over by Client {client}");
+                        return;
+                    }
+
+                    ChangeOwner(client, entity);
+                }
+                internal static void ChangeOwner(NetworkClient client, NetworkEntity entity)
+                {
+                    entity.Owner?.Entities.Remove(entity);
+                    entity.SetOwner(client);
+                    entity.Owner?.Entities.Add(entity);
+                }
+
+                internal static void MakeOrphan(NetworkEntity entity) //*Cocks gun with malicious intent* 
+                {
+                    entity.Type = EntityType.Orphan;
+                    entity.SetOwner(Master.Client);
+
+                    MasterObjects.Add(entity);
+                }
+
+                static void Destroy(ref DestroyEntityCommand command)
+                {
+                    if (Dictionary.TryGetValue(command.ID, out var entity) == false)
+                    {
+                        Debug.LogError($"Couldn't Destroy Entity {command.ID} Because It's Not Registered in Room");
+                        return;
+                    }
+
+                    Destroy(entity);
+                }
+
+                public delegate void DestroyDelegate(NetworkEntity entity);
+                public static event DestroyDelegate OnDestroy;
+                internal static void Destroy(NetworkEntity entity)
+                {
+                    Debug.Log($"Destroying Entity '{entity.name}'");
+
+                    entity.Owner?.Entities.Remove(entity);
+
+                    Dictionary.Remove(entity.ID);
+
+                    if (entity.IsMasterObject) MasterObjects.Remove(entity);
+
+                    Despawn(entity);
+
+                    OnDestroy?.Invoke(entity);
+
+                    Object.Destroy(entity.gameObject);
+                }
+
+                internal static void DestroyAllNonPersistant()
+                {
+                    var entities = Dictionary.Values.ToArray();
+
+                    for (int i = 0; i < entities.Length; i++)
+                    {
+                        if (entities[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
+
+                        Destroy(entities[i]);
+                    }
+                }
+
+                internal static void Despawn(NetworkEntity entity)
+                {
+                    entity.Despawn();
+
+                    if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Scenes.MoveToActive(entity);
+                }
+
+                internal static void Clear()
+                {
+                    foreach (var entity in Dictionary.Values)
+                    {
+                        if (entity == null)
+                        {
+                            Debug.LogWarning("Found null Entity when Clearing Room's Entities, Ignoring Entity");
+                            continue;
+                        }
+
+                        Despawn(entity);
+                    }
+
+                    Dictionary.Clear();
+                    MasterObjects.Clear();
+                }
             }
-            #endregion
+
+            public static class RemoteSync
+            {
+                internal static void Configure()
+                {
+                    Client.MessageDispatcher.RegisterHandler<RpcCommand>(InvokeRPC);
+                    Client.MessageDispatcher.RegisterHandler<SyncVarCommand>(InvokeSyncVar);
+                }
+
+                internal static void Clear()
+                {
+
+                }
+
+                static void InvokeRPC(ref RpcCommand command)
+                {
+                    try
+                    {
+                        if (Entities.TryGet(command.Entity, out var target) == false)
+                        {
+                            Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
+                            if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                            return;
+                        }
+
+                        target.InvokeRPC(command);
+                    }
+                    catch (Exception)
+                    {
+                        if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                        throw;
+                    }
+                }
+
+                static void InvokeSyncVar(ref SyncVarCommand command)
+                {
+                    if (Entities.TryGet(command.Entity, out var target) == false)
+                    {
+                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity}");
+                        return;
+                    }
+
+                    target.InvokeSyncVar(command);
+                }
+            }
 
             public static class Scenes
             {
@@ -547,9 +646,14 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    Client.RegisterMessageHandler<LoadScenesCommand>(Load);
+                    Client.MessageDispatcher.RegisterHandler<LoadScenesPayload>(Load);
 
                     LoadMethod = DefaultLoadMethod;
+                }
+
+                internal static void Clear()
+                {
+
                 }
 
                 #region Load
@@ -581,12 +685,12 @@ namespace MNet
                     }
                 }
 
-                static void Load(ref LoadScenesCommand command)
+                static void Load(ref LoadScenesPayload payload)
                 {
                     if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
 
-                    var scenes = command.Scenes;
-                    var mode = ConvertLoadMode(command.Mode);
+                    var scenes = payload.Scenes;
+                    var mode = ConvertLoadMode(payload.Mode);
 
                     Load(scenes, mode).Forget();
                 }
@@ -598,7 +702,7 @@ namespace MNet
                     var pauseLock = Realtime.Pause.AddLock();
                     OnLoadBegin?.Invoke(scenes, mode);
 
-                    if (mode == LoadSceneMode.Single) DestoryNonPersistantEntities();
+                    if (mode == LoadSceneMode.Single) Entities.DestroyAllNonPersistant();
 
                     await LoadMethod(scenes, mode);
 
@@ -610,18 +714,6 @@ namespace MNet
 
                 public delegate void LoadDelegate(byte[] indexes, LoadSceneMode mode);
                 #endregion
-
-                static void DestoryNonPersistantEntities()
-                {
-                    var entities = Room.Entities.Values.ToArray();
-
-                    for (int i = 0; i < entities.Length; i++)
-                    {
-                        if (entities[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
-
-                        Room.DestroyEntity(entities[i]);
-                    }
-                }
 
                 #region Request
                 public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
@@ -649,7 +741,9 @@ namespace MNet
                         return;
                     }
 
-                    var request = new LoadScenesRequest(indexes, ConvertLoadMode(mode));
+                    var request = new LoadScenesPayload(indexes, ConvertLoadMode(mode));
+
+                    Load(ref request);
 
                     Client.Send(ref request);
                 }
@@ -664,28 +758,14 @@ namespace MNet
 
             public static void Leave() => Client.Disconnect();
 
-            static void Disconnect(DisconnectCode code) => Clear();
-
             static void Clear()
             {
-                foreach (var entity in Entities.Values)
-                {
-                    if (entity == null)
-                    {
-                        Debug.LogWarning("Found null Entity when Clearing Room's Entities, Ignoring Entity");
-                        continue;
-                    }
-
-                    DespawnEntity(entity);
-                }
-
                 Info.Clear();
-
-                Master = default;
-
-                Entities.Clear();
+                Scenes.Clear();
+                RemoteSync.Clear();
                 Clients.Clear();
-                MasterObjects.Clear();
+                Master.Clear();
+                Entities.Clear();
             }
         }
     }

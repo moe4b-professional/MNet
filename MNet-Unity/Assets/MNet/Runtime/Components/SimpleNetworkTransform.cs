@@ -201,8 +201,10 @@ namespace MNet
             SetAll(); //Set All at first to read defaults
         }
 
-        void Start()
+        protected override void OnReady()
         {
+            base.OnReady();
+
             SetAll(); //Set All again to read any modifications that might've came from applying Entity attributes or the like
 
             if (Entity.IsMine && forceSync) Debug.LogWarning($"Force Sync is Enabled for {this}, this is Useful for Stress Testing but Please Remember to Turn it Off!");

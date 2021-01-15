@@ -26,10 +26,10 @@ namespace MNet.Example
             if (NetworkAPI.Client.IsConnected)
                 Add("You Connected");
 
-            NetworkAPI.Room.OnClientConnected += ClientConnectedCallback;
-            NetworkAPI.Room.OnClientDisconnected += ClientDisconnectedCallback;
+            NetworkAPI.Room.Clients.OnConnected += ClientConnectedCallback;
+            NetworkAPI.Room.Clients.OnDisconnected += ClientDisconnectedCallback;
 
-            NetworkAPI.Room.OnChangeMaster += ChangeMasterCallback;
+            NetworkAPI.Room.Master.OnChange += ChangeMasterCallback;
         }
 
         #region Callbacks
@@ -80,9 +80,9 @@ namespace MNet.Example
 
         void OnDestroy()
         {
-            NetworkAPI.Room.OnClientConnected -= ClientConnectedCallback;
-            NetworkAPI.Room.OnClientDisconnected -= ClientDisconnectedCallback;
-            NetworkAPI.Room.OnChangeMaster -= ChangeMasterCallback;
+            NetworkAPI.Room.Clients.OnConnected -= ClientConnectedCallback;
+            NetworkAPI.Room.Clients.OnDisconnected -= ClientDisconnectedCallback;
+            NetworkAPI.Room.Master.OnChange -= ChangeMasterCallback;
         }
 
         public struct Entry

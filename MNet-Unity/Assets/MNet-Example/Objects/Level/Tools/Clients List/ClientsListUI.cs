@@ -45,8 +45,8 @@ namespace MNet.Example
 
 		void Start()
 		{
-			NetworkAPI.Room.OnClientConnected += AddClientCallback;
-			NetworkAPI.Room.OnClientDisconnected += RemoveClientCallback;
+			NetworkAPI.Room.Clients.OnConnected += AddClientCallback;
+			NetworkAPI.Room.Clients.OnDisconnected += RemoveClientCallback;
 
 			Populate();
 
@@ -89,7 +89,7 @@ namespace MNet.Example
 
 		void Populate()
         {
-            foreach (var client in NetworkAPI.Room.Clients.Values)
+            foreach (var client in NetworkAPI.Room.Clients.List)
 				Add(client);
         }
 
@@ -119,8 +119,8 @@ namespace MNet.Example
 
         void OnDestroy()
 		{
-			NetworkAPI.Room.OnClientConnected -= AddClientCallback;
-			NetworkAPI.Room.OnClientDisconnected -= RemoveClientCallback;
+			NetworkAPI.Room.Clients.OnConnected -= AddClientCallback;
+			NetworkAPI.Room.Clients.OnDisconnected -= RemoveClientCallback;
 		}
 	}
 }

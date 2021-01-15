@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
-    public enum NetworkEntityType : byte
+    public enum EntityType : byte
     {
         /// <summary>
         /// Entities local to a Scene
@@ -42,7 +42,6 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
     public struct NetworkEntityID : IManualNetworkSerializable
     {
         ushort value;
@@ -84,5 +83,53 @@ namespace MNet
         public static bool operator !=(NetworkEntityID a, NetworkEntityID b) => !a.Equals(b);
 
         public static NetworkEntityID Increment(NetworkEntityID id) => new NetworkEntityID(id.value + 1);
+    }
+
+    [Preserve]
+    public struct EntitySpawnToken : IManualNetworkSerializable
+    {
+        byte value;
+        public byte Value => value;
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Insert(value);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            value = reader.Next();
+        }
+
+        public EntitySpawnToken(byte value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is EntitySpawnToken token)
+                return Equals(this, token);
+
+            return false;
+        }
+
+        public static bool Equals(EntitySpawnToken a, EntitySpawnToken b) => a.value == b.value;
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(EntitySpawnToken a, EntitySpawnToken b) => a.Equals(b);
+        public static bool operator !=(EntitySpawnToken a, EntitySpawnToken b) => !a.Equals(b);
+
+        public static EntitySpawnToken Increment(EntitySpawnToken id)
+        {
+            var value = id.value;
+
+            value += 1;
+
+            return new EntitySpawnToken(value);
+        }
     }
 }

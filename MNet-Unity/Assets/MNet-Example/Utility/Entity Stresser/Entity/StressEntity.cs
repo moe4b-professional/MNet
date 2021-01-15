@@ -34,8 +34,10 @@ namespace MNet.Example
             Entity.Attributes.TryGetValue(2, out area);
         }
 
-        void Start()
+        protected override void OnSpawn()
         {
+            base.OnSpawn();
+
             name = $"Sample {Entity.ID}";
 
             ReadAttributes(out var position, out var angle, out area);

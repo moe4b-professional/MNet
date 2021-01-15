@@ -388,11 +388,7 @@ namespace MNet
 
         public override byte Deserialize(NetworkReader reader)
         {
-            var value = reader.Data[reader.Position];
-
-            reader.Position += 1;
-
-            return value;
+            return reader.Next();
         }
     }
 

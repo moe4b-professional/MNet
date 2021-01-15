@@ -302,7 +302,7 @@ namespace MNet
             RegisterMessageHandler<RoomTimeRequest>(ProcessTimeRequest);
             RegisterMessageHandler<PingRequest>(ProcessPingRequest);
 
-            RegisterMessageHandler<LoadScenesRequest>(LoadScenes);
+            RegisterMessageHandler<LoadScenesPayload>(LoadScenes);
 
             RegisterMessageHandler<ChangeRoomInfoPayload>(ChangeInfo);
         }
@@ -521,7 +521,7 @@ namespace MNet
         }
         #endregion
 
-        void LoadScenes(NetworkClient sender, ref LoadScenesRequest request)
+        void LoadScenes(NetworkClient sender, ref LoadScenesPayload payload)
         {
             if (sender != Master)
             {
@@ -529,7 +529,7 @@ namespace MNet
                 return;
             }
 
-            if (request.Mode == NetworkSceneLoadMode.Single)
+            if (payload.Mode == NetworkSceneLoadMode.Single)
             {
                 var array = Entities.Values.ToArray();
 
@@ -541,10 +541,9 @@ namespace MNet
                 }
             }
 
-            var command = LoadScenesCommand.Write(request);
-            var message = Broadcast(ref command, condition: NetworkClient.IsReady);
+            var message = Broadcast(ref payload, condition: NetworkClient.IsReady, exception: sender.ID);
 
-            if (request.Mode == NetworkSceneLoadMode.Single)
+            if (payload.Mode == NetworkSceneLoadMode.Single)
             {
                 UnbufferMessages(LoadScenesMessages);
                 LoadScenesMessages.Clear();
@@ -557,7 +556,7 @@ namespace MNet
         #region Entity
         void SpawnEntity(NetworkClient sender, ref SpawnEntityRequest request)
         {
-            if (request.Type == NetworkEntityType.SceneObject && sender != Master)
+            if (request.Type == EntityType.SceneObject && sender != Master)
             {
                 Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Scene Object");
                 return;
@@ -594,8 +593,16 @@ namespace MNet
 
             Log.Info($"Room {this.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
 
+            if (entity.IsDynamic)
+            {
+                var response = SpawnEntityResponse.Write(entity.ID, request.Token);
+                Send(ref response, sender);
+            }
+
+            NetworkClientID? exception = entity.IsDynamic ? sender.ID : null;
+
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
-            entity.SpawnMessage = Broadcast(ref command, condition: NetworkClient.IsReady);
+            entity.SpawnMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception: exception);
             BufferMessage(entity.SpawnMessage);
         }
 
@@ -639,7 +646,7 @@ namespace MNet
                 return;
             }
 
-            entity.Type = NetworkEntityType.Orphan;
+            entity.Type = EntityType.Orphan;
             entity.SetOwner(Master);
 
             MasterObjects.Add(entity);
@@ -706,7 +713,7 @@ namespace MNet
 
             for (int i = entities.Count; i-- > 0;)
             {
-                if (entities[i].Type == NetworkEntityType.SceneObject) continue;
+                if (entities[i].Type == EntityType.SceneObject) continue;
 
                 if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
                 {

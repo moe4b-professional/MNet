@@ -66,10 +66,10 @@ namespace MNet
 
                 NetworkAPI.OnProcess += Process;
 
-                Client.OnReady += ClientReadyCallback;
+                Client.Ready.OnCallback += ClientReadyCallback;
                 Client.OnDisconnect += DisconnectCallback;
 
-                Client.RegisterMessageHandler<RoomTimeResponse>(Set);
+                Client.MessageDispatcher.RegisterHandler<RoomTimeResponse>(Set);
             }
 
             static void Process()

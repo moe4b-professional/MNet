@@ -156,6 +156,8 @@ namespace MNet.Example
 				return $"Player {Random.Range(0, 1000)}";
 			}
 
+			NetworkClientProfile GenerateProfile() => new NetworkClientProfile(PlayerName);
+
 			PopupPanel Popup => Core.UI.Popup;
 
 			protected override void Configure()
@@ -164,10 +166,9 @@ namespace MNet.Example
 
 				if (PlayerPrefs.HasKey(PlayerNameKey) == false) PlayerName = GetDefaultPlayerName();
 
-				NetworkAPI.Client.AutoRegister = false;
+				NetworkAPI.Client.Register.GetProfileMethod = GenerateProfile;
 
-				NetworkAPI.Client.OnConnect += ClientConnectCallback;
-                NetworkAPI.Client.OnReady += ReadyCallback;
+                NetworkAPI.Client.Ready.OnCallback += ReadyCallback;
 
 				Core.OnInit += Init;
 			}
@@ -211,13 +212,6 @@ namespace MNet.Example
 
 					Popup.Show("Failed to Retrieve Master Info", "Retry", GetMasterInfo);
 				}
-			}
-
-            void ClientConnectCallback()
-			{
-				NetworkAPI.Client.Profile = new NetworkClientProfile(PlayerName);
-
-				NetworkAPI.Client.Register();
 			}
 
 			void ReadyCallback(ReadyClientResponse response)

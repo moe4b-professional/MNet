@@ -23,10 +23,10 @@ namespace MNet
     {
         public static class Client
         {
-            public static NetworkClientProfile Profile { get; set; }
-
             public static NetworkClient Self { get; private set; }
+
             public static NetworkClientID ID => Self.ID;
+            public static NetworkClientProfile Profile => Self.Profile;
 
             public static bool IsConnected => Realtime.IsConnected;
 
@@ -36,84 +36,25 @@ namespace MNet
                 {
                     if (Self == null) return false;
 
-                    return Room.Master == Self;
+                    return Room.Master.Client == Self;
                 }
             }
 
-            public static IReadOnlyList<NetworkEntity> Entities => Self?.Entities;
-
-            public static MessageSendQueue SendQueue { get; private set; }
-
-            #region Message Dispatcher
-            internal static Dictionary<Type, MessageCallbackDelegate> MessageDispatcher { get; private set; }
-
-            public delegate void MessageCallbackDelegate(NetworkMessage message);
-            public delegate void MessageHandlerDelegate<TPayload>(ref TPayload payload);
-
-            public static void RegisterMessageHandler<TPayload>(MessageHandlerDelegate<TPayload> handler)
-            {
-                var type = typeof(TPayload);
-
-                if (MessageDispatcher.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
-
-                MessageDispatcher.Add(type, Callback);
-
-                void Callback(NetworkMessage message)
-                {
-                    var payload = message.Read<TPayload>();
-
-                    handler(ref payload);
-                }
-            }
-            #endregion
+            public static bool IsRegistered => Register.IsComplete;
+            public static bool IsReady => Ready.IsComplete;
 
             internal static void Configure()
             {
-                IsReady = false;
-
-                MessageDispatcher = new Dictionary<Type, MessageCallbackDelegate>();
-
-                RegisterMessageHandler<RegisterClientResponse>(RegisterCallback);
-                RegisterMessageHandler<ReadyClientResponse>(ReadyCallback);
-
+                MessageDispatcher.Configure();
+                SendQueue.Configure();
+                Register.Configure();
+                Ready.Configure();
+                Entities.Configure();
                 RPR.Configure();
-
-                NetworkAPI.OnProcess += Process;
 
                 Realtime.OnConnect += ConnectCallback;
                 Realtime.OnMessage += MessageCallback;
                 Realtime.OnDisconnect += DisconnectedCallback;
-                Realtime.OnInitialize += RealtimeInitializeCallback;
-
-                Room.OnSpawnEntity += SpawnEntityCallback;
-                Room.OnDestroyEntity += DestroyEntityCallback;
-            }
-
-            static void RealtimeInitializeCallback(NetworkTransport transport)
-            {
-                SendQueue = new MessageSendQueue(transport.CheckMTU);
-            }
-
-            static void Process()
-            {
-                if (IsConnected && AppAPI.Config.QueueMessages) ResolveSendQueue();
-            }
-
-            static void ResolveSendQueue()
-            {
-                var deliveries = SendQueue.Deliveries;
-
-                for (int d = 0; d < deliveries.Count; d++)
-                {
-                    if (deliveries[d].Empty) continue;
-
-                    var buffers = deliveries[d].Read();
-
-                    for (int b = 0; b < buffers.Count; b++)
-                        Realtime.Send(buffers[b], deliveries[d].Mode);
-
-                    deliveries[d].Clear();
-                }
             }
 
             public static bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable)
@@ -142,128 +83,298 @@ namespace MNet
             {
                 Debug.Log("Client Connected");
 
-                if (AutoRegister) Register();
-
                 OnConnect?.Invoke();
             }
 
             static void MessageCallback(NetworkMessage message, DeliveryMode mode)
             {
-                if (MessageDispatcher.TryGetValue(message.Type, out var callback) == false)
+                MessageDispatcher.Invoke(message, mode);
+            }
+
+            public static class MessageDispatcher
+            {
+                static Dictionary<Type, MessageCallbackDelegate> Dictionary;
+
+                internal static void Configure()
                 {
-                    Debug.LogWarning($"Recieved Message with Payload of {message.Type} Has no Handler");
-                    return;
+                    Dictionary = new Dictionary<Type, MessageCallbackDelegate>();
                 }
 
-                callback(message);
-            }
-
-            #region Register
-            public static bool AutoRegister { get; set; } = true;
-
-            public static bool IsRegistered => Self != null;
-
-            public static void Register()
-            {
-                var request = new RegisterClientRequest(Profile);
-
-                Send(ref request);
-            }
-
-            public delegate void RegisterDelegate(RegisterClientResponse response);
-            public static event RegisterDelegate OnRegister;
-            static void RegisterCallback(ref RegisterClientResponse response)
-            {
-                Self = new NetworkClient(response.ID, Profile);
-
-                Debug.Log("Client Registered");
-
-                if (AutoReady) Ready();
-
-                OnRegister?.Invoke(response);
-            }
-            #endregion
-
-            #region Ready
-            public static bool AutoReady { get; set; } = true;
-
-            public static bool IsReady { get; private set; }
-
-            public static void Ready()
-            {
-                var request = ReadyClientRequest.Write();
-
-                Send(ref request);
-            }
-
-            public delegate void ReadyDelegate(ReadyClientResponse response);
-            public static event ReadyDelegate OnReady;
-            static void ReadyCallback(ref ReadyClientResponse response)
-            {
-                IsReady = true;
-
-                Debug.Log("Client Set Ready");
-
-                OnReady?.Invoke(response);
-            }
-            #endregion
-
-            #region Spawn Entity
-            public static void SpawnEntity(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
-            {
-                if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(prefab, out var resource) == false)
+                internal static void Invoke(NetworkMessage message, DeliveryMode mode)
                 {
-                    Debug.LogError($"Prefab '{prefab}' Not Registerd as a Network Spawnable Object");
-                    return;
+                    if (Dictionary.TryGetValue(message.Type, out var callback) == false)
+                    {
+                        Debug.LogWarning($"Recieved Message with Payload of {message.Type} Has no Handler");
+                        return;
+                    }
+
+                    callback(message);
                 }
 
-                SpawnEntity(resource, persistance : persistance, attributes: attributes, owner: owner);
+                public delegate void MessageCallbackDelegate(NetworkMessage message);
+                public delegate void MessageHandlerDelegate<TPayload>(ref TPayload payload);
+
+                public static void RegisterHandler<TPayload>(MessageHandlerDelegate<TPayload> handler)
+                {
+                    var type = typeof(TPayload);
+
+                    if (Dictionary.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
+
+                    Dictionary.Add(type, Callback);
+
+                    void Callback(NetworkMessage message)
+                    {
+                        var payload = message.Read<TPayload>();
+
+                        handler(ref payload);
+                    }
+                }
             }
 
-            public static void SpawnEntity(string name, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
+            public static class SendQueue
             {
-                if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(name, out var resource) == false)
+                public static MessageSendQueue Queue { get; private set; }
+
+                internal static void Configure()
                 {
-                    Debug.LogError($"No Network Spawnable Objects Registerd with Name '{name}'");
-                    return;
+                    Realtime.OnInitialize += RealtimeInitializeCallback;
+
+                    NetworkAPI.OnProcess += Process;
                 }
 
-                SpawnEntity(resource, persistance: persistance, attributes: attributes, owner: owner);
-            }
-
-            public static void SpawnEntity(ushort resource, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
-            {
-                var request = SpawnEntityRequest.Write(resource, persistance, attributes, owner);
-
-                Send(ref request);
-            }
-
-            #region Scene Object
-            internal static void SpawnSceneObject(ushort resource, Scene scene) => SpawnSceneObject(resource, (byte)scene.buildIndex);
-
-            internal static void SpawnSceneObject(ushort resource, byte scene)
-            {
-                if (IsMaster == false)
+                static void RealtimeInitializeCallback(NetworkTransport transport)
                 {
-                    Debug.LogError("Only the Master Client May Spawn Scene Objects, Ignoring Request");
-                    return;
+                    Queue = new MessageSendQueue(transport.CheckMTU);
                 }
 
-                var request = SpawnEntityRequest.Write(resource, scene);
+                static void Process()
+                {
+                    if (IsConnected && AppAPI.Config.QueueMessages) Resolve();
+                }
 
-                Send(ref request);
+                static void Resolve()
+                {
+                    var deliveries = Queue.Deliveries;
+
+                    for (int d = 0; d < deliveries.Count; d++)
+                    {
+                        if (deliveries[d].Empty) continue;
+
+                        var buffers = deliveries[d].Read();
+
+                        for (int b = 0; b < buffers.Count; b++)
+                            Realtime.Send(buffers[b], deliveries[d].Mode);
+
+                        deliveries[d].Clear();
+                    }
+                }
+
+                public static void Add(byte[] raw, DeliveryMode mode) => Queue.Add(raw, mode);
+
+                internal static void Clear()
+                {
+                    Queue.Clear();
+                }
             }
-            #endregion
 
-            public delegate void SpawnEntityDelegate(NetworkEntity entity);
-            public static event SpawnEntityDelegate OnSpawnEntity;
-            static void SpawnEntityCallback(NetworkEntity entity)
+            public static class Register
             {
-                if (entity.Owner != Self) return;
+                public static bool Auto { get; set; } = true;
 
-                OnSpawnEntity?.Invoke(entity);
+                public static bool IsComplete => Self != null;
+
+                public static NetworkClientProfile Profile { get; private set; }
+
+                internal static void Configure()
+                {
+                    GetProfileMethod = DefaultGetProfileMethod;
+
+                    OnConnect += ConnectCallback;
+
+                    MessageDispatcher.RegisterHandler<RegisterClientResponse>(Callback);
+                }
+
+                static void ConnectCallback()
+                {
+                    if (Auto) Request();
+                }
+
+                public static void Request()
+                {
+                    Profile = GetProfileMethod();
+
+                    var request = new RegisterClientRequest(Profile);
+
+                    Send(ref request);
+                }
+
+                public delegate NetworkClientProfile ProfileDelegate();
+                public static ProfileDelegate GetProfileMethod { get; set; }
+                static NetworkClientProfile DefaultGetProfileMethod()
+                {
+                    var name = $"Player {Random.Range(0, 1000)}";
+
+                    return new NetworkClientProfile(name);
+                }
+
+                public delegate void callbackDelegate(RegisterClientResponse response);
+                public static event callbackDelegate OnCallback;
+                static void Callback(ref RegisterClientResponse response)
+                {
+                    Self = new NetworkClient(response.ID, Profile);
+
+                    Debug.Log("Client Registered");
+
+                    OnCallback?.Invoke(response);
+                }
+
+                internal static void Clear()
+                {
+
+                }
             }
-            #endregion
+
+            public static class Ready
+            {
+                public static bool Auto { get; set; } = true;
+
+                public static bool IsComplete { get; private set; }
+
+                internal static void Configure()
+                {
+                    IsComplete = false;
+
+                    Register.OnCallback += RegisterCallback;
+
+                    MessageDispatcher.RegisterHandler<ReadyClientResponse>(Callback);
+                }
+
+                static void RegisterCallback(RegisterClientResponse response)
+                {
+                    if (Auto) Request();
+                }
+
+                public static void Request()
+                {
+                    var request = ReadyClientRequest.Write();
+
+                    Send(ref request);
+                }
+
+                public delegate void CallbackDelegate(ReadyClientResponse response);
+                public static event CallbackDelegate OnCallback;
+                static void Callback(ref ReadyClientResponse response)
+                {
+                    IsComplete = true;
+
+                    Debug.Log("Client Set Ready");
+
+                    OnCallback?.Invoke(response);
+                }
+
+                internal static void Clear()
+                {
+                    IsComplete = false;
+                }
+            }
+
+            public static class Entities
+            {
+                public static IReadOnlyList<NetworkEntity> List => Self?.Entities;
+
+                internal static void Configure()
+                {
+                    Tokens = new AutoKeyDictionary<EntitySpawnToken, NetworkEntity>(EntitySpawnToken.Increment);
+
+                    MessageDispatcher.RegisterHandler<SpawnEntityResponse>(SpawnResponse);
+
+                    Room.Entities.OnSpawn += SpawnCallback;
+                    Room.Entities.OnDestroy += DestroyCallback;
+                }
+
+                internal static void Clear()
+                {
+                    Tokens.Clear();
+                }
+
+                #region Spawn
+                static AutoKeyDictionary<EntitySpawnToken, NetworkEntity> Tokens;
+
+                public static NetworkEntity Spawn(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
+                {
+                    if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(prefab, out var resource) == false)
+                        throw new Exception($"Prefab '{prefab}' Not Registerd as a Network Spawnable Object");
+
+                    return Spawn(resource, persistance: persistance, attributes: attributes, owner: owner);
+                }
+
+                public static NetworkEntity Spawn(string name, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
+                {
+                    if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(name, out var resource) == false)
+                        throw new Exception($"No Network Spawnable Objects Registerd with Name '{name}'");
+
+                    return Spawn(resource, persistance: persistance, attributes: attributes, owner: owner);
+                }
+
+                public static NetworkEntity Spawn(ushort resource, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
+                {
+                    var token = Tokens.Reserve();
+
+                    var instance = Room.Entities.Instantiate(resource);
+
+                    instance.Setup(Self, EntityType.Dynamic, persistance, attributes);
+
+                    Tokens.Assign(token, instance);
+
+                    var request = SpawnEntityRequest.Write(resource, token, persistance, attributes, owner);
+
+                    Send(ref request);
+
+                    return instance;
+                }
+
+                static void SpawnResponse(ref SpawnEntityResponse payload)
+                {
+                    if (Tokens.TryGetValue(payload.Token, out var entity) == false)
+                    {
+                        Debug.LogError($"Couldn't Find Entity with Token {payload.Token} to Finish Spawining");
+                        return;
+                    }
+
+                    Tokens.Remove(payload.Token);
+
+                    Room.Entities.SpawnLocal(entity, payload.ID);
+                }
+
+                public delegate void SpawnDelegate(NetworkEntity entity);
+                public static event SpawnDelegate OnSpawn;
+                static void SpawnCallback(NetworkEntity entity)
+                {
+                    if (entity.Owner != Self) return;
+
+                    OnSpawn?.Invoke(entity);
+                }
+                #endregion
+
+                #region Destroy
+                public static void Destroy(NetworkEntity entity) => Destroy(entity.ID);
+                public static void Destroy(NetworkEntityID id)
+                {
+                    var request = new DestroyEntityRequest(id);
+
+                    Send(ref request);
+                }
+
+                public delegate void DestroyDelegate(NetworkEntity entity);
+                public static event DestroyDelegate OnDestroy;
+                static void DestroyCallback(NetworkEntity entity)
+                {
+                    if (entity.Owner != Self) return;
+
+                    OnDestroy?.Invoke(entity);
+                }
+                #endregion
+            }
 
             public static class RPR
             {
@@ -273,10 +384,10 @@ namespace MNet
                 {
                     promises = new AutoKeyDictionary<RprChannelID, RprPromise>(RprChannelID.Increment);
 
-                    Client.RegisterMessageHandler<RprCommand>(Command);
-                    Client.RegisterMessageHandler<RprResponse>(Response);
+                    Client.MessageDispatcher.RegisterHandler<RprCommand>(Command);
+                    Client.MessageDispatcher.RegisterHandler<RprResponse>(Response);
 
-                    Room.OnRemoveClient += RemoveClientCallback;
+                    Room.Clients.OnRemove += RemoveClientCallback;
                 }
 
                 static void Response(ref RprResponse response)
@@ -287,7 +398,7 @@ namespace MNet
                         return;
                     }
 
-                    if (Room.Clients.TryGetValue(response.Sender, out var sender) == false)
+                    if (Room.Clients.TryGet(response.Sender, out var sender) == false)
                     {
                         Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} from Unregistered Client {response.Sender}");
                         return;
@@ -356,28 +467,6 @@ namespace MNet
                 #endregion
             }
 
-            #region Destroy Entity
-            public static void DestroyEntity(NetworkEntity entity) => DestroyEntity(entity.ID);
-            public static void DestroyEntity(NetworkEntityID id)
-            {
-                var request = new DestroyEntityRequest(id);
-
-                Send(ref request);
-            }
-
-            public delegate void DestroyEntityDelegate(NetworkEntity entity);
-            public static event DestroyEntityDelegate OnDestroyEntity;
-            static void DestroyEntityCallback(NetworkEntity entity)
-            {
-                if (entity.Owner != Self) return;
-
-                OnDestroyEntity?.Invoke(entity);
-            }
-            #endregion
-
-            #region Disconnect
-            public static void Disconnect() => Realtime.Disconnect();
-
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
             static void DisconnectedCallback(DisconnectCode code)
@@ -388,15 +477,17 @@ namespace MNet
 
                 OnDisconnect?.Invoke(code);
             }
-            #endregion
+
+            public static void Disconnect() => Realtime.Disconnect();
 
             static void Clear()
             {
-                Self = null;
-
-                IsReady = false;
+                Self = default;
 
                 SendQueue.Clear();
+                Register.Clear();
+                Ready.Clear();
+                Entities.Clear();
             }
         }
     }

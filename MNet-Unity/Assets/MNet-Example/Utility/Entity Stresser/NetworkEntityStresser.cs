@@ -25,29 +25,48 @@ namespace MNet.Example
 
 		public int area = 50;
 
-		IEnumerator Start()
-		{
-			if (NetworkAPI.Client.IsMaster == false) yield break;
+		void Perform()
+        {
+			StartCoroutine(Coroutine());
+			IEnumerator Coroutine()
+			{
+				for (int i = 0; i < count; i++)
+				{
+					var attributes = new AttributesCollection();
 
-			for (int i = 0; i < count; i++)
-            {
-				Spawn();
+					StressEntity.CalculateRandomCoords(area, out Vector3 position, out float angle);
 
-				if (i % 100 == 0) yield return new WaitForEndOfFrame();
+					attributes.Set(0, position);
+					attributes.Set(1, angle);
+					attributes.Set(2, area);
+
+					NetworkAPI.Client.Entities.Spawn("Stress Entity", attributes: attributes);
+
+					if (i % 50 == 0) yield return new WaitForEndOfFrame();
+				}
 			}
 		}
 
-		void Spawn()
+#if UNITY_EDITOR
+		[CustomEditor(typeof(NetworkEntityStresser))]
+		class Inspector : Editor
 		{
-			var attributes = new AttributesCollection();
+			public override void OnInspectorGUI()
+			{
+				base.OnInspectorGUI();
 
-			StressEntity.CalculateRandomCoords(area, out Vector3 position, out float angle);
+				EditorGUILayout.Space();
 
-			attributes.Set(0, position);
-			attributes.Set(1, angle);
-			attributes.Set(2, area);
+				GUI.enabled = Application.isPlaying;
 
-			NetworkAPI.Client.SpawnEntity("Stress Entity", attributes: attributes);
+				if (GUILayout.Button("Spawn"))
+				{
+					var target = base.target as NetworkEntityStresser;
+
+					target.Perform();
+				}
+			}
 		}
+#endif
 	}
 }

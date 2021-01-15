@@ -16,11 +16,11 @@ namespace MNet
 
         public NetworkEntityID ID { get; protected set; }
 
-        public NetworkEntityType Type { get; internal set; }
+        public EntityType Type { get; internal set; }
 
-        public bool IsSceneObject => Type == NetworkEntityType.SceneObject;
-        public bool IsDynamic => Type == NetworkEntityType.Dynamic;
-        public bool IsOrphan => Type == NetworkEntityType.Orphan;
+        public bool IsSceneObject => Type == EntityType.SceneObject;
+        public bool IsDynamic => Type == EntityType.Dynamic;
+        public bool IsOrphan => Type == EntityType.Orphan;
 
         public bool IsMasterObject => CheckIfMasterObject(Type);
 
@@ -35,7 +35,7 @@ namespace MNet
 
         public override string ToString() => ID.ToString();
 
-        public NetworkEntity(NetworkClient owner, NetworkEntityID id, NetworkEntityType type, PersistanceFlags persistance)
+        public NetworkEntity(NetworkClient owner, NetworkEntityID id, EntityType type, PersistanceFlags persistance)
         {
             SetOwner(owner);
 
@@ -49,6 +49,6 @@ namespace MNet
         }
 
         //Static Utility
-        public static bool CheckIfMasterObject(NetworkEntityType type) => type == NetworkEntityType.SceneObject || type == NetworkEntityType.Orphan;
+        public static bool CheckIfMasterObject(EntityType type) => type == EntityType.SceneObject || type == EntityType.Orphan;
     }
 }

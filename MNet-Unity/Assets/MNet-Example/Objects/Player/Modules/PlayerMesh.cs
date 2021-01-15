@@ -36,8 +36,10 @@ namespace MNet.Example
 			mesh = GetComponent<MeshRenderer>();
 		}
 
-		void Start()
+		protected override void OnSpawn()
 		{
+			base.OnSpawn();
+
 			if (Entity.IsMine) SyncVar(nameof(Color), Random.ColorHSV());
 		}
 	}

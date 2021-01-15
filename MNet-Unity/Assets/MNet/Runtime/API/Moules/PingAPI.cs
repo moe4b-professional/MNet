@@ -44,7 +44,7 @@ namespace MNet
 
                 NetworkAPI.OnProcess += Process;
 
-                Client.RegisterMessageHandler<PingResponse>(Register);
+                Client.MessageDispatcher.RegisterHandler<PingResponse>(Register);
                 Client.OnDisconnect += ClientDisconnectCallback;
             }
 

@@ -23,7 +23,7 @@ namespace MNet
     public class NetworkClient
     {
         public NetworkClientID ID { get; protected set; }
-        public bool IsMaster => this == NetworkAPI.Room.Master;
+        public bool IsMaster => this == NetworkAPI.Room.Master.Client;
 
         public NetworkClientProfile Profile { get; protected set; }
         public string Name => Profile == null ? "Anonymous Client" : Profile.Name;

@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
 	public class ScenesLoad : NetworkBehaviour
@@ -25,16 +27,31 @@ namespace MNet
 
 		public LoadSceneMode mode = LoadSceneMode.Single;
 
-		public float delay = 2f;
-
-		IEnumerator Start()
-		{
-			if (NetworkAPI.Client.IsMaster)
-			{
-				yield return new WaitForSeconds(delay);
-
-				NetworkAPI.Room.Scenes.Load(mode, scenes);
-			}
+		void Request()
+        {
+			NetworkAPI.Room.Scenes.Load(mode, scenes);
 		}
-	}
+
+#if UNITY_EDITOR
+		[CustomEditor(typeof(ScenesLoad))]
+		class Inspector : Editor
+        {
+            public override void OnInspectorGUI()
+            {
+                base.OnInspectorGUI();
+
+				EditorGUILayout.Space();
+
+				GUI.enabled = Application.isPlaying;
+
+				if(GUILayout.Button("Load"))
+                {
+					var target = base.target as ScenesLoad;
+
+					target.Request();
+                }
+            }
+        }
+#endif
+    }
 }

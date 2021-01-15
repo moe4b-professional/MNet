@@ -76,13 +76,6 @@ namespace MNet
                 Register(this);
                 return;
             }
-
-            for (ushort i = 0; i < list.Count; i++)
-            {
-                if (list[i] == null) return;
-
-                list[i].Setup();
-            }
         }
 
         void Start()
@@ -118,7 +111,7 @@ namespace MNet
 
                 if (list[resource].IsReady) continue;
 
-                NetworkAPI.Client.SpawnSceneObject(resource, Scene);
+                NetworkAPI.Room.Entities.SpawnSceneObject(resource, Scene);
             }
         }
         #endregion
@@ -196,6 +189,18 @@ namespace MNet
             if (collection.TryGetValue(scene, out component)) return component;
 
             return null;
+        }
+
+        public static NetworkEntity LocateEntity(int sceneIndex, ushort resource)
+        {
+            var scene = Find(sceneIndex);
+
+            if (scene == null) throw new Exception($"Couldn't Find Scene with Index {sceneIndex}");
+
+            if (scene.Find(resource, out var entity) == false)
+                throw new Exception($"Couldn't Find NetworkBehaviour {resource} In Scene {sceneIndex}");
+
+            return entity;
         }
 
         public static void Register(NetworkEntity entity)

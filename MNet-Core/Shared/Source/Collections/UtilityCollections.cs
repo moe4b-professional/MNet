@@ -68,27 +68,40 @@ namespace MNet
     {
         protected HashSet<TKey> hash;
 
-        protected ConcurrentQueue<TKey> vacant;
+        protected Queue<TKey> vacant;
 
         protected TKey index;
 
-        public void Increment() => index = Incrementor(index);
+        public TKey Increment()
+        {
+            var key = index;
+
+            index = Incrementor(index);
+
+            return key;
+        }
 
         public delegate TKey IncrementDelegate(TKey value);
         public IncrementDelegate Incrementor { get; protected set; }
 
         public TKey Reserve()
         {
-            if (vacant.TryDequeue(out var key) == false)
+            if (vacant.Count > 0)
             {
-                key = index;
+                var key = vacant.Dequeue();
 
-                Increment();
+                Add(key);
+
+                return key;
             }
+            else
+            {
+                var key = Increment();
 
-            Add(key);
+                Add(key);
 
-            return key;
+                return key;
+            }
         }
 
         void Add(TKey key)
@@ -105,17 +118,24 @@ namespace MNet
             return true;
         }
 
+        public bool Contains(TKey key) => hash.Contains(key);
+
         void Remove(TKey key)
         {
             hash.Remove(key);
         }
 
-        public bool Contains(TKey key) => hash.Contains(key);
+        public void Clear()
+        {
+            index = default;
+            hash.Clear();
+            vacant.Clear();
+        }
 
         public AutoKeyCollection(IncrementDelegate incrementor, TKey initial)
         {
             hash = new HashSet<TKey>();
-            vacant = new ConcurrentQueue<TKey>();
+            vacant = new Queue<TKey>();
 
             index = initial;
             this.Incrementor = incrementor;
@@ -158,6 +178,12 @@ namespace MNet
             Keys.Free(key);
 
             return removed;
+        }
+
+        public virtual void Clear()
+        {
+            Dictionary.Clear();
+            Keys.Clear();
         }
 
         public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor, TKey initial)

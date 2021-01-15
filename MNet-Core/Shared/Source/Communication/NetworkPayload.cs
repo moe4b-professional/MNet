@@ -181,14 +181,15 @@ namespace MNet
             Register<ChangeEntityOwnerRequest>(47);
             Register<ChangeEntityOwnerCommand>(48);
 
-            Register<LoadScenesRequest>(49);
-            Register<LoadScenesCommand>(50);
+            Register<LoadScenesPayload>(49);
 
             Register<RprRequest>(51);
             Register<RprResponse>(52);
             Register<RprCommand>(53);
 
             Register<ChangeRoomInfoPayload>(54);
+
+            Register<SpawnEntityResponse>(55);
         }
 
         static NetworkPayload()
@@ -462,11 +463,14 @@ namespace MNet
     [Serializable]
     public struct SpawnEntityRequest : INetworkSerializable
     {
-        NetworkEntityType type;
-        public NetworkEntityType Type => type;
+        EntityType type;
+        public EntityType Type => type;
 
         ushort resource;
         public ushort Resource { get { return resource; } }
+
+        EntitySpawnToken token;
+        public EntitySpawnToken Token => token;
 
         PersistanceFlags persistance;
         public PersistanceFlags Persistance => persistance;
@@ -488,13 +492,14 @@ namespace MNet
 
             switch (type)
             {
-                case NetworkEntityType.Dynamic:
+                case EntityType.Dynamic:
+                    context.Select(ref token);
                     context.Select(ref persistance);
                     context.Select(ref attributes);
                     context.Select(ref owner);
                     break;
 
-                case NetworkEntityType.SceneObject:
+                case EntityType.SceneObject:
                     context.Select(ref scene);
                     break;
 
@@ -504,12 +509,13 @@ namespace MNet
             }
         }
 
-        public static SpawnEntityRequest Write(ushort resource, PersistanceFlags persistance, AttributesCollection attributes, NetworkClientID? owner = null)
+        public static SpawnEntityRequest Write(ushort resource, EntitySpawnToken token, PersistanceFlags persistance, AttributesCollection attributes, NetworkClientID? owner = null)
         {
             var request = new SpawnEntityRequest()
             {
-                type = NetworkEntityType.Dynamic,
+                type = EntityType.Dynamic,
                 resource = resource,
+                token = token,
                 persistance = persistance,
                 attributes = attributes,
                 owner = owner,
@@ -522,12 +528,39 @@ namespace MNet
         {
             var request = new SpawnEntityRequest()
             {
-                type = NetworkEntityType.SceneObject,
+                type = EntityType.SceneObject,
                 scene = scene,
                 resource = resource,
             };
 
             return request;
+        }
+    }
+
+    [Preserve]
+    public struct SpawnEntityResponse : INetworkSerializable
+    {
+        NetworkEntityID id;
+        public NetworkEntityID ID => id;
+
+        EntitySpawnToken token;
+        public EntitySpawnToken Token => token;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref id);
+            context.Select(ref token);
+        }
+
+        public static SpawnEntityResponse Write(NetworkEntityID id, EntitySpawnToken token)
+        {
+            var response = new SpawnEntityResponse()
+            {
+                id = id,
+                token = token,
+            };
+
+            return response;
         }
     }
 
@@ -541,8 +574,8 @@ namespace MNet
         ushort resource;
         public ushort Resource { get { return resource; } }
 
-        NetworkEntityType type;
-        public NetworkEntityType Type => type;
+        EntityType type;
+        public EntityType Type => type;
 
         NetworkClientID owner;
         public NetworkClientID Owner { get { return owner; } }
@@ -559,7 +592,7 @@ namespace MNet
         //Yes, I know, mutable structs are "evil", I'll be careful, I swear
         public SpawnEntityCommand MakeOrphan()
         {
-            type = NetworkEntityType.Orphan;
+            type = EntityType.Orphan;
 
             return this;
         }
@@ -574,18 +607,18 @@ namespace MNet
 
             switch (type)
             {
-                case NetworkEntityType.Dynamic:
+                case EntityType.Dynamic:
                     context.Select(ref owner);
                     context.Select(ref persistance);
                     context.Select(ref attributes);
                     break;
 
-                case NetworkEntityType.Orphan:
+                case EntityType.Orphan:
                     context.Select(ref persistance);
                     context.Select(ref attributes);
                     break;
 
-                case NetworkEntityType.SceneObject:
+                case EntityType.SceneObject:
                     context.Select(ref scene);
                     break;
 
