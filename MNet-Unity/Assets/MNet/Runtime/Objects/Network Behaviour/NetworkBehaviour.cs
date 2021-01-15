@@ -167,11 +167,17 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var payload = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, raw);
+            var request = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, raw);
 
-            if (exception != null) payload.Except(exception.ID);
+            if (exception != null) request.Except(exception.ID);
 
-            return SendRPC(bind, payload);
+            if (exception != NetworkAPI.Client.Self)
+            {
+                var command = RpcCommand.Write(NetworkAPI.Client.ID, request);
+                InvokeRPC(command);
+            }
+
+            return SendRPC(bind, request);
         }
 
         protected bool TargetRPC(MethodInfo method, NetworkClient target, params object[] arguments)
@@ -190,9 +196,16 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var payload = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, raw);
+            var request = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, raw);
 
-            return SendRPC(bind, payload);
+            if (target == NetworkAPI.Client.Self)
+            {
+                var command = RpcCommand.Write(NetworkAPI.Client.ID, request);
+                InvokeRPC(command);
+                return true;
+            }
+
+            return SendRPC(bind, request);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(MethodInfo method, NetworkClient target, params object[] arguments)
@@ -213,12 +226,20 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var payload = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
+            var request = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
 
-            if (SendRPC(bind, payload) == false)
+            if(target == NetworkAPI.Client.Self)
             {
-                Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
-                return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                var command = RpcCommand.Write(NetworkAPI.Client.ID, request);
+                InvokeRPC(command);
+            }
+            else
+            {
+                if (SendRPC(bind, request) == false)
+                {
+                    Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
+                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                }
             }
 
             await UniTask.WaitUntil(promise.IsComplete);
@@ -263,9 +284,10 @@ namespace MNet
             }
 
             object[] arguments;
+            RpcInfo info;
             try
             {
-                arguments = bind.ReadArguments(command);
+                arguments = bind.ReadArguments(command, out info);
             }
             catch (Exception ex)
             {
@@ -379,6 +401,9 @@ namespace MNet
             }
 
             var request = bind.CreateRequest(value);
+
+            var command = SyncVarCommand.Write(NetworkAPI.Client.ID, request);
+            InvokeSyncVar(command);
 
             return SendSyncVar(bind, request);
         }

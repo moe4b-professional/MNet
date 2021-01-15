@@ -69,13 +69,15 @@ namespace MNet
             return raw;
         }
 
-        public object[] ReadArguments(RpcCommand command)
+        public object[] ReadArguments(RpcCommand command, out RpcInfo info)
         {
             var arguments = command.Read(ParametersInfo, 1);
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
 
-            arguments[arguments.Length - 1] = new RpcInfo(sender, command.Time);
+            info = new RpcInfo(sender);
+
+            arguments[arguments.Length - 1] = info;
 
             return arguments;
         }
@@ -120,19 +122,13 @@ namespace MNet
         public NetworkClient Sender { get; private set; }
 
         /// <summary>
-        /// Time this RPC Request was Invoked on the Server
-        /// </summary>
-        public NetworkTimeSpan Time { get; private set; }
-
-        /// <summary>
         /// Is this RPC Request the Result of the Room's Buffer
         /// </summary>
         public bool IsBuffered { get; private set; }
 
-        public RpcInfo(NetworkClient sender, NetworkTimeSpan time)
+        public RpcInfo(NetworkClient sender)
         {
             this.Sender = sender;
-            this.Time = time;
 
             this.IsBuffered = NetworkAPI.Realtime.IsOnBuffer;
         }

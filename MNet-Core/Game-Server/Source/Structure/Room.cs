@@ -202,7 +202,7 @@ namespace MNet
             return message;
         }
 
-        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception = null, BroadcastCondition condition = null)
+        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null, BroadcastCondition condition = null)
         {
             var message = NetworkMessage.Write(ref payload);
 
@@ -212,7 +212,8 @@ namespace MNet
             {
                 foreach (var client in Clients.Values)
                 {
-                    if (exception == client.ID) continue;
+                    if (exception1 == client.ID) continue;
+                    if (exception2 == client.ID) continue;
 
                     if (condition?.Invoke(client) == false) continue;
 
@@ -223,9 +224,10 @@ namespace MNet
             {
                 foreach (var client in Clients.Values)
                 {
-                    if (exception != null && exception == client.ID) continue;
+                    if (exception1 == client.ID) continue;
+                    if (exception2 == client.ID) continue;
 
-                    if (condition != null && condition(client) == false) continue;
+                    if (condition?.Invoke(client) == false) continue;
 
                     TransportContext.Send(client.ID, raw, mode);
                 }
@@ -418,7 +420,7 @@ namespace MNet
 
             if (payload.RemoveAttributes) Attributes.RemoveAll(payload.RemovedAttributes);
 
-            Broadcast(ref payload, condition: NetworkClient.IsReady, exception: sender.ID);
+            Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
         }
 
         #region RPC
@@ -446,9 +448,9 @@ namespace MNet
 
         void InvokeBroadcastRPC(NetworkClient sender, NetworkEntity entity, ref RpcRequest request, DeliveryMode mode)
         {
-            var command = RpcCommand.Write(sender.ID, request, time);
+            var command = RpcCommand.Write(sender.ID, request);
 
-            var message = Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady, exception: request.Exception);
+            var message = Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady, exception1: request.Exception, exception2: sender.ID);
 
             entity.RpcBuffer.Set(message, ref request, BufferMessage, UnbufferMessages);
         }
@@ -462,7 +464,7 @@ namespace MNet
                 return;
             }
 
-            var command = RpcCommand.Write(sender.ID, request, time);
+            var command = RpcCommand.Write(sender.ID, request);
 
             Send(ref command, target, mode);
         }
@@ -499,7 +501,7 @@ namespace MNet
 
             var command = SyncVarCommand.Write(sender.ID, request);
 
-            var message = Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady);
+            var message = Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady, exception1: sender.ID);
 
             entity.SyncVarBuffer.Set(message, request, BufferMessage, UnbufferMessage);
         }
@@ -541,7 +543,7 @@ namespace MNet
                 }
             }
 
-            var message = Broadcast(ref payload, condition: NetworkClient.IsReady, exception: sender.ID);
+            var message = Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
 
             if (payload.Mode == NetworkSceneLoadMode.Single)
             {
@@ -602,7 +604,7 @@ namespace MNet
             NetworkClientID? exception = entity.IsDynamic ? sender.ID : null;
 
             var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
-            entity.SpawnMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception: exception);
+            entity.SpawnMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception1: exception);
             BufferMessage(entity.SpawnMessage);
         }
 
@@ -633,7 +635,7 @@ namespace MNet
             UnbufferMessage(entity.OwnershipMessage);
 
             var command = new ChangeEntityOwnerCommand(owner.ID, request.Entity);
-            entity.OwnershipMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception: sender.ID);
+            entity.OwnershipMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception1: sender.ID);
 
             BufferMessage(entity.OwnershipMessage);
         }

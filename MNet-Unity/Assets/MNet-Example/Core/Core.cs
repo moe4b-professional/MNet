@@ -86,7 +86,7 @@ namespace MNet.Example
 
 				if (mode == LoadSceneMode.Single)
 				{
-					await UI.Fader.Transition(0f, 0.2f);
+					UI.Fader.Transition(0f, 0.2f).Forget();
 				}
 			}
 		}

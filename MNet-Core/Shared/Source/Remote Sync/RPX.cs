@@ -133,38 +133,6 @@ namespace MNet
             return results;
         }
 
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref entity);
-            context.Select(ref behaviour);
-            context.Select(ref method);
-
-            context.Select(ref raw);
-
-            context.Select(ref type);
-
-            switch (type)
-            {
-                case RpcType.Broadcast:
-                    context.Select(ref bufferMode);
-                    context.Select(ref exception);
-                    break;
-
-                case RpcType.Target:
-                    context.Select(ref target);
-                    break;
-
-                case RpcType.Query:
-                    context.Select(ref target);
-                    context.Select(ref returnChannel);
-                    break;
-
-                default:
-                    Log.Error($"No Case Defined for {type} in {GetType()}");
-                    break;
-            }
-        }
-
         public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
@@ -301,9 +269,6 @@ namespace MNet
         RpcType type;
         public RpcType Type => type;
 
-        NetworkTimeSpan time;
-        public NetworkTimeSpan Time => time;
-
         RprChannelID returnChannel;
         public RprChannelID ReturnChannel => returnChannel;
 
@@ -335,7 +300,6 @@ namespace MNet
             entity.Serialize(writer);
             behaviour.Serialize(writer);
             method.Serialize(writer);
-            time.Serialize(writer);
 
             writer.Write(raw);
 
@@ -365,7 +329,6 @@ namespace MNet
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
             method.Deserialize(reader);
-            time.Deserialize(reader);
 
             reader.Read(out raw);
 
@@ -391,7 +354,7 @@ namespace MNet
 
         //Static Utility
 
-        public static RpcCommand Write(NetworkClientID sender, RpcRequest request, NetworkTimeSpan time)
+        public static RpcCommand Write(NetworkClientID sender, RpcRequest request)
         {
             var command = new RpcCommand()
             {
@@ -402,25 +365,6 @@ namespace MNet
                 raw = request.Raw,
                 type = request.Type,
                 returnChannel = request.ReturnChannel,
-                time = time,
-            };
-
-            return command;
-        }
-
-        public static RpcCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RemoteResponseType result, NetworkTimeSpan time)
-        {
-            var raw = NetworkSerializer.Serialize(result);
-
-            var command = new RpcCommand()
-            {
-                sender = sender,
-                entity = entity,
-                behaviour = behaviour,
-                method = method,
-                raw = raw,
-                type = RpcType.Target,
-                time = time,
             };
 
             return command;

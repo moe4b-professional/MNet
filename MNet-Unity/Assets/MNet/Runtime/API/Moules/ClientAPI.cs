@@ -456,6 +456,14 @@ namespace MNet
                 public static bool Respond(NetworkClientID target, RprChannelID channel, object value, Type type)
                 {
                     var request = RprRequest.Write(target, channel, value, type);
+
+                    if(target == Client.ID)
+                    {
+                        var response = RprResponse.Write(Client.ID, request);
+                        Response(ref response);
+                        return true;
+                    }
+
                     return Send(ref request);
                 }
 
