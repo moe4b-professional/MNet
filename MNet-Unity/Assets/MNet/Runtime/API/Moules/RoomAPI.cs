@@ -441,7 +441,7 @@ namespace MNet
 
             static void ChangeEntityOwner(ref ChangeEntityOwnerCommand command)
             {
-                if (Clients.TryGetValue(command.Client, out var owner) == false)
+                if (Clients.TryGetValue(command.Client, out var client) == false)
                 {
                     Debug.LogWarning($"No Client {command.Client} Found to Takeover Entity {command.Entity}");
                     return;
@@ -449,12 +449,16 @@ namespace MNet
 
                 if (Entities.TryGetValue(command.Entity, out var entity) == false)
                 {
-                    Debug.LogWarning($"No Entity {command.Entity} To be Taken Over by Client {owner}");
+                    Debug.LogWarning($"No Entity {command.Entity} To be Taken Over by Client {client}");
                     return;
                 }
 
+                ChangeEntityOwner(client, entity);
+            }
+            internal static void ChangeEntityOwner(NetworkClient client, NetworkEntity entity)
+            {
                 entity.Owner?.Entities.Remove(entity);
-                entity.SetOwner(owner);
+                entity.SetOwner(client);
                 entity.Owner?.Entities.Add(entity);
             }
 

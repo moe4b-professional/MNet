@@ -372,16 +372,19 @@ namespace MNet
 
             var type = GetType();
 
-            var properties = type.GetProperties(flags).Where(SyncVarAttribute.Defined).OrderBy(SyncVarBind.GetName).ToArray();
+            var fields = type.GetFields(flags).Cast<MemberInfo>();
+            var properties = type.GetProperties(flags).Cast<MemberInfo>();
 
-            if (properties.Length > byte.MaxValue)
+            var members = fields.Union(properties).Where(SyncVarAttribute.Defined).OrderBy(SyncVarBind.GetName).ToArray();
+
+            if (members.Length > byte.MaxValue)
                 throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} SyncVars Defined");
 
-            for (byte i = 0; i < properties.Length; i++)
+            for (byte i = 0; i < members.Length; i++)
             {
-                var attribute = SyncVarAttribute.Retrieve(properties[i]);
+                var attribute = SyncVarAttribute.Retrieve(members[i]);
 
-                var bind = new SyncVarBind(this, attribute, properties[i], i);
+                var bind = new SyncVarBind(this, attribute, members[i], i);
 
                 if (SyncVars.Contains(bind.Name))
                     throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
@@ -407,6 +410,45 @@ namespace MNet
             var request = bind.CreateRequest(value);
 
             return SendSyncVar(bind, request);
+        }
+        #endregion
+
+        #region Hooks
+        protected void RegisterSyncVarHook<T>(string name, T field, SyncVarHook<T> hook)
+        {
+            RegisterSyncVarHook<T>(name, hook);
+        }
+        protected void RegisterSyncVarHook<T>(string name, SyncVarHook<T> hook)
+        {
+            if (SyncVars.TryGetValue(name, out var bind) == false)
+            {
+                Debug.LogWarning($"No SyncVar '{GetType().Name}->{name}' Found on Register Hook on");
+                return;
+            }
+
+            if(bind.Hooks.Contains(hook))
+            {
+                Debug.LogWarning($"SyncVar Hook {hook.Method.Name} Already Registered for SyncVar '{GetType().Name}->{name}' Cannot Register Hook More than Once");
+                return;
+            }
+
+            bind.Hooks.Add(hook);
+        }
+
+        protected void UnregisterSyncVarHook<T>(string name, T field, SyncVarHook<T> hook)
+        {
+            UnregisterSyncVarHook(name, hook);
+        }
+        protected void UnregisterSyncVarHook<T>(string name, SyncVarHook<T> hook)
+        {
+            if (SyncVars.TryGetValue(name, out var bind) == false)
+            {
+                Debug.LogWarning($"No SyncVar '{GetType().Name}->{name}' Found on Register Hook on");
+                return;
+            }
+
+            if (bind.Hooks.Remove(hook) == false)
+                Debug.LogWarning($"No SyncVar Hook {hook.Method.Name} for SyncVar '{GetType().Name}->{name}' was Removed because it wasn't Registered to begin With");
         }
         #endregion
 
@@ -441,10 +483,13 @@ namespace MNet
                 return;
             }
 
-            object value;
+            var oldValue = bind.GetValue();
+
+            object newValue;
+            SyncVarInfo info;
             try
             {
-                value = bind.ParseValue(command);
+                bind.ParseCommand(command, out newValue, out info);
             }
             catch (Exception ex)
             {
@@ -458,11 +503,24 @@ namespace MNet
 
             try
             {
-                bind.Set(value);
+                bind.SetValue(newValue);
             }
             catch (Exception)
             {
-                var text = $"Error Trying to Set SyncVar '{bind}' With Value '{value}', " +
+                var text = $"Error Trying to Set SyncVar '{bind}' With Value '{newValue}', " +
+                    $"Please Ensure SyncVar is Implemented Correctly";
+
+                Debug.LogWarning(text, this);
+                return;
+            }
+
+            try
+            {
+                bind.InvokeHooks(oldValue, newValue, info);
+            }
+            catch (Exception)
+            {
+                var text = $"Error Trying to Invoke SyncVar Hooks for '{bind}' With Values '{oldValue}'/'{newValue}', " +
                     $"Please Ensure SyncVar is Implemented Correctly";
 
                 Debug.LogWarning(text, this);

@@ -26,21 +26,75 @@ namespace MNet
         public NetworkBehaviour Behaviour { get; protected set; }
         public NetworkEntity Entity => Behaviour.Entity;
 
+        #region Attribute
         public SyncVarAttribute Attribute { get; protected set; }
         public RemoteAuthority Authority => Attribute.Authority;
         public DeliveryMode DeliveryMode => Attribute.Mode;
+        #endregion
+
+        #region Field
+        public FieldInfo FieldInfo { get; protected set; }
+        public bool IsField => FieldInfo != null;
 
         public PropertyInfo PropertyInfo { get; protected set; }
+        public bool IsProperty => PropertyInfo != null;
 
         public SyncVarFieldID FieldID { get; protected set; }
 
         public string Name { get; protected set; }
 
-        public Type Type => PropertyInfo.PropertyType;
+        public Type Type
+        {
+            get
+            {
+                if(IsField) return FieldInfo.FieldType;
 
-        public object Get() => PropertyInfo.GetValue(Behaviour);
+                if(IsProperty) return PropertyInfo.PropertyType;
 
-        public void Set(object value) => PropertyInfo.SetValue(Behaviour, value);
+                throw new NotImplementedException();
+            }
+        }
+        #endregion
+
+        #region Hooks
+        public List<Delegate> Hooks { get; protected set; }
+
+        public void InvokeHooks(object oldValue, object newValue, SyncVarInfo info)
+        {
+            for (int i = 0; i < Hooks.Count; i++)
+                Hooks[i].DynamicInvoke(oldValue, newValue, info);
+        }
+        #endregion
+
+        #region Value Accessors
+        public object GetValue()
+        {
+            if (IsField)
+                return FieldInfo.GetValue(Behaviour);
+
+            if (IsProperty)
+                return PropertyInfo.GetValue(Behaviour);
+
+            throw new NotImplementedException();
+        }
+
+        public void SetValue(object value)
+        {
+            if (IsField)
+            {
+                FieldInfo.SetValue(Behaviour, value);
+                return;
+            }
+
+            if (IsProperty)
+            {
+                PropertyInfo.SetValue(Behaviour, value);
+                return;
+            }
+
+            throw new NotImplementedException();
+        }
+        #endregion
 
         public SyncVarRequest CreateRequest(object value)
         {
@@ -49,44 +103,71 @@ namespace MNet
             return request;
         }
 
-        public object ParseValue(SyncVarCommand command)
+        public void ParseCommand(SyncVarCommand command, out object value, out SyncVarInfo info)
         {
-            var value = command.Read(Type);
+            value = command.Read(Type);
 
-            return value;
+            NetworkAPI.Room.Clients.TryGetValue(command.Sender, out var sender);
+
+            info = new SyncVarInfo(sender);
         }
 
-        public override string ToString() => $"{Entity}->{Name}";
+        public override string ToString() => $"{Behaviour}->{Name}";
 
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, PropertyInfo property, byte index)
+        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, MemberInfo member, byte index)
         {
             this.Behaviour = behaviour;
 
             this.Attribute = attribute;
 
-            this.PropertyInfo = property;
-            Name = GetName(PropertyInfo);
-            this.FieldID = new SyncVarFieldID(index);
+            FieldInfo = member as FieldInfo;
+            PropertyInfo = member as PropertyInfo;
 
-            if (property.SetMethod == null) throw FormatInvalidPropertyException(behaviour, property, "Setter");
+            Name = GetName(member);
+            FieldID = new SyncVarFieldID(index);
 
-            if (property.GetMethod == null) throw FormatInvalidPropertyException(behaviour, property, "Getter");
+            Hooks = new List<Delegate>();
+
+            if (IsProperty)
+            {
+                if (PropertyInfo.SetMethod == null) throw FormatInvalidPropertyAcessorException(behaviour, PropertyInfo, "Setter");
+                if (PropertyInfo.GetMethod == null) throw FormatInvalidPropertyAcessorException(behaviour, PropertyInfo, "Getter");
+            }
         }
 
         //Static Utility
 
-        public static Exception FormatInvalidPropertyException<T>(T type, PropertyInfo property, string missing)
+        public static string GetName(MemberInfo info) => info.Name;
+
+        public static Exception FormatInvalidPropertyAcessorException<T>(T type, PropertyInfo property, string missing)
         {
             var text = $"{type.GetType().Name}->{property.Name}' Property Cannot be Used as a SyncVar " +
                     $"as it does not have a {missing}";
 
             throw new Exception(text);
         }
-
-        public static string GetName(PropertyInfo info) => info.Name;
     }
 
-    [AttributeUsage(AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
+    public struct SyncVarInfo
+    {
+        public NetworkClient Sender { get; private set; }
+
+        /// <summary>
+        /// Is this RPC Request the Result of the Room's Buffer
+        /// </summary>
+        public bool IsBuffered { get; private set; }
+
+        public SyncVarInfo(NetworkClient sender)
+        {
+            this.Sender = sender;
+
+            this.IsBuffered = NetworkAPI.Realtime.IsOnBuffer;
+        }
+    }
+
+    public delegate void SyncVarHook<T>(T oldValue, T newValue, SyncVarInfo info);
+
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class SyncVarAttribute : Attribute
     {
         public RemoteAuthority Authority { get; set; } = RemoteAuthority.Any;
@@ -97,8 +178,8 @@ namespace MNet
 
         }
 
-        public static SyncVarAttribute Retrieve(PropertyInfo info) => info.GetCustomAttribute<SyncVarAttribute>(true);
+        public static SyncVarAttribute Retrieve(MemberInfo info) => info.GetCustomAttribute<SyncVarAttribute>(true);
 
-        public static bool Defined(PropertyInfo info) => Retrieve(info) != null;
+        public static bool Defined(MemberInfo info) => Retrieve(info) != null;
     }
 }

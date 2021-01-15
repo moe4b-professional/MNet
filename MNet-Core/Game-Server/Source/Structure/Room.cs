@@ -624,8 +624,10 @@ namespace MNet
             entity.Owner?.Entities.Add(entity);
 
             UnbufferMessage(entity.OwnershipMessage);
+
             var command = new ChangeEntityOwnerCommand(owner.ID, request.Entity);
-            entity.OwnershipMessage = Broadcast(ref command, condition: NetworkClient.IsReady);
+            entity.OwnershipMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception: sender.ID);
+
             BufferMessage(entity.OwnershipMessage);
         }
 

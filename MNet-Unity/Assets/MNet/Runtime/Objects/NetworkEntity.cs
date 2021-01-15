@@ -88,6 +88,8 @@ namespace MNet
 
             var requst = new ChangeEntityOwnerRequest(reciever.ID, ID);
 
+            NetworkAPI.Room.ChangeEntityOwner(reciever, this);
+
             return NetworkAPI.Client.Send(ref requst);
         }
         #endregion

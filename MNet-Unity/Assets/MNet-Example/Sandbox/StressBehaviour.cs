@@ -23,13 +23,9 @@ namespace MNet.Example
 	{
 		public float interval = 0.1f;
 
-		string var = default;
+		[SerializeField]
 		[SyncVar(Authority = RemoteAuthority.Owner)]
-		public string Var
-		{
-			get => var;
-			set => var = value;
-		}
+		string var = default;
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void Call(string arg, RpcInfo infp)
@@ -39,15 +35,18 @@ namespace MNet.Example
 
 		void Start()
 		{
-			if (Entity.IsMine) StartCoroutine(Procedure());
+			StartCoroutine(Procedure());
 		}
 
 		IEnumerator Procedure()
 		{
 			while (Entity.IsConnected)
 			{
-				SyncVar(nameof(Var), Var, "Hello World");
-				BroadcastRPC(Call, "Hello World");
+				if (Entity.IsMine)
+				{
+					SyncVar(nameof(var), var, "Hello World");
+					BroadcastRPC(Call, "Hello World");
+				}
 
 				yield return new WaitForSeconds(interval);
 			}
