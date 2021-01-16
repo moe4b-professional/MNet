@@ -295,13 +295,13 @@ namespace MNet
 
             RegisterMessageHandler<SpawnEntityRequest>(SpawnEntity);
             RegisterMessageHandler<ChangeEntityOwnerRequest>(ChangeEntityOwner);
-            RegisterMessageHandler<DestroyEntityRequest>(DestroyEntity);
+            RegisterMessageHandler<DestroyEntityPayload>(DestroyEntity);
 
             RegisterMessageHandler<RpcRequest>(InvokeRPC);
             RegisterMessageHandler<SyncVarRequest>(InvokeSyncVar);
             RegisterMessageHandler<RprRequest>(InvokeRPR);
 
-            RegisterMessageHandler<RoomTimeRequest>(ProcessTimeRequest);
+            RegisterMessageHandler<TimeRequest>(ProcessTimeRequest);
             RegisterMessageHandler<PingRequest>(ProcessPingRequest);
 
             RegisterMessageHandler<LoadScenesPayload>(LoadScenes);
@@ -389,7 +389,7 @@ namespace MNet
         {
             client.SetReady();
 
-            var time = new RoomTimeResponse(this.time, request.Timestamp);
+            var time = new TimeResponse(this.time, request.Timestamp);
 
             ///DO NOT PASS the Message Buffer in as an argument for the ReadyClientResponse
             ///You'll get what I can only describe as a very rare single-threaded race condition
@@ -508,9 +508,9 @@ namespace MNet
         #endregion
 
         #region Utility Requests
-        void ProcessTimeRequest(NetworkClient sender, ref RoomTimeRequest request)
+        void ProcessTimeRequest(NetworkClient sender, ref TimeRequest request)
         {
-            var response = new RoomTimeResponse(time, request.Timestamp);
+            var response = new TimeResponse(time, request.Timestamp);
 
             Send(ref response, sender);
         }
@@ -539,7 +539,7 @@ namespace MNet
                 {
                     if (array[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
 
-                    DestroyEntity(array[i], false);
+                    DestroyEntity(array[i]);
                 }
             }
 
@@ -658,23 +658,26 @@ namespace MNet
             MessageBuffer.Set(bufferIndex, message);
         }
 
-        void DestroyEntity(NetworkClient sender, ref DestroyEntityRequest request)
+        void DestroyEntity(NetworkClient sender, ref DestroyEntityPayload payload)
         {
-            if (Entities.TryGetValue(request.ID, out var entity) == false)
+            if (Entities.TryGetValue(payload.ID, out var entity) == false)
             {
-                Log.Warning($"Client {sender} Trying to Destroy Non Registered Entity {request.ID}");
+                Log.Warning($"Client {sender} Trying to Destroy Non Registered Entity {payload.ID}");
                 return;
             }
 
             if (sender != entity.Owner && sender != Master)
             {
-                Log.Warning($"Client {sender} Trying to Destroy Entity {entity} Without Having Authority on that Entity");
+                Log.Warning($"Client {sender} Trying to Destroy Entity {entity} Without Having Authority over that Entity");
                 return;
             }
 
-            DestroyEntity(entity, true);
+            DestroyEntity(entity);
+
+            Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
         }
-        void DestroyEntity(NetworkEntity entity, bool broadcast)
+
+        void DestroyEntity(NetworkEntity entity)
         {
             UnbufferMessage(entity.SpawnMessage);
             UnbufferMessage(entity.OwnershipMessage);
@@ -687,9 +690,6 @@ namespace MNet
             Entities.Remove(entity.ID);
 
             if (entity.IsMasterObject) MasterObjects.Remove(entity);
-
-            var command = new DestroyEntityCommand(entity.ID);
-            if (broadcast) Broadcast(ref command, condition: NetworkClient.IsReady);
         }
         #endregion
 
@@ -723,7 +723,7 @@ namespace MNet
                     continue;
                 }
 
-                DestroyEntity(client.Entities[i], false);
+                DestroyEntity(client.Entities[i]);
             }
 
             Clients.Remove(client.ID);

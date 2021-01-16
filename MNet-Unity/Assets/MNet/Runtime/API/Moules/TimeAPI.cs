@@ -69,7 +69,7 @@ namespace MNet
                 Client.Ready.OnCallback += ClientReadyCallback;
                 Client.OnDisconnect += DisconnectCallback;
 
-                Client.MessageDispatcher.RegisterHandler<RoomTimeResponse>(Set);
+                Client.MessageDispatcher.RegisterHandler<TimeResponse>(Set);
             }
 
             static void Process()
@@ -81,12 +81,12 @@ namespace MNet
 
             public static void Request()
             {
-                var payload = RoomTimeRequest.Write();
+                var payload = TimeRequest.Write();
 
                 Client.Send(ref payload, DeliveryMode.Reliable);
             }
 
-            static void Set(ref RoomTimeResponse response)
+            static void Set(ref TimeResponse response)
             {
                 var rtt = DateTime.UtcNow - response.RequestTimestamp;
 

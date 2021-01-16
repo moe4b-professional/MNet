@@ -80,12 +80,6 @@ namespace MNet
         {
             var type = typeof(T);
 
-            Register(code, type, useForChildern);
-        }
-
-        public static void Register(ushort code, Type type) => Register(code, type, false);
-        public static void Register(ushort code, Type type, bool useForChildern)
-        {
             Validate(code, type);
 
             Codes.Add(code, type);
@@ -121,75 +115,109 @@ namespace MNet
 
         static void RegisterInternal()
         {
-            Register<byte>(0);
-            Register<short>(1);
-            Register<ushort>(2);
-            Register<int>(3);
-            Register<uint>(4);
-            Register<float>(5);
-            Register<bool>(6);
-            Register<string>(7);
+            ushort index = 0;
 
-            Register<Guid>(8);
-            Register<DateTime>(9);
-            Register<TimeSpan>(10);
+            void Add<T>()
+            {
+                Register<T>(index);
 
-            Register<RegisterClientRequest>(11);
-            Register<RegisterClientResponse>(12);
+                index += 1;
+            }
 
-            Register<ReadyClientRequest>(13);
-            Register<ReadyClientResponse>(14);
+            #region Primitives
+            Add<byte>();
+            Add<byte[]>();
 
-            Register<SpawnEntityRequest>(15);
-            Register<SpawnEntityCommand>(16);
+            Add<bool>();
 
-            Register<DestroyEntityRequest>(17);
-            Register<DestroyEntityCommand>(18);
+            Add<short>();
+            Add<ushort>();
 
-            Register<ClientConnectedPayload>(19);
-            Register<ClientDisconnectPayload>(20);
+            Add<int>();
+            Add<uint>();
 
-            Register<RoomInfo>(22);
+            Add<float>();
 
-            Register<NetworkClientInfo>(24);
-            Register<NetworkClientProfile>(25);
+            Add<long>();
+            Add<ulong>();
 
-            Register<RpcRequest>(26);
-            Register<RpcCommand>(27);
-            Register<RemoteBufferMode>(28);
+            Add<double>();
 
-            Register<AttributesCollection>(29);
+            Add<string>();
+            #endregion
 
-            Register<ChangeMasterCommand>(32);
+            #region POCO
+            Add<Guid>();
+            Add<DateTime>();
+            Add<TimeSpan>();
+            #endregion
 
-            Register<SyncVarRequest>(37);
-            Register<SyncVarCommand>(38);
+            Add<AttributesCollection>();
 
-            Register<long>(39);
-            Register<ulong>(40);
+            #region Client
+            Add<NetworkClientInfo>();
+            Add<NetworkClientProfile>();
 
-            Register<double>(41);
+            Add<RegisterClientRequest>();
+            Add<RegisterClientResponse>();
 
-            Register<RoomTimeRequest>(42);
-            Register<RoomTimeResponse>(43);
+            Add<ReadyClientRequest>();
+            Add<ReadyClientResponse>();
 
-            Register<PingRequest>(44);
-            Register<PingResponse>(45);
+            Add<ClientConnectedPayload>();
+            Add<ClientDisconnectPayload>();
+            #endregion
 
-            Register<byte[]>(46);
+            #region Entity
+            Add<SpawnEntityRequest>();
+            Add<SpawnEntityResponse>();
+            Add<SpawnEntityCommand>();
 
-            Register<ChangeEntityOwnerRequest>(47);
-            Register<ChangeEntityOwnerCommand>(48);
+            Add<ChangeEntityOwnerRequest>();
+            Add<ChangeEntityOwnerCommand>();
 
-            Register<LoadScenesPayload>(49);
+            Add<DestroyEntityPayload>();
+            #endregion
 
-            Register<RprRequest>(51);
-            Register<RprResponse>(52);
-            Register<RprCommand>(53);
+            #region Room
+            Add<RoomInfo>();
 
-            Register<ChangeRoomInfoPayload>(54);
+            Add<ChangeMasterCommand>();
 
-            Register<SpawnEntityResponse>(55);
+            Add<ChangeRoomInfoPayload>();
+            #endregion
+
+            #region RPX
+            Add<RemoteBufferMode>();
+            #endregion
+
+            #region RPC
+            Add<RpcRequest>();
+            Add<RpcCommand>();
+            #endregion
+
+            #region RPR
+            Add<RprRequest>();
+            Add<RprResponse>();
+            Add<RprCommand>();
+            #endregion
+
+            #region SyncVar
+            Add<SyncVarRequest>();
+            Add<SyncVarCommand>();
+            #endregion
+
+            #region Time
+            Add<TimeRequest>();
+            Add<TimeResponse>();
+            #endregion
+
+            #region Ping
+            Add<PingRequest>();
+            Add<PingResponse>();
+            #endregion
+
+            Add<LoadScenesPayload>();
         }
 
         static NetworkPayload()
@@ -435,8 +463,8 @@ namespace MNet
         NetworkMessage[] buffer;
         public NetworkMessage[] Buffer => buffer;
 
-        RoomTimeResponse time;
-        public RoomTimeResponse Time => time;
+        TimeResponse time;
+        public TimeResponse Time => time;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -447,7 +475,7 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public ReadyClientResponse(RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, RoomTimeResponse time)
+        public ReadyClientResponse(RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, TimeResponse time)
         {
             this.room = room;
             this.clients = clients;
@@ -695,7 +723,7 @@ namespace MNet
     #region Destroy Entity
     [Preserve]
     [Serializable]
-    public struct DestroyEntityRequest : INetworkSerializable
+    public struct DestroyEntityPayload : INetworkSerializable
     {
         NetworkEntityID id;
         public NetworkEntityID ID => id;
@@ -705,25 +733,7 @@ namespace MNet
             context.Select(ref id);
         }
 
-        public DestroyEntityRequest(NetworkEntityID id)
-        {
-            this.id = id;
-        }
-    }
-
-    [Preserve]
-    [Serializable]
-    public struct DestroyEntityCommand : INetworkSerializable
-    {
-        NetworkEntityID id;
-        public NetworkEntityID ID => id;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref id);
-        }
-
-        public DestroyEntityCommand(NetworkEntityID id)
+        public DestroyEntityPayload(NetworkEntityID id)
         {
             this.id = id;
         }
@@ -793,7 +803,7 @@ namespace MNet
     #region Time
     [Preserve]
     [Serializable]
-    public struct RoomTimeRequest : INetworkSerializable
+    public struct TimeRequest : INetworkSerializable
     {
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
@@ -803,17 +813,17 @@ namespace MNet
             context.Select(ref timestamp);
         }
 
-        RoomTimeRequest(DateTime timestamp)
+        TimeRequest(DateTime timestamp)
         {
             this.timestamp = timestamp;
         }
 
-        public static RoomTimeRequest Write() => new RoomTimeRequest(DateTime.UtcNow);
+        public static TimeRequest Write() => new TimeRequest(DateTime.UtcNow);
     }
 
     [Preserve]
     [Serializable]
-    public struct RoomTimeResponse : INetworkSerializable
+    public struct TimeResponse : INetworkSerializable
     {
         NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
@@ -827,7 +837,7 @@ namespace MNet
             context.Select(ref requestTimestamp);
         }
 
-        public RoomTimeResponse(NetworkTimeSpan time, DateTime requestTimestamp)
+        public TimeResponse(NetworkTimeSpan time, DateTime requestTimestamp)
         {
             this.time = time;
             this.requestTimestamp = requestTimestamp;

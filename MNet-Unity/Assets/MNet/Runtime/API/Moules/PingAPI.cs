@@ -44,7 +44,8 @@ namespace MNet
 
                 NetworkAPI.OnProcess += Process;
 
-                Client.MessageDispatcher.RegisterHandler<PingResponse>(Register);
+                Client.MessageDispatcher.RegisterHandler<PingResponse>(Response);
+
                 Client.OnDisconnect += ClientDisconnectCallback;
             }
 
@@ -53,13 +54,13 @@ namespace MNet
                 if (Client.IsConnected == false) return;
                 if (Client.IsRegistered == false) return;
 
-                if (SendLock == false) Send();
+                if (SendLock == false) Request();
             }
 
             public static event Action OnChange;
             static void InvokeChange() => OnChange?.Invoke();
 
-            static void Send()
+            static void Request()
             {
                 var request = PingRequest.Write();
 
@@ -68,7 +69,7 @@ namespace MNet
                 SendLock = true;
             }
 
-            static void Register(ref PingResponse response)
+            static void Response(ref PingResponse response)
             {
                 var span = response.GetTimeSpan();
 

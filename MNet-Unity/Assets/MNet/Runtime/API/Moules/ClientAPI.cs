@@ -137,12 +137,12 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    Realtime.OnInitialize += RealtimeInitializeCallback;
-
                     NetworkAPI.OnProcess += Process;
+
+                    Realtime.OnInitialize += Initialize;
                 }
 
-                static void RealtimeInitializeCallback(NetworkTransport transport)
+                static void Initialize(NetworkTransport transport)
                 {
                     Queue = new MessageSendQueue(transport.CheckMTU);
                 }
@@ -357,10 +357,24 @@ namespace MNet
                 #endregion
 
                 #region Destroy
-                public static void Destroy(NetworkEntity entity) => Destroy(entity.ID);
-                public static void Destroy(NetworkEntityID id)
+                public static void Destroy(NetworkBehaviour behaviour) => Destroy(behaviour.Entity);
+                public static void Destroy(NetworkEntity entity)
                 {
-                    var request = new DestroyEntityRequest(id);
+                    if (entity.IsReady == false)
+                    {
+                        Debug.LogError($"Can't Destory Entity {entity} Because it's still not Ready");
+                        return;
+                    }
+
+                    if (entity.CheckAuthority(Client.Self) == false)
+                    {
+                        Debug.LogError($"Cannot Destory Entity {entity} Because Local Client doesn't have Authority over that Entity");
+                        return;
+                    }
+
+                    var request = new DestroyEntityPayload(entity.ID);
+
+                    Room.Entities.Destroy(entity);
 
                     Send(ref request);
                 }

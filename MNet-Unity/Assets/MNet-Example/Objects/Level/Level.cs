@@ -53,12 +53,12 @@ namespace MNet.Example
 			}
 		}
 
-        protected override void OnSpawn()
-        {
-            base.OnSpawn();
+		protected override void OnSpawn()
+		{
+			base.OnSpawn();
 
 			Player.Spawn();
-        }
+		}
 
 		public async UniTask Quit()
 		{

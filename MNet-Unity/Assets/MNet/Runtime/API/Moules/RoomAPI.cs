@@ -226,11 +226,6 @@ namespace MNet
                     NetworkAPI.Client.MessageDispatcher.RegisterHandler<ChangeMasterCommand>(Change);
                 }
 
-                internal static void Clear()
-                {
-                    Client = default;
-                }
-
                 internal static bool Assign(NetworkClientID id)
                 {
                     if (Clients.TryGet(id, out var target) == false)
@@ -252,6 +247,11 @@ namespace MNet
 
                     OnChange?.Invoke(Client);
                 }
+
+                internal static void Clear()
+                {
+                    Client = default;
+                }
             }
 
             public static class Clients
@@ -272,11 +272,6 @@ namespace MNet
                     Client.MessageDispatcher.RegisterHandler<ClientDisconnectPayload>(Disconnect);
                 }
 
-                internal static void Clear()
-                {
-                    Dictionary.Clear();
-                }
-
                 internal static void AddAll(IList<NetworkClientInfo> list)
                 {
                     for (int i = 0; i < list.Count; i++)
@@ -287,7 +282,7 @@ namespace MNet
                 public static event AddDelegate OnAdd;
                 static NetworkClient Add(NetworkClientInfo info)
                 {
-                    var client = Create(info);
+                    var client = Assimilate(info);
 
                     Dictionary.Add(client.ID, client);
 
@@ -296,7 +291,7 @@ namespace MNet
                     return client;
                 }
 
-                static NetworkClient Create(NetworkClientInfo info)
+                static NetworkClient Assimilate(NetworkClientInfo info)
                 {
                     if (Client.Self?.ID == info.ID) return Client.Self;
 
@@ -309,20 +304,7 @@ namespace MNet
                 {
                     Dictionary.Remove(client.ID);
 
-                    var entities = client.Entities;
-
-                    for (int i = 0; i < entities.Count; i++)
-                    {
-                        if (entities[i].Type == EntityType.SceneObject) continue;
-
-                        if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
-                        {
-                            Entities.MakeOrphan(entities[i]);
-                            continue;
-                        }
-
-                        Entities.Destroy(entities[i]);
-                    }
+                    Entities.DestroyFor(client);
 
                     OnRemove?.Invoke(client);
                 }
@@ -360,6 +342,11 @@ namespace MNet
 
                     OnDisconnected?.Invoke(client);
                 }
+
+                internal static void Clear()
+                {
+                    Dictionary.Clear();
+                }
             }
 
             public static class Entities
@@ -382,9 +369,10 @@ namespace MNet
 
                     Client.MessageDispatcher.RegisterHandler<SpawnEntityCommand>(SpawnRemote);
                     Client.MessageDispatcher.RegisterHandler<ChangeEntityOwnerCommand>(ChangeOwner);
-                    Client.MessageDispatcher.RegisterHandler<DestroyEntityCommand>(Destroy);
+                    Client.MessageDispatcher.RegisterHandler<DestroyEntityPayload>(Destroy);
                 }
 
+                #region Spawn
                 internal static void SpawnSceneObject(ushort resource, Scene scene) => SpawnSceneObject(resource, (byte)scene.buildIndex);
                 internal static void SpawnSceneObject(ushort resource, byte scene)
                 {
@@ -410,8 +398,6 @@ namespace MNet
 
                     var owner = FindOwner(command);
 
-                    Debug.Log($"Spawning Entity '{entity.name}' with ID: {id}, Owned By Client {owner}");
-
                     if (owner == null)
                         Debug.LogWarning($"Spawned Entity {entity.name} Has No Registered Owner");
 
@@ -429,6 +415,8 @@ namespace MNet
                 public static event SpawnEntityDelegate OnSpawn;
                 static void Spawn(NetworkEntity entity, NetworkEntityID id)
                 {
+                    Debug.Log($"Spawning Entity '{entity.name}' with ID: {id}, Owned By Client {entity.Owner}");
+
                     Dictionary.Add(id, entity);
 
                     entity.Owner?.Entities.Add(entity);
@@ -487,16 +475,16 @@ namespace MNet
                             return Master.Client;
 
                         case EntityType.Dynamic:
-                            if (Clients.TryGet(command.Owner, out var owner))
-                                return owner;
-                            else
-                                return null;
+                            Clients.TryGet(command.Owner, out var owner);
+                            return owner;
 
                         default:
                             throw new NotImplementedException();
                     }
                 }
+                #endregion
 
+                #region Change Owner
                 static void ChangeOwner(ref ChangeEntityOwnerCommand command)
                 {
                     if (Clients.TryGet(command.Client, out var client) == false)
@@ -513,26 +501,28 @@ namespace MNet
 
                     ChangeOwner(client, entity);
                 }
+
                 internal static void ChangeOwner(NetworkClient client, NetworkEntity entity)
                 {
                     entity.Owner?.Entities.Remove(entity);
                     entity.SetOwner(client);
                     entity.Owner?.Entities.Add(entity);
                 }
+                #endregion
 
                 internal static void MakeOrphan(NetworkEntity entity) //*Cocks gun with malicious intent* 
                 {
                     entity.Type = EntityType.Orphan;
-                    entity.SetOwner(Master.Client);
-
                     MasterObjects.Add(entity);
+                    entity.SetOwner(Master.Client);
                 }
 
-                static void Destroy(ref DestroyEntityCommand command)
+                #region Destroy
+                static void Destroy(ref DestroyEntityPayload payload)
                 {
-                    if (Dictionary.TryGetValue(command.ID, out var entity) == false)
+                    if (Dictionary.TryGetValue(payload.ID, out var entity) == false)
                     {
-                        Debug.LogError($"Couldn't Destroy Entity {command.ID} Because It's Not Registered in Room");
+                        Debug.LogError($"Couldn't Destroy Entity {payload.ID} Because It's Not Registered in Room");
                         return;
                     }
 
@@ -570,6 +560,25 @@ namespace MNet
                     }
                 }
 
+                internal static void DestroyFor(NetworkClient client)
+                {
+                    var entities = client.Entities;
+
+                    for (int i = 0; i < entities.Count; i++)
+                    {
+                        if (entities[i].IsMasterObject) continue;
+
+                        if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                        {
+                            MakeOrphan(entities[i]);
+                            continue;
+                        }
+
+                        Destroy(entities[i]);
+                    }
+                }
+                #endregion
+
                 internal static void Despawn(NetworkEntity entity)
                 {
                     entity.Despawn();
@@ -603,11 +612,6 @@ namespace MNet
                     Client.MessageDispatcher.RegisterHandler<SyncVarCommand>(InvokeSyncVar);
                 }
 
-                internal static void Clear()
-                {
-
-                }
-
                 static void InvokeRPC(ref RpcCommand command)
                 {
                     try
@@ -637,6 +641,11 @@ namespace MNet
                     }
 
                     target.InvokeSyncVar(command);
+                }
+
+                internal static void Clear()
+                {
+
                 }
             }
 

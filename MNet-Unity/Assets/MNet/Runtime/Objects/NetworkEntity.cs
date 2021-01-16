@@ -65,7 +65,7 @@ namespace MNet
             OnOwnerSet?.Invoke(Owner);
         }
 
-        public bool TakeoverOwnership()
+        public bool TakeOwnership()
         {
             if (IsMine)
             {
@@ -80,13 +80,13 @@ namespace MNet
         {
             if (IsMasterObject)
             {
-                Log.Error($"Master Objects Cannot be Taken Over by Clients, Will not Send Change Ownership Request");
+                Log.Error($"Master Objects Cannot be Taken Over by Clients");
                 return false;
             }
 
             if (Owner == reciever)
             {
-                Debug.LogWarning($"Client: {reciever} Already Owns Entity '{this};, Ignoring Request");
+                Debug.LogWarning($"Client: {reciever} Already Owns Entity '{this}', Ignoring Request");
                 return false;
             }
 
@@ -97,6 +97,20 @@ namespace MNet
             return NetworkAPI.Client.Send(ref requst);
         }
         #endregion
+
+        /// <summary>
+        /// Checks if client has authority over this Entity
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        public virtual bool CheckAuthority(NetworkClient client)
+        {
+            if (client.IsMaster) return true;
+
+            if (client == Owner) return true;
+
+            return false;
+        }
 
         public AttributesCollection Attributes { get; protected set; }
 
@@ -146,6 +160,8 @@ namespace MNet
         {
             this.ID = id;
 
+            if (IsDynamic || IsOrphan) name += $" {id}";
+
             IsReady = true;
 
             foreach (var behaviour in Behaviours.Values) behaviour.Spawn();
@@ -179,16 +195,6 @@ namespace MNet
             OnReady?.Invoke();
         }
 
-        public event Action OnDespawn;
-        internal virtual void Despawn()
-        {
-            IsReady = false;
-
-            foreach (var behaviour in Behaviours.Values) behaviour.Despawn();
-
-            OnDespawn?.Invoke();
-        }
-
         #region Remote Sync
         public void InvokeRPC(RpcCommand command)
         {
@@ -213,6 +219,16 @@ namespace MNet
             target.InvokeSyncVar(command);
         }
         #endregion
+
+        public event Action OnDespawn;
+        internal virtual void Despawn()
+        {
+            IsReady = false;
+
+            foreach (var behaviour in Behaviours.Values) behaviour.Despawn();
+
+            OnDespawn?.Invoke();
+        }
 
         protected virtual void OnDestroy()
         {
