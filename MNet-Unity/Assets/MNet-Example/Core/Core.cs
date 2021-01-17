@@ -297,6 +297,8 @@ namespace MNet.Example
 
 		void Configure()
 		{
+			NetworkAPI.Configure();
+
 			SceneAccessor = SceneAccessor.Create();
 
 			ForAllProperties(Property.Configure);

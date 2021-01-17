@@ -34,14 +34,6 @@ namespace MNet
 
             return GetCode(type);
         }
-        public static ushort GetCode(object instance)
-        {
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
-
-            var type = instance.GetType();
-
-            return GetCode(type);
-        }
         public static ushort GetCode(Type type)
         {
             if (TryGetCode(type, out var code))
@@ -75,8 +67,7 @@ namespace MNet
         #endregion
 
         #region Register
-        public static void Register<T>(ushort code) => Register<T>(code, false);
-        public static void Register<T>(ushort code, bool useForChildern)
+        public static void Register<T>(ushort code, bool useForChildern = false)
         {
             var type = typeof(T);
 
@@ -173,8 +164,10 @@ namespace MNet
             Add<SpawnEntityResponse>();
             Add<SpawnEntityCommand>();
 
-            Add<ChangeEntityOwnerRequest>();
-            Add<ChangeEntityOwnerCommand>();
+            Add<TransferEntityPayload>();
+
+            Add<TakeoverEntityRequest>();
+            Add<TakeoverEntityCommand>();
 
             Add<DestroyEntityPayload>();
             #endregion
@@ -674,31 +667,48 @@ namespace MNet
     }
     #endregion
 
-    #region Takeover Entity
+    #region Entity Ownership
     [Preserve]
-    public struct ChangeEntityOwnerRequest : INetworkSerializable
+    public struct TransferEntityPayload : INetworkSerializable
     {
+        NetworkEntityID entity;
+        public NetworkEntityID Entity => entity;
+
         NetworkClientID client;
         public NetworkClientID Client => client;
 
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref entity);
+            context.Select(ref client);
+        }
+
+        public TransferEntityPayload(NetworkEntityID entity, NetworkClientID client)
+        {
+            this.entity = entity;
+            this.client = client;
+        }
+    }
+
+    [Preserve]
+    public struct TakeoverEntityRequest : INetworkSerializable
+    {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
 
         public void Select(ref NetworkSerializationContext context)
         {
-            context.Select(ref client);
             context.Select(ref entity);
         }
 
-        public ChangeEntityOwnerRequest(NetworkClientID client, NetworkEntityID entity)
+        public TakeoverEntityRequest(NetworkEntityID entity)
         {
-            this.client = client;
             this.entity = entity;
         }
     }
 
     [Preserve]
-    public struct ChangeEntityOwnerCommand : INetworkSerializable
+    public struct TakeoverEntityCommand : INetworkSerializable
     {
         NetworkClientID client;
         public NetworkClientID Client => client;
@@ -712,10 +722,17 @@ namespace MNet
             context.Select(ref entity);
         }
 
-        public ChangeEntityOwnerCommand(NetworkClientID client, NetworkEntityID entity)
+        public TakeoverEntityCommand(NetworkClientID client, NetworkEntityID entity)
         {
             this.client = client;
             this.entity = entity;
+        }
+
+        public static TakeoverEntityCommand Write(NetworkClientID client, TakeoverEntityRequest request)
+        {
+            var command = new TakeoverEntityCommand(client, request.Entity);
+
+            return command;
         }
     }
     #endregion

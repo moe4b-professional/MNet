@@ -65,18 +65,7 @@ namespace MNet
             OnOwnerSet?.Invoke(Owner);
         }
 
-        public bool TakeOwnership()
-        {
-            if (IsMine)
-            {
-                Debug.LogWarning($"You Already Own Entity {this}, no Need to Takeover it, Ignoring");
-                return false;
-            }
-
-            return ChangeOwnership(NetworkAPI.Client.Self);
-        }
-
-        public bool ChangeOwnership(NetworkClient reciever)
+        public bool Takeover()
         {
             if (IsMasterObject)
             {
@@ -84,17 +73,40 @@ namespace MNet
                 return false;
             }
 
-            if (Owner == reciever)
+            if (IsMine)
             {
-                Debug.LogWarning($"Client: {reciever} Already Owns Entity '{this}', Ignoring Request");
+                Debug.LogWarning($"You Already Own Entity {this}, no Need to Takeover it");
                 return false;
             }
 
-            var requst = new ChangeEntityOwnerRequest(reciever.ID, ID);
+            var request = new TakeoverEntityRequest(ID);
 
-            NetworkAPI.Room.Entities.ChangeOwner(reciever, this);
+            return NetworkAPI.Client.Send(ref request);
+        }
 
-            return NetworkAPI.Client.Send(ref requst);
+        public bool TransferTo(NetworkClient client)
+        {
+            if (IsMasterObject)
+            {
+                Log.Error($"Master Objects Cannot be Transfered");
+                return false;
+            }
+
+            if (Owner == client)
+            {
+                Debug.LogWarning($"Client: {client} Already Owns Entity '{this}'");
+                return false;
+            }
+
+            if(CheckAuthority(NetworkAPI.Client.Self) == false)
+            {
+                Debug.LogWarning($"Local Client has no Authority over Entity '{this}', Entity Trasnsfer Invalid");
+                return false;
+            }
+
+            var payload = new TransferEntityPayload(ID, client.ID);
+
+            return NetworkAPI.Client.Send(ref payload);
         }
         #endregion
 

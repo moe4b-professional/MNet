@@ -31,6 +31,9 @@ namespace MNet.Example
 		Dropdown level = null;
 
 		[SerializeField]
+		Toggle offline = null;
+
+		[SerializeField]
 		Button button = null;
 
 		public Core Core => Core.Instance;
@@ -53,19 +56,22 @@ namespace MNet.Example
 			var name = this.name.GetValueOrDefault("Game Room");
 			var capacity = this.capacity.GetOption(Core.Network.Capacities);
 			var level = this.level.value;
+			var offline = this.offline.isOn;
 
-			Create(name, capacity, (byte)level);
+			Create(name, capacity, (byte)level, offline);
 		}
 
-		void Create(string name, byte capacity, byte level)
+		void Create(string name, byte capacity, byte level, bool offline)
 		{
 			Popup.Show("Creating Room");
 
 			var attributes = new AttributesCollection();
-
 			Core.Levels.WriteAttribute(attributes, level);
 
-			NetworkAPI.Room.Create(name, capacity, attributes: attributes, handler: Callback);
+			if (offline)
+				NetworkAPI.Room.CreateOffline(attributes: attributes, handler: Callback);
+			else
+				NetworkAPI.Room.Create(name, capacity, attributes: attributes, handler: Callback);
 
 			void Callback(RoomInfo room, RestError error)
 			{

@@ -294,7 +294,8 @@ namespace MNet
             RegisterMessageHandler<ReadyClientRequest>(ReadyClient);
 
             RegisterMessageHandler<SpawnEntityRequest>(SpawnEntity);
-            RegisterMessageHandler<ChangeEntityOwnerRequest>(ChangeEntityOwner);
+            RegisterMessageHandler<TransferEntityPayload>(TransferEntity);
+            RegisterMessageHandler<TakeoverEntityRequest>(TakeoverEntity);
             RegisterMessageHandler<DestroyEntityPayload>(DestroyEntity);
 
             RegisterMessageHandler<RpcRequest>(InvokeRPC);
@@ -608,36 +609,70 @@ namespace MNet
             BufferMessage(entity.SpawnMessage);
         }
 
-        void ChangeEntityOwner(NetworkClient sender, ref ChangeEntityOwnerRequest request)
+        void TransferEntity(NetworkClient sender, ref TransferEntityPayload payload)
         {
-            if (Clients.TryGetValue(request.Client, out var owner) == false)
+            if (Entities.TryGetValue(payload.Entity, out var entity) == false)
             {
-                Log.Warning($"No Network Client: {request.Client} Found to Take Ownership of Entity {request.Entity}");
+                Log.Warning($"No Entity {payload.Entity} Found to Transfer Ownership of, Ignoring request from Client: {sender}");
                 return;
             }
 
-            if (Entities.TryGetValue(request.Entity, out var entity) == false)
+            if (Clients.TryGetValue(payload.Client, out var client) == false)
             {
-                Log.Warning($"No Entity {request.Entity} Found to Change Ownership of, Ignoring request from Client: {sender}");
+                Log.Warning($"No Network Client: {payload.Client} Found to Transfer Entity {entity} to");
                 return;
             }
 
             if (entity.IsMasterObject)
             {
-                Log.Warning($"Master Objects Cannot be Taken Over by Clients, Ignoring request from Client: {sender}");
+                Log.Warning($"Master Objects Cannot be Transfered, Ignoring request from Client: {sender}");
                 return;
             }
 
-            entity.Owner?.Entities.Remove(entity);
-            entity.SetOwner(owner);
-            entity.Owner?.Entities.Add(entity);
+            if (sender != entity.Owner && sender != Master)
+            {
+                Log.Warning($"Client {sender} Trying to Transfer Ownership of Entity they have no Authority over");
+                return;
+            }
+
+            ChangeEntityOwner(entity, client);
 
             UnbufferMessage(entity.OwnershipMessage);
 
-            var command = new ChangeEntityOwnerCommand(owner.ID, request.Entity);
+            entity.OwnershipMessage = Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
+
+            BufferMessage(entity.OwnershipMessage);
+        }
+
+        void TakeoverEntity(NetworkClient sender, ref TakeoverEntityRequest request)
+        {
+            if (Entities.TryGetValue(request.Entity, out var entity) == false)
+            {
+                Log.Warning($"No Entity {request.Entity} Found to Takeover Ownership of, Ignoring request from Client: {sender}");
+                return;
+            }
+
+            if (entity.IsMasterObject)
+            {
+                Log.Warning($"Master Objects Cannot be Takenover, Ignoring request from Client: {sender}");
+                return;
+            }
+
+            ChangeEntityOwner(entity, sender);
+
+            UnbufferMessage(entity.OwnershipMessage);
+
+            var command = TakeoverEntityCommand.Write(sender.ID, request);
             entity.OwnershipMessage = Broadcast(ref command, condition: NetworkClient.IsReady, exception1: sender.ID);
 
             BufferMessage(entity.OwnershipMessage);
+        }
+
+        void ChangeEntityOwner(NetworkEntity entity, NetworkClient owner)
+        {
+            entity.Owner?.Entities.Remove(entity);
+            entity.SetOwner(owner);
+            entity.Owner?.Entities.Add(entity);
         }
 
         void MakeEntityOrphan(NetworkEntity entity)

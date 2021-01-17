@@ -47,6 +47,7 @@ namespace MNet
             {
                 MessageDispatcher.Configure();
                 SendQueue.Configure();
+                Prediction.Clear();
                 Register.Configure();
                 Ready.Configure();
                 Entities.Configure();
@@ -62,6 +63,14 @@ namespace MNet
                 if (IsConnected == false)
                 {
                     Debug.LogWarning($"Cannot Send Payload '{payload}' When Network Client Isn't Connected");
+                    return false;
+                }
+
+                if (Prediction.Process(ref payload, mode) == Prediction.Response.Consume) return true;
+
+                if (OfflineMode.On)
+                {
+                    Debug.LogWarning($"Payload of Type {payload.GetType()} not Consumed in Offline Mode");
                     return false;
                 }
 
@@ -98,6 +107,13 @@ namespace MNet
                 internal static void Configure()
                 {
                     Dictionary = new Dictionary<Type, MessageCallbackDelegate>();
+                }
+
+                internal static void Invoke<TPayload>(ref TPayload payload, DeliveryMode mode)
+                {
+                    var message = NetworkMessage.Write(ref payload);
+
+                    Invoke(message, mode);
                 }
 
                 internal static void Invoke(NetworkMessage message, DeliveryMode mode)
@@ -174,6 +190,268 @@ namespace MNet
                 internal static void Clear()
                 {
                     Queue.Clear();
+                }
+            }
+
+            public static class Prediction
+            {
+                public enum Response
+                {
+                    None, Consume, Send
+                }
+
+                internal static void Configure()
+                {
+
+                }
+
+                internal static Response Process<TPayload>(ref TPayload payload, DeliveryMode mode)
+                {
+                    switch (payload)
+                    {
+                        case RegisterClientRequest instance:
+                            return RegisterClient(ref instance, mode);
+
+                        case ReadyClientRequest instance:
+                            return ReadyClient(ref instance, mode);
+
+                        case SpawnEntityRequest instance:
+                            return SpawnEntity(ref instance, mode);
+
+                        case TransferEntityPayload instance:
+                            return TransferEntity(ref instance, mode);
+
+                        case TakeoverEntityRequest instance:
+                            return TakeoverEntity(ref instance, mode);
+
+                        case DestroyEntityPayload instance:
+                            return DestroyEntity(ref instance, mode);
+
+                        case RpcRequest instance:
+                            return InvokeRPC(ref instance, mode);
+
+                        case SyncVarRequest instance:
+                            return InvokeSyncVar(ref instance, mode);
+
+                        case LoadScenesPayload instance:
+                            return LoadScenes(ref instance, mode);
+
+                        case ChangeRoomInfoPayload instance:
+                            return ChangeRoomInfo(ref instance, mode);
+
+                        case PingRequest instance:
+                            return Ping(ref instance, mode);
+
+                        case TimeRequest instance:
+                            return Time(ref instance, mode);
+                    }
+
+                    return Response.None;
+                }
+
+                #region Client
+                static Response RegisterClient(ref RegisterClientRequest request, DeliveryMode mode)
+                {
+                    if(OfflineMode.On)
+                    {
+                        var response = new RegisterClientResponse(default);
+
+                        MessageDispatcher.Invoke(ref response, mode);
+
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
+
+                static Response ReadyClient(ref ReadyClientRequest request, DeliveryMode mode)
+                {
+                    if(OfflineMode.On)
+                    {
+                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(ID, Profile) };
+                        var buffer = new NetworkMessage[] { };
+                        var time = new TimeResponse(default, request.Timestamp);
+
+                        var response = new ReadyClientResponse(OfflineMode.Info, clients, Client.ID, buffer, time);
+
+                        MessageDispatcher.Invoke(ref response, mode);
+
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
+                #endregion
+
+                #region Entity
+                static Response SpawnEntity(ref SpawnEntityRequest request, DeliveryMode mode)
+                {
+                    if (OfflineMode.On)
+                    {
+                        var id = OfflineMode.EntityIDs.Reserve();
+
+                        if(request.Type == EntityType.Dynamic)
+                        {
+                            var response = SpawnEntityResponse.Write(id, request.Token);
+
+                            MessageDispatcher.Invoke(ref response, mode);
+                        }
+                        else
+                        {
+                            var command = SpawnEntityCommand.Write(Client.ID, id, request);
+
+                            MessageDispatcher.Invoke(ref command, mode);
+                        }
+
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
+
+                static Response TransferEntity(ref TransferEntityPayload payload, DeliveryMode mode)
+                {
+                    MessageDispatcher.Invoke(ref payload, mode);
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+
+                static Response TakeoverEntity(ref TakeoverEntityRequest request, DeliveryMode mode)
+                {
+                    var command = TakeoverEntityCommand.Write(Client.ID, request);
+
+                    MessageDispatcher.Invoke(ref command, mode);
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+
+                static Response DestroyEntity(ref DestroyEntityPayload request, DeliveryMode mode)
+                {
+                    MessageDispatcher.Invoke(ref request, DeliveryMode.Reliable);
+
+                    if (OfflineMode.On)
+                    {
+                        OfflineMode.EntityIDs.Free(request.ID);
+
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
+                #endregion
+
+                #region RPC
+                static Response InvokeRPC(ref RpcRequest request, DeliveryMode mode)
+                {
+                    switch (request.Type)
+                    {
+                        case RpcType.Broadcast:
+                            return InvokeBroadcastRPC(ref request, mode);
+
+                        case RpcType.Target:
+                        case RpcType.Query:
+                            return InvokeDirectRPC(ref request, mode);
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+                }
+
+                static Response InvokeBroadcastRPC(ref RpcRequest request, DeliveryMode mode)
+                {
+                    if (request.Exception != Client.ID)
+                    {
+                        var command = RpcCommand.Write(Client.ID, request);
+
+                        MessageDispatcher.Invoke(ref command, mode);
+                    }
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+
+                static Response InvokeDirectRPC(ref RpcRequest request, DeliveryMode mode)
+                {
+                    if (request.Target == Client.ID)
+                    {
+                        var command = RpcCommand.Write(Client.ID, request);
+
+                        MessageDispatcher.Invoke(ref command, mode);
+
+                        return Response.Consume;
+                    }
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+                #endregion
+
+                static Response InvokeSyncVar(ref SyncVarRequest request, DeliveryMode mode)
+                {
+                    var command = SyncVarCommand.Write(Client.ID, request);
+
+                    MessageDispatcher.Invoke(ref command, mode);
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+
+                static Response LoadScenes(ref LoadScenesPayload payload, DeliveryMode mode)
+                {
+                    MessageDispatcher.Invoke(ref payload, mode);
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+
+                static Response ChangeRoomInfo(ref ChangeRoomInfoPayload payload, DeliveryMode mode)
+                {
+                    MessageDispatcher.Invoke(ref payload, mode);
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+
+                static Response Ping(ref PingRequest request, DeliveryMode mode)
+                {
+                    if (OfflineMode.On)
+                    {
+                        var response = new PingResponse(request);
+
+                        MessageDispatcher.Invoke(ref response, mode);
+
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
+
+                static Response Time(ref TimeRequest request, DeliveryMode mode)
+                {
+                    if(OfflineMode.On)
+                    {
+                        var response = new TimeResponse(NetworkAPI.Time.Span, request.Timestamp);
+
+                        MessageDispatcher.Invoke(ref response, mode);
+
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
+
+                internal static void Clear()
+                {
+
                 }
             }
 
@@ -321,7 +599,6 @@ namespace MNet
                     var token = Tokens.Reserve();
 
                     var instance = Room.Entities.Instantiate(resource);
-
                     instance.Setup(Self, EntityType.Dynamic, persistance, attributes);
 
                     Tokens.Assign(token, instance);
@@ -373,8 +650,6 @@ namespace MNet
                     }
 
                     var request = new DestroyEntityPayload(entity.ID);
-
-                    Room.Entities.Destroy(entity);
 
                     Send(ref request);
                 }
@@ -507,6 +782,7 @@ namespace MNet
                 Self = default;
 
                 SendQueue.Clear();
+                Prediction.Clear();
                 Register.Clear();
                 Ready.Clear();
                 Entities.Clear();

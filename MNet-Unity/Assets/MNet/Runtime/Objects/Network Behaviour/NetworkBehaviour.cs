@@ -171,12 +171,6 @@ namespace MNet
 
             if (exception != null) request.Except(exception.ID);
 
-            if (exception != NetworkAPI.Client.Self)
-            {
-                var command = RpcCommand.Write(NetworkAPI.Client.ID, request);
-                InvokeRPC(command);
-            }
-
             return SendRPC(bind, request);
         }
 
@@ -197,13 +191,6 @@ namespace MNet
             var raw = bind.WriteArguments(arguments);
 
             var request = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, raw);
-
-            if (target == NetworkAPI.Client.Self)
-            {
-                var command = RpcCommand.Write(NetworkAPI.Client.ID, request);
-                InvokeRPC(command);
-                return true;
-            }
 
             return SendRPC(bind, request);
         }
@@ -228,18 +215,10 @@ namespace MNet
 
             var request = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
 
-            if(target == NetworkAPI.Client.Self)
+            if (SendRPC(bind, request) == false)
             {
-                var command = RpcCommand.Write(NetworkAPI.Client.ID, request);
-                InvokeRPC(command);
-            }
-            else
-            {
-                if (SendRPC(bind, request) == false)
-                {
-                    Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
-                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
-                }
+                Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
+                return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
             }
 
             await UniTask.WaitUntil(promise.IsComplete);
@@ -401,9 +380,6 @@ namespace MNet
             }
 
             var request = bind.CreateRequest(value);
-
-            var command = SyncVarCommand.Write(NetworkAPI.Client.ID, request);
-            InvokeSyncVar(command);
 
             return SendSyncVar(bind, request);
         }

@@ -28,6 +28,7 @@ namespace MNet
         {
             internal static void Configure()
             {
+                OfflineMode.Configure();
                 Info.Configure();
                 Scenes.Configure();
                 RemoteSync.Configure();
@@ -43,7 +44,12 @@ namespace MNet
 
             #region Join
             public static void Join(RoomInfo info) => Join(info.ID);
-            public static void Join(RoomID id) => Realtime.Connect(Server.Game.ID, id);
+            public static void Join(RoomID id)
+            {
+                var server = OfflineMode.On ? default : Server.Game.ID;
+
+                Realtime.Connect(server, id);
+            }
             #endregion
 
             #region Create
@@ -58,8 +64,23 @@ namespace MNet
                 void Callback(RoomInfo info, RestError error)
                 {
                     handler?.Invoke(info, error);
-                    OnCreate?.Invoke(info, error);
+                    InvokeCreate(info, error);
                 }
+            }
+
+            public static RoomInfo CreateOffline(AttributesCollection attributes = null, CreateDelegate handler = null)
+            {
+                var info = OfflineMode.StartRoom(attributes);
+
+                handler?.Invoke(info, null);
+                Room.InvokeCreate(info, null);
+
+                return info;
+            }
+
+            internal static void InvokeCreate(RoomInfo info, RestError error)
+            {
+                OnCreate?.Invoke(info, error);
             }
             #endregion
 
@@ -148,8 +169,6 @@ namespace MNet
                         Debug.LogError("Local Client cannot Change Room Info because They are Not Room Master");
                         return;
                     }
-
-                    Change(ref payload);
 
                     Client.Send(ref payload);
                 }
@@ -368,7 +387,8 @@ namespace MNet
                     MasterObjects = new HashSet<NetworkEntity>();
 
                     Client.MessageDispatcher.RegisterHandler<SpawnEntityCommand>(SpawnRemote);
-                    Client.MessageDispatcher.RegisterHandler<ChangeEntityOwnerCommand>(ChangeOwner);
+                    Client.MessageDispatcher.RegisterHandler<TransferEntityPayload>(Transfer);
+                    Client.MessageDispatcher.RegisterHandler<TakeoverEntityCommand>(Takeover);
                     Client.MessageDispatcher.RegisterHandler<DestroyEntityPayload>(Destroy);
                 }
 
@@ -484,8 +504,25 @@ namespace MNet
                 }
                 #endregion
 
-                #region Change Owner
-                static void ChangeOwner(ref ChangeEntityOwnerCommand command)
+                #region Ownership
+                static void Transfer(ref TransferEntityPayload payload)
+                {
+                    if (Clients.TryGet(payload.Client, out var client) == false)
+                    {
+                        Debug.LogWarning($"No Client {payload.Client} Found to Transfer Entity {payload.Entity} to");
+                        return;
+                    }
+
+                    if (Dictionary.TryGetValue(payload.Entity, out var entity) == false)
+                    {
+                        Debug.LogWarning($"No Entity {payload.Entity} To be Transfered to Client {client}");
+                        return;
+                    }
+
+                    ChangeOwner(client, entity);
+                }
+
+                static void Takeover(ref TakeoverEntityCommand command)
                 {
                     if (Clients.TryGet(command.Client, out var client) == false)
                     {
@@ -752,8 +789,6 @@ namespace MNet
 
                     var request = new LoadScenesPayload(indexes, ConvertLoadMode(mode));
 
-                    Load(ref request);
-
                     Client.Send(ref request);
                 }
                 #endregion
@@ -769,6 +804,7 @@ namespace MNet
 
             static void Clear()
             {
+                OfflineMode.Clear();
                 Info.Clear();
                 Scenes.Clear();
                 RemoteSync.Clear();

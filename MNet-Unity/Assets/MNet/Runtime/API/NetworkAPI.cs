@@ -27,19 +27,13 @@ namespace MNet
 
         public static bool IsRunning { get; private set; }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void OnLoad()
+        public static void Configure()
         {
             Config = NetworkAPIConfig.Load();
 
             if (Config == null)
                 throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
 
-            Configure();
-        }
-
-        static void Configure()
-        {
             Log.Output = LogOutput;
 
             GlobalCoroutine.Configure();
@@ -51,7 +45,6 @@ namespace MNet
 #endif
 
             IsRunning = true;
-
             Application.quitting += ApplicationQuitCallback;
 
             Server.Configure();

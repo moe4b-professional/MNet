@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
 	public static partial class NetworkAPI
@@ -32,7 +34,10 @@ namespace MNet
             public static double Min { get; private set; }
             public static double Max { get; private set; }
 
-            static bool SendLock = false;
+            /// <summary>
+            /// Polling Interval In Milliseconds
+            /// </summary>
+            public static int PollInterval { get; private set; }
 
             public static string Text => $"Average: {Average.ToString("N")}ms | Min: {Min.ToString("N")}ms | Max: {Max.ToString("N")}ms";
 
@@ -42,19 +47,22 @@ namespace MNet
 
                 Average = Min = Max = 0d;
 
-                NetworkAPI.OnProcess += Process;
+                PollInterval = 1000;
 
-                Client.MessageDispatcher.RegisterHandler<PingResponse>(Response);
+                Poll().Forget();
 
+                Client.MessageDispatcher.RegisterHandler<PingResponse>(Calculate);
                 Client.OnDisconnect += ClientDisconnectCallback;
             }
 
-            static void Process()
+            static async UniTask Poll()
             {
-                if (Client.IsConnected == false) return;
-                if (Client.IsRegistered == false) return;
+                while (true)
+                {
+                    if (Client.IsConnected) Request();
 
-                if (SendLock == false) Request();
+                    await UniTask.Delay(PollInterval, ignoreTimeScale: true);
+                }
             }
 
             public static event Action OnChange;
@@ -65,11 +73,9 @@ namespace MNet
                 var request = PingRequest.Write();
 
                 Client.Send(ref request, DeliveryMode.Reliable);
-
-                SendLock = true;
             }
 
-            static void Response(ref PingResponse response)
+            static void Calculate(ref PingResponse response)
             {
                 var span = response.GetTimeSpan();
 
@@ -82,10 +88,10 @@ namespace MNet
                 Min = Samples.Min();
                 Max = Samples.Max();
 
-                SendLock = false;
-
                 InvokeChange();
             }
+
+            static void ClientDisconnectCallback(DisconnectCode code) => Clear();
 
             static void Clear()
             {
@@ -93,12 +99,8 @@ namespace MNet
 
                 Average = Min = Max = 0d;
 
-                SendLock = false;
-
                 InvokeChange();
             }
-
-            static void ClientDisconnectCallback(DisconnectCode code) => Clear();
         }
     }
 }

@@ -31,7 +31,20 @@ namespace MNet
         {
             public static NetworkTransport Transport { get; private set; }
 
-            public static bool IsConnected => Transport == null ? false : Transport.IsConnected;
+            public static bool IsConnected
+            {
+                get
+                {
+                    if (OfflineMode) return true;
+
+                    if (Transport == null)
+                        return false;
+
+                    return Transport.IsConnected;
+                }
+            }
+
+            public static bool OfflineMode { get; private set; }
 
             #region Buffer
             public static bool IsOnBuffer { get; private set; } = false;
@@ -114,6 +127,8 @@ namespace MNet
 
             internal static void Configure()
             {
+                OfflineMode = false;
+
                 InputQueue = new ConcurrentQueue<Action>();
 
                 Pause.Configure();
@@ -145,6 +160,13 @@ namespace MNet
                 if (IsConnected)
                 {
                     Debug.LogError("Client Must Be Disconnected Before Reconnecting");
+                    return;
+                }
+
+                if (NetworkAPI.OfflineMode.On)
+                {
+                    OfflineMode = true;
+                    QueueConnect();
                     return;
                 }
 
@@ -193,6 +215,8 @@ namespace MNet
 
             internal static void Clear()
             {
+                OfflineMode = false;
+
                 InputQueue = new ConcurrentQueue<Action>();
             }
 
@@ -229,12 +253,18 @@ namespace MNet
             #endregion
 
             #region Disconnect
-            public delegate void DisconnectDelegate(DisconnectCode code);
-            public static event DisconnectDelegate OnDisconnect;
+            
             static void DisconnectCallback(DisconnectCode code)
             {
                 Clear();
 
+                InvokeDisconnect(code);
+            }
+
+            public delegate void DisconnectDelegate(DisconnectCode code);
+            public static event DisconnectDelegate OnDisconnect;
+            static void InvokeDisconnect(DisconnectCode code)
+            {
                 OnDisconnect?.Invoke(code);
             }
 
@@ -254,9 +284,10 @@ namespace MNet
                     return;
                 }
 
-                Clear();
+                if (OfflineMode == false) Transport.Close();
 
-                Transport.Close();
+                InvokeDisconnect(DisconnectCode.Normal);
+                Clear();
             }
 
             static void ApplicationQuitCallback()

@@ -204,7 +204,7 @@ namespace Cysharp.Threading.Tasks
             return dest.ToArray();
         }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
         {
             // capture default(unity) sync-context.
