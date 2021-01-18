@@ -70,7 +70,7 @@ namespace MNet
 
             public static RoomInfo CreateOffline(AttributesCollection attributes = null, CreateDelegate handler = null)
             {
-                var info = OfflineMode.StartRoom(attributes);
+                var info = OfflineMode.Start(attributes);
 
                 handler?.Invoke(info, null);
                 Room.InvokeCreate(info, null);
@@ -519,7 +519,7 @@ namespace MNet
                         return;
                     }
 
-                    ChangeOwner(client, entity);
+                    ChangeOwner(entity, client);
                 }
 
                 static void Takeover(ref TakeoverEntityCommand command)
@@ -536,10 +536,10 @@ namespace MNet
                         return;
                     }
 
-                    ChangeOwner(client, entity);
+                    ChangeOwner(entity, client);
                 }
 
-                internal static void ChangeOwner(NetworkClient client, NetworkEntity entity)
+                internal static void ChangeOwner(NetworkEntity entity, NetworkClient client)
                 {
                     entity.Owner?.Entities.Remove(entity);
                     entity.SetOwner(client);
@@ -572,10 +572,8 @@ namespace MNet
                 {
                     Debug.Log($"Destroying Entity '{entity.name}'");
 
-                    entity.Owner?.Entities.Remove(entity);
-
                     Dictionary.Remove(entity.ID);
-
+                    entity.Owner?.Entities.Remove(entity);
                     if (entity.IsMasterObject) MasterObjects.Remove(entity);
 
                     Despawn(entity);
@@ -599,9 +597,9 @@ namespace MNet
 
                 internal static void DestroyFor(NetworkClient client)
                 {
-                    var entities = client.Entities;
+                    var entities = client.Entities.ToArray();
 
-                    for (int i = 0; i < entities.Count; i++)
+                    for (int i = 0; i < entities.Length; i++)
                     {
                         if (entities[i].IsMasterObject) continue;
 

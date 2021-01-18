@@ -272,7 +272,7 @@ namespace MNet
                         var buffer = new NetworkMessage[] { };
                         var time = new TimeResponse(default, request.Timestamp);
 
-                        var response = new ReadyClientResponse(OfflineMode.Info, clients, Client.ID, buffer, time);
+                        var response = new ReadyClientResponse(OfflineMode.RoomInfo, clients, Client.ID, buffer, time);
 
                         MessageDispatcher.Invoke(ref response, mode);
 

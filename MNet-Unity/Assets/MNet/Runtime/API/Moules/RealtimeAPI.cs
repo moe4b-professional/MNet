@@ -253,7 +253,6 @@ namespace MNet
             #endregion
 
             #region Disconnect
-            
             static void DisconnectCallback(DisconnectCode code)
             {
                 Clear();

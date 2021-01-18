@@ -25,7 +25,7 @@ namespace MNet
         {
             public static bool On { get; private set; }
 
-            internal static RoomInfo Info { get; private set; }
+            internal static RoomInfo RoomInfo { get; private set; }
 
             internal static AutoKeyCollection<NetworkEntityID> EntityIDs { get; private set; }
 
@@ -36,20 +36,25 @@ namespace MNet
                 EntityIDs = new AutoKeyCollection<NetworkEntityID>(NetworkEntityID.Increment);
             }
 
-            internal static RoomInfo StartRoom(AttributesCollection attributes = null)
+            internal static RoomInfo Start(AttributesCollection attributes = null)
             {
                 On = true;
 
-                Info = new RoomInfo(default, "Offline Room", 1, 1, false, attributes);
+                RoomInfo = new RoomInfo(default, "Offline Room", 1, 1, false, attributes);
 
-                return Info;
+                return RoomInfo;
+            }
+
+            public static void Stop()
+            {
+                Clear();
             }
 
             internal static void Clear()
             {
                 On = false;
 
-                Info = default;
+                RoomInfo = default;
 
                 EntityIDs.Clear();
             }

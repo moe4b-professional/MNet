@@ -557,6 +557,15 @@ namespace MNet
         }
 
         #region Entity
+        bool CheckEntityAuthority(NetworkEntity entity, NetworkClient client)
+        {
+            if (client == Master) return true;
+
+            if (client == entity.Owner) return true;
+
+            return false;
+        }
+
         void SpawnEntity(NetworkClient sender, ref SpawnEntityRequest request)
         {
             if (request.Type == EntityType.SceneObject && sender != Master)
@@ -629,7 +638,7 @@ namespace MNet
                 return;
             }
 
-            if (sender != entity.Owner && sender != Master)
+            if(CheckEntityAuthority(entity, sender) == false)
             {
                 Log.Warning($"Client {sender} Trying to Transfer Ownership of Entity they have no Authority over");
                 return;
@@ -701,7 +710,7 @@ namespace MNet
                 return;
             }
 
-            if (sender != entity.Owner && sender != Master)
+            if (CheckEntityAuthority(entity, sender) == false)
             {
                 Log.Warning($"Client {sender} Trying to Destroy Entity {entity} Without Having Authority over that Entity");
                 return;

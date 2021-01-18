@@ -27,7 +27,10 @@ namespace MNet
 		{
             public static List<double> Samples { get; private set; }
 
-            public static ushort MaxSamples { get; set; } = 20;
+            /// <summary>
+            /// Maximum Number of Samples to Keep for Calculating Min and Max
+            /// </summary>
+            public static ushort MaxSamples { get; set; } = 10;
 
             public static double Average { get; private set; }
 
@@ -35,7 +38,8 @@ namespace MNet
             public static double Max { get; private set; }
 
             /// <summary>
-            /// Polling Interval In Milliseconds
+            /// Polling Interval In Milliseconds,
+            /// 100 for Editor And 1,000 for Builds
             /// </summary>
             public static int PollInterval { get; private set; }
 
@@ -47,7 +51,7 @@ namespace MNet
 
                 Average = Min = Max = 0d;
 
-                PollInterval = 1000;
+                PollInterval = Application.isEditor ? 100 : 1000;
 
                 Poll().Forget();
 
