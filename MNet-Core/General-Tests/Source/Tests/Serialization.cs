@@ -59,11 +59,18 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            foreach (var key in original.Keys)
+            void CheckEquality<T>(ushort key)
             {
-                if (Equals(original[key], copy[key]) == false)
-                    Assert.Fail($"Mistmatched Data on Key {key}");
+                original.TryGetValue<T>(key, out var value1);
+                copy.TryGetValue<T>(key, out var value2);
+
+                Assert.AreEqual(value1, value2);
             }
+
+            CheckEquality<string>(0);
+            CheckEquality<DateTime>(1);
+            CheckEquality<Guid>(2);
+            CheckEquality<float>(3);
         }
 
         [Test]

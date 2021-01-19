@@ -8,17 +8,13 @@ namespace MNet
 {
     public static class NetworkPayload
     {
-        public const ushort MinCode = 4000;
+        public const byte MinCode = 100;
 
-        public static Dictionary<ushort, Type> Codes { get; private set; }
-        public static Dictionary<Type, ushort> Types { get; private set; }
-
-        public static List<Type> Implicits { get; private set; }
-
-        static readonly object SyncLock = new object();
+        public static Dictionary<byte, Type> Codes { get; private set; }
+        public static Dictionary<Type, byte> Types { get; private set; }
 
         #region Get Type
-        public static Type GetType(ushort code)
+        public static Type GetType(byte code)
         {
             if (TryGetType(code, out var type))
                 return type;
@@ -26,17 +22,17 @@ namespace MNet
                 throw new Exception($"No NetworkPayload Registerd With Code {code}");
         }
 
-        public static bool TryGetType(ushort code, out Type type) => Codes.TryGetValue(code, out type);
+        public static bool TryGetType(byte code, out Type type) => Codes.TryGetValue(code, out type);
         #endregion
 
         #region Get Code
-        public static ushort GetCode<T>()
+        public static byte GetCode<T>()
         {
             var type = typeof(T);
 
             return GetCode(type);
         }
-        public static ushort GetCode(Type type)
+        public static byte GetCode(Type type)
         {
             if (TryGetCode(type, out var code))
                 return code;
@@ -44,36 +40,10 @@ namespace MNet
                 throw new Exception($"Type {type} Not Registered as a NetworkPayload");
         }
 
-        public static bool TryGetCode(Type type, out ushort code)
-        {
-            lock (SyncLock)
-            {
-                if (Types.TryGetValue(type, out code))
-                    return true;
-            }
-
-            if (TryGetCodeFromImplicit(type, out code))
-            {
-                lock (SyncLock) Types.Add(type, code);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        static bool TryGetCodeFromImplicit(Type target, out ushort code)
-        {
-            for (int i = 0; i < Implicits.Count; i++)
-                if (Implicits[i].IsAssignableFrom(target))
-                    return TryGetCode(Implicits[i], out code);
-
-            code = default;
-            return false;
-        }
+        public static bool TryGetCode(Type type, out byte code) => Types.TryGetValue(type, out code);
         #endregion
 
-        public static void Register<T>(ushort code, bool useForChildern = false)
+        public static void Register<T>(byte code)
         {
             var type = typeof(T);
 
@@ -81,28 +51,26 @@ namespace MNet
 
             Codes.Add(code, type);
             Types.Add(type, code);
-
-            if (useForChildern) Implicits.Add(type);
         }
 
         #region Validate
-        static void Validate(ushort code, Type type)
+        static void Validate(byte code, Type type)
         {
             ValidateDuplicate(code, type);
         }
 
-        static void ValidateDuplicate(ushort code, Type type)
+        static void ValidateDuplicate(byte code, Type type)
         {
             ValidateTypeDuplicate(code, type);
 
             ValidateCodeDuplicate(code, type);
         }
-        static void ValidateTypeDuplicate(ushort code, Type type)
+        static void ValidateTypeDuplicate(byte code, Type type)
         {
             if (TryGetType(code, out var duplicate))
                 throw new Exception($"NetworkPayload Type Duplicate Found, '{type}' & '{duplicate}' both registered with code '{code}'");
         }
-        static void ValidateCodeDuplicate(ushort code, Type type)
+        static void ValidateCodeDuplicate(byte code, Type type)
         {
             if (TryGetCode(type, out var duplicate))
                 throw new Exception($"NetworkPayload Type Duplicate Found, Code '{code}' & '{duplicate}' Both Registered to '{type}'");
@@ -111,7 +79,7 @@ namespace MNet
 
         static void RegisterInternal()
         {
-            ushort index = 0;
+            byte index = 0;
 
             void Add<T>()
             {
@@ -120,40 +88,7 @@ namespace MNet
                 index += 1;
             }
 
-            #region Primitives
-            Add<byte>();
-            Add<byte[]>();
-
-            Add<bool>();
-
-            Add<short>();
-            Add<ushort>();
-
-            Add<int>();
-            Add<uint>();
-
-            Add<float>();
-
-            Add<long>();
-            Add<ulong>();
-
-            Add<double>();
-
-            Add<string>();
-            #endregion
-
-            #region POCO
-            Add<Guid>();
-            Add<DateTime>();
-            Add<TimeSpan>();
-            #endregion
-
-            Add<AttributesCollection>();
-
             #region Client
-            Add<NetworkClientInfo>();
-            Add<NetworkClientProfile>();
-
             Add<RegisterClientRequest>();
             Add<RegisterClientResponse>();
 
@@ -178,15 +113,9 @@ namespace MNet
             #endregion
 
             #region Room
-            Add<RoomInfo>();
-
             Add<ChangeMasterCommand>();
 
             Add<ChangeRoomInfoPayload>();
-            #endregion
-
-            #region RPX
-            Add<RemoteBufferMode>();
             #endregion
 
             #region RPC
@@ -220,10 +149,8 @@ namespace MNet
 
         static NetworkPayload()
         {
-            Codes = new Dictionary<ushort, Type>();
-            Types = new Dictionary<Type, ushort>();
-
-            Implicits = new List<Type>();
+            Codes = new Dictionary<byte, Type>();
+            Types = new Dictionary<Type, byte>();
 
             RegisterInternal();
         }

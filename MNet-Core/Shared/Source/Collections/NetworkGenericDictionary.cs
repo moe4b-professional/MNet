@@ -12,7 +12,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public class NetworkGenericDictionary<TKey> : INetworkSerializable
+    public class NetworkGenericDictionary<TKey> : IManualNetworkSerializable
     {
         Dictionary<TKey, byte[]> payload;
 
@@ -20,25 +20,11 @@ namespace MNet
 
         public IReadOnlyCollection<TKey> Keys => payload.Keys;
 
-        public object this[TKey key]
-        {
-            get
-            {
-                if (TryGetValue(key, out var value) == false)
-                    return new KeyNotFoundException($"No Key: '{key}' registerd in {GetType().Name}");
-
-                return value;
-            }
-        }
-
         public void Set<T>(TKey key, T value)
         {
-            var type = typeof(T);
-
             var writer = NetworkWriter.Pool.Any;
 
-            writer.Write(type);
-            writer.Write(value, type);
+            writer.Write(value);
 
             var raw = writer.ToArray();
 
@@ -50,37 +36,42 @@ namespace MNet
 
         public bool ContainsKey(TKey key) => payload.ContainsKey(key);
 
-        public bool TryGetValue(TKey key, out object value)
+        public bool TryGetValue<TValue>(TKey key, out TValue value)
         {
-            if (objects.TryGetValue(key, out value)) return true;
-
-            if (payload.TryGetValue(key, out byte[] binary))
+            if (objects.TryGetValue(key, out var instance))
             {
-                var reader = new NetworkReader(binary);
+                if (instance is TValue cast)
+                {
+                    value = cast;
+                    return true;
+                }
+                else
+                {
+                    value = default;
+                    return false;
+                }
+            }
 
-                reader.Read(out Type type);
+            if (payload.TryGetValue(key, out byte[] raw))
+            {
+                var reader = new NetworkReader(raw);
 
-                value = reader.Read(type);
+                try
+                {
+                    value = reader.Read<TValue>();
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Exception when Reading key {key} as {typeof(TValue)}, Wrong Type Read Most Likely\n" +
+                        $"Exception: {ex}");
+                }
 
                 objects[key] = value;
 
                 return true;
             }
 
-            return false;
-        }
-        public bool TryGetValue<T>(TKey key, out T value)
-        {
-            if (TryGetValue(key, out object instance))
-            {
-                if (instance is T)
-                {
-                    value = (T)instance;
-                    return true;
-                }
-            }
-
-            value = default(T);
+            value = default;
             return false;
         }
 
@@ -111,9 +102,33 @@ namespace MNet
             }
         }
 
-        public void Select(ref NetworkSerializationContext context)
+        public void Serialize(NetworkWriter writer)
         {
-            context.Select(ref payload);
+            NetworkSerializationHelper.Length.Write(writer, payload.Count);
+
+            foreach (var pair in payload)
+            {
+                writer.Write(pair.Key);
+
+                NetworkSerializationHelper.Length.Write(writer, pair.Value.Length);
+                writer.Insert(pair.Value);
+            }
+        }
+        public void Deserialize(NetworkReader reader)
+        {
+            NetworkSerializationHelper.Length.Read(reader, out var count);
+
+            payload = new Dictionary<TKey, byte[]>(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var key = reader.Read<TKey>();
+
+                var length = NetworkSerializationHelper.Length.Read(reader);
+                var raw = reader.BlockCopy(length);
+
+                payload.Add(key, raw);
+            }
         }
 
         public NetworkGenericDictionary()

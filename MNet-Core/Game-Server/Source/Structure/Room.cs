@@ -133,19 +133,7 @@ namespace MNet
 
             void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
             {
-                TPayload payload;
-
-                try
-                {
-                    payload = message.Read<TPayload>();
-
-                }
-                catch (Exception)
-                {
-                    Log.Error($"Exception Reading {typeof(TPayload)} from Client {sender.ID}");
-                    DisconnectClient(sender, DisconnectCode.InvalidData);
-                    return;
-                }
+                var payload = message.Read<TPayload>();
 
                 handler.Invoke(sender, ref payload, mode);
             }
@@ -160,19 +148,7 @@ namespace MNet
 
             void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
             {
-                TPayload payload;
-
-                try
-                {
-                    payload = message.Read<TPayload>();
-
-                }
-                catch (Exception)
-                {
-                    Log.Error($"Exception Reading {typeof(TPayload)} from Client {sender.ID}");
-                    DisconnectClient(sender, DisconnectCode.InvalidData);
-                    return;
-                }
+                var payload = message.Read<TPayload>();
 
                 handler.Invoke(sender, ref payload);
             }

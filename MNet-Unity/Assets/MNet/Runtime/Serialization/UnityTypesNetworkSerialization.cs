@@ -19,42 +19,6 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [Preserve]
-    public class UnityTypesNetworkSerialization
-    {
-        public const ushort MinCode = NetworkPayload.MinCode + 4000;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
-        static void OnLoad()
-        {
-            var index = NetworkPayload.MinCode;
-
-            void Add<T>(bool useForChildern = false)
-            {
-                NetworkPayload.Register<T>(index, useForChildern);
-
-                index += 1;
-            }
-
-            Add<Vector2>();
-            Add<Vector2Int>();
-
-            Add<Vector3>();
-            Add<Vector3Int>();
-
-            Add<Vector4>();
-
-            Add<Quaternion>();
-
-            Add<Color>();
-
-            Add<NetworkEntity>(true);
-            Add<NetworkBehaviour>(true);
-
-            Add<ISyncedAsset>(true);
-        }
-    }
-
     #region Vector2
     [Preserve]
     public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>

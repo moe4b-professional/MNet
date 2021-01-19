@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
+using System.Reflection;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 using WebSocketSharp;
 using WebSocketSharp.Net;
@@ -15,62 +15,39 @@ namespace MNet
     [Serializable]
     public class NetworkMessage
     {
-        Type type;
-        public Type Type => type;
+        object payload = default;
+        public object Payload => payload;
 
-        byte[] raw = default;
-        public byte[] Raw => raw;
+        public Type Type => payload.GetType();
 
-        public int Size => raw.Length;
+        public bool Is<TType>() => payload is TType;
 
-        public bool Is<TType>()
-        {
-            var type = typeof(TType);
-
-            return Is(type);
-        }
-        public bool Is(Type target)
-        {
-            return target == Type;
-        }
-
-        public T Read<T>() => NetworkSerializer.Deserialize<T>(raw);
+        public T Read<T>() => (T)payload;
 
         public void Serialize(NetworkWriter writer)
         {
-            writer.Write(type);
-
-            var length = (ushort)raw.Length;
-
-            writer.Write(length);
-            writer.Insert(raw);
+            writer.Write(Type);
+            writer.Write(payload);
         }
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out type);
-
-            reader.Read(out ushort length);
-            raw = reader.BlockCopy(length);
+            reader.Read(out Type type);
+            payload = reader.Read(type);
         }
 
-        public override string ToString() => type.FullName;
+        public override string ToString() => payload.ToString();
 
         public NetworkMessage() { }
-        NetworkMessage(Type type, byte[] raw)
+        NetworkMessage(object payload)
         {
-            this.type = type;
-            this.raw = raw;
+            this.payload = payload;
         }
 
         //Static Utility
 
         public static NetworkMessage Write<T>(ref T payload)
         {
-            var type = typeof(T);
-
-            var raw = NetworkSerializer.Serialize(payload);
-
-            var message = new NetworkMessage(type, raw);
+            var message = new NetworkMessage(payload);
 
             return message;
         }

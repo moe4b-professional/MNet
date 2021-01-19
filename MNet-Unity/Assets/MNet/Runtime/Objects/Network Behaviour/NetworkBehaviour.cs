@@ -301,7 +301,7 @@ namespace MNet
                 if (bind.IsAsync)
                     AwaitAsyncQueryRPC(result as IUniTask, command, bind).Forget();
                 else
-                    NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, result, bind.ReturnType);
+                    NetworkAPI.Client.RPR.Respond(command, result, bind.ReturnType);
             }
             else
             {
@@ -331,7 +331,7 @@ namespace MNet
                 return;
             }
 
-            NetworkAPI.Client.RPR.Respond(command.Sender, command.ReturnChannel, task.Result, task.Type);
+            NetworkAPI.Client.RPR.Respond(command, task.Result, task.Type);
         }
         #endregion
 

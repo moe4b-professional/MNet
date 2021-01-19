@@ -230,6 +230,9 @@ namespace MNet
                         case RpcRequest instance:
                             return InvokeRPC(ref instance, mode);
 
+                        case RprRequest instance:
+                            return InvokeRPR(ref instance, mode);
+
                         case SyncVarRequest instance:
                             return InvokeSyncVar(ref instance, mode);
 
@@ -386,11 +389,35 @@ namespace MNet
                         return Response.Consume;
                     }
 
-                    if (OfflineMode.On) return Response.Consume;
+                    if (OfflineMode.On)
+                    {
+                        Debug.LogWarning($"Invoking {request.Type} RPC on Non-Local Client {request.Target} in Offline Mode!");
+                        return Response.Consume;
+                    }
 
                     return Response.Send;
                 }
                 #endregion
+
+                static Response InvokeRPR(ref RprRequest request, DeliveryMode mode)
+                {
+                    if(request.Target == Client.ID)
+                    {
+                        var response = RprResponse.Write(Client.ID, request);
+
+                        MessageDispatcher.Invoke(ref response, mode);
+
+                        return Response.Consume;
+                    }
+
+                    if (OfflineMode.On)
+                    {
+                        Debug.LogWarning($"Invoking RPR on Non-Local Client {request.Target} in Offline Mode!");
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
 
                 static Response InvokeSyncVar(ref SyncVarRequest request, DeliveryMode mode)
                 {
@@ -657,7 +684,7 @@ namespace MNet
                 #endregion
             }
 
-            public static class RPR
+            internal static class RPR
             {
                 static AutoKeyDictionary<RprChannelID, RprPromise> promises;
 
@@ -665,13 +692,34 @@ namespace MNet
                 {
                     promises = new AutoKeyDictionary<RprChannelID, RprPromise>(RprChannelID.Increment);
 
-                    Client.MessageDispatcher.RegisterHandler<RprCommand>(Command);
-                    Client.MessageDispatcher.RegisterHandler<RprResponse>(Response);
+                    Client.MessageDispatcher.RegisterHandler<RprCommand>(Fullfil);
+                    Client.MessageDispatcher.RegisterHandler<RprResponse>(Fullfil);
 
-                    Room.Clients.OnRemove += RemoveClientCallback;
+                    Room.Clients.OnRemove += ClientRemovedCallback;
                 }
 
-                static void Response(ref RprResponse response)
+                static void ClientRemovedCallback(NetworkClient client)
+                {
+                    var selection = promises.Values.Where(IsClient).ToArray();
+
+                    foreach (var promise in selection) Fullfil(promise, RemoteResponseType.Disconnect, null);
+
+                    bool IsClient(RprPromise promise) => promise.Target == client;
+                }
+
+                #region Fullfil
+                static void Fullfil(ref RprCommand command)
+                {
+                    if (promises.TryGetValue(command.Channel, out var promise) == false)
+                    {
+                        Debug.LogWarning($"Recieved RPR Command for Channel {command.Channel} But that Command Doesn't Exist");
+                        return;
+                    }
+
+                    Fullfil(promise, command.Response, null);
+                }
+
+                static void Fullfil(ref RprResponse response)
                 {
                     if (promises.TryGetValue(response.Channel, out var promise) == false)
                     {
@@ -694,33 +742,14 @@ namespace MNet
                     Fullfil(promise, response.Response, response.Raw);
                 }
 
-                static void Command(ref RprCommand command)
-                {
-                    if (promises.TryGetValue(command.Channel, out var promise) == false)
-                    {
-                        Debug.LogWarning($"Recieved RPR Command for Channel {command.Channel} But that Command Doesn't Exist");
-                        return;
-                    }
-
-                    Fullfil(promise, command.Response, null);
-                }
-
-                static void RemoveClientCallback(NetworkClient client)
-                {
-                    var selection = promises.Values.Where(IsClient).ToArray();
-
-                    foreach (var promise in selection) Fullfil(promise, RemoteResponseType.Disconnect, null);
-
-                    bool IsClient(RprPromise promise) => promise.Target == client;
-                }
-
                 static void Fullfil(RprPromise promise, RemoteResponseType response, byte[] raw)
                 {
                     promise.Fullfil(response, raw);
                     promises.Remove(promise.Channel);
                 }
+                #endregion
 
-                public static RprPromise Promise(NetworkClient target)
+                internal static RprPromise Promise(NetworkClient target)
                 {
                     var channel = promises.Reserve();
 
@@ -732,25 +761,21 @@ namespace MNet
                 }
 
                 #region Respond
-                public static bool Respond(RpcCommand command, RemoteResponseType response) => Respond(command.Sender, command.ReturnChannel, response);
-
-                public static bool Respond(NetworkClientID target, RprChannelID channel, object value, Type type)
+                internal static bool Respond(RpcCommand command, RemoteResponseType response)
                 {
-                    var request = RprRequest.Write(target, channel, value, type);
-
-                    if(target == Client.ID)
+                    if (response == RemoteResponseType.Success)
                     {
-                        var response = RprResponse.Write(Client.ID, request);
-                        Response(ref response);
-                        return true;
+                        Log.Error($"Cannot Respond to RPR with Success Without Providing a Value");
+                        return false;
                     }
 
+                    var request = RprRequest.Write(command.Sender, command.ReturnChannel, response);
                     return Send(ref request);
                 }
 
-                public static bool Respond(NetworkClientID target, RprChannelID channel, RemoteResponseType response)
+                internal static bool Respond(RpcCommand command, object value, Type type)
                 {
-                    var request = RprRequest.Write(target, channel, response);
+                    var request = RprRequest.Write(command.Sender, command.ReturnChannel, value, type);
                     return Send(ref request);
                 }
                 #endregion

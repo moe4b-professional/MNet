@@ -614,8 +614,6 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, Type instance)
         {
-            if (WriteNull(writer, instance)) return;
-
             var code = NetworkPayload.GetCode(instance);
 
             writer.Write(code);
@@ -623,9 +621,7 @@ namespace MNet
 
         public override Type Deserialize(NetworkReader reader)
         {
-            if (ReadNull(reader)) return null;
-
-            reader.Read(out ushort code);
+            reader.Read(out byte code);
 
             var value = NetworkPayload.GetType(code);
 
@@ -1532,52 +1528,6 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class ListNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(List<>);
-        }
-
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (WriteNull(writer, instance)) return;
-
-            var list = instance as IList;
-
-            NetworkSerializationHelper.Length.Write(writer, list.Count);
-
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
-
-            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
-        }
-
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (ReadNull(reader)) return null;
-
-            NetworkSerializationHelper.Length.Read(reader, out var count);
-
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
-
-            var list = NetworkSerializationHelper.List.Instantiate(argument, count);
-
-            for (int i = 0; i < count; i++)
-            {
-                var element = reader.Read(argument);
-
-                list.Add(element);
-            }
-
-            return list;
-        }
-    }
-
-    [Preserve]
     public sealed class ArraySegmentNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
         public static bool IsValid(Type target)
@@ -1623,6 +1573,52 @@ namespace MNet
             var segment = Activator.CreateInstance(type, array);
 
             return segment;
+        }
+    }
+
+    [Preserve]
+    public sealed class ListNetworkSerializationResolver : NetworkSerializationImplicitResolver
+    {
+        public static bool IsValid(Type target)
+        {
+            if (target.IsGenericType == false) return false;
+
+            return target.GetGenericTypeDefinition() == typeof(List<>);
+        }
+
+        public override bool CanResolve(Type target) => IsValid(target);
+
+        public override void Serialize(NetworkWriter writer, object instance, Type type)
+        {
+            if (WriteNull(writer, instance)) return;
+
+            var list = instance as IList;
+
+            NetworkSerializationHelper.Length.Write(writer, list.Count);
+
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+
+            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
+        }
+
+        public override object Deserialize(NetworkReader reader, Type type)
+        {
+            if (ReadNull(reader)) return null;
+
+            NetworkSerializationHelper.Length.Read(reader, out var count);
+
+            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+
+            var list = NetworkSerializationHelper.List.Instantiate(argument, count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var element = reader.Read(argument);
+
+                list.Add(element);
+            }
+
+            return list;
         }
     }
 
