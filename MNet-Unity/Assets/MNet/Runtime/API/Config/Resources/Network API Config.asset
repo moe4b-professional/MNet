@@ -29,7 +29,7 @@ MonoBehaviour:
     late:
       pre: 1
       post: 0
-  spawnableObjects:
+  syncedAssets:
     autoUpdate: 1
     list:
     - {fileID: 573034543577270253, guid: 661d50abe5902ce44b108e0c7fed7072, type: 3}

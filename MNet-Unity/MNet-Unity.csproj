@@ -130,6 +130,8 @@
      <Compile Include="Assets\MNet\Runtime\Components\Tests\SerializationTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\SyncVarTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Data\GameScene.cs" />
+     <Compile Include="Assets\MNet\Runtime\Data\ISyncedAsset.cs" />
+     <Compile Include="Assets\MNet\Runtime\Data\PrefabAsset.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviour.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\Network Behaviour\NetworkBehaviourGenericRPCs.cs" />
      <Compile Include="Assets\MNet\Runtime\Objects\NetworkClient.cs" />
@@ -144,6 +146,7 @@
      <Compile Include="Assets\MNet\Runtime\Transport\Variants\WebSocketTransport.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\Dependancy.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\GlobalCoroutine.cs" />
+     <Compile Include="Assets\MNet\Runtime\Utility\PrefabSelection.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\SyncInterval.cs" />
      <Compile Include="Assets\MNet\Shared\Collections\AttributesCollection.cs" />
      <Compile Include="Assets\MNet\Shared\Collections\CollectionPrettyPrint.cs" />

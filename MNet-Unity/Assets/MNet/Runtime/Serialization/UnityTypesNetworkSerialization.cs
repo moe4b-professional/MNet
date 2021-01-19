@@ -22,43 +22,36 @@ namespace MNet
     [Preserve]
     public class UnityTypesNetworkSerialization
     {
-        public static class IDs
-        {
-            public const ushort Start = NetworkPayload.MinCode;
-
-            public const ushort Vector2 = Start + 1;
-            public const ushort Vector2Int = Vector2 + 1;
-
-            public const ushort Vector3 = Vector2Int + 1;
-            public const ushort Vector3Int = Vector3 + 1;
-
-            public const ushort Vector4 = Vector3Int + 1;
-
-            public const ushort Quaternion = Vector4 + 1;
-
-            public const ushort Color = Quaternion + 1;
-
-            public const ushort NetworkEntity = Color + 1;
-            public const ushort NetworkBehaviour = NetworkEntity + 1;
-        }
+        public const ushort MinCode = NetworkPayload.MinCode + 4000;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void OnLoad()
         {
-            NetworkPayload.Register<Vector2>(IDs.Vector2);
-            NetworkPayload.Register<Vector2Int>(IDs.Vector2Int);
+            var index = NetworkPayload.MinCode;
 
-            NetworkPayload.Register<Vector3>(IDs.Vector3);
-            NetworkPayload.Register<Vector3Int>(IDs.Vector3Int);
+            void Add<T>(bool useForChildern = false)
+            {
+                NetworkPayload.Register<T>(index, useForChildern);
 
-            NetworkPayload.Register<Vector4>(IDs.Vector4);
+                index += 1;
+            }
 
-            NetworkPayload.Register<Quaternion>(IDs.Quaternion);
+            Add<Vector2>();
+            Add<Vector2Int>();
 
-            NetworkPayload.Register<Color>(IDs.Color);
+            Add<Vector3>();
+            Add<Vector3Int>();
 
-            NetworkPayload.Register<NetworkEntity>(IDs.NetworkEntity, true);
-            NetworkPayload.Register<NetworkBehaviour>(IDs.NetworkBehaviour, true);
+            Add<Vector4>();
+
+            Add<Quaternion>();
+
+            Add<Color>();
+
+            Add<NetworkEntity>(true);
+            Add<NetworkBehaviour>(true);
+
+            Add<ISyncedAsset>(true);
         }
     }
 
@@ -283,6 +276,34 @@ namespace MNet
             }
 
             return behaviour;
+        }
+    }
+
+    [Preserve]
+    public class SyncedAssetNetworkSerializationResolver : NetworkSerializationExplicitResolver<ISyncedAsset>
+    {
+        public override bool CanResolveDerivatives => true;
+
+        public override void Serialize(NetworkWriter writer, ISyncedAsset instance)
+        {
+            var asset = instance as Object;
+
+            if (NetworkAPI.Config.SyncedAssets.TryGetIndex(asset, out var index) == false)
+                throw new Exception($"Cannot Serialize Unregistered Synced Asset {asset}");
+
+            writer.Write(index);
+        }
+
+        public override ISyncedAsset Deserialize(NetworkReader reader)
+        {
+            reader.Read(out ushort index);
+
+            var asset = NetworkAPI.Config.SyncedAssets[index] as ISyncedAsset;
+
+            if(asset == null)
+                Debug.LogWarning($"No Synced Asset found for index {index} when Deserializing");
+
+            return asset;
         }
     }
 }

@@ -471,10 +471,10 @@ namespace MNet
 
                 internal static NetworkEntity Instantiate(ushort resource)
                 {
-                    var prefab = NetworkAPI.Config.SpawnableObjects[resource];
+                    var prefab = NetworkAPI.Config.SyncedAssets[resource] as GameObject;
 
                     if (prefab == null)
-                        throw new Exception($"No Dynamic Network Spawnable Object with ID: {resource} Found to Spawn");
+                        throw new Exception($"No Synced Asset GameObject with ID: {resource} Found to Spawn");
 
                     var instance = Object.Instantiate(prefab);
 

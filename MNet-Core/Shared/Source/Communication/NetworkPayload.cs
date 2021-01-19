@@ -15,6 +15,8 @@ namespace MNet
 
         public static List<Type> Implicits { get; private set; }
 
+        static readonly object SyncLock = new object();
+
         #region Get Type
         public static Type GetType(ushort code)
         {
@@ -44,18 +46,23 @@ namespace MNet
 
         public static bool TryGetCode(Type type, out ushort code)
         {
-            if (Types.TryGetValue(type, out code)) return true;
+            lock (SyncLock)
+            {
+                if (Types.TryGetValue(type, out code))
+                    return true;
+            }
 
             if (TryGetCodeFromImplicit(type, out code))
             {
-                Types.Add(type, code);
+                lock (SyncLock) Types.Add(type, code);
+
                 return true;
             }
 
             return false;
         }
 
-        public static bool TryGetCodeFromImplicit(Type target, out ushort code)
+        static bool TryGetCodeFromImplicit(Type target, out ushort code)
         {
             for (int i = 0; i < Implicits.Count; i++)
                 if (Implicits[i].IsAssignableFrom(target))
@@ -66,7 +73,6 @@ namespace MNet
         }
         #endregion
 
-        #region Register
         public static void Register<T>(ushort code, bool useForChildern = false)
         {
             var type = typeof(T);
@@ -78,7 +84,6 @@ namespace MNet
 
             if (useForChildern) Implicits.Add(type);
         }
-        #endregion
 
         #region Validate
         static void Validate(ushort code, Type type)

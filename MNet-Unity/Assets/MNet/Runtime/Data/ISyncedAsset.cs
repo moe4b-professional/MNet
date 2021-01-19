@@ -17,19 +17,13 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Cysharp.Threading.Tasks;
-
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace MNet.Example
+namespace MNet
 {
-    public class Sandbox : NetworkBehaviour
-    {
-        [RuntimeInitializeOnLoadMethod]
-        static void OnLoad()
-        {
+	/// <summary>
+	/// Allows Syncing Script Assets (ScriptableObjects) on the Network
+	/// </summary>
+	public interface ISyncedAsset
+	{
 
-        }
-    }
+	}
 }

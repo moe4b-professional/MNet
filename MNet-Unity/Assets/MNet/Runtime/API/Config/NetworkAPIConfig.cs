@@ -327,22 +327,22 @@ namespace MNet
         }
 
         [SerializeField]
-        SpawnableObjectsProperty spawnableObjects = new SpawnableObjectsProperty();
-        public SpawnableObjectsProperty SpawnableObjects => spawnableObjects;
+        SyncedAssetsProperty syncedAssets = new SyncedAssetsProperty();
+        public SyncedAssetsProperty SyncedAssets => syncedAssets;
         [Serializable]
-        public class SpawnableObjectsProperty
+        public class SyncedAssetsProperty
         {
             [SerializeField]
             bool autoUpdate = true;
             public bool AutoUpdate => autoUpdate;
 
             [SerializeField]
-            List<GameObject> list;
-            public List<GameObject> List => list;
+            List<Object> list;
+            public List<Object> List => list;
 
             public int Count => list.Count;
 
-            public GameObject this[ushort index]
+            public Object this[ushort index]
             {
                 get
                 {
@@ -352,11 +352,8 @@ namespace MNet
                 }
             }
 
-            public Dictionary<GameObject, ushort> Prefabs { get; protected set; }
-            public bool TryGetIndex(GameObject prefab, out ushort index) => Prefabs.TryGetValue(prefab, out index);
-
-            public Dictionary<string, ushort> Names { get; protected set; }
-            public bool TryGetIndex(string name, out ushort index) => Names.TryGetValue(name, out index);
+            public Dictionary<Object, ushort> Indexes { get; protected set; }
+            public bool TryGetIndex(Object prefab, out ushort index) => Indexes.TryGetValue(prefab, out index);
 
             NetworkAPIConfig config;
 
@@ -370,69 +367,75 @@ namespace MNet
 
                 CheckForDuplicates();
 
-                Prefabs = new Dictionary<GameObject, ushort>();
-                Names = new Dictionary<string, ushort>();
+                Indexes = new Dictionary<Object, ushort>();
 
                 for (ushort i = 0; i < list.Count; i++)
                 {
                     if (list[i] == null) continue;
 
-                    Prefabs.Add(list[i].gameObject, i);
-                    Names.Add(list[i].name, i);
+                    Indexes.Add(list[i], i);
                 }
             }
 
             void CheckForDuplicates()
             {
-                var hash = new HashSet<GameObject>();
+                var hash = new HashSet<object>();
 
                 for (int i = 0; i < list.Count; i++)
                 {
                     if (hash.Contains(list[i]))
-                        throw new Exception($"Duplicate Network Spawnable Object '{list[i]}' Found at Index {i}");
+                        throw new Exception($"Duplicate Network Synced Asset '{list[i]}' Found at Index {i}");
 
                     hash.Add(list[i]);
                 }
             }
 
-            public SpawnableObjectsProperty()
+            public SyncedAssetsProperty()
             {
-                list = new List<GameObject>();
+                list = new List<Object>();
             }
 
 #if UNITY_EDITOR
             void Refresh()
             {
-                var hash = new HashSet<GameObject>(list);
+                var hash = new HashSet<Object>(list);
 
-                foreach (var element in GetAll())
-                {
-                    if (hash.Contains(element.gameObject)) continue;
+                foreach (var element in Iterate(hash))
+                    list.Add(element);
 
-                    list.Add(element.gameObject);
-                }
-
-                list.RemoveAll(x => x == null);
+                list.RemoveAll(x => x == null || CheckAsset(x) == false);
 
                 EditorUtility.SetDirty(config);
             }
 
-            static IEnumerable<NetworkEntity> GetAll()
+            static IEnumerable<Object> Iterate(HashSet<Object> exceptions)
             {
-                var guids = AssetDatabase.FindAssets($"t:{nameof(GameObject)}");
+                var paths = AssetDatabase.GetAllAssetPaths();
 
-                for (int i = 0; i < guids.Length; i++)
+                for (int i = 0; i < paths.Length; i++)
                 {
-                    var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                    var asset = AssetDatabase.LoadAssetAtPath<Object>(paths[i]);
 
-                    var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    if (exceptions.Contains(asset)) continue;
 
-                    var entity = asset.GetComponent<NetworkEntity>();
+                    if (CheckAsset(asset) == false) continue;
 
-                    if (entity == null) continue;
-
-                    yield return entity;
+                    yield return asset;
                 }
+            }
+
+            static bool CheckAsset(Object asset)
+            {
+                switch (asset)
+                {
+                    case GameObject gameObject:
+                        return NetworkEntity.IsAttachedTo(gameObject);
+
+                    case ScriptableObject scriptableObject:
+                        return scriptableObject is ISyncedAsset;
+                }
+
+                return false;
             }
 #endif
         }
@@ -454,7 +457,7 @@ namespace MNet
 
             ParseGameVersion();
 
-            spawnableObjects.Configure(this);
+            syncedAssets.Configure(this);
         }
 
         void ParseAppID()

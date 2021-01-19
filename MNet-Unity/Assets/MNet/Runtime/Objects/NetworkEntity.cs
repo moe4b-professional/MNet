@@ -250,6 +250,8 @@ namespace MNet
         }
 
         //Static Utility
+        public static bool IsAttachedTo(GameObject gameObject) => gameObject.TryGetComponent<NetworkEntity>(out _);
+
         public static NetworkEntity Find(NetworkEntityID id)
         {
             TryFind(id, out var entity);

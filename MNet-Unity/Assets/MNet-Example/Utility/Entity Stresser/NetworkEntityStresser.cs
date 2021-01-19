@@ -21,6 +21,8 @@ namespace MNet.Example
 {
 	public class NetworkEntityStresser : NetworkBehaviour
 	{
+		public PrefabAsset prefab;
+
 		public int count = 2000;
 
 		public int area = 50;
@@ -40,7 +42,7 @@ namespace MNet.Example
 					attributes.Set(1, angle);
 					attributes.Set(2, area);
 
-					NetworkAPI.Client.Entities.Spawn("Stress Entity", attributes: attributes);
+					NetworkAPI.Client.Entities.Spawn(prefab, attributes: attributes);
 
 					if (i % 50 == 0) yield return new WaitForEndOfFrame();
 				}

@@ -580,16 +580,8 @@ namespace MNet
 
                 public static NetworkEntity Spawn(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
                 {
-                    if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(prefab, out var resource) == false)
+                    if (NetworkAPI.Config.SyncedAssets.TryGetIndex(prefab, out var resource) == false)
                         throw new Exception($"Prefab '{prefab}' Not Registerd as a Network Spawnable Object");
-
-                    return Spawn(resource, persistance: persistance, attributes: attributes, owner: owner);
-                }
-
-                public static NetworkEntity Spawn(string name, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
-                {
-                    if (NetworkAPI.Config.SpawnableObjects.TryGetIndex(name, out var resource) == false)
-                        throw new Exception($"No Network Spawnable Objects Registerd with Name '{name}'");
 
                     return Spawn(resource, persistance: persistance, attributes: attributes, owner: owner);
                 }

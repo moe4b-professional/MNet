@@ -78,14 +78,14 @@ namespace MNet.Example
 
 		//Static Utility
 
-		public static NetworkEntity Spawn() => Spawn(Vector3.zero, Quaternion.identity);
-		public static NetworkEntity Spawn(Vector3 position, Quaternion rotation)
+		public static NetworkEntity Spawn(GameObject prefab) => Spawn(prefab, Vector3.zero, Quaternion.identity);
+		public static NetworkEntity Spawn(GameObject prefab, Vector3 position, Quaternion rotation)
 		{
 			var attributes = WriteAttributes(position, rotation);
 
 			var persistance = PersistanceFlags.SceneLoad;
 
-			return NetworkAPI.Client.Entities.Spawn("Player", attributes: attributes, persistance: persistance);
+			return NetworkAPI.Client.Entities.Spawn(prefab, attributes: attributes, persistance: persistance);
 		}
 
 		public static AttributesCollection WriteAttributes(Vector3 position, Quaternion rotation)

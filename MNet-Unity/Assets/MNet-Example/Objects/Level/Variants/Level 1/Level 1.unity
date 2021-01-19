@@ -966,6 +966,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6de92054a7ebe7a4caaf83c693930da3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  prefab:
+    gameObject: {fileID: 92370369000106702, guid: 66bf7db27409ae541af2939871d2dc8c,
+      type: 3}
   count: 8000
   area: 50
 --- !u!1 &411091175
@@ -3008,6 +3011,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: acf502da0a3fadf40af37b252e344fe0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  player:
+    gameObject: {fileID: 573034543577270253, guid: 661d50abe5902ce44b108e0c7fed7072,
+      type: 3}
 --- !u!114 &1697156423
 MonoBehaviour:
   m_ObjectHideFlags: 0

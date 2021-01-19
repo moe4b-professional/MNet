@@ -27,6 +27,9 @@ namespace MNet.Example
 	{
 		public const int ExecutionOrder = -200;
 
+		[SerializeField]
+		PrefabAsset player = default;
+
 		public static Level Instance { get; protected set; }
 
 		public LevelUI UI { get; protected set; }
@@ -57,7 +60,7 @@ namespace MNet.Example
 		{
 			base.OnSpawn();
 
-			Player.Spawn();
+			Player.Spawn(player);
 		}
 
 		public async UniTask Quit()
