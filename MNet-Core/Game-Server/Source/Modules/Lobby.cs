@@ -123,7 +123,7 @@ namespace MNet
                 }
 
                 var room = Create(app, payload.Version, payload.Name, payload.Capacity, payload.Visibile, payload.Attributes);
-                var info = room.GetInfo();
+                var info = room.Info.Get();
 
                 RestServerAPI.Write(response, info);
             }
@@ -159,9 +159,9 @@ namespace MNet
 
                 foreach (var room in targets)
                 {
-                    if (room.Visibile == false) continue;
+                    if (room.Visible == false) continue;
 
-                    var info = room.GetInfo();
+                    var info = room.Info.Get();
 
                     list.Add(info);
                 }

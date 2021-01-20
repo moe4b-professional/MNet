@@ -615,6 +615,12 @@ namespace MNet
 
                 public static NetworkEntity Spawn(ushort resource, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
                 {
+                    if (owner != null && IsMaster == false)
+                    {
+                        Debug.LogError($"Only the Master Client can Spawn Entities for other Clients");
+                        return null;
+                    }
+
                     var token = Tokens.Reserve();
 
                     var instance = Room.Entities.Instantiate(resource);
