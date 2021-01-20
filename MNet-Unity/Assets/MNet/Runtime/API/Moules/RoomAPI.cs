@@ -55,27 +55,26 @@ namespace MNet
             #region Create
             public delegate void CreateDelegate(RoomInfo room, RestError error);
             public static event CreateDelegate OnCreate;
-            public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, CreateDelegate handler = null)
+            public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, bool offline = false, CreateDelegate handler = null)
             {
-                var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, attributes);
+                if (offline)
+                {
+                    var info = OfflineMode.Start(name, capacity, visibile, attributes);
 
-                Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
+                    Callback(info, null);
+                }
+                else
+                {
+                    var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, attributes);
+
+                    Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
+                }
 
                 void Callback(RoomInfo info, RestError error)
                 {
                     handler?.Invoke(info, error);
                     InvokeCreate(info, error);
                 }
-            }
-
-            public static RoomInfo CreateOffline(AttributesCollection attributes = null, CreateDelegate handler = null)
-            {
-                var info = OfflineMode.Start(attributes);
-
-                handler?.Invoke(info, null);
-                Room.InvokeCreate(info, null);
-
-                return info;
             }
 
             internal static void InvokeCreate(RoomInfo info, RestError error)
@@ -386,6 +385,8 @@ namespace MNet
                     Dictionary = new Dictionary<NetworkEntityID, NetworkEntity>();
                     MasterObjects = new HashSet<NetworkEntity>();
 
+                    InstantiateMethod = DefaultInstantiateMethod;
+
                     Client.MessageDispatcher.RegisterHandler<SpawnEntityCommand>(SpawnRemote);
                     Client.MessageDispatcher.RegisterHandler<TransferEntityPayload>(Transfer);
                     Client.MessageDispatcher.RegisterHandler<TakeoverEntityCommand>(Takeover);
@@ -469,6 +470,7 @@ namespace MNet
                     throw new NotImplementedException();
                 }
 
+                #region Instantiate
                 internal static NetworkEntity Instantiate(ushort resource)
                 {
                     var prefab = NetworkAPI.Config.SyncedAssets[resource] as GameObject;
@@ -476,15 +478,25 @@ namespace MNet
                     if (prefab == null)
                         throw new Exception($"No Synced Asset GameObject with ID: {resource} Found to Spawn");
 
-                    var instance = Object.Instantiate(prefab);
+                    var instance = InstantiateMethod(prefab);
+
+                    if (instance == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {resource}");
 
                     instance.name = prefab.name;
 
-                    var entity = instance.GetComponent<NetworkEntity>();
-                    if (entity == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {resource}");
-
-                    return entity;
+                    return instance;
                 }
+
+                public static InstantiateMethodDelegate InstantiateMethod { get; set; }
+                public delegate NetworkEntity InstantiateMethodDelegate(GameObject prefab);
+
+                public static NetworkEntity DefaultInstantiateMethod(GameObject prefab)
+                {
+                    var instance = Object.Instantiate(prefab);
+
+                    return instance.GetComponent<NetworkEntity>();
+                }
+                #endregion
 
                 static NetworkClient FindOwner(SpawnEntityCommand command)
                 {
@@ -716,7 +728,7 @@ namespace MNet
                     {
                         var scene = SceneManager.GetSceneByBuildIndex(scenes[i]);
 
-                        if (scene.isLoaded)
+                        if (scene.isLoaded && mode == LoadSceneMode.Additive)
                         {
                             Log.Warning($"Got Command to Load Scene at Index {scenes[i]} but That Scene is Already Loaded, " +
                                 $"Loading The Same Scene Multiple Times is not Supported, Ignoring");
@@ -781,7 +793,7 @@ namespace MNet
                 {
                     if (Client.IsMaster == false)
                     {
-                        Debug.LogWarning($"Only the Master Client Can Load Scenes, Ignoring Request");
+                        Debug.LogWarning($"Only the Master Client may Load Scenes, Ignoring Request");
                         return;
                     }
 
@@ -802,13 +814,14 @@ namespace MNet
 
             static void Clear()
             {
-                OfflineMode.Clear();
                 Info.Clear();
                 Scenes.Clear();
                 RemoteSync.Clear();
                 Clients.Clear();
                 Master.Clear();
                 Entities.Clear();
+
+                if (OfflineMode.On) OfflineMode.Stop();
             }
         }
     }

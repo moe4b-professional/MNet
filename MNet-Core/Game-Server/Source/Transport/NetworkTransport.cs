@@ -241,9 +241,8 @@ namespace MNet
             }
             catch (Exception ex)
             {
-                Log.Info(ex);
-
                 Log.Error($"Invalid Network Messages Recieved from {sender.ClientID}");
+                Log.Error(ex);
                 Disconnect(sender, DisconnectCode.InvalidData);
             }
         }

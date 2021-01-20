@@ -68,10 +68,7 @@ namespace MNet.Example
 			var attributes = new AttributesCollection();
 			Core.Levels.WriteAttribute(attributes, level);
 
-			if (offline)
-				NetworkAPI.Room.CreateOffline(attributes: attributes, handler: Callback);
-			else
-				NetworkAPI.Room.Create(name, capacity, attributes: attributes, handler: Callback);
+			NetworkAPI.Room.Create(name, capacity, attributes: attributes, offline: offline, handler: Callback);
 
 			void Callback(RoomInfo room, RestError error)
 			{

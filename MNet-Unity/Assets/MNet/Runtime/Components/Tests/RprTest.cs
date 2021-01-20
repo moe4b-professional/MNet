@@ -26,20 +26,39 @@ namespace MNet
     {
         public string value;
 
+        public string valueAsync;
+
         public bool success = false;
 
         protected async override void OnSpawn()
         {
             base.OnSpawn();
 
-            var answer = await QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client);
+            {
+                var answer = await QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client);
 
-            success = answer.Success;
+                if (answer.Success)
+                    value = answer.Value;
+                else
+                    Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
+            }
 
-            if (answer.Success)
-                value = answer.Value;
-            else
-                Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
+            {
+                var answer = await QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client);
+
+                if (answer.Success)
+                    valueAsync = answer.Value;
+                else
+                    Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
+            }
+
+            success = value != string.Empty && valueAsync != string.Empty;
+        }
+
+        [NetworkRPC]
+        string QueryRPC(RpcInfo info)
+        {
+            return NetworkAPI.Client.Profile.Name;
         }
 
         [NetworkRPC]

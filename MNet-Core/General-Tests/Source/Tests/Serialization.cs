@@ -19,13 +19,18 @@ namespace MNet
         [Test]
         public void DeliverySegmentation()
         {
-            var original = new List<string>();
+            var original = new List<RpcRequest>();
 
             var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable, 500);
 
             for (byte i = 1; i <= 40; i++)
             {
-                var payload = "XOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXOXO";
+                var entity = new NetworkEntityID(i);
+                var behaviour = new NetworkBehaviourID(i);
+                var method = new RpxMethodID(i);
+                var target = new NetworkClientID(i);
+
+                var payload = RpcRequest.WriteTarget(entity, behaviour, method, target, new byte[] { i, i });
 
                 var message = NetworkMessage.Write(ref payload);
                 original.Add(payload);
@@ -34,17 +39,33 @@ namespace MNet
                 delivery.Add(binary);
             }
 
-            var copy = new List<string>(original.Count);
+            var copy = new List<RpcRequest>();
 
             foreach (var buffer in delivery.Read())
             {
                 foreach (var message in NetworkMessage.ReadAll(buffer))
                 {
-                    copy.Add(message.Read<string>());
+                    copy.Add(message.Read<RpcRequest>());
                 }
             }
 
-            Utility.Compare(original, copy);
+            Assert.AreEqual(original.Count, copy.Count);
+
+            for (int i = 0; i < original.Count; i++)
+                Compare(original[i], copy[i]);
+
+            static bool Compare(RpcRequest a, RpcRequest b)
+            {
+                Assert.AreEqual(a.Type, b.Type);
+                Assert.AreEqual(a.Entity, b.Entity);
+                Assert.AreEqual(a.Behaviour, b.Behaviour);
+                Assert.AreEqual(a.Method, b.Method);
+                Assert.AreEqual(a.Target, b.Target);
+
+                Utility.Compare(a.Raw, b.Raw);
+
+                return true;
+            }
         }
 
         [Test]
@@ -145,38 +166,6 @@ namespace MNet
         public void Tuple()
         {
             var original = ("Hello World", 4, DateTime.Now, Guid.NewGuid());
-
-            var copy = NetworkSerializer.Clone(original);
-
-            Utility.Compare(original, copy);
-        }
-
-        [Test]
-        public void ObjectArray()
-        {
-            var original = new object[]
-            {
-                "Hello World",
-                42,
-                Guid.NewGuid(),
-                DateTime.Now,
-            };
-
-            var copy = NetworkSerializer.Clone(original);
-
-            Utility.Compare(original, copy);
-        }
-
-        [Test]
-        public void ObjectList()
-        {
-            var original = new List<object>
-            {
-                "Hello World",
-                20,
-                Guid.NewGuid(),
-                DateTime.Now,
-            };
 
             var copy = NetworkSerializer.Clone(original);
 
