@@ -168,7 +168,7 @@ namespace MNet.Example
 
 				NetworkAPI.Client.Register.GetProfileMethod = GenerateProfile;
 
-                NetworkAPI.Client.Ready.OnCallback += ReadyCallback;
+				NetworkAPI.Client.Register.OnCallback += RegisterCallback;
 
 				Core.OnInit += Init;
 			}
@@ -214,7 +214,7 @@ namespace MNet.Example
 				}
 			}
 
-			void ReadyCallback(ReadyClientResponse response)
+			void RegisterCallback(RegisterClientResponse response)
 			{
 				if (NetworkAPI.Client.IsMaster)
 				{

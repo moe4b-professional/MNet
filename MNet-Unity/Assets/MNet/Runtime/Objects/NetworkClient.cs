@@ -23,15 +23,17 @@ namespace MNet
     public class NetworkClient
     {
         public NetworkClientID ID { get; protected set; }
-        public bool IsMaster => this == NetworkAPI.Room.Master.Client;
 
         public NetworkClientProfile Profile { get; protected set; }
+
         public string Name => Profile == null ? "Anonymous Client" : Profile.Name;
+
         public AttributesCollection Attributes => Profile.Attributes;
+
+        public bool IsMaster => this == NetworkAPI.Room.Master.Client;
 
         public List<NetworkEntity> Entities { get; protected set; }
 
-        public NetworkClient(NetworkClientInfo info) : this(info.ID, info.Profile) { }
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
             this.ID = id;

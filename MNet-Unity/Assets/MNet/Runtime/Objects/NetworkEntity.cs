@@ -41,7 +41,7 @@ namespace MNet
         /// <summary>
         /// Is this an entity that will always be owned by the master client? such as scene objects and orphans
         /// </summary>
-        public bool IsMasterObject => Type == EntityType.SceneObject | Type == EntityType.Orphan;
+        public bool IsMasterObject => CheckIfMasterObject(Type);
         #endregion
 
         public PersistanceFlags Persistance { get; protected set; }
@@ -98,7 +98,7 @@ namespace MNet
                 return false;
             }
 
-            if(CheckAuthority(NetworkAPI.Client.Self) == false)
+            if (CheckAuthority(NetworkAPI.Client.Self) == false)
             {
                 Debug.LogWarning($"Local Client has no Authority over Entity '{this}', Entity Trasnsfer Invalid");
                 return false;
@@ -128,6 +128,9 @@ namespace MNet
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
+        /// <summary>
+        /// Boolean value to show if this Entity is ready to send and recieve messages
+        /// </summary>
         public bool IsReady { get; protected set; } = false;
 
         public Scene Scene => gameObject.scene;

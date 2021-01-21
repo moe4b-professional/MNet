@@ -51,23 +51,12 @@ namespace MNet
         public Scene Scene => gameObject.scene;
         bool IsInSameScene(NetworkEntity entity) => entity.Scene == this.Scene;
 
-#if UNITY_EDITOR
         void Reset()
         {
+#if UNITY_EDITOR
             FindAll();
-        }
-
-        void FindAll()
-        {
-            list.Clear();
-
-            var targets = FindObjectsOfType<NetworkEntity>().Where(IsInSameScene);
-
-            list.AddRange(targets);
-
-            EditorUtility.SetDirty(this);
-        }
 #endif
+        }
 
         void Awake()
         {
@@ -82,20 +71,14 @@ namespace MNet
         {
             if (Application.isPlaying == false) return;
 
-            if (NetworkAPI.Client.IsConnected && NetworkAPI.Client.IsReady)
-                EvaluateSpawn();
-            else
-                NetworkAPI.Room.OnReady += RoomReadyCallback;
-        }
+            if (NetworkAPI.Client.IsRegistered) EvaluateSpawn();
 
-        void RoomReadyCallback(ReadyClientResponse response)
-        {
-            NetworkAPI.Room.OnReady -= RoomReadyCallback;
-
-            EvaluateSpawn();
+            NetworkAPI.Client.Register.OnCallback += EvaluateSpawnOnClientRegister;
         }
 
         #region Spawn
+        void EvaluateSpawnOnClientRegister(RegisterClientResponse response) => EvaluateSpawn();
+
         void EvaluateSpawn()
         {
             if (NetworkAPI.Client.IsMaster == false) return;
@@ -134,11 +117,12 @@ namespace MNet
 
             return true;
         }
+
         public bool Remove(NetworkEntity target) => list.Remove(target);
 
         void OnDestroy()
         {
-            NetworkAPI.Room.OnReady -= RoomReadyCallback;
+            NetworkAPI.Client.Register.OnCallback -= EvaluateSpawnOnClientRegister;
 
             Unregister(this);
         }
@@ -227,6 +211,17 @@ namespace MNet
         }
 
 #if UNITY_EDITOR
+        void FindAll()
+        {
+            list.Clear();
+
+            var targets = FindObjectsOfType<NetworkEntity>().Where(IsInSameScene);
+
+            list.AddRange(targets);
+
+            EditorUtility.SetDirty(this);
+        }
+
         [CustomEditor(typeof(NetworkScene))]
         class Inspector : UnityEditor.Editor
         {

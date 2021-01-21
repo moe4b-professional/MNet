@@ -92,9 +92,6 @@ namespace MNet
             Add<RegisterClientRequest>();
             Add<RegisterClientResponse>();
 
-            Add<ReadyClientRequest>();
-            Add<ReadyClientResponse>();
-
             Add<ClientConnectedPayload>();
             Add<ClientDisconnectPayload>();
             #endregion
@@ -321,14 +318,26 @@ namespace MNet
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
+        TimeRequest time;
+        public TimeRequest Time => time;
+
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref profile);
+            context.Select(ref time);
         }
 
-        public RegisterClientRequest(NetworkClientProfile profile)
+        public RegisterClientRequest(NetworkClientProfile profile, TimeRequest time)
         {
             this.profile = profile;
+            this.time = time;
+        }
+
+        public static RegisterClientRequest Write(NetworkClientProfile profile)
+        {
+            var time = TimeRequest.Write();
+
+            return new RegisterClientRequest(profile, time);
         }
     }
 
@@ -339,43 +348,6 @@ namespace MNet
         NetworkClientID id;
         public NetworkClientID ID => id;
 
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref id);
-        }
-
-        public RegisterClientResponse(NetworkClientID id)
-        {
-            this.id = id;
-        }
-    }
-    #endregion
-
-    #region Ready Client
-    [Preserve]
-    [Serializable]
-    public struct ReadyClientRequest : INetworkSerializable
-    {
-        DateTime timestamp;
-        public DateTime Timestamp => timestamp;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref timestamp);
-        }
-
-        ReadyClientRequest(DateTime timestamp)
-        {
-            this.timestamp = timestamp;
-        }
-
-        public static ReadyClientRequest Write() => new ReadyClientRequest(DateTime.UtcNow);
-    }
-
-    [Preserve]
-    [Serializable]
-    public struct ReadyClientResponse : INetworkSerializable
-    {
         RoomInfo room;
         public RoomInfo Room => room;
 
@@ -393,6 +365,7 @@ namespace MNet
 
         public void Select(ref NetworkSerializationContext context)
         {
+            context.Select(ref id);
             context.Select(ref room);
             context.Select(ref clients);
             context.Select(ref buffer);
@@ -400,8 +373,9 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public ReadyClientResponse(RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, TimeResponse time)
+        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, TimeResponse time)
         {
+            this.id = id;
             this.room = room;
             this.clients = clients;
             this.master = master;
@@ -694,21 +668,22 @@ namespace MNet
     [Serializable]
     public struct ClientConnectedPayload : INetworkSerializable
     {
-        NetworkClientInfo info;
-        public NetworkClientInfo Info => info;
+        NetworkClientID id;
+        public NetworkClientID ID => id;
 
-        public NetworkClientID ID => info.ID;
-
-        public NetworkClientProfile Profile => info.Profile;
+        NetworkClientProfile profile;
+        public NetworkClientProfile Profile => profile;
 
         public void Select(ref NetworkSerializationContext context)
         {
-            context.Select(ref info);
+            context.Select(ref id);
+            context.Select(ref profile);
         }
 
-        public ClientConnectedPayload(NetworkClientInfo info)
+        public ClientConnectedPayload(NetworkClientID id, NetworkClientProfile profile)
         {
-            this.info = info;
+            this.id = id;
+            this.profile = profile;
         }
     }
 
@@ -777,20 +752,22 @@ namespace MNet
         NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
 
-        DateTime requestTimestamp;
-        public DateTime RequestTimestamp => requestTimestamp;
+        DateTime timestamp;
+        public DateTime Timestamp => timestamp;
 
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref time);
-            context.Select(ref requestTimestamp);
+            context.Select(ref timestamp);
         }
 
-        public TimeResponse(NetworkTimeSpan time, DateTime requestTimestamp)
+        public TimeResponse(NetworkTimeSpan time, DateTime timestamp)
         {
             this.time = time;
-            this.requestTimestamp = requestTimestamp;
+            this.timestamp = timestamp;
         }
+
+        public static TimeResponse Write(NetworkTimeSpan time, TimeRequest request) => new TimeResponse(time, request.Timestamp);
     }
     #endregion
 

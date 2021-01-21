@@ -30,18 +30,17 @@ namespace MNet
 
             public static bool IsConnected => Realtime.IsConnected;
 
+            public static bool IsRegistered => Register.IsComplete;
+
             public static bool IsMaster
             {
                 get
                 {
                     if (Self == null) return false;
 
-                    return Room.Master.Client == Self;
+                    return Self.IsMaster;
                 }
             }
-
-            public static bool IsRegistered => Register.IsComplete;
-            public static bool IsReady => Ready.IsComplete;
 
             internal static void Configure()
             {
@@ -49,7 +48,6 @@ namespace MNet
                 SendQueue.Configure();
                 Prediction.Clear();
                 Register.Configure();
-                Ready.Configure();
                 Entities.Configure();
                 RPR.Configure();
 
@@ -212,9 +210,6 @@ namespace MNet
                         case RegisterClientRequest instance:
                             return RegisterClient(ref instance, mode);
 
-                        case ReadyClientRequest instance:
-                            return ReadyClient(ref instance, mode);
-
                         case SpawnEntityRequest instance:
                             return SpawnEntity(ref instance, mode);
 
@@ -252,30 +247,16 @@ namespace MNet
                     return Response.None;
                 }
 
-                #region Client
                 static Response RegisterClient(ref RegisterClientRequest request, DeliveryMode mode)
                 {
-                    if(OfflineMode.On)
+                    if (OfflineMode.On)
                     {
-                        var response = new RegisterClientResponse(default);
-
-                        MessageDispatcher.Invoke(ref response, mode);
-
-                        return Response.Consume;
-                    }
-
-                    return Response.Send;
-                }
-
-                static Response ReadyClient(ref ReadyClientRequest request, DeliveryMode mode)
-                {
-                    if(OfflineMode.On)
-                    {
-                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(ID, Profile) };
+                        var id = new NetworkClientID();
+                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Register.Profile) };
                         var buffer = new NetworkMessage[] { };
-                        var time = new TimeResponse(default, request.Timestamp);
+                        var time = TimeResponse.Write(default, request.Time);
 
-                        var response = new ReadyClientResponse(OfflineMode.RoomInfo, clients, Client.ID, buffer, time);
+                        var response = new RegisterClientResponse(id, OfflineMode.RoomInfo, clients, id, buffer, time);
 
                         MessageDispatcher.Invoke(ref response, mode);
 
@@ -284,7 +265,6 @@ namespace MNet
 
                     return Response.Send;
                 }
-                #endregion
 
                 #region Entity
                 static Response SpawnEntity(ref SpawnEntityRequest request, DeliveryMode mode)
@@ -293,7 +273,7 @@ namespace MNet
                     {
                         var id = OfflineMode.EntityIDs.Reserve();
 
-                        if(request.Type == EntityType.Dynamic)
+                        if (request.Type == EntityType.Dynamic)
                         {
                             var response = SpawnEntityResponse.Write(id, request.Token);
 
@@ -401,7 +381,7 @@ namespace MNet
 
                 static Response InvokeRPR(ref RprRequest request, DeliveryMode mode)
                 {
-                    if(request.Target == Client.ID)
+                    if (request.Target == Client.ID)
                     {
                         var response = RprResponse.Write(Client.ID, request);
 
@@ -464,7 +444,7 @@ namespace MNet
 
                 static Response Time(ref TimeRequest request, DeliveryMode mode)
                 {
-                    if(OfflineMode.On)
+                    if (OfflineMode.On)
                     {
                         var response = new TimeResponse(NetworkAPI.Time.Span, request.Timestamp);
 
@@ -508,7 +488,7 @@ namespace MNet
                 {
                     Profile = GetProfileMethod();
 
-                    var request = new RegisterClientRequest(Profile);
+                    var request = RegisterClientRequest.Write(Profile);
 
                     Send(ref request);
                 }
@@ -530,56 +510,14 @@ namespace MNet
 
                     Debug.Log("Client Registered");
 
-                    OnCallback?.Invoke(response);
-                }
-
-                internal static void Clear()
-                {
-
-                }
-            }
-
-            public static class Ready
-            {
-                public static bool Auto { get; set; } = true;
-
-                public static bool IsComplete { get; private set; }
-
-                internal static void Configure()
-                {
-                    IsComplete = false;
-
-                    Register.OnCallback += RegisterCallback;
-
-                    MessageDispatcher.RegisterHandler<ReadyClientResponse>(Callback);
-                }
-
-                static void RegisterCallback(RegisterClientResponse response)
-                {
-                    if (Auto) Request();
-                }
-
-                public static void Request()
-                {
-                    var request = ReadyClientRequest.Write();
-
-                    Send(ref request);
-                }
-
-                public delegate void CallbackDelegate(ReadyClientResponse response);
-                public static event CallbackDelegate OnCallback;
-                static void Callback(ref ReadyClientResponse response)
-                {
-                    IsComplete = true;
-
-                    Debug.Log("Client Set Ready");
+                    Room.Register(ref response);
 
                     OnCallback?.Invoke(response);
                 }
 
                 internal static void Clear()
                 {
-                    IsComplete = false;
+
                 }
             }
 
@@ -787,6 +725,8 @@ namespace MNet
                 #endregion
             }
 
+            public static void Disconnect() => Realtime.Disconnect();
+
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
             static void DisconnectedCallback(DisconnectCode code)
@@ -798,8 +738,6 @@ namespace MNet
                 OnDisconnect?.Invoke(code);
             }
 
-            public static void Disconnect() => Realtime.Disconnect();
-
             static void Clear()
             {
                 Self = default;
@@ -807,8 +745,9 @@ namespace MNet
                 SendQueue.Clear();
                 Prediction.Clear();
                 Register.Clear();
-                Ready.Clear();
                 Entities.Clear();
+
+                NetworkAPI.Room.Clear();
             }
         }
     }

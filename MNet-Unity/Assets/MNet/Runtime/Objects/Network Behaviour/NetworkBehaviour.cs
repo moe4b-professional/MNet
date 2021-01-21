@@ -108,21 +108,6 @@ namespace MNet
         protected virtual void OnReady() { }
         #endregion
 
-        #region Despawn
-        internal void Despawn()
-        {
-            ASyncDespawnCancellation.Cancel();
-            ASyncDespawnCancellation.Dispose();
-
-            OnDespawn();
-        }
-
-        /// <summary>
-        /// Invoked when the entity is despawned from the network
-        /// </summary>
-        protected virtual void OnDespawn() { }
-        #endregion
-
         #region RPC
         protected DualDictionary<RpxMethodID, string, RpcBind> RPCs { get; private set; }
 
@@ -398,7 +383,7 @@ namespace MNet
                 return;
             }
 
-            if(bind.Hooks.Contains(hook))
+            if (bind.Hooks.Contains(hook))
             {
                 Debug.LogWarning($"SyncVar Hook {hook.Method.Name} Already Registered for SyncVar '{GetType().Name}->{name}' Cannot Register Hook More than Once");
                 return;
@@ -533,6 +518,21 @@ namespace MNet
 
             return NetworkAPI.Client.Send(ref payload, mode);
         }
+
+        #region Despawn
+        internal void Despawn()
+        {
+            ASyncDespawnCancellation.Cancel();
+            ASyncDespawnCancellation.Dispose();
+
+            OnDespawn();
+        }
+
+        /// <summary>
+        /// Invoked when the entity is despawned from the network
+        /// </summary>
+        protected virtual void OnDespawn() { }
+        #endregion
 
         #region Editor
 #if UNITY_EDITOR

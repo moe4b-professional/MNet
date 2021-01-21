@@ -66,7 +66,7 @@ namespace MNet
 
                 NetworkAPI.OnProcess += Process;
 
-                Client.Ready.OnCallback += ClientReadyCallback;
+                Client.Register.OnCallback += ClientRegisterCallback;
                 Client.OnDisconnect += DisconnectCallback;
 
                 Client.MessageDispatcher.RegisterHandler<TimeResponse>(Set);
@@ -74,7 +74,7 @@ namespace MNet
 
             static void Process()
             {
-                if (Client.IsReady == false) return;
+                if (Client.IsRegistered == false) return;
 
                 Calculate();
             }
@@ -86,9 +86,16 @@ namespace MNet
                 Client.Send(ref payload, DeliveryMode.Reliable);
             }
 
+            static void ClientRegisterCallback(RegisterClientResponse response)
+            {
+                var time = response.Time;
+
+                Set(ref time);
+            }
+
             static void Set(ref TimeResponse response)
             {
-                var rtt = DateTime.UtcNow - response.RequestTimestamp;
+                var rtt = DateTime.UtcNow - response.Timestamp;
 
                 Set(response.Time, rtt);
             }
@@ -120,6 +127,8 @@ namespace MNet
                 Span = value;
             }
 
+            static void DisconnectCallback(DisconnectCode code) => Clear();
+
             static void Clear()
             {
                 Span = default;
@@ -127,17 +136,6 @@ namespace MNet
 
                 IsBroken = false;
             }
-
-            #region Callbacks
-            static void ClientReadyCallback(ReadyClientResponse response)
-            {
-                var time = response.Time;
-
-                Set(ref time);
-            }
-
-            static void DisconnectCallback(DisconnectCode code) => Clear();
-            #endregion
         }
     }
 }

@@ -35,11 +35,6 @@ namespace MNet
                 Clients.Configure();
                 Master.Configure();
                 Entities.Configure();
-
-                Client.OnConnect += Setup;
-                Client.Register.OnCallback += Register;
-                Client.Ready.OnCallback += Ready;
-                Client.OnDisconnect += (code) => Clear();
             }
 
             #region Join
@@ -83,27 +78,13 @@ namespace MNet
             }
             #endregion
 
-            static void Setup()
-            {
-
-            }
-
-            static void Register(RegisterClientResponse response)
-            {
-
-            }
-
-            public delegate void ReadyDelegate(ReadyClientResponse response);
-            public static event ReadyDelegate OnReady;
-            static void Ready(ReadyClientResponse response)
+            internal static void Register(ref RegisterClientResponse response)
             {
                 Info.Load(response.Room);
                 Clients.AddAll(response.Clients);
                 Master.Assign(response.Master);
 
                 Realtime.ApplyBuffer(response.Buffer).Forget();
-
-                OnReady?.Invoke(response);
             }
 
             public static class Info
@@ -293,14 +274,14 @@ namespace MNet
                 internal static void AddAll(IList<NetworkClientInfo> list)
                 {
                     for (int i = 0; i < list.Count; i++)
-                        Add(list[i]);
+                        Add(list[i].ID, list[i].Profile);
                 }
 
                 public delegate void AddDelegate(NetworkClient client);
                 public static event AddDelegate OnAdd;
-                static NetworkClient Add(NetworkClientInfo info)
+                static NetworkClient Add(NetworkClientID id, NetworkClientProfile profile)
                 {
-                    var client = Assimilate(info);
+                    var client = Assimilate(id, profile);
 
                     Dictionary.Add(client.ID, client);
 
@@ -309,11 +290,11 @@ namespace MNet
                     return client;
                 }
 
-                static NetworkClient Assimilate(NetworkClientInfo info)
+                static NetworkClient Assimilate(NetworkClientID id, NetworkClientProfile profile)
                 {
-                    if (Client.Self?.ID == info.ID) return Client.Self;
+                    if (Client.Self?.ID == id) return Client.Self;
 
-                    return new NetworkClient(info);
+                    return new NetworkClient(id, profile);
                 }
 
                 public delegate void RemoveDelegate(NetworkClient client);
@@ -337,7 +318,7 @@ namespace MNet
                         return;
                     }
 
-                    var client = Add(payload.Info);
+                    var client = Add(payload.ID, payload.Profile);
 
                     OnConnected?.Invoke(client);
 
@@ -812,7 +793,7 @@ namespace MNet
 
             public static void Leave() => Client.Disconnect();
 
-            static void Clear()
+            internal static void Clear()
             {
                 Info.Clear();
                 Scenes.Clear();

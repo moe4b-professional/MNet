@@ -12,21 +12,15 @@ namespace MNet
 {
     class NetworkClient
     {
-        public NetworkClientInfo Info { get; protected set; }
+        public NetworkClientID ID { get; protected set; }
 
-        public NetworkClientID ID => Info.ID;
+        public NetworkClientProfile Profile { get; protected set; }
 
-        public NetworkClientProfile Profile => Info.Profile;
         public string Name => Profile.Name;
+
         public AttributesCollection Attributes => Profile.Attributes;
 
         public List<NetworkEntity> Entities { get; protected set; }
-
-        public bool Ready { get; protected set; }
-        public void SetReady()
-        {
-            Ready = true;
-        }
 
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
         public static NetworkClientInfo ReadInfo(NetworkClient client) => client.ReadInfo();
@@ -35,16 +29,14 @@ namespace MNet
 
         public override string ToString() => ID.ToString();
 
-        public NetworkClient(NetworkClientInfo info)
+        public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
-            this.Info = info;
+            this.ID = id;
+            this.Profile = profile;
 
             Entities = new List<NetworkEntity>();
 
             SendQueue = new MessageSendQueue(Realtime.Transport.CheckMTU);
         }
-
-        //Static Utility
-        public static bool IsReady(NetworkClient client) => client.Ready;
     }
 }

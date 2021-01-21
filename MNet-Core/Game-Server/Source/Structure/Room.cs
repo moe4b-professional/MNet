@@ -53,7 +53,7 @@ namespace MNet
 
                 if (payload.RemoveAttributes) Room.Attributes.RemoveAll(payload.RemovedAttributes);
 
-                Room.Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
+                Room.Broadcast(ref payload, exception1: sender.ID);
             }
         }
 
@@ -64,6 +64,7 @@ namespace MNet
 
             public NetworkTimeSpan span;
 
+            public TimeResponse CreateResponse(TimeRequest request) => CreateResponse(request.Timestamp);
             public TimeResponse CreateResponse(DateTime stamp) => new TimeResponse(span, stamp);
 
             public override void Configure()
@@ -87,7 +88,7 @@ namespace MNet
 
             void Request(NetworkClient sender, ref TimeRequest request)
             {
-                var response = CreateResponse(request.Timestamp);
+                var response = CreateResponse(request);
 
                 Room.Send(ref response, sender);
             }
@@ -108,13 +109,6 @@ namespace MNet
 
             NetworkClientInfo[] GetInfo() => Dictionary.ToArray(NetworkClient.ReadInfo);
 
-            public override void Configure()
-            {
-                base.Configure();
-
-                MessageDispatcher.RegisterHandler<ReadyClientRequest>(Ready);
-            }
-
             public override void Start()
             {
                 base.Start();
@@ -123,6 +117,7 @@ namespace MNet
                 TransportContext.OnDisconnect += DisconnectCallback;
             }
 
+            #region Connect & Add
             void ConnectCallback(NetworkClientID id)
             {
                 Log.Info($"Room {Room.ID}: Client {id} Connected");
@@ -142,55 +137,60 @@ namespace MNet
                     return;
                 }
 
-                var info = new NetworkClientInfo(id, request.Profile);
+                var client = Add(id, request.Profile);
 
-                var client = new NetworkClient(info);
+                var time = Time.CreateResponse(request.Time);
+
+                ///DO NOT PASS the Message Buffer in as an argument for the Response
+                ///You'll get what I can only describe as a very rare single-threaded race condition
+                ///In reality this is because the Response will be serialized later on
+                ///And the MessageBuffer.List will get passed by reference
+                ///So if a Response request is created for a certain client before any previous client spawns an entity
+                ///The message buffer will still include the new entity spawn
+                ///Because by the time the buffer list gets serialized, it would be the latest version in the room
+                ///And the client will still recieve the entity spawn command in real-time because they are now registered
+                ///And yeah ... don't ask me how I found this bug :P
+                var buffer = MessageBuffer.ToArray();
+
+                var room = Info.Get();
+                var clients = GetInfo();
+
+                Log.Info($"Room {Room.ID}: Client {id} Registerd");
+
+                var response = new RegisterClientResponse(id, room, clients, Master.ID, buffer, time);
+                Room.Send(ref response, client);
+
+                var payload = new ClientConnectedPayload(client.ID, client.Profile);
+                Room.Broadcast(ref payload);
+            }
+
+            NetworkClient Add(NetworkClientID id, NetworkClientProfile profile)
+            {
+                var client = new NetworkClient(id, profile);
 
                 if (Clients.Count == 0) Master.Set(client);
 
                 Dictionary.Add(id, client);
 
-                Log.Info($"Room {Room.ID}: Client {id} Registerd");
-
-                var response = new RegisterClientResponse(id);
-                Room.Send(ref response, client);
-
-                var payload = new ClientConnectedPayload(info);
-                Room.Broadcast(ref payload, condition: NetworkClient.IsReady);
+                return client;
             }
+            #endregion
 
-            void Ready(NetworkClient client, ref ReadyClientRequest request)
-            {
-                client.SetReady();
-
-                var time = Time.CreateResponse(request.Timestamp);
-
-                ///DO NOT PASS the Message Buffer in as an argument for the ReadyClientResponse
-                ///You'll get what I can only describe as a very rare single-threaded race condition
-                ///In reality this is because the ReadyClientResponse will be serialized later on
-                ///And the MessageBuffer.List will get passed by reference
-                ///So if a ReadyClientResponse request is created for a certain client before any previous client spawns an entity
-                ///The message buffer will still include the new entity spawn
-                ///Because by the time the buffer list gets serialized, it would be the latest version in the room
-                ///And the client will still recieve the entity spawn command in real-time because they are now marked ready
-                ///And yeah ... don't ask me how I know :P
-                var buffer = MessageBuffer.List.ToArray();
-
-                var room = Info.Get();
-                var clients = Clients.GetInfo();
-
-                var response = new ReadyClientResponse(room, clients, Master.ID, buffer, time);
-
-                Room.Send(ref response, client);
-
-                Log.Info($"Room {Room.ID}: Client {client.ID} Set Ready");
-            }
-
+            #region Disconnect & Remove
             void Disconnect(NetworkClient client, DisconnectCode code)
             {
                 Dictionary.Remove(client.ID);
 
                 TransportContext.Disconnect(client.ID, code);
+            }
+
+            void DisconnectCallback(NetworkClientID id)
+            {
+                Log.Info($"Room {Room.ID}: Client {id} Disconnected");
+
+                if (Dictionary.TryGetValue(id, out var client)) Remove(client);
+
+                if (Room.Occupancy == 0) Room.Stop();
             }
 
             void Remove(NetworkClient client)
@@ -204,17 +204,9 @@ namespace MNet
                 if (client == Master.Client) Master.Select();
 
                 var payload = new ClientDisconnectPayload(client.ID);
-                Room.Broadcast(ref payload, condition: NetworkClient.IsReady);
+                Room.Broadcast(ref payload);
             }
-
-            void DisconnectCallback(NetworkClientID id)
-            {
-                Log.Info($"Room {Room.ID}: Client {id} Disconnected");
-
-                if (Dictionary.TryGetValue(id, out var client)) Remove(client);
-
-                if (Room.Occupancy == 0) Room.Stop();
-            }
+            #endregion
 
             public ClientsProperty()
             {
@@ -242,7 +234,7 @@ namespace MNet
 
                 var command = new ChangeMasterCommand(Client.ID);
 
-                Room.Broadcast(ref command, condition: NetworkClient.IsReady);
+                Room.Broadcast(ref command);
             }
 
             public void Select()
@@ -342,7 +334,7 @@ namespace MNet
                 NetworkClientID? exception = entity.IsDynamic ? sender.ID : null;
 
                 var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
-                entity.SpawnMessage = Room.Broadcast(ref command, condition: NetworkClient.IsReady, exception1: exception);
+                entity.SpawnMessage = Room.Broadcast(ref command, exception1: exception);
                 MessageBuffer.Add(entity.SpawnMessage);
             }
 
@@ -377,7 +369,7 @@ namespace MNet
 
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
-                entity.OwnershipMessage = Room.Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
+                entity.OwnershipMessage = Room.Broadcast(ref payload, exception1: sender.ID);
 
                 MessageBuffer.Remove(entity.OwnershipMessage);
             }
@@ -401,7 +393,7 @@ namespace MNet
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
                 var command = TakeoverEntityCommand.Write(sender.ID, request);
-                entity.OwnershipMessage = Room.Broadcast(ref command, condition: NetworkClient.IsReady, exception1: sender.ID);
+                entity.OwnershipMessage = Room.Broadcast(ref command, exception1: sender.ID);
 
                 MessageBuffer.Add(entity.OwnershipMessage);
             }
@@ -449,7 +441,7 @@ namespace MNet
 
                 Destroy(entity);
 
-                Room.Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
+                Room.Broadcast(ref payload, exception1: sender.ID);
             }
 
             public void Destroy(NetworkEntity entity)
@@ -544,7 +536,7 @@ namespace MNet
             {
                 var command = RpcCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady, exception1: request.Exception, exception2: sender.ID);
+                var message = Room.Broadcast(ref command, mode: mode, exception1: request.Exception, exception2: sender.ID);
 
                 entity.RpcBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
@@ -595,7 +587,7 @@ namespace MNet
 
                 var command = SyncVarCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, condition: NetworkClient.IsReady, exception1: sender.ID);
+                var message = Room.Broadcast(ref command, mode: mode, exception1: sender.ID);
 
                 entity.SyncVarBuffer.Set(message, request, MessageBuffer.Add, MessageBuffer.Remove);
             }
@@ -606,6 +598,8 @@ namespace MNet
         public class MessageBufferProperty : Property
         {
             public List<NetworkMessage> List { get; protected set; }
+
+            public NetworkMessage[] ToArray() => List.ToArray();
 
             public bool TryGetIndex(NetworkMessage message, out int index)
             {
@@ -773,7 +767,7 @@ namespace MNet
 
                 if (payload.Mode == NetworkSceneLoadMode.Single) Entities.DestroyAllNonPersistant();
 
-                var message = Room.Broadcast(ref payload, condition: NetworkClient.IsReady, exception1: sender.ID);
+                var message = Room.Broadcast(ref payload, exception1: sender.ID);
 
                 if (payload.Mode == NetworkSceneLoadMode.Single)
                 {
@@ -855,7 +849,7 @@ namespace MNet
             return message;
         }
 
-        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null, BroadcastCondition condition = null)
+        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
         {
             var message = NetworkMessage.Write(ref payload);
 
@@ -868,8 +862,6 @@ namespace MNet
                     if (exception1 == client.ID) continue;
                     if (exception2 == client.ID) continue;
 
-                    if (condition?.Invoke(client) == false) continue;
-
                     SendQueue.Add(raw, client, mode);
                 }
             }
@@ -880,15 +872,12 @@ namespace MNet
                     if (exception1 == client.ID) continue;
                     if (exception2 == client.ID) continue;
 
-                    if (condition?.Invoke(client) == false) continue;
-
                     TransportContext.Send(client.ID, raw, mode);
                 }
             }
 
             return message;
         }
-        public delegate bool BroadcastCondition(NetworkClient client);
         #endregion
 
         public void Start()
