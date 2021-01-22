@@ -31,6 +31,11 @@ namespace MNet
 
         public bool IsConnected => NetworkAPI.Client.IsConnected;
 
+        /// <summary>
+        /// Boolean value to show if this Entity is ready to send and recieve messages
+        /// </summary>
+        public bool IsReady { get; protected set; } = false;
+
         #region Type
         public EntityType Type { get; internal set; }
 
@@ -60,7 +65,7 @@ namespace MNet
         {
             Owner = client;
 
-            foreach (var behaviour in Behaviours.Values) behaviour.OwnerSetCallback(Owner);
+            foreach (var behaviour in Behaviours.Values) behaviour.SetOwner(Owner);
 
             OnOwnerSet?.Invoke(Owner);
         }
@@ -108,30 +113,46 @@ namespace MNet
 
             return NetworkAPI.Client.Send(ref payload);
         }
-        #endregion
 
         /// <summary>
         /// Checks if client has authority over this Entity
         /// </summary>
         /// <param name="client"></param>
         /// <returns></returns>
-        public virtual bool CheckAuthority(NetworkClient client)
+        public bool CheckAuthority(NetworkClient client) => CheckAuthority(client, RemoteAuthority.Owner | RemoteAuthority.Master);
+        /// <summary>
+        /// Checks if client has authority over this Entity with RemoteAuthority flags
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        public bool CheckAuthority(NetworkClient client, RemoteAuthority authority)
         {
-            if (client.IsMaster) return true;
+            //instantly validate every buffered message
+            if (NetworkAPI.Realtime.IsOnBuffer) return true;
 
-            if (client == Owner) return true;
+            if (authority.HasFlag(RemoteAuthority.Any)) return true;
+
+            if (client == null) return false;
+
+            if (authority.HasFlag(RemoteAuthority.Owner))
+            {
+                if (client == Owner)
+                    return true;
+            }
+
+            if (authority.HasFlag(RemoteAuthority.Master))
+            {
+                if (client == NetworkAPI.Room.Master.Client)
+                    return true;
+            }
 
             return false;
         }
+        #endregion
 
         public AttributesCollection Attributes { get; protected set; }
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
-
-        /// <summary>
-        /// Boolean value to show if this Entity is ready to send and recieve messages
-        /// </summary>
-        public bool IsReady { get; protected set; } = false;
 
         public Scene Scene => gameObject.scene;
 

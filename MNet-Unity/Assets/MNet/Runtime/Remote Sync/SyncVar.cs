@@ -47,9 +47,9 @@ namespace MNet
         {
             get
             {
-                if(IsField) return FieldInfo.FieldType;
+                if (IsField) return FieldInfo.FieldType;
 
-                if(IsProperty) return PropertyInfo.PropertyType;
+                if (IsProperty) return PropertyInfo.PropertyType;
 
                 throw new NotImplementedException();
             }
@@ -96,7 +96,7 @@ namespace MNet
         }
         #endregion
 
-        public SyncVarRequest CreateRequest(object value)
+        public SyncVarRequest WriteRequest(object value)
         {
             var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, FieldID, value);
 
@@ -108,7 +108,6 @@ namespace MNet
             value = command.Read(Type);
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
-
             info = new SyncVarInfo(sender);
         }
 

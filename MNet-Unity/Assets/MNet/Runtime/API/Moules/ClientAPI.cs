@@ -32,15 +32,7 @@ namespace MNet
 
             public static bool IsRegistered => Register.IsComplete;
 
-            public static bool IsMaster
-            {
-                get
-                {
-                    if (Self == null) return false;
-
-                    return Self.IsMaster;
-                }
-            }
+            public static bool IsMaster => Self == null ? false : Self.IsMaster;
 
             internal static void Configure()
             {
@@ -517,7 +509,7 @@ namespace MNet
 
                 internal static void Clear()
                 {
-
+                    Profile = default;
                 }
             }
 

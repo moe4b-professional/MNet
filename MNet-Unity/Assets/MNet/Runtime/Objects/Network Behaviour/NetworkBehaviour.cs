@@ -67,7 +67,7 @@ namespace MNet
         #endregion
 
         #region Set Owner
-        internal void OwnerSetCallback(NetworkClient client)
+        internal void SetOwner(NetworkClient client)
         {
             OnOwnerSet(client);
         }
@@ -221,7 +221,7 @@ namespace MNet
                 return false;
             }
 
-            if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
             {
                 Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
                 return false;
@@ -240,18 +240,11 @@ namespace MNet
                 return;
             }
 
-            if (ValidateAuthority(command.Sender, bind.Authority) == false)
-            {
-                Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                return;
-            }
-
             object[] arguments;
             RpcInfo info;
             try
             {
-                arguments = bind.ReadArguments(command, out info);
+                bind.ParseCommand(command, out arguments, out info);
             }
             catch (Exception ex)
             {
@@ -260,6 +253,13 @@ namespace MNet
                     $"{ex}";
 
                 Debug.LogError(text, this);
+                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                return;
+            }
+
+            if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
+            {
+                Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
                 if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
                 return;
             }
@@ -364,7 +364,7 @@ namespace MNet
                 return false;
             }
 
-            var request = bind.CreateRequest(value);
+            var request = bind.WriteRequest(value);
 
             return SendSyncVar(bind, request, delivery);
         }
@@ -417,7 +417,7 @@ namespace MNet
                 return false;
             }
 
-            if (ValidateAuthority(NetworkAPI.Client.ID, bind.Authority) == false)
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
             {
                 Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
                 return false;
@@ -431,12 +431,6 @@ namespace MNet
             if (SyncVars.TryGetValue(command.Field, out var bind) == false)
             {
                 Debug.LogWarning($"No SyncVar '{GetType().Name}->{command.Field}' Found on to Invoke");
-                return;
-            }
-
-            if (ValidateAuthority(command.Sender, bind.Authority) == false)
-            {
-                Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
                 return;
             }
 
@@ -455,6 +449,12 @@ namespace MNet
                     $"{ex}";
 
                 Debug.LogWarning(text, this);
+                return;
+            }
+
+            if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
+            {
+                Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
                 return;
             }
 
@@ -485,28 +485,6 @@ namespace MNet
             }
         }
         #endregion
-
-        public bool ValidateAuthority(NetworkClientID sender, RemoteAuthority authority)
-        {
-            //instantly validate every buffered message
-            if (NetworkAPI.Realtime.IsOnBuffer) return true;
-
-            if (authority.HasFlag(RemoteAuthority.Any)) return true;
-
-            if (authority.HasFlag(RemoteAuthority.Owner))
-            {
-                if (sender == Entity.Owner?.ID)
-                    return true;
-            }
-
-            if (authority.HasFlag(RemoteAuthority.Master))
-            {
-                if (sender == NetworkAPI.Room.Master.Client?.ID)
-                    return true;
-            }
-
-            return false;
-        }
 
         protected virtual bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable)
         {

@@ -69,17 +69,14 @@ namespace MNet
             return raw;
         }
 
-        public object[] ReadArguments(RpcCommand command, out RpcInfo info)
+        public void ParseCommand(RpcCommand command, out object[] arguments, out RpcInfo info)
         {
-            var arguments = command.Read(ParametersInfo, 1);
+            arguments = command.Read(ParametersInfo, 1);
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
-
             info = new RpcInfo(sender);
 
             arguments[arguments.Length - 1] = info;
-
-            return arguments;
         }
 
         public override string ToString() => $"{Behaviour}->{Name}";
