@@ -22,33 +22,27 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Tests/" + "Sync Var Test")]
     public class SyncVarTest : NetworkBehaviour
     {
+        [SyncVar(Authority = RemoteAuthority.Owner)]
         [SerializeField]
-        string field;
-        [SyncVar(Authority = RemoteAuthority.Owner | RemoteAuthority.Master)]
-        public string Field
-        {
-            get => field;
-            private set
-            {
-                //Do your things here, new value: value, old value: field
-                field = value;
+        string field = default;
 
-                success = value == NetworkAPI.Client.Profile.Name;
-            }
+        void FieldSyncHook(string oldValue, string newValue, SyncVarInfo info)
+        {
+            if (success == false) success = true;
         }
 
         [SerializeField]
         bool success = false;
 
-        void SyncField(string value) => SyncVar(nameof(Field), Field, value);
-
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
+            RegisterSyncVarHook(nameof(field), field, FieldSyncHook);
+
             if (Entity.IsMine == false) return;
 
-            SyncField(NetworkAPI.Client.Profile.Name);
+            SyncVar(nameof(field), field, NetworkAPI.Client.Profile.Name);
         }
     }
 }

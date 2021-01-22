@@ -24,105 +24,491 @@ namespace MNet
     public partial class NetworkBehaviour
     {
         #region Broadcast Void
-        protected void BroadcastRPC(VoidRpcMethod rpc, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception);
-        protected void BroadcastRPC<T1>(VoidRpcMethod<T1> rpc, T1 arg1, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1);
-        protected void BroadcastRPC<T1, T2>(VoidRpcMethod<T1, T2> rpc, T1 arg1, T2 arg2, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2);
-        protected void BroadcastRPC<T1, T2, T3>(VoidRpcMethod<T1, T2, T3> rpc, T1 arg1, T2 arg2, T3 arg3, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3);
-        protected void BroadcastRPC<T1, T2, T3, T4>(VoidRpcMethod<T1, T2, T3, T4> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4);
-        protected void BroadcastRPC<T1, T2, T3, T4, T5>(VoidRpcMethod<T1, T2, T3, T4, T5> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5);
-        protected void BroadcastRPC<T1, T2, T3, T4, T5, T6>(VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5, arg6);
+        protected void BroadcastRPC(
+            VoidRpcMethod rpc,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception);
+        }
+
+        protected void BroadcastRPC<T1>(
+            VoidRpcMethod<T1> rpc,
+            T1 arg1,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception, arg1);
+        }
+
+        protected void BroadcastRPC<T1, T2>(
+            VoidRpcMethod<T1, T2> rpc,
+            T1 arg1,
+            T2 arg2,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception, arg1, arg2);
+        }
+
+        protected void BroadcastRPC<T1, T2, T3>(
+            VoidRpcMethod<T1, T2, T3> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception, arg1, arg2, arg3);
+        }
+
+        protected void BroadcastRPC<T1, T2, T3, T4>(
+            VoidRpcMethod<T1, T2, T3, T4> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception, arg1, arg2, arg3, arg4);
+        }
+
+        protected void BroadcastRPC<T1, T2, T3, T4, T5>(
+            VoidRpcMethod<T1, T2, T3, T4, T5> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected void BroadcastRPC<T1, T2, T3, T4, T5, T6>(
+            VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer: buffer, delivery, exception, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
         #endregion
 
         #region Broadcast Return
-        protected void BroadcastRPC<TResult>(ReturnRpcMethod<TResult> rpc, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception);
-        protected void BroadcastRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, T1 arg1, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1);
-        protected void BroadcastRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, T1 arg1, T2 arg2, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2);
-        protected void BroadcastRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, T1 arg1, T2 arg2, T3 arg3, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3);
-        protected void BroadcastRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4);
-        protected void BroadcastRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5);
-        protected void BroadcastRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, RemoteBufferMode buffer = RemoteBufferMode.None, NetworkClient exception = null)
-            => BroadcastRPC(rpc.Method, buffer: buffer, exception: exception, arg1, arg2, arg3, arg4, arg5, arg6);
+        protected void BroadcastRPC<TResult>(
+            ReturnRpcMethod<TResult> rpc,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception);
+        }
+
+        protected void BroadcastRPC<TResult, T1>(
+            ReturnRpcMethod<TResult, T1> rpc,
+            T1 arg1,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception, arg1);
+        }
+
+        protected void BroadcastRPC<TResult, T1, T2>(
+            ReturnRpcMethod<TResult, T1, T2> rpc,
+            T1 arg1,
+            T2 arg2,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception, arg1, arg2);
+        }
+
+        protected void BroadcastRPC<TResult, T1, T2, T3>(
+            ReturnRpcMethod<TResult, T1, T2, T3> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception, arg1, arg2, arg3);
+        }
+
+        protected void BroadcastRPC<TResult, T1, T2, T3, T4>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception, arg1, arg2, arg3, arg4);
+        }
+
+        protected void BroadcastRPC<TResult, T1, T2, T3, T4, T5>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected void BroadcastRPC<TResult, T1, T2, T3, T4, T5, T6>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            RemoteBufferMode buffer = RemoteBufferMode.None,
+            DeliveryMode delivery = DeliveryMode.Reliable,
+            NetworkClient exception = null)
+        {
+            BroadcastRPC(rpc.Method, buffer, delivery, exception, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
         #endregion
 
         #region Target Void
-        protected void TargetRPC(VoidRpcMethod rpc, NetworkClient target)
-            => TargetRPC(rpc.Method, target);
-        protected void TargetRPC<T1>(VoidRpcMethod<T1> rpc, NetworkClient target, T1 arg1)
-            => TargetRPC(rpc.Method, target, arg1);
-        protected void TargetRPC<T1, T2>(VoidRpcMethod<T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
-            => TargetRPC(rpc.Method, target, arg1, arg2);
-        protected void TargetRPC<T1, T2, T3>(VoidRpcMethod<T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3);
-        protected void TargetRPC<T1, T2, T3, T4>(VoidRpcMethod<T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3, arg4);
-        protected void TargetRPC<T1, T2, T3, T4, T5>(VoidRpcMethod<T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3, arg4, arg5);
-        protected void TargetRPC<T1, T2, T3, T4, T5, T6>(VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3, arg4, arg5, arg6);
+        protected void TargetRPC(
+            VoidRpcMethod rpc,
+            NetworkClient target,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery);
+        }
+
+        protected void TargetRPC<T1>(
+            VoidRpcMethod<T1> rpc,
+            NetworkClient target,
+            T1 arg1,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1);
+        }
+
+        protected void TargetRPC<T1, T2>(
+            VoidRpcMethod<T1, T2> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2);
+        }
+
+        protected void TargetRPC<T1, T2, T3>(
+            VoidRpcMethod<T1, T2, T3> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3);
+        }
+
+        protected void TargetRPC<T1, T2, T3, T4>(
+            VoidRpcMethod<T1, T2, T3, T4> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3, arg4);
+        }
+
+        protected void TargetRPC<T1, T2, T3, T4, T5>(
+            VoidRpcMethod<T1, T2, T3, T4, T5> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected void TargetRPC<T1, T2, T3, T4, T5, T6>(
+            VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
         #endregion
 
         #region Target Return
-        protected void TargetRPC<TResult>(ReturnRpcMethod<TResult> rpc, NetworkClient target)
-            => TargetRPC(rpc.Method, target);
-        protected void TargetRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, NetworkClient target, T1 arg1)
-            => TargetRPC(rpc.Method, target, arg1);
-        protected void TargetRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
-            => TargetRPC(rpc.Method, target, arg1, arg2);
-        protected void TargetRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3);
-        protected void TargetRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3, arg4);
-        protected void TargetRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3, arg4, arg5);
-        protected void TargetRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => TargetRPC(rpc.Method, target, arg1, arg2, arg3, arg4, arg5, arg6);
+        protected void TargetRPC<TResult>(
+            ReturnRpcMethod<TResult> rpc,
+            NetworkClient target,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery);
+        }
+
+        protected void TargetRPC<TResult, T1>(
+            ReturnRpcMethod<TResult, T1> rpc,
+            NetworkClient target,
+            T1 arg1,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1);
+        }
+
+        protected void TargetRPC<TResult, T1, T2>(
+            ReturnRpcMethod<TResult, T1, T2> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2);
+        }
+
+        protected void TargetRPC<TResult, T1, T2, T3>(
+            ReturnRpcMethod<TResult, T1, T2, T3> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3);
+        }
+
+        protected void TargetRPC<TResult, T1, T2, T3, T4>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3, arg4);
+        }
+
+        protected void TargetRPC<TResult, T1, T2, T3, T4, T5>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected void TargetRPC<TResult, T1, T2, T3, T4, T5, T6>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            TargetRPC(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
         #endregion
 
         #region Query Synchronous
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(ReturnRpcMethod<TResult> rpc, NetworkClient target)
-            => QueryRPC<TResult>(rpc.Method, target);
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, NetworkClient target, T1 arg1)
-            => QueryRPC<TResult>(rpc.Method, target, arg1);
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2);
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3);
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3, arg4);
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3, arg4, arg5);
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3, arg4, arg5, arg6);
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(
+            ReturnRpcMethod<TResult> rpc,
+            NetworkClient target,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1>(
+            ReturnRpcMethod<TResult, T1> rpc,
+            NetworkClient target,
+            T1 arg1,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2>(
+            ReturnRpcMethod<TResult, T1, T2> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3>(
+            ReturnRpcMethod<TResult, T1, T2, T3> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3, arg4);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
         #endregion
 
         #region Query Asynchronous
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult>(AsyncReturnRpcMethod<TResult> rpc, NetworkClient target)
-            => QueryRPC<TResult>(rpc.Method, target);
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1>(AsyncReturnRpcMethod<TResult, T1> rpc, NetworkClient target, T1 arg1)
-            => QueryRPC<TResult>(rpc.Method, target, arg1);
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2>(AsyncReturnRpcMethod<TResult, T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2);
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3>(AsyncReturnRpcMethod<TResult, T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3);
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4>(AsyncReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3, arg4);
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5>(AsyncReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3, arg4, arg5);
-        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5, T6>(AsyncReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            => QueryRPC<TResult>(rpc.Method, target, arg1, arg2, arg3, arg4, arg5, arg6);
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult>(
+            AsyncReturnRpcMethod<TResult> rpc,
+            NetworkClient target,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1>(
+            AsyncReturnRpcMethod<TResult, T1> rpc,
+            NetworkClient target,
+            T1 arg1,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2>(
+            AsyncReturnRpcMethod<TResult, T1, T2> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3>(
+            AsyncReturnRpcMethod<TResult, T1, T2, T3> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4>(
+            AsyncReturnRpcMethod<TResult, T1, T2, T3, T4> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3, arg4);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5>(
+            AsyncReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5, T6>(
+            AsyncReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc,
+            NetworkClient target,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            return QueryRPC<TResult>(rpc.Method, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
         #endregion
 
         #region Delegates

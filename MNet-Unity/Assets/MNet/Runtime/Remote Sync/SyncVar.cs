@@ -28,8 +28,8 @@ namespace MNet
 
         #region Attribute
         public SyncVarAttribute Attribute { get; protected set; }
+
         public RemoteAuthority Authority => Attribute.Authority;
-        public DeliveryMode DeliveryMode => Attribute.Mode;
         #endregion
 
         #region Field
@@ -171,7 +171,6 @@ namespace MNet
     public sealed class SyncVarAttribute : Attribute
     {
         public RemoteAuthority Authority { get; set; } = RemoteAuthority.Any;
-        public DeliveryMode Mode { get; set; } = DeliveryMode.Reliable;
 
         public SyncVarAttribute()
         {

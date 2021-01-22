@@ -32,12 +32,12 @@ namespace MNet
         /// <summary>
         /// Reliable and ordered. Packets won't be dropped, won't be duplicated, will arrive in order.
         /// </summary>
-        Reliable = 2,
+        Reliable,
 
         /// <summary>
         /// Unreliable. Packets can be dropped, can be duplicated, can arrive without order.
         /// </summary>
-        Unreliable = 4,
+        Unreliable,
     }
 
     public static partial class NetworkTransportUtility

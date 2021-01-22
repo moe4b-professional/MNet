@@ -33,7 +33,7 @@ namespace MNet.Example
 
 		}
 
-        protected override void OnSpawn()
+		protected override void OnSpawn()
         {
             base.OnSpawn();
 

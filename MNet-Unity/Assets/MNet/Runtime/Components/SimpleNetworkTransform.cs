@@ -255,7 +255,7 @@ namespace MNet
 
             var raw = writer.Flush();
 
-            BroadcastRPC(Sync, raw, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
+            BroadcastRPC(Sync, raw, buffer: RemoteBufferMode.Last, delivery: DeliveryMode.Unreliable, exception: Entity.Owner);
         }
 
         YieldInstruction RemoteProcedure()
@@ -274,7 +274,7 @@ namespace MNet
             transform.localScale = scale.Value;
         }
 
-        [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master, Delivery = DeliveryMode.Unreliable)]
+        [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master)]
         void Sync(byte[] binary, RpcInfo info)
         {
             reader.Set(binary);

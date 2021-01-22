@@ -33,8 +33,8 @@ namespace MNet
 
         #region Attribute
         public NetworkRPCAttribute Attribute { get; protected set; }
+
         public RemoteAuthority Authority => Attribute.Authority;
-        public DeliveryMode DeliveryMode => Attribute.Delivery;
         #endregion
 
         #region Method
@@ -138,7 +138,6 @@ namespace MNet
     public sealed class NetworkRPCAttribute : Attribute
     {
         public RemoteAuthority Authority { get; set; } = RemoteAuthority.Any;
-        public DeliveryMode Delivery { get; set; } = DeliveryMode.Reliable;
 
         public NetworkRPCAttribute() { }
 
