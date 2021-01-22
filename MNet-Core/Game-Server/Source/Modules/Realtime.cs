@@ -11,21 +11,7 @@ namespace MNet
     {
         public static Dictionary<NetworkTransportType, INetworkTransport> Transports { get; private set; }
 
-        public static void Configure()
-        {
-            Transports = new Dictionary<NetworkTransportType, INetworkTransport>();
-
-            var types = AppsAPI.Dictionary.Values.Select(x => x.Transport).Distinct();
-
-            foreach (var type in types)
-            {
-                Log.Info($"Configuring {type} Transport");
-
-                var transport = CreateTransport(type);
-
-                Transports.Add(type, transport);
-            }
-        }
+        public static void TryGet(NetworkTransportType type, out INetworkTransport transport) => Transports.TryGetValue(type, out transport);
 
         static INetworkTransport CreateTransport(NetworkTransportType type)
         {
@@ -42,6 +28,22 @@ namespace MNet
             }
         }
 
+        public static void Configure()
+        {
+            Transports = new Dictionary<NetworkTransportType, INetworkTransport>();
+
+            var types = AppsAPI.Dictionary.Values.Select(x => x.Transport).Distinct();
+
+            foreach (var type in types)
+            {
+                Log.Info($"Configuring {type} Transport");
+
+                var transport = CreateTransport(type);
+
+                Transports.Add(type, transport);
+            }
+        }
+
         public static void Start()
         {
             foreach (var pair in Transports)
@@ -55,7 +57,7 @@ namespace MNet
             }
         }
 
-        public static INetworkTransportContext Register(NetworkTransportType type, uint code)
+        public static INetworkTransportContext RegisterContext(NetworkTransportType type, uint code)
         {
             if (Transports.TryGetValue(type, out var transport) == false)
                 throw new Exception($"No Transport of Type {type} Defined in Realtime");
@@ -65,7 +67,7 @@ namespace MNet
             return context;
         }
 
-        public static void Unregister(NetworkTransportType type, uint code)
+        public static void UnregisterContext(NetworkTransportType type, uint code)
         {
             if (Transports.TryGetValue(type, out var transport) == false)
                 throw new Exception($"No Transport of Type {type} Defined in Realtime");

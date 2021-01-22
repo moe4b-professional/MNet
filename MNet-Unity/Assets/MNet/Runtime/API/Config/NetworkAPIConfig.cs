@@ -367,7 +367,6 @@ namespace MNet
         [SerializeField]
         SyncedAssetsProperty syncedAssets = new SyncedAssetsProperty();
         public SyncedAssetsProperty SyncedAssets => syncedAssets;
-
         [Serializable]
         public class SyncedAssetsProperty
         {

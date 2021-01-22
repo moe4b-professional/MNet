@@ -886,7 +886,7 @@ namespace MNet
 
             MessageDispatcher.RegisterHandler<PingRequest>(Ping);
 
-            TransportContext = Realtime.Register(App.Transport, ID.Value);
+            TransportContext = Realtime.RegisterContext(App.Transport, ID.Value);
             TransportContext.OnMessage += MessageRecievedCallback;
 
             ForAllProperties(x => x.Start());
@@ -950,7 +950,7 @@ namespace MNet
 
             Scheduler.Stop();
 
-            Realtime.Unregister(App.Transport, ID.Value);
+            Realtime.UnregisterContext(App.Transport, ID.Value);
 
             OnStop?.Invoke(this);
         }

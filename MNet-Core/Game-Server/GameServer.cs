@@ -102,6 +102,8 @@ namespace MNet
             {
                 var key = Console.ReadKey();
 
+                Console.WriteLine();
+
                 switch (key.Key)
                 {
                     case ConsoleKey.Escape:
