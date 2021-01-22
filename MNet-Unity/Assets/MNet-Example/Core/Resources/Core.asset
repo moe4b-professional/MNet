@@ -21,6 +21,11 @@ MonoBehaviour:
       scene: {fileID: 11400000, guid: 90bde26ed83a39f47a5f38eb014bafeb, type: 2}
   network:
     capacities: 0406080a32
+    appIds:
+      global: Game 1 (Global)
+      overrides:
+      - id: Game 1 (Web)
+        platforms: 11000000
   _UI:
     prefab: {fileID: 4676521047626379673, guid: 16c5ce5c56810c141aab256e22c48131,
       type: 3}

@@ -43,7 +43,7 @@ namespace MNet
             }
         }
 
-        public static ushort Port => Constants.Server.Game.Realtime.Port;
+        public const ushort Port = Utility.Port;
 
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 

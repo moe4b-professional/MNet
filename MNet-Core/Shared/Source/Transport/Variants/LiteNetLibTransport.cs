@@ -12,6 +12,8 @@ namespace MNet
     {
         public static class LiteNetLib
         {
+            public const ushort Port = 9292;
+
             public static int CheckMTU(DeliveryMode mode)
             {
                 switch (mode)

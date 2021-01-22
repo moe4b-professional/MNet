@@ -166,7 +166,7 @@ namespace MNet
 
             NetworkClient Add(NetworkClientID id, NetworkClientProfile profile)
             {
-                var client = new NetworkClient(id, profile);
+                var client = new NetworkClient(id, profile, TransportContext.Transport);
 
                 if (Clients.Count == 0) Master.Set(client);
 
@@ -886,7 +886,7 @@ namespace MNet
 
             MessageDispatcher.RegisterHandler<PingRequest>(Ping);
 
-            TransportContext = Realtime.Register(ID.Value);
+            TransportContext = Realtime.Register(App.Transport, ID.Value);
             TransportContext.OnMessage += MessageRecievedCallback;
 
             ForAllProperties(x => x.Start());
@@ -950,7 +950,7 @@ namespace MNet
 
             Scheduler.Stop();
 
-            Realtime.Unregister(ID.Value);
+            Realtime.Unregister(App.Transport, ID.Value);
 
             OnStop?.Invoke(this);
         }

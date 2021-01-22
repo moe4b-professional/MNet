@@ -19,10 +19,10 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-	public static partial class NetworkAPI
+    public static partial class NetworkAPI
     {
-		public static class Physics
-		{
+        public static class Physics
+        {
             public static bool AutoSimulate
             {
                 get => UnityEngine.Physics.autoSimulation;
@@ -43,5 +43,5 @@ namespace MNet
                     AutoSimulate = true;
             }
         }
-	}
+    }
 }

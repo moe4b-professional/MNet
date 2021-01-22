@@ -23,6 +23,48 @@ namespace MNet
     public class NetworkAPIConfig : ScriptableObject
     {
         [SerializeField]
+        AppIDsProperty appID = new AppIDsProperty();
+        [Serializable]
+        public class AppIDsProperty
+        {
+            [SerializeField]
+            string global = "Game 1 (Global)";
+            public string Global => global;
+
+            [SerializeField]
+            Element[] overrides = { new Element("Game 1 (Web)", RuntimePlatform.WebGLPlayer) };
+            public Element[] Overrides => overrides;
+            [Serializable]
+            public class Element
+            {
+                [SerializeField]
+                string _ID = default;
+                public string ID => _ID;
+
+                [SerializeField]
+                RuntimePlatform[] platforms = default;
+                public RuntimePlatform[] Platforms => platforms;
+
+                public Element(string id, params RuntimePlatform[] platforms)
+                {
+                    this._ID = id;
+                    this.platforms = platforms;
+                }
+            }
+
+            public AppID Retrieve(RuntimePlatform platform)
+            {
+                for (int i = 0; i < overrides.Length; i++)
+                    if (overrides[i].Platforms.Contains(platform))
+                        return new AppID(overrides[i].ID);
+
+                return new AppID(global);
+            }
+        }
+
+        public AppID AppID { get; internal set; }
+
+        [SerializeField]
         MasterAddressProperty masterAddress = new MasterAddressProperty();
         public string MasterAddress => masterAddress.Value;
         [Serializable]
@@ -102,10 +144,6 @@ namespace MNet
             }
 #endif
         }
-
-        [SerializeField]
-        protected string appID = "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA"; //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHHHHHHHHHHHHH
-        public AppID AppID { get; protected set; }
 
         [SerializeField]
         RestScheme restScheme = RestScheme.HTTP;
@@ -329,6 +367,7 @@ namespace MNet
         [SerializeField]
         SyncedAssetsProperty syncedAssets = new SyncedAssetsProperty();
         public SyncedAssetsProperty SyncedAssets => syncedAssets;
+
         [Serializable]
         public class SyncedAssetsProperty
         {
@@ -453,23 +492,18 @@ namespace MNet
 
         void OnEnable()
         {
-            ParseAppID();
+            SelectAppID();
 
             ParseGameVersion();
 
             syncedAssets.Configure(this);
         }
 
-        void ParseAppID()
+        void SelectAppID()
         {
-            try
-            {
-                AppID = AppID.Parse(appID);
-            }
-            catch (Exception)
-            {
-                throw new Exception($"Couldn't Parse '{appID}' as App ID, Please Enter a Valid App ID in Network API Config");
-            }
+            var platform = NetworkAPI.CheckPlatform();
+
+            AppID = appID.Retrieve(platform);
         }
 
         void ParseGameVersion()

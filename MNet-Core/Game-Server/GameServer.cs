@@ -98,7 +98,17 @@ namespace MNet
 
             Sandbox.Run();
 
-            while (true) Console.ReadLine();
+            while (true)
+            {
+                var key = Console.ReadKey();
+
+                switch (key.Key)
+                {
+                    case ConsoleKey.Escape:
+                        Exit();
+                        break;
+                }
+            }
         }
 
         static void Procedure()
@@ -117,12 +127,25 @@ namespace MNet
             MasterServer.Configure();
             MasterServer.Register();
 
-            Realtime.Configure(Config.Remote.Transport);
+            Realtime.Configure();
             RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
             Lobby.Configure();
 
             Realtime.Start();
             RestServerAPI.Start();
+        }
+
+        static void Exit()
+        {
+            Log.Info("Closing Server");
+
+            MasterServer.Remove();
+
+            Realtime.Close();
+
+            Thread.Sleep(2000);
+
+            Environment.Exit(0);
         }
     }
 

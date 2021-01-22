@@ -38,7 +38,7 @@ namespace MNet
             }
         }
 
-        public const int Port = Constants.Server.Game.Realtime.Port;
+        public const int Port = Utility.Port;
 
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
@@ -106,7 +106,7 @@ namespace MNet
             }
         }
 
-        public const int Port = Constants.Server.Game.Realtime.Port;
+        public const int Port = Utility.Port;
 
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 

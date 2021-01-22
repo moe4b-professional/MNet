@@ -29,14 +29,14 @@ namespace MNet
 
         public override string ToString() => ID.ToString();
 
-        public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
+        public NetworkClient(NetworkClientID id, NetworkClientProfile profile, INetworkTransport transport)
         {
             this.ID = id;
             this.Profile = profile;
 
             Entities = new List<NetworkEntity>();
 
-            SendQueue = new MessageSendQueue(Realtime.Transport.CheckMTU);
+            SendQueue = new MessageSendQueue(transport.CheckMTU);
         }
     }
 }

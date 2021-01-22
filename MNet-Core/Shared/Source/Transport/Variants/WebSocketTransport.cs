@@ -12,6 +12,8 @@ namespace MNet
     {
         public static class WebSocket
         {
+            public const ushort Port = 9191;
+
             public static int CheckMTU(DeliveryMode mode) => int.MaxValue;
 
             public static class Disconnect

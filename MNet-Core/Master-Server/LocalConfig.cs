@@ -13,9 +13,6 @@ namespace MNet
     public partial class LocalConfig : LocalConfig<LocalConfig>
     {
         [JsonProperty]
-        public NetworkTransportType Transport { get; protected set; }
-
-        [JsonProperty]
         public RestScheme RestScheme { get; protected set; }
 
         [JsonProperty]
@@ -25,13 +22,12 @@ namespace MNet
         {
             base.WriteDefaults();
 
-            Transport = NetworkTransportType.WebSockets;
             RestScheme = RestScheme.HTTP;
 
             Apps = new AppConfig[] { };
         }
 
-        public RemoteConfig GetRemoteConfig() => new RemoteConfig(Transport);
+        public RemoteConfig GetRemoteConfig() => new RemoteConfig();
 
         public LocalConfig() { }
     }

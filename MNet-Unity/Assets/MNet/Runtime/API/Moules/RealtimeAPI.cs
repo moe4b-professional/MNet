@@ -135,18 +135,18 @@ namespace MNet
 
                 NetworkAPI.OnProcess += Process;
 
-                Server.OnRemoteConfig += Initialize;
+                AppAPI.OnSet += Initialize;
 
                 Application.quitting += ApplicationQuitCallback;
             }
 
             public delegate void InitializeDelegate(NetworkTransport transport);
             public static event InitializeDelegate OnInitialize;
-            static void Initialize(RemoteConfig config)
+            static void Initialize(AppConfig app)
             {
-                Server.OnRemoteConfig -= Initialize;
+                Debug.Log($"Configuring {app.Transport} Transport");
 
-                Transport = CreateTransport(config.Transport);
+                Transport = CreateTransport(app.Transport);
 
                 Transport.OnConnect += QueueConnect;
                 Transport.OnMessage += QueueMessage;
@@ -298,11 +298,7 @@ namespace MNet
 
             static NetworkTransport CreateTransport(NetworkTransportType type)
             {
-#if UNITY_EDITOR
-                var platform = ConvertBuildTarget(EditorUserBuildSettings.activeBuildTarget);
-#else
-                var platform = Application.platform;
-#endif
+                var platform = NetworkAPI.CheckPlatform();
 
                 if (NetworkTransport.IsSupported(type, platform) == false)
                     throw new Exception($"{type} Transport not Supported on {platform}");
@@ -318,58 +314,6 @@ namespace MNet
 
                 throw new NotImplementedException();
             }
-
-#if UNITY_EDITOR
-            static RuntimePlatform ConvertBuildTarget(BuildTarget target)
-            {
-                switch (target)
-                {
-                    case BuildTarget.StandaloneOSX:
-                        return RuntimePlatform.OSXPlayer;
-
-                    case BuildTarget.StandaloneWindows:
-                        return RuntimePlatform.WindowsPlayer;
-
-                    case BuildTarget.iOS:
-                        return RuntimePlatform.IPhonePlayer;
-
-                    case BuildTarget.Android:
-                        return RuntimePlatform.Android;
-
-                    case BuildTarget.StandaloneWindows64:
-                        return RuntimePlatform.WindowsPlayer;
-
-                    case BuildTarget.WebGL:
-                        return RuntimePlatform.WebGLPlayer;
-
-                    case BuildTarget.WSAPlayer:
-                        return RuntimePlatform.WSAPlayerX64;
-
-                    case BuildTarget.StandaloneLinux64:
-                        return RuntimePlatform.LinuxPlayer;
-
-                    case BuildTarget.PS4:
-                        return RuntimePlatform.PS4;
-
-                    case BuildTarget.XboxOne:
-                        return RuntimePlatform.XboxOne;
-
-                    case BuildTarget.tvOS:
-                        return RuntimePlatform.tvOS;
-
-                    case BuildTarget.Switch:
-                        return RuntimePlatform.Switch;
-
-                    case BuildTarget.Lumin:
-                        return RuntimePlatform.Lumin;
-
-                    case BuildTarget.Stadia:
-                        return RuntimePlatform.Stadia;
-                }
-
-                throw new Exception($"Invalid Build Target: {target}");
-            }
-#endif
         }
     }
 }

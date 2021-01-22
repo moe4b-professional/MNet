@@ -21,8 +21,8 @@ using UnityEngine.Networking;
 
 namespace MNet
 {
-	public static partial class NetworkAPI
-	{
+    public static partial class NetworkAPI
+    {
         public static partial class Server
         {
             public static class Master

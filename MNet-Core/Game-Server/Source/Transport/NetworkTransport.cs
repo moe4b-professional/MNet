@@ -19,6 +19,8 @@ namespace MNet
 
         INetworkTransportContext Register(uint id);
         void Unregister(uint id);
+
+        void Close();
     }
 
     abstract class NetworkTransport<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransport
@@ -62,11 +64,11 @@ namespace MNet
             return Contexts.TryRemove(context.ID);
         }
 
+        public abstract void Close();
+
         public NetworkTransport()
         {
             Contexts = new ConcurrentDictionary<uint, TContext>();
-
-            Log.Info($"Configuring {GetType().Name}");
         }
     }
     #endregion
@@ -74,6 +76,8 @@ namespace MNet
     #region Context
     public interface INetworkTransportContext
     {
+        INetworkTransport Transport { get; }
+
         void Poll();
 
         public event NetworkTransportConnectDelegate OnConnect;
@@ -86,10 +90,13 @@ namespace MNet
     }
 
     abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransportContext
+        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection, TIID>
         where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
         where TClient : NetworkTransportClient<TContext, TConnection, TIID>
     {
         public TTransport Transport { get; protected set; }
+
+        INetworkTransport INetworkTransportContext.Transport => Transport;
 
         public uint ID { get; protected set; }
 
@@ -283,10 +290,7 @@ namespace MNet
         }
         #endregion
 
-        public virtual void Close()
-        {
-
-        }
+        public abstract void Close();
 
         public NetworkTransportContext(TTransport transport, uint id)
         {

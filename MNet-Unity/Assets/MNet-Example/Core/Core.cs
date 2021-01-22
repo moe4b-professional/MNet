@@ -57,12 +57,12 @@ namespace MNet.Example
 
 			UIProperty UI => Core.UI;
 
-            protected override void Configure()
-            {
-                base.Configure();
+			protected override void Configure()
+			{
+				base.Configure();
 
 				NetworkAPI.Room.Scenes.LoadMethod = Load;
-            }
+			}
 
 			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
 
@@ -112,9 +112,9 @@ namespace MNet.Example
 				Dictionary = list.ToDictionary(LevelData.GetName);
 			}
 
-            #region Attribute
-            public void WriteAttribute(AttributesCollection attributes, byte index)
-            {
+			#region Attribute
+			public void WriteAttribute(AttributesCollection attributes, byte index)
+			{
 				attributes.Set(0, index);
 			}
 
@@ -127,10 +127,10 @@ namespace MNet.Example
 
 				return data;
 			}
-            #endregion
-        }
+			#endregion
+		}
 
-        [SerializeField]
+		[SerializeField]
 		NetworkProperty network = new NetworkProperty();
 		public NetworkProperty Network => network;
 		[Serializable]
@@ -149,7 +149,7 @@ namespace MNet.Example
 			public const string PlayerNameKey = "Player Name";
 
 			public static string GetDefaultPlayerName()
-            {
+			{
 				if (string.IsNullOrEmpty(Environment.UserName) == false)
 					return Environment.UserName;
 
@@ -164,6 +164,8 @@ namespace MNet.Example
 			{
 				base.Configure();
 
+				NetworkAPI.Configure();
+
 				if (PlayerPrefs.HasKey(PlayerNameKey) == false) PlayerName = GetDefaultPlayerName();
 
 				NetworkAPI.Client.Register.GetProfileMethod = GenerateProfile;
@@ -173,13 +175,13 @@ namespace MNet.Example
 				Core.OnInit += Init;
 			}
 
-            void Init()
+			void Init()
 			{
 				GetMasterConfig();
 			}
 
 			void GetMasterConfig()
-            {
+			{
 				Popup.Show("Getting Master Scheme");
 
 				NetworkAPI.Server.Master.GetScheme(Callback);
@@ -195,9 +197,9 @@ namespace MNet.Example
 					Popup.Show("Failed To Retrieve Master Scheme", "Retry", GetMasterConfig);
 				}
 			}
-			
+
 			void GetMasterInfo()
-            {
+			{
 				Popup.Show("Getting Master Info");
 
 				NetworkAPI.Server.Master.GetInfo(Callback);
@@ -234,9 +236,9 @@ namespace MNet.Example
 		public class UIProperty : Property
 		{
 			[SerializeField]
-            GameObject prefab = default;
+			GameObject prefab = default;
 
-            public CoreUIContainer Container { get; protected set; }
+			public CoreUIContainer Container { get; protected set; }
 
 			public PopupPanel Popup => Container.Popup;
 
@@ -297,8 +299,6 @@ namespace MNet.Example
 
 		void Configure()
 		{
-			NetworkAPI.Configure();
-
 			SceneAccessor = SceneAccessor.Create();
 
 			ForAllProperties(Property.Configure);

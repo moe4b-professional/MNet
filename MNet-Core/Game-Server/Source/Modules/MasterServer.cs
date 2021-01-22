@@ -46,20 +46,18 @@ namespace MNet
             AppsAPI.Set(response.Apps);
         }
 
-        public static bool Remove(out RemoveGameServerResponse response)
+        public static bool Remove()
         {
             var payload = new RemoveGameServerRequest(GameServer.Info.ID, ApiKey.Token);
 
             try
             {
-                response = Rest.POST<RemoveGameServerRequest, RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Remove, payload).Result;
+                var response = Rest.POST<RemoveGameServerRequest, RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Remove, payload).Result;
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Error(ex);
-
-                response = default;
                 return false;
             }
         }

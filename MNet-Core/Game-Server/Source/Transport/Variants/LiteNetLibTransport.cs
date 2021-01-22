@@ -18,7 +18,7 @@ namespace MNet
     {
         public NetManager Server { get; protected set; }
 
-        public static ushort Port => Constants.Server.Game.Realtime.Port;
+        public static ushort Port => Utility.Port;
 
         public Dictionary<NetPeer, LiteNetLibTransportContext> Routes { get; protected set; }
 
@@ -112,6 +112,11 @@ namespace MNet
 
         protected override LiteNetLibTransportContext CreateContext(uint id) => new LiteNetLibTransportContext(this, id);
 
+        public override void Close()
+        {
+            Server.Stop(true);
+        }
+
         public LiteNetLibTransport()
         {
             Server = new NetManager(this);
@@ -151,6 +156,11 @@ namespace MNet
         protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
         {
             return new LiteNetLibTransportClient(this, clientID, connection);
+        }
+
+        public override void Close()
+        {
+
         }
 
         public LiteNetLibTransportContext(LiteNetLibTransport transport, uint id) : base(transport, id)

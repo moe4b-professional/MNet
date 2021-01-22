@@ -366,8 +366,6 @@ namespace MNet
                     Dictionary = new Dictionary<NetworkEntityID, NetworkEntity>();
                     MasterObjects = new HashSet<NetworkEntity>();
 
-                    InstantiateMethod = DefaultInstantiateMethod;
-
                     Client.MessageDispatcher.RegisterHandler<SpawnEntityCommand>(SpawnRemote);
                     Client.MessageDispatcher.RegisterHandler<TransferEntityPayload>(Transfer);
                     Client.MessageDispatcher.RegisterHandler<TakeoverEntityCommand>(Takeover);
@@ -451,6 +449,24 @@ namespace MNet
                     throw new NotImplementedException();
                 }
 
+                static NetworkClient FindOwner(SpawnEntityCommand command)
+                {
+                    switch (command.Type)
+                    {
+                        case EntityType.SceneObject:
+                        case EntityType.Orphan:
+                            return Master.Client;
+
+                        case EntityType.Dynamic:
+                            Clients.TryGet(command.Owner, out var owner);
+                            return owner;
+
+                        default:
+                            throw new NotImplementedException();
+                    }
+                }
+                #endregion
+
                 #region Instantiate
                 internal static NetworkEntity Instantiate(ushort resource)
                 {
@@ -468,7 +484,7 @@ namespace MNet
                     return instance;
                 }
 
-                public static InstantiateMethodDelegate InstantiateMethod { get; set; }
+                public static InstantiateMethodDelegate InstantiateMethod { get; set; } = DefaultInstantiateMethod;
                 public delegate NetworkEntity InstantiateMethodDelegate(GameObject prefab);
 
                 public static NetworkEntity DefaultInstantiateMethod(GameObject prefab)
@@ -476,24 +492,6 @@ namespace MNet
                     var instance = Object.Instantiate(prefab);
 
                     return instance.GetComponent<NetworkEntity>();
-                }
-                #endregion
-
-                static NetworkClient FindOwner(SpawnEntityCommand command)
-                {
-                    switch (command.Type)
-                    {
-                        case EntityType.SceneObject:
-                        case EntityType.Orphan:
-                            return Master.Client;
-
-                        case EntityType.Dynamic:
-                            Clients.TryGet(command.Owner, out var owner);
-                            return owner;
-
-                        default:
-                            throw new NotImplementedException();
-                    }
                 }
                 #endregion
 
@@ -684,8 +682,6 @@ namespace MNet
                 internal static void Configure()
                 {
                     Client.MessageDispatcher.RegisterHandler<LoadScenesPayload>(Load);
-
-                    LoadMethod = DefaultLoadMethod;
                 }
 
                 internal static void Clear()
@@ -700,7 +696,7 @@ namespace MNet
                 /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
                 /// no need to pause realtime or any of that in custom method, just load the scenes
                 /// </summary>
-                public static LoadMethodDeleagate LoadMethod { get; set; }
+                public static LoadMethodDeleagate LoadMethod { get; set; } = DefaultLoadMethod;
                 public delegate UniTask LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
 
                 public static async UniTask DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)

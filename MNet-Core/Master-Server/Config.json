@@ -1,11 +1,18 @@
 {
-  "Transport": "LiteNetLib",
   "RestScheme": "HTTP",
   "Apps": [
     {
-      "ID": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+      "ID": "Game 1 (Global)",
       "MinimumVersion": "0.0.0",
       "TickDelay": 5,
+      "Transport": "LiteNetLib",
+      "QueueMessages": true
+    },
+    {
+      "ID": "Game 1 (Web)",
+      "MinimumVersion": "0.0.0",
+      "TickDelay": 5,
+      "Transport": "WebSockets",
       "QueueMessages": true
     }
   ]

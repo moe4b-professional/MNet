@@ -72,7 +72,7 @@ namespace MNet
 
                 public static class Realtime
                 {
-                    public const int Port = 9090;
+
                 }
             }
         }

@@ -15,7 +15,7 @@ namespace MNet
     {
         public WebSocketServer Server { get; protected set; }
 
-        public static ushort Port => Constants.Server.Game.Realtime.Port;
+        public static ushort Port => Utility.Port;
 
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
@@ -29,6 +29,11 @@ namespace MNet
             var context = new WebSocketTransportContext(this, id);
 
             return context;
+        }
+
+        public override void Close()
+        {
+            Server.Stop();
         }
 
         public WebSocketTransport() : base()
@@ -105,8 +110,6 @@ namespace MNet
 
         public override void Close()
         {
-            base.Close();
-
             Server.RemoveWebSocketService(Path);
         }
 
