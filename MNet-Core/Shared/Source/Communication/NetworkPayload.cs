@@ -201,7 +201,7 @@ namespace MNet
         }
     }
 
-    #region Master Server Config
+    #region Master Server Scheme
     [Preserve]
     [Serializable]
     public struct MasterServerSchemeRequest : INetworkSerializable

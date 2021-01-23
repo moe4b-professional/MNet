@@ -63,7 +63,7 @@ namespace MNet
 
             ReadResult(request, out TResult result, out var error);
 
-            if (error != null) Log.Error(error);
+            if (error != null) Debug.LogError(error);
 
             request.Dispose();
 
@@ -80,7 +80,7 @@ namespace MNet
 
         public static void ReadResult<TResult>(UnityWebRequest request, out TResult payload, out RestError error)
         {
-            if (request.isNetworkError || request.isNetworkError)
+            if (request.isNetworkError || request.isHttpError)
             {
                 var code = (RestStatusCode)request.responseCode;
 
