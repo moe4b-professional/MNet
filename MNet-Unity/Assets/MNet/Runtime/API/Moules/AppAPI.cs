@@ -19,11 +19,11 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-	public static partial class NetworkAPI
+    public static partial class NetworkAPI
     {
-		public static class AppAPI
-		{
-			public static AppConfig Config { get; private set; }
+        public static class AppAPI
+        {
+            public static AppConfig Config { get; private set; }
 
             internal static void Configure()
             {
@@ -38,13 +38,15 @@ namespace MNet
             }
 
             public delegate void SetDelegate(AppConfig app);
-			public static event SetDelegate OnSet;
-			public static void Set(AppConfig instance)
+            public static event SetDelegate OnSet;
+            public static void Set(AppConfig instance)
             {
-				Config = instance;
+                Config = instance;
 
-				OnSet?.Invoke(instance);
+                Debug.Log("App Config: " + instance);
+
+                OnSet?.Invoke(instance);
             }
-		}
-	}
+        }
+    }
 }

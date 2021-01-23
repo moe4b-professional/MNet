@@ -144,8 +144,6 @@ namespace MNet
             public static event InitializeDelegate OnInitialize;
             static void Initialize(AppConfig app)
             {
-                Debug.Log($"Configuring {app.Transport} Transport");
-
                 Transport = CreateTransport(app.Transport);
 
                 Transport.OnConnect += QueueConnect;

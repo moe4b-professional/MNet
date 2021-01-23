@@ -38,9 +38,9 @@ namespace MNet
         {
             public RoomInfo Get() => new RoomInfo(Room.ID, Room.Name, Room.Capacity, Room.Occupancy, Room.Visible, Room.Attributes);
 
-            public override void Configure()
+            public override void Start()
             {
-                base.Configure();
+                base.Start();
 
                 MessageDispatcher.RegisterHandler<ChangeRoomInfoPayload>(Change);
             }
@@ -67,18 +67,13 @@ namespace MNet
             public TimeResponse CreateResponse(TimeRequest request) => CreateResponse(request.Timestamp);
             public TimeResponse CreateResponse(DateTime stamp) => new TimeResponse(Span, stamp);
 
-            public override void Configure()
-            {
-                base.Configure();
-
-                MessageDispatcher.RegisterHandler<TimeRequest>(ProcessRequest);
-            }
-
             public override void Start()
             {
                 base.Start();
 
                 stamp = DateTime.UtcNow;
+
+                MessageDispatcher.RegisterHandler<TimeRequest>(ProcessRequest);
             }
 
             public void Calculate()
@@ -269,9 +264,9 @@ namespace MNet
 
             public bool TryGet(NetworkEntityID id, out NetworkEntity client) => Dictionary.TryGetValue(id, out client);
 
-            public override void Configure()
+            public override void Start()
             {
-                base.Configure();
+                base.Start();
 
                 MessageDispatcher.RegisterHandler<SpawnEntityRequest>(Spawn);
                 MessageDispatcher.RegisterHandler<TransferEntityPayload>(Transfer);
@@ -500,9 +495,9 @@ namespace MNet
         public RemoteCallsProperty RemoteCalls = new RemoteCallsProperty();
         public class RemoteCallsProperty : Property
         {
-            public override void Configure()
+            public override void Start()
             {
-                base.Configure();
+                base.Start();
 
                 MessageDispatcher.RegisterHandler<RpcRequest>(InvokeRPC);
                 MessageDispatcher.RegisterHandler<SyncVarRequest>(InvokeSyncVar);
@@ -715,6 +710,8 @@ namespace MNet
                 hash.Add(target);
             }
 
+            public void Remove(NetworkClient client) => hash.Remove(client);
+
             public void Resolve()
             {
                 foreach (var client in hash)
@@ -737,8 +734,6 @@ namespace MNet
                 hash.Clear();
             }
 
-            public void Remove(NetworkClient client) => hash.Remove(client);
-
             public SendQueueProperty()
             {
                 hash = new HashSet<NetworkClient>();
@@ -750,9 +745,9 @@ namespace MNet
         {
             List<NetworkMessage> LoadMessages;
 
-            public override void Configure()
+            public override void Start()
             {
-                base.Configure();
+                base.Start();
 
                 MessageDispatcher.RegisterHandler<LoadScenesPayload>(Load);
             }
@@ -802,6 +797,7 @@ namespace MNet
         public class Property
         {
             public Room Room;
+            public virtual void Set(Room reference) => Room = reference;
 
             #region Properties
             public InfoProperty Info => Room.Info;
@@ -822,8 +818,6 @@ namespace MNet
             #endregion
 
             public INetworkTransportContext TransportContext => Room.TransportContext;
-
-            public virtual void Set(Room reference) => Room = reference;
 
             public virtual void Configure() { }
 
@@ -913,9 +907,9 @@ namespace MNet
 
             TransportContext.Poll();
 
-            OnTick?.Invoke();
-
             if (Scheduler.Running && App.QueueMessages) SendQueue.Resolve();
+
+            OnTick?.Invoke();
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
