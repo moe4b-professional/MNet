@@ -62,16 +62,16 @@ namespace MNet
         {
             DateTime stamp;
 
-            public NetworkTimeSpan span;
+            public NetworkTimeSpan Span;
 
             public TimeResponse CreateResponse(TimeRequest request) => CreateResponse(request.Timestamp);
-            public TimeResponse CreateResponse(DateTime stamp) => new TimeResponse(span, stamp);
+            public TimeResponse CreateResponse(DateTime stamp) => new TimeResponse(Span, stamp);
 
             public override void Configure()
             {
                 base.Configure();
 
-                MessageDispatcher.RegisterHandler<TimeRequest>(Request);
+                MessageDispatcher.RegisterHandler<TimeRequest>(ProcessRequest);
             }
 
             public override void Start()
@@ -83,10 +83,10 @@ namespace MNet
 
             public void Calculate()
             {
-                span = NetworkTimeSpan.Calculate(stamp);
+                Span = NetworkTimeSpan.Calculate(stamp);
             }
 
-            void Request(NetworkClient sender, ref TimeRequest request)
+            void ProcessRequest(NetworkClient sender, ref TimeRequest request)
             {
                 var response = CreateResponse(request);
 
@@ -127,7 +127,7 @@ namespace MNet
             {
                 if (Room.IsFull)
                 {
-                    TransportContext.Disconnect(id, DisconnectCode.FullCapacity);
+                    Disconnect(id, DisconnectCode.FullCapacity);
                     return;
                 }
 
@@ -136,6 +136,8 @@ namespace MNet
                     Log.Warning($"Client {id} Already Registered With Room {Room.ID}, Ignoring Register Request");
                     return;
                 }
+
+                Log.Info($"Room {Room.ID}: Client {id} Registerd");
 
                 var client = Add(id, request.Profile);
 
@@ -154,8 +156,6 @@ namespace MNet
 
                 var room = Info.Get();
                 var clients = GetInfo();
-
-                Log.Info($"Room {Room.ID}: Client {id} Registerd");
 
                 var response = new RegisterClientResponse(id, room, clients, Master.ID, buffer, time);
                 Room.Send(ref response, client);
@@ -177,11 +177,11 @@ namespace MNet
             #endregion
 
             #region Disconnect & Remove
-            void Disconnect(NetworkClient client, DisconnectCode code)
+            void Disconnect(NetworkClient client, DisconnectCode code) => Disconnect(client.ID, code);
+            void Disconnect(NetworkClientID id, DisconnectCode code)
             {
-                Dictionary.Remove(client.ID);
-
-                TransportContext.Disconnect(client.ID, code);
+                Dictionary.Remove(id);
+                TransportContext.Disconnect(id, code);
             }
 
             void DisconnectCallback(NetworkClientID id)
@@ -201,7 +201,7 @@ namespace MNet
 
                 SendQueue.Remove(client);
 
-                if (client == Master.Client) Master.Select();
+                if (client == Master.Client) Master.ChooseNew();
 
                 var payload = new ClientDisconnectPayload(client.ID);
                 Room.Broadcast(ref payload);
@@ -237,7 +237,7 @@ namespace MNet
                 Room.Broadcast(ref command);
             }
 
-            public void Select()
+            public void ChooseNew()
             {
                 if (Clients.Count > 0)
                 {
@@ -893,14 +893,14 @@ namespace MNet
 
             Scheduler.Start();
 
-            OnTick += VoidClearProcedure;
+            OnTick += ClearEmptyRoomProcedure;
         }
 
-        void VoidClearProcedure()
+        void ClearEmptyRoomProcedure()
         {
-            if (Scheduler.ElapsedTime > 10 * 1000)
+            if (Time.Span.Seconds > 20)
             {
-                OnTick -= VoidClearProcedure;
+                OnTick -= ClearEmptyRoomProcedure;
 
                 if (Occupancy == 0) Stop();
             }
