@@ -31,9 +31,11 @@ namespace MNet
             return context;
         }
 
-        public override void Close()
+        public override void Stop()
         {
-            Server.Stop();
+            var value = Utility.Disconnect.CodeToValue(DisconnectCode.ServerClosed);
+
+            Server.Stop(value, null);
         }
 
         public WebSocketTransport() : base()
@@ -101,7 +103,7 @@ namespace MNet
             Sessions.SendTo(raw, client.InternalID);
         }
 
-        public override void Disconnect(WebSocketTransportClient client, DisconnectCode code = DisconnectCode.Normal)
+        public override void Disconnect(WebSocketTransportClient client, DisconnectCode code)
         {
             var value = Utility.Disconnect.CodeToValue(code);
 

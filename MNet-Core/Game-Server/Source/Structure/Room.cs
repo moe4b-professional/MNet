@@ -33,6 +33,8 @@ namespace MNet
 
         public AttributesCollection Attributes { get; protected set; }
 
+        public MigrationPolicy MigrationPolicy { get; protected set; }
+
         public InfoProperty Info = new InfoProperty();
         public class InfoProperty : Property
         {
@@ -185,7 +187,7 @@ namespace MNet
 
                 if (Dictionary.TryGetValue(id, out var client)) Remove(client);
 
-                if (Room.Occupancy == 0) Room.Stop();
+                if (Room.Occupancy == 0 && Room.IsRunning) Room.Stop();
             }
 
             void Remove(NetworkClient client)
@@ -196,12 +198,27 @@ namespace MNet
 
                 SendQueue.Remove(client);
 
-                if (client == Master.Client) Master.ChooseNew();
+                if (client == Master.Client) ProcessMigration();
 
                 var payload = new ClientDisconnectPayload(client.ID);
                 Room.Broadcast(ref payload);
             }
             #endregion
+
+            void ProcessMigration()
+            {
+                switch (Room.MigrationPolicy)
+                {
+                    case MigrationPolicy.ChooseRandom:
+                        Master.ChooseNew();
+                        break;
+
+                    case MigrationPolicy.StopRoom:
+                        TransportContext.DisconnectAll(DisconnectCode.HostDisconnected);
+                        Room.Stop();
+                        break;
+                }
+            }
 
             public ClientsProperty()
             {
@@ -826,6 +843,8 @@ namespace MNet
 
         Scheduler Scheduler;
 
+        public bool IsRunning => Scheduler.IsRunning;
+
         public INetworkTransportContext TransportContext;
 
         #region Communication
@@ -907,7 +926,7 @@ namespace MNet
 
             TransportContext.Poll();
 
-            if (Scheduler.Running && App.QueueMessages) SendQueue.Resolve();
+            if (Scheduler.IsRunning && App.QueueMessages) SendQueue.Resolve();
 
             OnTick?.Invoke();
         }
@@ -949,7 +968,7 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, AppConfig app, Version version, string name, byte capacity, bool visible, AttributesCollection attributes)
+        public Room(RoomID id, AppConfig app, Version version, string name, byte capacity, bool visible, MigrationPolicy migrationPolicy, AttributesCollection attributes)
         {
             this.ID = id;
 
@@ -959,6 +978,7 @@ namespace MNet
             this.Name = name;
             this.Capacity = capacity;
             this.Visible = visible;
+            this.MigrationPolicy = migrationPolicy;
             this.Attributes = attributes;
 
             Scheduler = new Scheduler(App.TickDelay, Tick);

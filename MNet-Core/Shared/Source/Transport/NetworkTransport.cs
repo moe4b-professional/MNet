@@ -23,7 +23,9 @@ namespace MNet
         Timeout,
         FullCapacity,
         InvalidContext,
-        InvalidData
+        InvalidData,
+        ServerClosed,
+        HostDisconnected,
     }
 
     [Preserve]

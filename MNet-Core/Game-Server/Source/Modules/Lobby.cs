@@ -122,18 +122,18 @@ namespace MNet
                     return;
                 }
 
-                var room = Create(app, payload.Version, payload.Name, payload.Capacity, payload.Visibile, payload.Attributes);
+                var room = Create(app, payload.Version, payload.Name, payload.Capacity, payload.Visibile, payload.MigrationPolicy, payload.Attributes);
                 var info = room.Info.Get();
 
                 RestServerAPI.Write(response, info);
             }
-            public static Room Create(AppConfig app, Version version, string name, byte capacity, bool visibile, AttributesCollection attributes)
+            public static Room Create(AppConfig app, Version version, string name, byte capacity, bool visibile, MigrationPolicy migrationPolicy, AttributesCollection attributes)
             {
                 Log.Info($"Creating Room '{name}'");
 
                 var id = Reserve();
 
-                var room = new Room(id, app, version, name, capacity, visibile, attributes);
+                var room = new Room(id, app, version, name, capacity, visibile, migrationPolicy, attributes);
 
                 Add(room);
 

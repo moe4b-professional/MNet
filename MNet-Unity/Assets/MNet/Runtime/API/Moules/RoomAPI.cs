@@ -50,7 +50,14 @@ namespace MNet
             #region Create
             public delegate void CreateDelegate(RoomInfo room, RestError error);
             public static event CreateDelegate OnCreate;
-            public static void Create(string name, byte capacity, bool visibile = true, AttributesCollection attributes = null, bool offline = false, CreateDelegate handler = null)
+            public static void Create(
+                string name,
+                byte capacity,
+                bool visibile = true,
+                MigrationPolicy migrationPolicy = MigrationPolicy.ChooseRandom,
+                AttributesCollection attributes = null,
+                bool offline = false,
+                CreateDelegate handler = null)
             {
                 if (offline)
                 {
@@ -60,7 +67,7 @@ namespace MNet
                 }
                 else
                 {
-                    var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, attributes);
+                    var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, migrationPolicy, attributes);
 
                     Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
                 }

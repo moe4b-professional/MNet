@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Diagnostics;
 
 using System.IO;
-
-using System.Collections.Generic;
+using System.Net;
 
 using System.Threading;
+using System.Diagnostics;
 
-using System.Net;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace MNet
 {
@@ -17,68 +18,7 @@ namespace MNet
 
         public static void Main(string[] args)
         {
-            for (long i = 0; i < 50; i++)
-            {
-                PerformanceTools.Measure(StructTest);
-            }
-
-            Console.Read();
-
-            for (long i = 0; i < 50; i++)
-            {
-                PerformanceTools.Measure(StructTest);
-                PerformanceTools.Measure(ClassTest);
-
-                Console.WriteLine();
-            }
-
-            Console.ReadLine();
-        }
-
-        static void StructTest()
-        {
-            for (long i = 0; i < Count; i++)
-            {
-                var sample = new StructSample(42, 420f);
-
-                PerformanceTools.Consume(sample.a);
-                PerformanceTools.Consume(sample.b);
-            }
-        }
-        struct StructSample
-        {
-            public int a { get; private set; }
-
-            public float b { get; private set; }
-
-            public StructSample(int a, float b)
-            {
-                this.a = a;
-                this.b = b;
-            }
-        }
-
-        static void ClassTest()
-        {
-            for (long i = 0; i < Count; i++)
-            {
-                var sample = new ClassSample(42, 420f);
-
-                PerformanceTools.Consume(sample.a);
-                PerformanceTools.Consume(sample.b);
-            }
-        }
-        class ClassSample
-        {
-            public int a { get; private set; }
-
-            public float b { get; private set; }
-
-            public ClassSample(int a, float b)
-            {
-                this.a = a;
-                this.b = b;
-            }
+            while (true) Console.ReadKey();
         }
     }
 

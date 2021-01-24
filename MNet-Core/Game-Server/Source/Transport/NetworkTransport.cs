@@ -20,7 +20,7 @@ namespace MNet
         INetworkTransportContext Register(uint id);
         void Unregister(uint id);
 
-        void Close();
+        void Stop();
     }
 
     abstract class NetworkTransport<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransport
@@ -64,7 +64,7 @@ namespace MNet
             return Contexts.TryRemove(context.ID);
         }
 
-        public abstract void Close();
+        public abstract void Stop();
 
         public NetworkTransport()
         {
@@ -87,6 +87,8 @@ namespace MNet
         void Send(NetworkClientID target, byte[] raw, DeliveryMode mode);
 
         void Disconnect(NetworkClientID clientID, DisconnectCode code);
+
+        void DisconnectAll(DisconnectCode code);
     }
 
     abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransportContext
@@ -274,10 +276,8 @@ namespace MNet
         #endregion
 
         #region Disconnect
-        public virtual void Disconnect(TClient client) => Disconnect(client, DisconnectCode.Normal);
         public abstract void Disconnect(TClient client, DisconnectCode code);
 
-        public virtual void Disconnect(NetworkClientID clientID) => Disconnect(clientID, DisconnectCode.Normal);
         public virtual void Disconnect(NetworkClientID clientID, DisconnectCode code)
         {
             if (Clients.TryGetValue(clientID, out var client) == false)
@@ -287,6 +287,12 @@ namespace MNet
             }
 
             Disconnect(client, code);
+        }
+
+        public virtual void DisconnectAll(DisconnectCode code)
+        {
+            foreach (var client in Clients.Values)
+                Disconnect(client, code);
         }
         #endregion
 

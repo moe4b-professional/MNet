@@ -173,6 +173,9 @@ namespace MNet
         bool visibile;
         public bool Visibile => visibile;
 
+        MigrationPolicy migrationPolicy;
+        public MigrationPolicy MigrationPolicy => migrationPolicy;
+
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
@@ -182,21 +185,20 @@ namespace MNet
             context.Select(ref version);
 
             context.Select(ref name);
-
             context.Select(ref capacity);
-
             context.Select(ref visibile);
-
+            context.Select(ref migrationPolicy);
             context.Select(ref attributes);
         }
 
-        public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, bool visibile, AttributesCollection attributes)
+        public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, bool visibile, MigrationPolicy migrationPolicy, AttributesCollection attributes)
         {
             this.appID = appID;
             this.version = version;
             this.name = name;
             this.capacity = capacity;
             this.visibile = visibile;
+            this.migrationPolicy = migrationPolicy;
             this.attributes = attributes;
         }
     }

@@ -112,9 +112,12 @@ namespace MNet
 
         protected override LiteNetLibTransportContext CreateContext(uint id) => new LiteNetLibTransportContext(this, id);
 
-        public override void Close()
+        public override void Stop()
         {
-            Server.Stop(true);
+            var binary = Utility.Disconnect.CodeToBinary(DisconnectCode.ServerClosed);
+
+            Server.DisconnectAll(binary, 0, binary.Length);
+            Server.Stop();
         }
 
         public LiteNetLibTransport()
@@ -139,6 +142,11 @@ namespace MNet
 
     class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
     {
+        protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
+        {
+            return new LiteNetLibTransportClient(this, clientID, connection);
+        }
+
         public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryMode mode)
         {
             var method = Utility.Delivery.Glossary[mode];
@@ -151,11 +159,6 @@ namespace MNet
             var binary = Utility.Disconnect.CodeToBinary(code);
 
             client.Peer.Disconnect(binary);
-        }
-
-        protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
-        {
-            return new LiteNetLibTransportClient(this, clientID, connection);
         }
 
         public override void Close()

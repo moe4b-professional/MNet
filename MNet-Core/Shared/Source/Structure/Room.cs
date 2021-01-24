@@ -112,4 +112,10 @@ namespace MNet
             return true;
         }
     }
+
+    public enum MigrationPolicy : byte
+    {
+        ChooseRandom,
+        StopRoom,
+    }
 }

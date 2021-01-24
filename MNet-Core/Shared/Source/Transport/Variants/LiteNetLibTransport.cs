@@ -71,6 +71,9 @@ namespace MNet
 
                         case DisconnectReason.ConnectionRejected:
                             return DisconnectCode.Rejected;
+
+                        case DisconnectReason.RemoteConnectionClose:
+                            return DisconnectCode.ServerClosed;
                     }
 
                     return DisconnectCode.Unknown;

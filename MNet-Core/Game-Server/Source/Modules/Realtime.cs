@@ -78,7 +78,7 @@ namespace MNet
         public static void Close()
         {
             foreach (var transport in Transports.Values)
-                transport.Close();
+                transport.Stop();
         }
     }
 }
