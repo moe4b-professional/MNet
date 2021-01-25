@@ -61,7 +61,7 @@ namespace MNet.Example
 		{
 			base.OnSetup();
 
-			ReadAttributes(Entity.Attributes, out var position, out var rotation);
+			ReadAttributes(Entity, out var position, out var rotation);
 
 			transform.position = position;
 			transform.rotation = rotation;
@@ -98,10 +98,18 @@ namespace MNet.Example
 			return collection;
 		}
 
-		public static void ReadAttributes(AttributesCollection collection, out Vector3 position, out Quaternion rotation)
+		public static void ReadAttributes(NetworkEntity entity, out Vector3 position, out Quaternion rotation)
 		{
-			collection.TryGetValue(0, out position);
-			collection.TryGetValue(1, out rotation);
+			if(entity.Attributes == null)
+            {
+				Debug.LogWarning($"No Attributes Registered with Entity {entity}");
+				position = default;
+				rotation = default;
+				return;
+            }
+
+			entity.Attributes.TryGetValue(0, out position);
+			entity.Attributes.TryGetValue(1, out rotation);
 		}
 	}
 #pragma warning restore CS0108

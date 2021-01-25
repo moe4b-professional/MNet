@@ -63,6 +63,11 @@ namespace MNet
             return ReadNull(reader);
         }
 
+        internal virtual void Register()
+        {
+
+        }
+
         public NetworkSerializationResolver() { }
 
         //Static Utility
@@ -134,6 +139,8 @@ namespace MNet
                         Implicits.Add(instance);
                     else
                         Explicits.Add(instance);
+
+                    instance.Register();
                 }
             }
         }
@@ -158,6 +165,7 @@ namespace MNet
 
                 if (resolver == null) continue;
 
+                resolver.Register();
                 return resolver;
             }
 
@@ -361,9 +369,16 @@ namespace MNet
             return Deserialize(reader);
         }
 
+        internal override void Register()
+        {
+            base.Register();
+
+            Instance = this;
+        }
+
         public NetworkSerializationExplicitResolver()
         {
-            Instance = this;
+
         }
 
         //Static
@@ -765,7 +780,7 @@ namespace MNet
     {
         public NetworkSerializationGenericResolver()
         {
-            Instance = this;
+            
         }
 
         static NetworkSerializationGenericResolver()

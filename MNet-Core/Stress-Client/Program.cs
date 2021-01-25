@@ -1,0 +1,240 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
+
+using LiteNetLib;
+
+namespace MNet
+{
+    static class Client
+    {
+        static RestClientAPI RestAPI;
+
+        static string IP = "127.0.0.1";
+
+        static AppID AppID = new AppID("Game 1 (Global)");
+
+        static Version GameVersion = new Version(1, 0, 0);
+
+        public static List<Player> Players;
+
+        static void Main(string[] args)
+        {
+            Run();
+
+            while (true)
+            {
+                var key = Console.ReadKey();
+
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    Disconnect();
+                    Environment.Exit(0);
+                }
+            }
+        }
+
+        static async void Run()
+        {
+            Players = new List<Player>();
+
+            RestAPI = new RestClientAPI(Constants.Server.Game.Rest.Port, RestScheme.HTTP);
+            RestAPI.SetIP(IP);
+
+            Console.Write("How many Rooms to Create: ");
+            var rooms = int.Parse(Console.ReadLine());
+
+            Console.Write("How many Players per Room: ");
+            var occupancy = int.Parse(Console.ReadLine());
+
+            for (int i = 1; i <= rooms; i++)
+            {
+                if (i % 50 == 0) await Task.Delay(8000);
+
+                Stress(i, occupancy);
+            }
+        }
+
+        static async void Stress(int index, int occupancy)
+        {
+            var room = await CreateRoom($"Stress Room {index}", byte.MaxValue);
+
+            for (int i = 0; i < occupancy; i++)
+            {
+                var player = new Player(i);
+
+                player.Connect(IP, room.ID);
+            }
+        }
+
+        static async Task<RoomInfo> CreateRoom(string name, byte capacity)
+        {
+            var attributes = new AttributesCollection();
+            attributes.Set(0, (byte)0);
+
+            var request = new CreateRoomRequest(AppID, GameVersion, name, capacity, true, MigrationPolicy.Continue, attributes);
+
+            var info = await RestAPI.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
+
+            return info;
+        }
+
+        static void Disconnect()
+        {
+            Players.ForEach(x => x.Disconnect());
+        }
+    }
+
+    class Player : INetEventListener
+    {
+        int Index;
+
+        NetManager Socket;
+        NetPeer Peer;
+
+        NetworkClientID ClientID;
+        NetworkEntityID EntityID;
+
+        bool IsReady = false;
+
+        byte[] Payload;
+
+        public void Connect(string address, RoomID room)
+        {
+            Peer = Socket.Connect(address, NetworkTransportUtility.LiteNetLib.Port, room.ToString());
+        }
+
+        public void OnPeerConnected(NetPeer peer)
+        {
+            RegisterClient();
+        }
+
+        void RegisterClient()
+        {
+            var profile = new NetworkClientProfile($"Player {Index}");
+
+            var request = new RegisterClientRequest(profile, default);
+
+            Send(ref request, DeliveryMethod.ReliableOrdered);
+        }
+        void RegisterClientResponse(RegisterClientResponse response)
+        {
+            ClientID = response.ID;
+
+            SpawnEntity();
+        }
+
+        void SpawnEntity()
+        {
+            var request = SpawnEntityRequest.Write(0, new EntitySpawnToken(0), PersistanceFlags.None, null);
+
+            Send(ref request, DeliveryMethod.ReliableOrdered);
+        }
+        void SpawnEntityResponse(SpawnEntityResponse response)
+        {
+            EntityID = response.ID;
+            IsReady = true;
+        }
+
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        {
+            var raw = reader.GetRemainingBytes();
+
+            foreach (var message in NetworkMessage.ReadAll(raw))
+            {
+                switch (message.Payload)
+                {
+                    case RegisterClientResponse response:
+                        RegisterClientResponse(response);
+                        break;
+
+                    case SpawnEntityResponse response:
+                        SpawnEntityResponse(response);
+                        break;
+                }
+            }
+        }
+
+        void Run()
+        {
+            while(true)
+            {
+                Socket.PollEvents();
+
+                if (IsReady)
+                {
+                    SendRPC(DeliveryMethod.ReliableOrdered);
+                    SendRPC(DeliveryMethod.Unreliable);
+
+                    SendSyncVar(DeliveryMethod.ReliableOrdered);
+                    SendSyncVar(DeliveryMethod.Unreliable);
+                }
+
+                Thread.Sleep(50);
+            }
+        }
+
+        void SendRPC(DeliveryMethod delivery)
+        {
+            var request = RpcRequest.WriteBroadcast(EntityID, default, default, RemoteBufferMode.Last, default, null, Payload);
+
+            Send(ref request, delivery);
+        }
+        void SendSyncVar(DeliveryMethod delivery)
+        {
+            var request = SyncVarRequest.Write(EntityID, default, default, default, Payload);
+
+            Send(ref request, delivery);
+        }
+        void Send<T>(ref T payload, DeliveryMethod delivery)
+        {
+            var message = NetworkMessage.Write(ref payload);
+
+            var binary = NetworkSerializer.Serialize(message);
+
+            Peer.Send(binary, delivery);
+        }
+
+        public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+        {
+            Log.Error($"Player Disconnected: {disconnectInfo.Reason}");
+        }
+
+        public void Disconnect()
+        {
+            IsReady = false;
+
+            if (Peer == null) return;
+
+            Peer.Disconnect();
+        }
+
+        #region Unused Callbacks
+        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
+        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
+        public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
+        public void OnConnectionRequest(ConnectionRequest request) { }
+        #endregion
+
+        public Player(int index)
+        {
+            this.Index = index;
+
+            Client.Players.Add(this);
+
+            Socket = new NetManager(this);
+            Socket.Start();
+            Socket.DisconnectTimeout = 20 * 1000;
+
+            new Thread(Run).Start();
+
+            Payload = new byte[14];
+
+            for (byte i = 0; i < Payload.Length; i++)
+                Payload[i] = i;
+        }
+    }
+}

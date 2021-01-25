@@ -87,7 +87,12 @@ namespace MNet
             var raw = reader.GetRemainingBytes();
             reader.Recycle();
 
-            var mode = Utility.Delivery.Glossary[deliveryMethod];
+            if(Utility.Delivery.Glossary.TryGetKey(deliveryMethod, out var mode) == false)
+            {
+                Log.Error($"LiteNetLib: Recieved Packet with Undefined Delivery Method of {deliveryMethod}");
+                Disconnect(peer, DisconnectCode.InvalidData);
+                return;
+            }
 
             context.RegisterMessages(peer, raw, mode);
         }
@@ -137,6 +142,13 @@ namespace MNet
             var binary = Utility.Disconnect.CodeToBinary(code);
 
             request.Reject(binary);
+        }
+
+        public static void Disconnect(NetPeer peer, DisconnectCode code)
+        {
+            var binary = Utility.Disconnect.CodeToBinary(code);
+
+            peer.Disconnect(binary);
         }
     }
 
