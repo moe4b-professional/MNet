@@ -40,6 +40,7 @@ namespace MNet
                 SendQueue.Configure();
                 Prediction.Clear();
                 Register.Configure();
+                Groups.Configure();
                 Entities.Configure();
                 RPR.Configure();
 
@@ -513,6 +514,59 @@ namespace MNet
                 }
             }
 
+            public static class Groups
+            {
+                public static HashSet<NetworkGroupID> Collection { get; private set; }
+
+                internal static void Configure()
+                {
+                    Collection = new HashSet<NetworkGroupID>();
+                    Collection.Add(NetworkGroupID.Default);
+                }
+
+                public static void Join(params byte[] selection)
+                {
+                    var ids = Array.ConvertAll(selection, NetworkGroupID.Create);
+
+                    Add(ids);
+
+                    var payload = new JoinNetworkGroupsPayload(ids);
+
+                    Send(ref payload);
+                }
+
+                static void Add(NetworkGroupID[] ids)
+                {
+                    for (int i = 0; i < ids.Length; i++)
+                        Collection.Add(ids[i]);
+                }
+
+                public static void Leave(params byte[] selection)
+                {
+                    var ids = Array.ConvertAll(selection, NetworkGroupID.Create);
+
+                    if (ids.Contains(NetworkGroupID.Default))
+                        throw new Exception($"Cannot Leave Default Network Group {NetworkGroupID.Default}");
+
+                    Remove(ids);
+
+                    var payload = new LeaveNetworkGroupsPayload(ids);
+
+                    Send(ref payload);
+                }
+
+                static void Remove(NetworkGroupID[] ids)
+                {
+                    Collection.RemoveWhere(ids.Contains);
+                }
+
+                internal static void Clear()
+                {
+                    Collection.Clear();
+                    Collection.Add(NetworkGroupID.Default);
+                }
+            }
+
             public static class Entities
             {
                 public static IReadOnlyList<NetworkEntity> List => Self?.Entities;
@@ -737,6 +791,7 @@ namespace MNet
                 SendQueue.Clear();
                 Prediction.Clear();
                 Register.Clear();
+                Groups.Clear();
                 Entities.Clear();
 
                 NetworkAPI.Room.Clear();

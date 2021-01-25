@@ -140,7 +140,7 @@ namespace MNet
             if (ResolveExplicit(value)) return;
 
             var type = typeof(T);
-            if (ResolveImplicit(value, type)) return;
+            if (ResolveAny(value, type)) return;
 
             throw FormatResolverException<T>();
         }
@@ -170,16 +170,6 @@ namespace MNet
             if (resolver == null) return false;
 
             resolver.Serialize(this, value);
-            return true;
-        }
-
-        bool ResolveImplicit(object value, Type type)
-        {
-            var resolver = NetworkSerializationResolver.Retrive(type);
-
-            if (resolver == null) return false;
-
-            resolver.Serialize(this, value, type);
             return true;
         }
 
@@ -242,7 +232,7 @@ namespace MNet
 
             if (ResolveExplicit(ref value)) return value;
 
-            if (ResolveImplicit(ref value)) return value;
+            if (ResolveAny(ref value)) return value;
 
             throw FormatResolverException<T>();
         }
@@ -266,13 +256,12 @@ namespace MNet
             return true;
         }
 
-        bool ResolveImplicit<T>(ref T value)
+        bool ResolveAny<T>(ref T value)
         {
             var type = typeof(T);
 
-            object instance = null;
-
-            if (ResolveImplicit(type, ref instance) == false) return false;
+            if (ResolveAny(type, out var instance) == false)
+                return false;
 
             try
             {
@@ -282,23 +271,9 @@ namespace MNet
             {
                 throw new InvalidCastException($"NetworkReader Trying to read {instance.GetType()} as {typeof(T)}");
             }
-            catch (Exception)
-            {
-                throw;
-            }
 
             return true;
         }
-        bool ResolveImplicit(Type type, ref object value)
-        {
-            var resolver = NetworkSerializationResolver.Retrive(type);
-
-            if (resolver == null) return false;
-
-            value = resolver.Deserialize(this, type);
-            return true;
-        }
-
         bool ResolveAny(Type type, out object value)
         {
             var resolver = NetworkSerializationResolver.Retrive(type);

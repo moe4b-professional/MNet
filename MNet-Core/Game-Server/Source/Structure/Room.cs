@@ -96,13 +96,15 @@ namespace MNet
         {
             Dictionary<NetworkClientID, NetworkClient> Dictionary;
 
-            public IReadOnlyCollection<NetworkClient> List => Dictionary.Values;
+            public List<NetworkClient> List;
 
             public bool TryGet(NetworkClientID id, out NetworkClient client) => Dictionary.TryGetValue(id, out client);
 
             public bool Contains(NetworkClientID id) => Dictionary.ContainsKey(id);
 
-            public int Count => Dictionary.Count;
+            public NetworkClient this[int index] => List[index];
+
+            public int Count => List.Count;
 
             NetworkClientInfo[] GetInfo() => Dictionary.ToArray(NetworkClient.ReadInfo);
 
@@ -168,6 +170,7 @@ namespace MNet
                 if (Clients.Count == 0) Master.Set(client);
 
                 Dictionary.Add(id, client);
+                List.Add(client);
 
                 return client;
             }
@@ -175,11 +178,7 @@ namespace MNet
 
             #region Disconnect & Remove
             void Disconnect(NetworkClient client, DisconnectCode code) => Disconnect(client.ID, code);
-            void Disconnect(NetworkClientID id, DisconnectCode code)
-            {
-                Dictionary.Remove(id);
-                TransportContext.Disconnect(id, code);
-            }
+            void Disconnect(NetworkClientID id, DisconnectCode code) => TransportContext.Disconnect(id, code);
 
             void DisconnectCallback(NetworkClientID id)
             {
@@ -195,6 +194,7 @@ namespace MNet
                 Entities.DestroyFor(client);
 
                 Dictionary.Remove(client.ID);
+                List.Remove(client);
 
                 SendQueue.Remove(client);
 
@@ -209,11 +209,11 @@ namespace MNet
             {
                 switch (Room.MigrationPolicy)
                 {
-                    case MigrationPolicy.ChooseRandom:
+                    case MigrationPolicy.Continue:
                         Master.ChooseNew();
                         break;
 
-                    case MigrationPolicy.StopRoom:
+                    case MigrationPolicy.Stop:
                         TransportContext.DisconnectAll(DisconnectCode.HostDisconnected);
                         Room.Stop();
                         break;
@@ -223,6 +223,7 @@ namespace MNet
             public ClientsProperty()
             {
                 Dictionary = new Dictionary<NetworkClientID, NetworkClient>();
+                List = new List<NetworkClient>();
             }
         }
 
@@ -261,6 +262,29 @@ namespace MNet
                 {
                     Set(null);
                 }
+            }
+        }
+
+        public GroupsProperty Groups = new GroupsProperty();
+        public class GroupsProperty : Property
+        {
+            public override void Start()
+            {
+                base.Start();
+
+                MessageDispatcher.RegisterHandler<JoinNetworkGroupsPayload>(Join);
+                MessageDispatcher.RegisterHandler<LeaveNetworkGroupsPayload>(Leave);
+            }
+
+            void Join(NetworkClient sender, ref JoinNetworkGroupsPayload payload)
+            {
+                for (int i = 0; i < payload.Length; i++)
+                    sender.Groups.Add(payload[i]);
+            }
+
+            void Leave(NetworkClient sender, ref LeaveNetworkGroupsPayload payload)
+            {
+                sender.Groups.RemoveWhere(payload.Selection.Contains);
             }
         }
 
@@ -548,9 +572,10 @@ namespace MNet
             {
                 var command = RpcCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, exception1: request.Exception, exception2: sender.ID);
+                var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
-                entity.RpcBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                if (request.Group == NetworkGroupID.Default && request.BufferMode != RemoteBufferMode.None)
+                    entity.RpcBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
 
             void InvokeDirectRPC(NetworkClient sender, NetworkEntity entity, ref RpcRequest request, DeliveryMode mode)
@@ -588,7 +613,6 @@ namespace MNet
             }
             #endregion
 
-            #region SyncVar
             void InvokeSyncVar(NetworkClient sender, ref SyncVarRequest request, DeliveryMode mode)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
@@ -599,11 +623,10 @@ namespace MNet
 
                 var command = SyncVarCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, exception1: sender.ID);
+                var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID);
 
                 entity.SyncVarBuffer.Set(message, request, MessageBuffer.Add, MessageBuffer.Remove);
             }
-            #endregion
         }
 
         public MessageBufferProperty MessageBuffer = new MessageBufferProperty();
@@ -803,6 +826,7 @@ namespace MNet
             action(Time);
             action(Clients);
             action(Master);
+            action(Groups);
             action(Entities);
             action(RemoteCalls);
             action(MessageBuffer);
@@ -862,7 +886,7 @@ namespace MNet
             return message;
         }
 
-        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
+        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkGroupID group = default, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
         {
             var message = NetworkMessage.Write(ref payload);
 
@@ -870,22 +894,24 @@ namespace MNet
 
             if (App.QueueMessages)
             {
-                foreach (var client in Clients.List)
+                for (int i = 0; i < Clients.Count; i++)
                 {
-                    if (exception1 == client.ID) continue;
-                    if (exception2 == client.ID) continue;
+                    if (Clients[i].Groups.Contains(group) == false) continue;
+                    if (exception1 == Clients[i].ID) continue;
+                    if (exception2 == Clients[i].ID) continue;
 
-                    SendQueue.Add(raw, client, mode);
+                    SendQueue.Add(raw, Clients[i], mode);
                 }
             }
             else
             {
-                foreach (var client in Clients.List)
+                for (int i = 0; i < Clients.Count; i++)
                 {
-                    if (exception1 == client.ID) continue;
-                    if (exception2 == client.ID) continue;
+                    if (Clients[i].Groups.Contains(group) == false) continue;
+                    if (exception1 == Clients[i].ID) continue;
+                    if (exception2 == Clients[i].ID) continue;
 
-                    TransportContext.Send(client.ID, raw, mode);
+                    TransportContext.Send(Clients[i].ID, raw, mode);
                 }
             }
 

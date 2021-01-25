@@ -136,13 +136,7 @@ namespace MNet
         }
 
         #region Methods
-        protected bool BroadcastRPC(MethodInfo method, RemoteBufferMode buffer, DeliveryMode delivery, NetworkClient exception, params object[] arguments)
-        {
-            var name = RpcBind.GetName(method);
-
-            return BroadcastRPC(name, buffer, delivery, exception, arguments);
-        }
-        protected bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, NetworkClient exception, params object[] arguments)
+        protected bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, NetworkGroupID group, NetworkClient exception, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -152,19 +146,11 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, raw);
-
-            if (exception != null) request.Except(exception.ID);
+            var request = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
 
             return SendRPC(bind, request, delivery);
         }
 
-        protected bool TargetRPC(MethodInfo method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
-        {
-            var name = RpcBind.GetName(method);
-
-            return TargetRPC(name, target, delivery, arguments);
-        }
         protected bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
@@ -180,12 +166,6 @@ namespace MNet
             return SendRPC(bind, request, delivery);
         }
 
-        protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(MethodInfo method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
-        {
-            var name = RpcBind.GetName(method);
-
-            return QueryRPC<TResult>(name, target, delivery, arguments);
-        }
         protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
@@ -212,6 +192,7 @@ namespace MNet
 
             return answer;
         }
+        #endregion
 
         internal bool SendRPC(RpcBind bind, RpcRequest request, DeliveryMode delivery)
         {
@@ -229,7 +210,6 @@ namespace MNet
 
             return Send(ref request, delivery);
         }
-        #endregion
 
         internal void InvokeRPC(RpcCommand command)
         {
@@ -354,9 +334,9 @@ namespace MNet
         /// <summary>
         /// Overload for ensuring type safety
         /// </summary>
-        protected bool SyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable) => SyncVar(name, value);
+        protected bool SyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default) => SyncVar(name, value, delivery, group);
 
-        protected bool SyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable)
+        protected bool SyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
         {
             if (SyncVars.TryGetValue(name, out var bind) == false)
             {
@@ -364,7 +344,7 @@ namespace MNet
                 return false;
             }
 
-            var request = bind.WriteRequest(value);
+            var request = bind.WriteRequest(value, group);
 
             return SendSyncVar(bind, request, delivery);
         }

@@ -37,7 +37,6 @@ namespace MNet
                 return false;
             }
         }
-
         protected static bool WriteNull(NetworkWriter writer, object instance, Type type)
         {
             if (instance == null)
@@ -57,7 +56,6 @@ namespace MNet
         {
             return reader.Next() == 1 ? true : false;
         }
-
         protected static bool ReadNull(NetworkReader reader, Type type)
         {
             if (NetworkSerializationHelper.Nullable.Any.Check(type) == false) return false;
@@ -767,10 +765,13 @@ namespace MNet
     {
         public NetworkSerializationGenericResolver()
         {
+            Instance = this;
+        }
+
+        static NetworkSerializationGenericResolver()
+        {
             //Explicitly Called to make sure that the base class's static constructor is called
             Initialiaze();
-
-            Instance = this;
         }
     }
 

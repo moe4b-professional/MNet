@@ -142,6 +142,11 @@ namespace MNet
             #endregion
 
             Add<LoadScenesPayload>();
+
+            #region Network Groups
+            Add<JoinNetworkGroupsPayload>();
+            Add<LeaveNetworkGroupsPayload>();
+            #endregion
         }
 
         static NetworkPayload()
@@ -884,6 +889,44 @@ namespace MNet
             if (ModifyAttributes) context.Select(ref modifiedAttributes);
 
             if (RemoveAttributes) context.Select(ref removedAttributes);
+        }
+    }
+
+    [Preserve]
+    public struct JoinNetworkGroupsPayload : INetworkSerializable
+    {
+        NetworkGroupID[] selection;
+        public NetworkGroupID[] Selection => selection;
+
+        public int Length => selection.Length;
+
+        public NetworkGroupID this[int index] => selection[index];
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref selection);
+        }
+
+        public JoinNetworkGroupsPayload(NetworkGroupID[] selection)
+        {
+            this.selection = selection;
+        }
+    }
+
+    [Preserve]
+    public struct LeaveNetworkGroupsPayload : INetworkSerializable
+    {
+        NetworkGroupID[] selection;
+        public NetworkGroupID[] Selection => selection;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref selection);
+        }
+
+        public LeaveNetworkGroupsPayload(NetworkGroupID[] selection)
+        {
+            this.selection = selection;
         }
     }
     #endregion

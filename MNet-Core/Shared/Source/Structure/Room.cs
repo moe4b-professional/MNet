@@ -115,7 +115,13 @@ namespace MNet
 
     public enum MigrationPolicy : byte
     {
-        ChooseRandom,
-        StopRoom,
+        /// <summary>
+        /// Continues the Room by choosing a random client as Master
+        /// </summary>
+        Continue,
+        /// <summary>
+        /// Stops the Room and disconnects all clients
+        /// </summary>
+        Stop,
     }
 }

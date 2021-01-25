@@ -54,7 +54,7 @@ namespace MNet
                 string name,
                 byte capacity,
                 bool visibile = true,
-                MigrationPolicy migrationPolicy = MigrationPolicy.ChooseRandom,
+                MigrationPolicy migrationPolicy = MigrationPolicy.Continue,
                 AttributesCollection attributes = null,
                 bool offline = false,
                 CreateDelegate handler = null)

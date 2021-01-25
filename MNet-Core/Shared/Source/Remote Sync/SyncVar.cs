@@ -55,6 +55,9 @@ namespace MNet
         SyncVarFieldID field;
         public SyncVarFieldID Field => field;
 
+        NetworkGroupID group;
+        public NetworkGroupID Group => group;
+
         byte[] raw;
         public byte[] Raw => raw;
 
@@ -70,6 +73,7 @@ namespace MNet
             entity.Serialize(writer);
             behaviour.Serialize(writer);
             field.Serialize(writer);
+            group.Serialize(writer);
 
             writer.Write(raw);
         }
@@ -79,11 +83,12 @@ namespace MNet
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
             field.Deserialize(reader);
+            group.Deserialize(reader);
 
             reader.Read(out raw);
         }
 
-        public static SyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, object value)
+        public static SyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, NetworkGroupID group, object value)
         {
             var raw = NetworkSerializer.Serialize(value);
 
@@ -92,6 +97,7 @@ namespace MNet
                 entity = entity,
                 behaviour = behaviour,
                 field = field,
+                group = group,
                 raw = raw,
             };
 

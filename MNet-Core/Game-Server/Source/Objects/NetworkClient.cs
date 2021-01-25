@@ -12,20 +12,22 @@ namespace MNet
 {
     class NetworkClient
     {
-        public NetworkClientID ID { get; protected set; }
+        public NetworkClientID ID;
 
-        public NetworkClientProfile Profile { get; protected set; }
+        public NetworkClientProfile Profile;
 
         public string Name => Profile.Name;
 
         public AttributesCollection Attributes => Profile.Attributes;
 
-        public List<NetworkEntity> Entities { get; protected set; }
+        public List<NetworkEntity> Entities;
+
+        public HashSet<NetworkGroupID> Groups;
 
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
         public static NetworkClientInfo ReadInfo(NetworkClient client) => client.ReadInfo();
 
-        public MessageSendQueue SendQueue { get; protected set; }
+        public MessageSendQueue SendQueue;
 
         public override string ToString() => ID.ToString();
 
@@ -35,6 +37,8 @@ namespace MNet
             this.Profile = profile;
 
             Entities = new List<NetworkEntity>();
+
+            Groups = new HashSet<NetworkGroupID>() { NetworkGroupID.Default };
 
             SendQueue = new MessageSendQueue(transport.CheckMTU);
         }

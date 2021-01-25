@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace MNet
 {
     [Preserve]
-    [Serializable]
     public struct NetworkClientID : IManualNetworkSerializable
     {
         byte value;
@@ -20,7 +19,7 @@ namespace MNet
 
         public void Deserialize(NetworkReader reader)
         {
-            reader.Read(out value);
+            value = reader.Next();
         }
 
         public NetworkClientID(byte value)
@@ -54,7 +53,6 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
     public class NetworkClientProfile : INetworkSerializable
     {
         string name;
@@ -82,7 +80,6 @@ namespace MNet
     }
 
     [Preserve]
-    [Serializable]
     public struct NetworkClientInfo : INetworkSerializable
     {
         NetworkClientID id;
@@ -103,5 +100,48 @@ namespace MNet
 
             this.profile = profile;
         }
+    }
+
+    [Preserve]
+    public struct NetworkGroupID : IManualNetworkSerializable
+    {
+        byte value;
+        public byte Value { get { return value; } }
+
+        public void Serialize(NetworkWriter writer)
+        {
+            writer.Insert(value);
+        }
+
+        public void Deserialize(NetworkReader reader)
+        {
+            value = reader.Next();
+        }
+
+        public NetworkGroupID(byte value)
+        {
+            this.value = value;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is NetworkGroupID id) return Equals(id);
+
+            return false;
+        }
+        public bool Equals(NetworkGroupID id) => this.value == id.value;
+
+        public override int GetHashCode() => value.GetHashCode();
+
+        public override string ToString() => value.ToString();
+
+        public static bool operator ==(NetworkGroupID a, NetworkGroupID b) => a.Equals(b);
+        public static bool operator !=(NetworkGroupID a, NetworkGroupID b) => !a.Equals(b);
+
+        public static implicit operator NetworkGroupID(byte value) => new NetworkGroupID(value);
+
+        public static NetworkGroupID Create(byte value) => new NetworkGroupID(value);
+
+        public static NetworkGroupID Default { get; private set; } = default;
     }
 }

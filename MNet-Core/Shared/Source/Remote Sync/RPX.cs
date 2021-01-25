@@ -103,16 +103,14 @@ namespace MNet
         RemoteBufferMode bufferMode;
         public RemoteBufferMode BufferMode => bufferMode;
 
-        NetworkClientID target;
-        public NetworkClientID Target => target;
+        NetworkGroupID group;
+        public NetworkGroupID Group => group;
 
         NetworkClientID? exception;
         public NetworkClientID? Exception => exception;
 
-        public void Except(NetworkClientID client)
-        {
-            exception = client;
-        }
+        NetworkClientID target;
+        public NetworkClientID Target => target;
 
         RprChannelID returnChannel;
         public RprChannelID ReturnChannel => returnChannel;
@@ -147,6 +145,7 @@ namespace MNet
             {
                 case RpcType.Broadcast:
                     writer.Write(bufferMode);
+                    group.Serialize(writer);
                     writer.Write(exception);
                     break;
 
@@ -179,6 +178,7 @@ namespace MNet
             {
                 case RpcType.Broadcast:
                     reader.Read(out bufferMode);
+                    group.Deserialize(reader);
                     reader.Read(out exception);
                     break;
 
@@ -201,7 +201,14 @@ namespace MNet
 
         //Static Utility
 
-        public static RpcRequest WriteBroadcast(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, RemoteBufferMode bufferMode, byte[] raw)
+        public static RpcRequest WriteBroadcast(
+            NetworkEntityID entity,
+            NetworkBehaviourID behaviour,
+            RpxMethodID method,
+            RemoteBufferMode bufferMode,
+            NetworkGroupID group,
+            NetworkClientID? exception,
+            byte[] raw)
         {
             var request = new RpcRequest()
             {
@@ -211,12 +218,18 @@ namespace MNet
                 raw = raw,
                 type = RpcType.Broadcast,
                 bufferMode = bufferMode,
+                exception = exception,
+                group = group,
             };
 
             return request;
         }
 
-        public static RpcRequest WriteTarget(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, byte[] raw)
+        public static RpcRequest WriteTarget(
+            NetworkEntityID entity,
+            NetworkBehaviourID behaviour,
+            RpxMethodID method, NetworkClientID target,
+            byte[] raw)
         {
             var request = new RpcRequest()
             {
@@ -231,7 +244,13 @@ namespace MNet
             return request;
         }
 
-        public static RpcRequest WriteQuery(NetworkEntityID entity, NetworkBehaviourID behaviour, RpxMethodID method, NetworkClientID target, RprChannelID returnChannel, byte[] raw)
+        public static RpcRequest WriteQuery(
+            NetworkEntityID entity,
+            NetworkBehaviourID behaviour,
+            RpxMethodID method,
+            NetworkClientID target,
+            RprChannelID returnChannel,
+            byte[] raw)
         {
             var request = new RpcRequest()
             {

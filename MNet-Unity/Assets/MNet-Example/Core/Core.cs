@@ -120,7 +120,7 @@ namespace MNet.Example
 
 			public LevelData ReadAttribute(AttributesCollection attributes)
 			{
-				if (attributes.TryGetValue<byte>(0, out var index) == false)
+				if (attributes.TryGetValue(0, out byte index) == false)
 					throw new Exception("Failed to Retrive Level from Room Attribute");
 
 				var data = Core.Levels[index];

@@ -19,8 +19,6 @@ namespace MNet
 
         public void Set(NetworkMessage message, ref RpcRequest request, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
         {
-            if (request.BufferMode == RemoteBufferMode.None) return;
-
             var key = (request.Behaviour, request.Method);
 
             if (Dictionary.TryGetValue(key, out var collection) == false)

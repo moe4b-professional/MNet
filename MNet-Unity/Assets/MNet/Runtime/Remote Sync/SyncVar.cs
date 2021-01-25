@@ -96,9 +96,9 @@ namespace MNet
         }
         #endregion
 
-        public SyncVarRequest WriteRequest(object value)
+        public SyncVarRequest WriteRequest(object value, NetworkGroupID group)
         {
-            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, FieldID, value);
+            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, FieldID, group, value);
 
             return request;
         }
