@@ -23,20 +23,34 @@ namespace MNet.Example
 	{
 		[SerializeField]
 		float speed = 3.5f;
+		public float Speed => speed;
 
 		[SerializeField]
 		float acceleration = 20f;
+		public float Acceleration => acceleration;
 
-		public Player Player { get; protected set; }
-		public void Set(Player reference) => Player = reference;
+		Player player;
+		public void Set(Player reference) => player = reference;
 
-		public PlayerRotation Rotation => Player.Rotation;
+		public NetworkEntity Entity => player.Entity;
+		public PlayerRotation Rotation => player.Rotation;
+
+		public Vector3 PlannarVelocity
+		{
+			get => Vector3.Scale(player.rigidbody.velocity, Vector3.forward + Vector3.right);
+			set
+            {
+				value.y = player.rigidbody.velocity.y;
+
+				player.rigidbody.velocity = value;
+			}
+		}
 
 		void Update()
 		{
-			if (Player.Entity.IsOrphan) return;
-
-			if (Player.Entity.IsMine == false) return;
+			if (Entity.IsOrphan) return;
+			if (Entity.IsReady == false) return;
+			if (Entity.IsMine == false) return;
 
 			var target = new Vector3()
 			{
@@ -44,15 +58,12 @@ namespace MNet.Example
 				z = Input.GetAxisRaw("Vertical"),
 			};
 
-			target = Vector3.ClampMagnitude(target * speed, speed);
+			var yDelta = Rotation.Process(PlannarVelocity);
+			var yScale = Mathf.Lerp(1f, 0.2f, yDelta / 120);
 
-			var velocity = Vector3.Scale(Player.Velocity, Vector3.forward + Vector3.right);
+			target = Vector3.ClampMagnitude(target * speed * yScale, speed);
 
-			velocity = Vector3.MoveTowards(velocity, target, acceleration * Time.deltaTime);
-
-			Player.Velocity = velocity + (Vector3.up * Player.Velocity.y);
-
-			Rotation.Process(velocity);
+			PlannarVelocity = Vector3.MoveTowards(PlannarVelocity, target, acceleration * Time.deltaTime);
 		}
 	}
 }

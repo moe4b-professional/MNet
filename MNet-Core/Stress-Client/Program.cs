@@ -21,6 +21,8 @@ namespace MNet
 
         public static List<Player> Players;
 
+        public static byte[] Payload;
+
         static void Main(string[] args)
         {
             Run();
@@ -39,10 +41,15 @@ namespace MNet
 
         static async void Run()
         {
-            Players = new List<Player>();
-
             RestAPI = new RestClientAPI(Constants.Server.Game.Rest.Port, RestScheme.HTTP);
             RestAPI.SetIP(IP);
+
+            Players = new List<Player>();
+
+            Payload = new byte[14];
+
+            for (byte i = 0; i < Payload.Length; i++)
+                Payload[i] = i;
 
             Console.Write("How many Rooms to Create: ");
             var rooms = int.Parse(Console.ReadLine());
@@ -84,7 +91,8 @@ namespace MNet
 
         static void Disconnect()
         {
-            Players.ForEach(x => x.Disconnect());
+            Players.ForEach(Action);
+            void Action(Player player) => player.Disconnect();
         }
     }
 
@@ -100,11 +108,24 @@ namespace MNet
 
         bool IsReady = false;
 
-        byte[] Payload;
+        public Player(int index)
+        {
+            this.Index = index;
+
+            Client.Players.Add(this);
+
+            Socket = new NetManager(this);
+            Socket.DisconnectTimeout = 20 * 1000;
+            Socket.Start();
+
+            new Thread(Run).Start();
+        }
 
         public void Connect(string address, RoomID room)
         {
-            Peer = Socket.Connect(address, NetworkTransportUtility.LiteNetLib.Port, room.ToString());
+            var key = $"{room}";
+
+            Peer = Socket.Connect(address, NetworkTransportUtility.LiteNetLib.Port, key);
         }
 
         public void OnPeerConnected(NetPeer peer)
@@ -136,6 +157,7 @@ namespace MNet
         void SpawnEntityResponse(SpawnEntityResponse response)
         {
             EntityID = response.ID;
+
             IsReady = true;
         }
 
@@ -160,7 +182,7 @@ namespace MNet
 
         void Run()
         {
-            while(true)
+            while (true)
             {
                 Socket.PollEvents();
 
@@ -179,16 +201,18 @@ namespace MNet
 
         void SendRPC(DeliveryMethod delivery)
         {
-            var request = RpcRequest.WriteBroadcast(EntityID, default, default, RemoteBufferMode.Last, default, null, Payload);
+            var request = RpcRequest.WriteBroadcast(EntityID, default, default, RemoteBufferMode.Last, default, null, Client.Payload);
 
             Send(ref request, delivery);
         }
+
         void SendSyncVar(DeliveryMethod delivery)
         {
-            var request = SyncVarRequest.Write(EntityID, default, default, default, Payload);
+            var request = SyncVarRequest.Write(EntityID, default, default, default, Client.Payload);
 
             Send(ref request, delivery);
         }
+
         void Send<T>(ref T payload, DeliveryMethod delivery)
         {
             var message = NetworkMessage.Write(ref payload);
@@ -200,6 +224,8 @@ namespace MNet
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
+            IsReady = false;
+
             Log.Error($"Player Disconnected: {disconnectInfo.Reason}");
         }
 
@@ -218,23 +244,5 @@ namespace MNet
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
         public void OnConnectionRequest(ConnectionRequest request) { }
         #endregion
-
-        public Player(int index)
-        {
-            this.Index = index;
-
-            Client.Players.Add(this);
-
-            Socket = new NetManager(this);
-            Socket.Start();
-            Socket.DisconnectTimeout = 20 * 1000;
-
-            new Thread(Run).Start();
-
-            Payload = new byte[14];
-
-            for (byte i = 0; i < Payload.Length; i++)
-                Payload[i] = i;
-        }
     }
 }

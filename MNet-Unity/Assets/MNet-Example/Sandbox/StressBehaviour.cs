@@ -37,6 +37,8 @@ namespace MNet.Example
         {
             base.OnSpawn();
 
+			if (Entity.IsMine) Debug.LogWarning($"Stress Behaviour Attached to {Entity}, Don't Forget to Remove it when not Stressing");
+
 			StartCoroutine(Procedure());
 		}
 

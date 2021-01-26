@@ -39,13 +39,15 @@ namespace MNet.Example
 			}
 		}
 
-		public void Process(Vector3 velocity)
+		public float Process(Vector3 velocity)
         {
-			if (velocity.magnitude < 0.1f) return;
+			if (velocity.magnitude < 0.1f) return 0f;
 
 			var target = Vector2Angle(velocity.x, velocity.z);
 
 			yAngle = Mathf.MoveTowardsAngle(yAngle, target, speed * Time.deltaTime);
+
+			return Mathf.DeltaAngle(yAngle, target);
 		}
 
 		public static float Vector2Angle(float x, float y)

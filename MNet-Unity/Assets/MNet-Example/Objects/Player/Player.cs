@@ -25,14 +25,9 @@ namespace MNet.Example
 	{
 		public PlayerMovement Movement { get; protected set; }
 		public PlayerRotation Rotation { get; protected set; }
+		public PlayerAnimator Animator { get; protected set; }
 
 		public Rigidbody rigidbody { get; protected set; }
-
-		public Vector3 Velocity
-		{
-			get => rigidbody.velocity;
-			set => rigidbody.velocity = value;
-		}
 
 		public Vector3 Position
 		{
@@ -40,21 +35,22 @@ namespace MNet.Example
 			set => transform.position = value;
 		}
 
-		public class Behaviour : NetworkBehaviour
-		{
-			public Player Player { get; protected set; }
-			public void Set(Player reference) => Player = reference;
-		}
+		public SimpleNetworkTransform NetworkTransform { get; protected set; }
 
 		void Awake()
 		{
 			rigidbody = GetComponent<Rigidbody>();
+
+			NetworkTransform = GetComponent<SimpleNetworkTransform>();
 
 			Movement = GetComponentInChildren<PlayerMovement>();
 			Movement.Set(this);
 
 			Rotation = GetComponentInChildren<PlayerRotation>();
 			Rotation.Set(this);
+
+			Animator = GetComponentInChildren<PlayerAnimator>();
+			Animator.Set(this);
 		}
 
 		protected override void OnSetup()
@@ -78,10 +74,19 @@ namespace MNet.Example
 
 		//Static Utility
 
-		public static NetworkEntity Spawn(GameObject prefab) => Spawn(prefab, Vector3.zero, Quaternion.identity);
-		public static NetworkEntity Spawn(GameObject prefab, Vector3 position, Quaternion rotation)
+		public static NetworkEntity Spawn(GameObject prefab)
+        {
+			var position = Vector3.zero;
+			var rotation = Quaternion.identity;
+			var color = Random.ColorHSV();
+
+			return Spawn(prefab, position, rotation, color);
+		}
+		public static NetworkEntity Spawn(GameObject prefab, Vector3 position, Quaternion rotation, Color color)
 		{
 			var attributes = WriteAttributes(position, rotation);
+
+			PlayerMesh.WriteAttributes(attributes, color);
 
 			var persistance = PersistanceFlags.SceneLoad;
 

@@ -19,28 +19,42 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	[RequireComponent(typeof(MeshRenderer))]
+#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
 	public class PlayerMesh : NetworkBehaviour
 	{
-		[SyncVar(Authority = RemoteAuthority.Owner)]
-		Color Color
-		{
-			get => mesh.material.color;
-			set => mesh.material.color = value;
+		[SerializeField]
+		Renderer[] renderers = default;
+
+		void SetColor(Color color)
+        {
+			var block = new MaterialPropertyBlock();
+
+			block.SetColor("_Color", color);
+
+			for (int i = 0; i < renderers.Length; i++)
+				renderers[i].SetPropertyBlock(block);
 		}
 
-		MeshRenderer mesh;
+        protected override void OnSetup()
+        {
+            base.OnSetup();
 
-		void Awake()
-		{
-			mesh = GetComponent<MeshRenderer>();
+			ReadAttributes(Entity.Attributes, out var color);
+
+			SetColor(color);
 		}
 
-		protected override void OnSpawn()
-		{
-			base.OnSpawn();
+		//Static Utility
 
-			if (Entity.IsMine) SyncVar(nameof(Color), Random.ColorHSV());
+		public static void WriteAttributes(AttributesCollection attributes, Color color)
+		{
+			attributes.Set(2, color);
+		}
+
+		public static void ReadAttributes(AttributesCollection attributes, out Color color)
+		{
+			attributes.TryGetValue(2, out color);
 		}
 	}
+#pragma warning restore CS0108 // Member hides inherited member; missing new keyword
 }

@@ -76,6 +76,7 @@
      <Compile Include="Assets\MNet-Example\Objects\Level\Utility\LevelPauseSetButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Level\Utility\QuitLevelButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Main Menu\MainMenu.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\Player\Modules\PlayerAnimator.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Player\Modules\PlayerMesh.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Player\Modules\PlayerMovement.cs" />
      <Compile Include="Assets\MNet-Example\Objects\Player\Modules\PlayerRotation.cs" />
@@ -124,6 +125,7 @@
      <Compile Include="Assets\MNet\Runtime\API\NetworkAPI.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\NetworkScene.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\NetworkStatsInfo.cs" />
+     <Compile Include="Assets\MNet\Runtime\Components\SimpleNetworkAnimator.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\SimpleNetworkTransform.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\RpcTest.cs" />
      <Compile Include="Assets\MNet\Runtime\Components\Tests\RprTest.cs" />

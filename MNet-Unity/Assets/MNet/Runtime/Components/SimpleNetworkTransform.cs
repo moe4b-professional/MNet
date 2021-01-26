@@ -41,6 +41,45 @@ namespace MNet
         public VectorCoordinateProperty Scale => scale;
 
         [SerializeField]
+        VelocityProperty velocity = default;
+        /// <summary>
+        /// Only valid for remote clients, if you are a local client then you should get your velocity from somehwere else anyway
+        /// </summary>
+        public VelocityProperty Velocity => velocity;
+        [Serializable]
+        public class VelocityProperty
+        {
+            Queue<Vector3> samples;
+
+            [SerializeField]
+            int maxSamples = 5;
+
+            public Vector3 Vector { get; protected set; }
+
+            public float Magnitude => Vector.magnitude;
+
+            public void Add(Vector3 value)
+            {
+                samples.Enqueue(value);
+
+                while (samples.Count > maxSamples) samples.Dequeue();
+
+                Vector = Vector3.zero;
+
+                foreach (var sample in samples)
+                    Vector += sample;
+
+                Vector /= samples.Count;
+            }
+
+            public VelocityProperty()
+            {
+                samples = new Queue<Vector3>();
+                Vector = Vector3.zero;
+            }
+        }
+
+        [SerializeField]
         bool forceSync = false;
         public bool ForceSync => forceSync;
 
@@ -246,7 +285,6 @@ namespace MNet
 
             return new WaitForSeconds(syncInverval / 1000f);
         }
-
         void Broadcast()
         {
             position.WriteBinary(writer);
@@ -260,13 +298,18 @@ namespace MNet
 
         YieldInstruction RemoteProcedure()
         {
+            var sample = transform.localPosition;
+
             if (position.Target.Any) transform.localPosition = position.Translate(transform.localPosition);
             if (rotation.Target.Any) transform.localRotation = rotation.Translate(transform.localRotation);
             if (scale.Target.Any) transform.localScale = scale.Translate(transform.localScale);
 
+            sample = (transform.position - sample) / Time.deltaTime;
+
+            Velocity.Add(sample);
+
             return new WaitForEndOfFrame();
         }
-
         void Anchor()
         {
             transform.localPosition = position.Value;
