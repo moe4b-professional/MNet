@@ -28,7 +28,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169</NoWarn>
-    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -37,7 +37,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <NoWarn>0169</NoWarn>
-    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <NoConfig>true</NoConfig>
@@ -98,6 +98,7 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\HideUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\ShowUIElementButton.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Utility\TransitionUIElementButton.cs" />
+     <Compile Include="Assets\MNet-Example\Sandbox\Half.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\NetworkTimeSinExample.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Sandbox.cs" />
      <Compile Include="Assets\MNet-Example\Sandbox\Scene Load\ScenesLoad.cs" />
@@ -150,6 +151,7 @@
      <Compile Include="Assets\MNet\Runtime\Utility\GlobalCoroutine.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\PrefabSelection.cs" />
      <Compile Include="Assets\MNet\Runtime\Utility\SyncInterval.cs" />
+     <Compile Include="Assets\MNet\Runtime\Utility\ToggleValue.cs" />
      <Compile Include="Assets\MNet\Shared\Collections\AttributesCollection.cs" />
      <Compile Include="Assets\MNet\Shared\Collections\CollectionPrettyPrint.cs" />
      <Compile Include="Assets\MNet\Shared\Collections\NetworkGenericDictionary.cs" />

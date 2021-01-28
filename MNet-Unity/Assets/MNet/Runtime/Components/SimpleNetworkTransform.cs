@@ -25,8 +25,8 @@ namespace MNet
         [SerializeField]
         [SyncInterval(0, 200)]
         [Tooltip("Sync Interval in ms, 1s = 1000ms")]
-        int syncInverval = 100;
-        public int SyncInterval => syncInverval;
+        int syncInterval = 100;
+        public int SyncInterval => syncInterval;
 
         [SerializeField]
         VectorCoordinateProperty position = new VectorCoordinateProperty(true);
@@ -248,7 +248,7 @@ namespace MNet
 
             if (Entity.IsMine && forceSync) Debug.LogWarning($"Force Sync is Enabled for {this}, this is Useful for Stress Testing but Please Remember to Turn it Off!");
 
-            StartCoroutine(Procedure());
+            coroutine = StartCoroutine(Procedure());
         }
 
         void SetAll()
@@ -258,7 +258,8 @@ namespace MNet
             scale.Set(transform.localScale);
         }
 
-        //Yes, I'm using coroutines, get off my back!
+        //Yes, I'm using coroutines for this, get off my back!
+        Coroutine coroutine;
         IEnumerator Procedure()
         {
             while (true)
@@ -270,7 +271,7 @@ namespace MNet
             }
         }
 
-        YieldInstruction LocalProcedure()
+        object LocalProcedure()
         {
             if (Entity.IsConnected)
             {
@@ -283,7 +284,7 @@ namespace MNet
                 if (updated || forceSync) Broadcast();
             }
 
-            return new WaitForSeconds(syncInverval / 1000f);
+            return new WaitForSecondsRealtime(syncInterval / 1000f);
         }
         void Broadcast()
         {
@@ -296,7 +297,7 @@ namespace MNet
             BroadcastRPC(Sync, raw, buffer: RemoteBufferMode.Last, delivery: DeliveryMode.Unreliable, exception: Entity.Owner);
         }
 
-        YieldInstruction RemoteProcedure()
+        object RemoteProcedure()
         {
             var sample = transform.localPosition;
 
@@ -327,6 +328,17 @@ namespace MNet
             scale.ReadBinary(reader);
 
             if (info.IsBuffered) Anchor();
+        }
+
+        protected override void OnDespawn()
+        {
+            base.OnDespawn();
+
+            if(coroutine != null)
+            {
+                StopCoroutine(coroutine);
+                coroutine = null;
+            }
         }
     }
 }
