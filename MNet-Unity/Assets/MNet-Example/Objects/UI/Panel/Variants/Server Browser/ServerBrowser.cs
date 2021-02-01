@@ -100,6 +100,12 @@ namespace MNet.Example
             }
         }
 
+        public void Query(Predicate<GameServerInfo> predicate)
+        {
+            for (int i = 0; i < templates.Count; i++)
+                templates[i].Visible = predicate(templates[i].Data);
+        }
+
         void InitTemplate(GameServerUITemplate template, int index)
         {
             Initializer.Perform(template);
