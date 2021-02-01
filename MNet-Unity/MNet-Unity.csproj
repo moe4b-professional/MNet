@@ -91,6 +91,11 @@
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Server Browser\ServerBrowser.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Server Browser\Utility\GameServerSelectionLabel.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Server Browser\Utility\ServerBrowserRefreshButton.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\UI\Panel\Variants\Server Browser\Utility\ServerBrowserRegionQueryDropDown.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\UI\Preference\UIPreference.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\UI\Preference\Variants\DropdownUIPreference.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\UI\Preference\Variants\InputFieldUIPreference.cs" />
+     <Compile Include="Assets\MNet-Example\Objects\UI\Preference\Variants\ToggleUIPreference.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Template\Basic Room\RoomBasicUITemplate.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Template\Game Server\GameServerUITemplate.cs" />
      <Compile Include="Assets\MNet-Example\Objects\UI\Template\UITemplate.cs" />

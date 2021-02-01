@@ -45,6 +45,7 @@ namespace MNet.Example
 
 			dropdown.AddOptions(options);
 		}
+		public static void AddOptions(this Dropdown dropdown, params string[] names) => dropdown.AddOptions((IList<string>)names);
 
 		public static string GetValueOrDefault(this InputField field, string defaultValue)
 		{

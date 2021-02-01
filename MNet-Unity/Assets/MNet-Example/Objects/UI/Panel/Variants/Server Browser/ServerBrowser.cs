@@ -34,12 +34,39 @@ namespace MNet.Example
 
         List<GameServerUITemplate> templates;
 
+        #region Query
+        List<QueryPredicate> queries;
+
+        public delegate bool QueryPredicate(GameServerInfo info);
+
+        public void AddQuery(QueryPredicate predicate) => queries.Add(predicate);
+
+        public void UpdateQuery()
+        {
+            for (int i = 0; i < templates.Count; i++)
+                templates[i].Visible = Query(templates[i].Data);
+        }
+
+        bool Query(GameServerInfo info)
+        {
+            for (int i = 0; i < queries.Count; i++)
+                if (queries[i](info) == false)
+                    return false;
+
+            return true;
+        }
+
+        public void RemoveQuery(QueryPredicate predicate) => queries.Remove(predicate);
+        #endregion
+
         Core Core => Core.Instance;
         PopupPanel Popup => Core.UI.Popup;
 
         void Awake()
         {
             templates = new List<GameServerUITemplate>();
+
+            queries = new List<QueryPredicate>();
         }
 
         void Start()
@@ -58,27 +85,6 @@ namespace MNet.Example
             Populate(info.Servers);
 
             if (NetworkAPI.Server.Game.Selection == null) Show();
-        }
-
-        public void Refresh()
-        {
-            Popup.Show("Retrieving Servers");
-
-            NetworkAPI.Server.Master.GetInfo(Callback);
-
-            void Callback(MasterServerInfoResponse info, RestError error)
-            {
-                if (error != null)
-                {
-                    Popup.Show("Failed To Retrieve Servers", "Okay");
-                    return;
-                }
-
-                if (info.Servers.Length == 0)
-                    Popup.Show("No Game Servers Found on Master", "Okay");
-                else
-                    Popup.Hide();
-            }
         }
 
         void Populate(ICollection<GameServerInfo> collection)
@@ -100,12 +106,6 @@ namespace MNet.Example
             }
         }
 
-        public void Query(Predicate<GameServerInfo> predicate)
-        {
-            for (int i = 0; i < templates.Count; i++)
-                templates[i].Visible = predicate(templates[i].Data);
-        }
-
         void InitTemplate(GameServerUITemplate template, int index)
         {
             Initializer.Perform(template);
@@ -120,6 +120,27 @@ namespace MNet.Example
             NetworkAPI.Server.Game.Select(template.Data);
 
             Hide();
+        }
+
+        public void Refresh()
+        {
+            Popup.Show("Retrieving Servers");
+
+            NetworkAPI.Server.Master.GetInfo(Callback);
+
+            void Callback(MasterServerInfoResponse info, RestError error)
+            {
+                if (error != null)
+                {
+                    Popup.Show("Failed To Retrieve Servers", "Okay");
+                    return;
+                }
+
+                if (info.Servers.Length == 0)
+                    Popup.Show("No Game Servers Found on Master", "Okay");
+                else
+                    Popup.Hide();
+            }
         }
 
         void Clear()
