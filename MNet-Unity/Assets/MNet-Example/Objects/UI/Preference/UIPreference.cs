@@ -38,11 +38,13 @@ namespace MNet.Example
             ID = name;
         }
 
-        protected void Start()
+        protected IEnumerator Start()
         {
             Component = GetComponent<TComponent>();
 
             Data = Load();
+
+            yield return new WaitForEndOfFrame();
 
             RegisterCallback();
 

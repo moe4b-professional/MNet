@@ -50,13 +50,13 @@ namespace MNet.Example
 				options.Add(region);
 
 			dropdown.AddOptions(options);
+
+			dropdown.onValueChanged.AddListener(ChangeCallback);
 		}
 
 		void Start()
         {
 			browser.AddQuery(Predicate);
-
-			dropdown.onValueChanged.AddListener(ChangeCallback);
 		}
 
 		void ChangeCallback(int value) => browser.UpdateQuery();
