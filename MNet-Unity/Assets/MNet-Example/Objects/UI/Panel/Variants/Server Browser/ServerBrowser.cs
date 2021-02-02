@@ -50,6 +50,8 @@ namespace MNet.Example
         {
             for (int i = 0; i < templates.Count; i++)
                 templates[i].Visible = Query(templates[i].Data);
+
+            ScrollToLast();
         }
 
         bool Query(GameServerInfo info)
@@ -104,16 +106,7 @@ namespace MNet.Example
             var entries = GameServerUITemplate.CreateAll(template, collection, InitTemplate);
             templates.AddRange(entries);
 
-            StartCoroutine(ScrollToStart());
-            IEnumerator ScrollToStart()
-            {
-                for (int i = 0; i < 2; i++)
-                {
-                    scroll.verticalNormalizedPosition = 1f;
-
-                    yield return new WaitForEndOfFrame();
-                }
-            }
+            ScrollToLast();
         }
 
         void InitTemplate(GameServerUITemplate template, int index)
@@ -150,6 +143,20 @@ namespace MNet.Example
                     Popup.Show("No Game Servers Found on Master", "Okay");
                 else
                     Popup.Hide();
+            }
+        }
+
+        void ScrollToLast()
+        {
+            StartCoroutine(Procedure());
+            IEnumerator Procedure()
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    scroll.verticalNormalizedPosition = 1f;
+
+                    yield return new WaitForEndOfFrame();
+                }
             }
         }
 

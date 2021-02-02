@@ -724,7 +724,7 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, IPAddress instance)
         {
-            if(instance == null)
+            if (instance == null)
             {
                 writer.Insert(0);
                 return;
@@ -780,7 +780,7 @@ namespace MNet
     {
         public NetworkSerializationGenericResolver()
         {
-            
+
         }
 
         static NetworkSerializationGenericResolver()
