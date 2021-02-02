@@ -23,7 +23,7 @@ namespace MNet.Example
     {
         protected override void RegisterCallback() => Component.onValueChanged.AddListener(ChangeCallback);
 
-        protected override void ApplyData(int data) => Component.value = data;
+        protected override void Apply(int data) => Component.value = data;
 
         protected override int Load() => PlayerPrefs.GetInt(ID, Default);
 

@@ -500,7 +500,7 @@ namespace MNet
 
         void SelectAppID()
         {
-            var platform = NetworkAPI.CheckPlatform();
+            var platform = MUtility.CheckPlatform();
 
             AppID = appID.Retrieve(platform);
         }

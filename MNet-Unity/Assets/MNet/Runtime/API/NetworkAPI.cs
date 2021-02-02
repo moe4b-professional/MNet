@@ -63,26 +63,15 @@ namespace MNet
 
         static void RegisterUpdateMethods()
         {
-            if (Application.isEditor || Config.UpdateMethod.Early) RegisterPlayerLoop<EarlyUpdate>(EarlyUpdate);
-            if (Application.isEditor || Config.UpdateMethod.Normal) RegisterPlayerLoop<Update>(Update);
-            if (Application.isEditor || Config.UpdateMethod.Fixed) RegisterPlayerLoop<FixedUpdate>(FixedUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Early) MUtility.RegisterPlayerLoop<EarlyUpdate>(EarlyUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Normal) MUtility.RegisterPlayerLoop<Update>(Update);
+            if (Application.isEditor || Config.UpdateMethod.Fixed) MUtility.RegisterPlayerLoop<FixedUpdate>(FixedUpdate);
 
-            if (Application.isEditor || Config.UpdateMethod.Late.Pre) RegisterPlayerLoop<PreLateUpdate>(PreLateUpdate);
-            if (Application.isEditor || Config.UpdateMethod.Late.Post) RegisterPlayerLoop<PostLateUpdate>(PostLateUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Late.Pre) MUtility.RegisterPlayerLoop<PreLateUpdate>(PreLateUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Late.Post) MUtility.RegisterPlayerLoop<PostLateUpdate>(PostLateUpdate);
 
             if (Config.UpdateMethod.Any == false)
                 Debug.LogWarning("No Update Methods Selected in Network API Config, Network Message's Won't be Processed");
-        }
-
-        static void RegisterPlayerLoop<TType>(PlayerLoopSystem.UpdateFunction callback)
-        {
-            var loop = PlayerLoop.GetCurrentPlayerLoop();
-
-            for (int i = 0; i < loop.subSystemList.Length; ++i)
-                if (loop.subSystemList[i].type == typeof(TType))
-                    loop.subSystemList[i].updateDelegate += callback;
-
-            PlayerLoop.SetPlayerLoop(loop);
         }
 
         #region Updates
@@ -163,58 +152,6 @@ namespace MNet
                     Debug.Log(target);
                     break;
             }
-        }
-
-        public static RuntimePlatform CheckPlatform()
-        {
-#if UNITY_EDITOR
-            switch (EditorUserBuildSettings.activeBuildTarget)
-            {
-                case BuildTarget.StandaloneOSX:
-                    return RuntimePlatform.OSXPlayer;
-
-                case BuildTarget.StandaloneWindows:
-                    return RuntimePlatform.WindowsPlayer;
-
-                case BuildTarget.iOS:
-                    return RuntimePlatform.IPhonePlayer;
-
-                case BuildTarget.Android:
-                    return RuntimePlatform.Android;
-
-                case BuildTarget.StandaloneWindows64:
-                    return RuntimePlatform.WindowsPlayer;
-
-                case BuildTarget.WebGL:
-                    return RuntimePlatform.WebGLPlayer;
-
-                case BuildTarget.WSAPlayer:
-                    return RuntimePlatform.WSAPlayerX64;
-
-                case BuildTarget.StandaloneLinux64:
-                    return RuntimePlatform.LinuxPlayer;
-
-                case BuildTarget.PS4:
-                    return RuntimePlatform.PS4;
-
-                case BuildTarget.XboxOne:
-                    return RuntimePlatform.XboxOne;
-
-                case BuildTarget.tvOS:
-                    return RuntimePlatform.tvOS;
-
-                case BuildTarget.Switch:
-                    return RuntimePlatform.Switch;
-
-                case BuildTarget.Lumin:
-                    return RuntimePlatform.Lumin;
-
-                case BuildTarget.Stadia:
-                    return RuntimePlatform.Stadia;
-            }
-#endif
-
-            return Application.platform;
         }
 
         static void ApplicationQuitCallback()

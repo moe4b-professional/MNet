@@ -17,47 +17,58 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using UnityEngine.PlayerLoop;
+
 namespace MNet.Example
 {
-	public abstract class UIPreference<TComponent, TData> : MonoBehaviour
-        where TComponent : Component
-	{
+    public abstract class UIPreference : MonoBehaviour
+    {
         [SerializeField]
         protected string ID;
 
+        protected virtual void Reset()
+        {
+            ID = name;
+        }
+    }
+
+    public abstract class UIPreference<TComponent, TData> : UIPreference
+        where TComponent : Component
+    {
         [SerializeField]
         TData _default = default;
         public TData Default => _default;
 
-        public TData Data { get; protected set; }
-
         public TComponent Component { get; protected set; }
 
-        void Reset()
-        {
-            ID = name;
-        }
-
-        protected IEnumerator Start()
+        void Awake()
         {
             Component = GetComponent<TComponent>();
 
-            Data = Load();
+            MUtility.LateStart.Register(LateStart);
+        }
 
-            yield return new WaitForEndOfFrame();
+        void LateStart()
+        {
+            gameObject.SetActive(false); //Used to hide UI transitions
+
+            var data = Load();
+
+            Apply(data);
 
             RegisterCallback();
 
-            ApplyData(Data);
+            gameObject.SetActive(true);
         }
 
-        protected abstract void ApplyData(TData data);
+        protected abstract void Save(TData data);
+
+        protected abstract TData Load();
+
+        protected abstract void Apply(TData data);
 
         protected abstract void RegisterCallback();
 
         protected virtual void ChangeCallback(TData data) => Save(data);
-
-        protected abstract void Save(TData data);
-        protected abstract TData Load();
     }
 }

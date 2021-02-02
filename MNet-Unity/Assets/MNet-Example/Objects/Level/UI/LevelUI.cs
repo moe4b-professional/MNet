@@ -24,10 +24,5 @@ namespace MNet.Example
         [SerializeField]
         PauseMenu pause = default;
         public PauseMenu Pause => pause;
-
-        void Awake()
-        {
-			
-        }
 	}
 }

@@ -39,7 +39,12 @@ namespace MNet.Example
 
         public delegate bool QueryPredicate(GameServerInfo info);
 
-        public void AddQuery(QueryPredicate predicate) => queries.Add(predicate);
+        public void AddQuery(QueryPredicate predicate)
+        {
+            queries.Add(predicate);
+
+            UpdateQuery();
+        }
 
         public void UpdateQuery()
         {
@@ -56,7 +61,12 @@ namespace MNet.Example
             return true;
         }
 
-        public void RemoveQuery(QueryPredicate predicate) => queries.Remove(predicate);
+        public void RemoveQuery(QueryPredicate predicate)
+        {
+            queries.Remove(predicate);
+
+            UpdateQuery();
+        }
         #endregion
 
         Core Core => Core.Instance;

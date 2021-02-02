@@ -38,7 +38,7 @@ namespace MNet.Example
 		}
 
 		void Awake()
-        {
+		{
 			dropdown = GetComponent<Dropdown>();
 			dropdown.ClearOptions();
 
@@ -55,7 +55,7 @@ namespace MNet.Example
 		}
 
 		void Start()
-        {
+		{
 			browser.AddQuery(Predicate);
 		}
 
