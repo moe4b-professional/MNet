@@ -74,14 +74,21 @@ namespace MNet.Example
 
 		//Static Utility
 
-		public static NetworkEntity Spawn(GameObject prefab)
+		public static NetworkEntity Spawn(GameObject prefab, float range)
         {
-			var position = Vector3.zero;
-			var rotation = Quaternion.identity;
+			var position = new Vector3
+			{
+				x = Random.Range(-range, range),
+				y = 0f,
+				z = Random.Range(-range, range),
+			};
+
+			var rotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
+
 			var color = Random.ColorHSV();
 
 			return Spawn(prefab, position, rotation, color);
-		}
+        }
 		public static NetworkEntity Spawn(GameObject prefab, Vector3 position, Quaternion rotation, Color color)
 		{
 			var attributes = WriteAttributes(position, rotation);

@@ -249,6 +249,10 @@ namespace MNet
             {
                 result = bind.Invoke(arguments);
             }
+            catch (TargetInvocationException ex)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
                 var text = $"Error Trying to Invoke RPC {bind}', " +

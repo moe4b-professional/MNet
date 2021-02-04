@@ -28,15 +28,16 @@ namespace MNet.Example
 		public void Set(Player reference) => player = reference;
 
 		public Vector3 Velocity
-        {
+		{
 			get
-            {
+			{
 				if (Entity.IsMine)
 					return player.rigidbody.velocity;
 				else
-					return player.NetworkTransform.Velocity.Vector;
-            }
-        }
+					return player.NetworkTransform.Position.Velocity.Vector;
+
+			}
+		}
 
 		public float Speed => player.Movement.Speed;
 

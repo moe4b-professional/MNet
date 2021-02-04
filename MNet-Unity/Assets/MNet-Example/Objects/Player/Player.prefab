@@ -106,29 +106,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncInterval: 50
   position:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 1
       y: 1
       z: 1
-    epsilon: 0.01
-    speed: 10
+    velocity:
+      maxSamples: 10
   rotation:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 0
       y: 1
       z: 0
-    epsilon: 0.01
-    speed: 10
   scale:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 0
       y: 0
       z: 0
-    epsilon: 0.01
-    speed: 10
-  velocity:
-    maxSamples: 10
-  forceSync: 1
 --- !u!1 &573034544643323621
 GameObject:
   m_ObjectHideFlags: 0

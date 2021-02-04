@@ -29,166 +29,273 @@ namespace MNet
         public int SyncInterval => syncInterval;
 
         [SerializeField]
-        VectorCoordinateProperty position = new VectorCoordinateProperty(true);
-        public VectorCoordinateProperty Position => position;
-
-        [SerializeField]
-        QuaternionCoordinateProperty rotation = new QuaternionCoordinateProperty();
-        public QuaternionCoordinateProperty Rotation => rotation;
-
-        [SerializeField]
-        VectorCoordinateProperty scale = new VectorCoordinateProperty(false);
-        public VectorCoordinateProperty Scale => scale;
-
-        [SerializeField]
-        VelocityProperty velocity = default;
-        /// <summary>
-        /// Only valid for remote clients, if you are a local client then you should get your velocity from somehwere else anyway
-        /// </summary>
-        public VelocityProperty Velocity => velocity;
+        PositionProperty position = default;
+        public PositionProperty Position => position;
         [Serializable]
-        public class VelocityProperty
+        public class PositionProperty : Property<Vector3, VectorConstraint>
         {
-            Queue<Vector3> samples;
-
             [SerializeField]
-            int maxSamples = 5;
-
-            public Vector3 Vector { get; protected set; }
-
-            public float Magnitude => Vector.magnitude;
-
-            public void Add(Vector3 value)
+            VelocityProperty velocity = default;
+            /// <summary>
+            /// Only valid for remote clients, if you are a local client then you should get your velocity from somehwere else anyway
+            /// </summary>
+            public VelocityProperty Velocity => velocity;
+            [Serializable]
+            public class VelocityProperty
             {
-                samples.Enqueue(value);
+                Queue<Vector3> samples;
 
-                while (samples.Count > maxSamples) samples.Dequeue();
+                [SerializeField]
+                int maxSamples = 5;
 
-                Vector = Vector3.zero;
+                public Vector3 Vector { get; protected set; }
 
-                foreach (var sample in samples)
-                    Vector += sample;
+                public float Magnitude => Vector.magnitude;
 
-                Vector /= samples.Count;
+                internal void Add(Vector3 value)
+                {
+                    samples.Enqueue(value);
+
+                    while (samples.Count > maxSamples) samples.Dequeue();
+
+                    Vector = Vector3.zero;
+
+                    foreach (var sample in samples)
+                        Vector += sample;
+
+                    Vector /= samples.Count;
+                }
+
+                public VelocityProperty()
+                {
+                    samples = new Queue<Vector3>();
+                    Vector = Vector3.zero;
+                }
             }
 
-            public VelocityProperty()
+            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
+
+            protected override Vector3 ReadValue() => Transform.Component.localPosition;
+            public override void ApplyValue(Vector3 value) => Transform.Component.localPosition = value;
+
+            internal override void Translate()
             {
-                samples = new Queue<Vector3>();
-                Vector = Vector3.zero;
+                var sample = ReadValue();
+
+                base.Translate();
+
+                sample = (ReadValue() - sample) / Time.deltaTime;
+
+                velocity.Add(sample);
+            }
+
+            protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
+            {
+                return Vector3.Lerp(current, target, speed * Time.deltaTime);
+            }
+
+            protected override void WriteBinary(NetworkWriter writer, Vector3 value)
+            {
+                WriteBinary(writer, value, constraints);
+            }
+            protected override Vector3 ReadBinary(NetworkReader reader, Vector3 source)
+            {
+                return ReadBinary(reader, source, constraints);
+            }
+
+            public PositionProperty()
+            {
+                constraints = new VectorConstraint(true);
             }
         }
 
         [SerializeField]
-        bool forceSync = false;
-        public bool ForceSync => forceSync;
-
+        RotationProperty rotation = default;
+        public RotationProperty Rotation => rotation;
         [Serializable]
-        public class VectorCoordinateProperty : CoordinateProperty<Vector3>
+        public class RotationProperty : Property<Quaternion, VectorConstraint>
         {
-            public override float CalculateDistance(Vector3 target) => Vector3.Distance(value, target);
+            protected override float CalculateDelta(Quaternion a, Quaternion b) => Quaternion.Angle(a, b);
 
-            public override Vector3 Translate(Vector3 current)
+            protected override Quaternion ReadValue() => Transform.Component.localRotation;
+            public override void ApplyValue(Quaternion value) => Transform.Component.localRotation = value;
+
+            protected override Quaternion Translate(Quaternion current, Quaternion target, float speed)
             {
-                //TODO use a movement method more appropriate than lerp
-                return Vector3.Lerp(current, value, speed * Time.deltaTime);
+                return Quaternion.Lerp(current, target, speed * Time.deltaTime);
             }
 
-            public override void WriteBinary(NetworkWriter writer)
+            protected override void WriteBinary(NetworkWriter writer, Quaternion value)
             {
-                if (Target.X) writer.Write(value.x);
-                if (Target.Y) writer.Write(value.y);
-                if (Target.Z) writer.Write(value.z);
+                WriteBinary(writer, value, constraints);
             }
-            public override void ReadBinary(NetworkReader reader)
+            protected override Quaternion ReadBinary(NetworkReader reader, Quaternion source)
             {
-                if (Target.X) value.x = reader.Read<float>();
-                if (Target.Y) value.y = reader.Read<float>();
-                if (Target.Z) value.z = reader.Read<float>();
+                return ReadBinary(reader, source, constraints);
             }
 
-            public VectorCoordinateProperty(bool target)
+            public RotationProperty()
             {
-                this.target = new VectorTargetProperty(target);
+                constraints = new VectorConstraint(false, true, false);
+            }
+        }
+
+        [SerializeField]
+        ScaleProperty scale = default;
+        public ScaleProperty Scale => scale;
+        [Serializable]
+        public class ScaleProperty : Property<Vector3, VectorConstraint>
+        {
+            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
+
+            protected override Vector3 ReadValue() => Transform.Component.localScale;
+            public override void ApplyValue(Vector3 value) => Transform.Component.localScale = value;
+
+            protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
+            {
+                return Vector3.Lerp(current, target, speed * Time.deltaTime);
+            }
+
+            protected override void WriteBinary(NetworkWriter writer, Vector3 value)
+            {
+                WriteBinary(writer, value, constraints);
+            }
+            protected override Vector3 ReadBinary(NetworkReader reader, Vector3 source)
+            {
+                return ReadBinary(reader, source, constraints);
+            }
+
+            public ScaleProperty()
+            {
+                constraints = new VectorConstraint(false);
             }
         }
 
         [Serializable]
-        public class QuaternionCoordinateProperty : CoordinateProperty<Quaternion>
+        public abstract class Property
         {
-            public override float CalculateDistance(Quaternion target) => Quaternion.Angle(value, target);
-
-            public override Quaternion Translate(Quaternion current) => Quaternion.Lerp(current, value, speed * Time.deltaTime);
-
-            public override void WriteBinary(NetworkWriter writer)
+            public SimpleNetworkTransform Transform { get; protected set; }
+            internal virtual void Set(SimpleNetworkTransform reference)
             {
-                var vector = Value.eulerAngles;
-
-                if (Target.X) writer.Write(vector.x);
-                if (Target.Y) writer.Write(vector.y);
-                if (Target.Z) writer.Write(vector.z);
-            }
-            public override void ReadBinary(NetworkReader reader)
-            {
-                var vector = value.eulerAngles;
-
-                if (Target.X) vector.x = reader.Read<float>();
-                if (Target.Y) vector.y = reader.Read<float>();
-                if (Target.Z) vector.z = reader.Read<float>();
-
-                value = Quaternion.Euler(vector);
-            }
-
-            public QuaternionCoordinateProperty()
-            {
-                target = new VectorTargetProperty(false, true, false);
+                Transform = reference;
             }
         }
 
         [Serializable]
-        public abstract class CoordinateProperty<TValue>
+        public abstract class Property<TValue, TConstraint> : Property
         {
-            protected TValue value = default;
-            public TValue Value
-            {
-                get => value;
-                set => Set(value);
-            }
+            [SerializeField]
+            protected float minChange = 0.05f;
+            public float MinChange => minChange;
 
             [SerializeField]
-            protected VectorTargetProperty target;
-            public VectorTargetProperty Target => target;
-
-            [SerializeField]
-            protected float epsilon = 0.01f;
-            public float Epsilon => epsilon;
-
-            [SerializeField]
-            protected float speed = 10;
+            float speed = 10f;
             public float Speed => speed;
 
-            public void Set(TValue value) => this.value = value;
+            [SerializeField]
+            protected TConstraint constraints = default;
+            public TConstraint Constraints => constraints;
 
-            public abstract TValue Translate(TValue current);
+            public TValue Value { get; protected set; }
 
-            public abstract float CalculateDistance(TValue target);
+            public TValue Target { get; protected set; }
 
-            public bool Update(TValue current)
+            internal override void Set(SimpleNetworkTransform reference)
             {
-                if (target.Any == false) return false;
+                base.Set(reference);
 
-                if (CalculateDistance(current) < epsilon) return false;
+                Value = ReadValue();
+                Target = ReadValue();
+            }
 
-                Set(current);
+            #region Controls
+            internal virtual bool CheckChanges()
+            {
+                var previous = Value;
+                var current = ReadValue();
+
+                var delta = CalculateDelta(previous, current);
+
+                if (delta < minChange) return false;
+
                 return true;
             }
 
-            public abstract void WriteBinary(NetworkWriter writer);
-            public abstract void ReadBinary(NetworkReader reader);
+            internal virtual void Update(NetworkWriter writer)
+            {
+                Value = ReadValue();
+
+                WriteBinary(writer, Value);
+            }
+
+            internal virtual void Sync(NetworkReader reader)
+            {
+                Target = ReadBinary(reader, Value);
+            }
+
+            internal virtual void Translate()
+            {
+                Value = Translate(Value, Target, speed);
+
+                ApplyValue(Value);
+            }
+
+            internal virtual void Anchor()
+            {
+                Value = Target;
+
+                ApplyValue(Value);
+            }
+            #endregion
+
+            #region Abstractions
+            protected abstract TValue Translate(TValue current, TValue target, float speed);
+
+            protected abstract float CalculateDelta(TValue a, TValue b);
+
+            protected abstract TValue ReadValue();
+            public abstract void ApplyValue(TValue value);
+
+            protected abstract void WriteBinary(NetworkWriter writer, TValue value);
+            protected abstract TValue ReadBinary(NetworkReader reader, TValue source);
+            #endregion
+
+            //Static Utility
+            #region Write Binary
+            public static void WriteBinary(NetworkWriter writer, Vector3 value, VectorConstraint constraints)
+            {
+                if (constraints.X) writer.Write(value.x);
+                if (constraints.Y) writer.Write(value.y);
+                if (constraints.Z) writer.Write(value.z);
+            }
+
+            public static void WriteBinary(NetworkWriter writer, Quaternion value, VectorConstraint constraints)
+            {
+                WriteBinary(writer, value.eulerAngles, constraints);
+            }
+            #endregion
+
+            public static Vector3 ReadBinary(NetworkReader reader, Vector3 source, VectorConstraint constraints)
+            {
+                var value = source;
+
+                if (constraints.X) value.x = reader.Read<float>();
+                if (constraints.Y) value.y = reader.Read<float>();
+                if (constraints.Z) value.z = reader.Read<float>();
+
+                return value;
+            }
+
+            public static Quaternion ReadBinary(NetworkReader reader, Quaternion source, VectorConstraint constraints)
+            {
+                var vector = ReadBinary(reader, source.eulerAngles, constraints);
+
+                return Quaternion.Euler(vector);
+            }
         }
 
         [Serializable]
-        public class VectorTargetProperty
+        public class VectorConstraint
         {
             [SerializeField]
             bool x = false;
@@ -216,12 +323,12 @@ namespace MNet
                 }
             }
 
-            public int Size => Count * sizeof(float);
+            public int BinarySize => Count * sizeof(float);
 
             public bool Any => x | y | z;
 
-            public VectorTargetProperty(bool value) : this(value, value, value) { }
-            public VectorTargetProperty(bool x, bool y, bool z)
+            public VectorConstraint(bool value) : this(value, value, value) { }
+            public VectorConstraint(bool x, bool y, bool z)
             {
                 this.x = x;
                 this.y = y;
@@ -229,112 +336,92 @@ namespace MNet
             }
         }
 
+        public Transform Component => transform;
+
         NetworkWriter writer;
         NetworkReader reader;
 
         void Awake()
         {
-            writer = new NetworkWriter(position.Target.Size + rotation.Target.Size + scale.Target.Size);
+            writer = new NetworkWriter(position.Constraints.BinarySize + rotation.Constraints.BinarySize + scale.Constraints.BinarySize);
             reader = new NetworkReader();
+        }
 
-            SetAll(); //Set All at first to read defaults
+        protected override void OnSpawn()
+        {
+            base.OnSpawn();
+
+            position.Set(this);
+            rotation.Set(this);
+            scale.Set(this);
         }
 
         protected override void OnReady()
         {
             base.OnReady();
 
-            SetAll(); //Set All again to read any modifications that might've came from applying Entity attributes or the like
-
-            if (Entity.IsMine && forceSync) Debug.LogWarning($"Force Sync is Enabled for {this}, this is Useful for Stress Testing but Please Remember to Turn it Off!");
-
             coroutine = StartCoroutine(Procedure());
         }
 
-        void SetAll()
-        {
-            position.Set(transform.localPosition);
-            rotation.Set(transform.localRotation);
-            scale.Set(transform.localScale);
-        }
-
-        //Yes, I'm using coroutines for this, get off my back!
         Coroutine coroutine;
         IEnumerator Procedure()
         {
-            while (true)
+            while (Entity.IsConnected)
             {
-                if (Entity.IsMine)
-                    yield return LocalProcedure();
-                else
-                    yield return RemoteProcedure();
+                if (Entity.IsMine) //Local Procedure
+                {
+                    var changed = false;
+
+                    changed |= position.CheckChanges();
+                    changed |= rotation.CheckChanges();
+                    changed |= scale.CheckChanges();
+
+                    if(changed)
+                    {
+                        position.Update(writer);
+                        rotation.Update(writer);
+                        scale.Update(writer);
+
+                        var binary = writer.Flush();
+
+                        BroadcastRPC(Sync, binary, delivery: DeliveryMode.Unreliable, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
+                    }
+
+                    yield return new WaitForSecondsRealtime(syncInterval / 1000f);
+                }
+                else //Remote Procedure
+                {
+                    position.Translate();
+                    rotation.Translate();
+                    scale.Translate();
+
+                    yield return new WaitForEndOfFrame();
+                }
             }
         }
 
-        object LocalProcedure()
-        {
-            if (Entity.IsConnected)
-            {
-                bool updated = false;
-
-                updated |= position.Update(transform.localPosition);
-                updated |= rotation.Update(transform.localRotation);
-                updated |= scale.Update(transform.localScale);
-
-                if (updated || forceSync) Broadcast();
-            }
-
-            return new WaitForSecondsRealtime(syncInterval / 1000f);
-        }
-        void Broadcast()
-        {
-            position.WriteBinary(writer);
-            rotation.WriteBinary(writer);
-            scale.WriteBinary(writer);
-
-            var raw = writer.Flush();
-
-            BroadcastRPC(Sync, raw, buffer: RemoteBufferMode.Last, delivery: DeliveryMode.Unreliable, exception: Entity.Owner);
-        }
-
-        object RemoteProcedure()
-        {
-            var sample = transform.localPosition;
-
-            if (position.Target.Any) transform.localPosition = position.Translate(transform.localPosition);
-            if (rotation.Target.Any) transform.localRotation = rotation.Translate(transform.localRotation);
-            if (scale.Target.Any) transform.localScale = scale.Translate(transform.localScale);
-
-            sample = (transform.position - sample) / Time.deltaTime;
-
-            Velocity.Add(sample);
-
-            return new WaitForEndOfFrame();
-        }
-        void Anchor()
-        {
-            transform.localPosition = position.Value;
-            transform.localRotation = rotation.Value;
-            transform.localScale = scale.Value;
-        }
-
-        [NetworkRPC(Authority = RemoteAuthority.Owner | RemoteAuthority.Master)]
+        [NetworkRPC]
         void Sync(byte[] binary, RpcInfo info)
         {
             reader.Set(binary);
 
-            position.ReadBinary(reader);
-            rotation.ReadBinary(reader);
-            scale.ReadBinary(reader);
+            position.Sync(reader);
+            rotation.Sync(reader);
+            scale.Sync(reader);
 
-            if (info.IsBuffered) Anchor();
+            if (info.IsBuffered)
+            {
+                position.Anchor();
+                rotation.Anchor();
+                scale.Anchor();
+            }
         }
 
         protected override void OnDespawn()
         {
             base.OnDespawn();
 
-            if(coroutine != null)
+            if (coroutine != null)
             {
                 StopCoroutine(coroutine);
                 coroutine = null;

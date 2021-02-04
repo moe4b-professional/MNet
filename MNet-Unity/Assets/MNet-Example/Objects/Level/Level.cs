@@ -60,7 +60,7 @@ namespace MNet.Example
 		{
 			base.OnSpawn();
 
-			Player.Spawn(player);
+			Player.Spawn(player, 4f);
 		}
 
 		public async UniTask Quit()
