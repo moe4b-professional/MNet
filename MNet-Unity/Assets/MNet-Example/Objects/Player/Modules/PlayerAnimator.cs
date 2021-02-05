@@ -21,29 +21,19 @@ namespace MNet.Example
 {
 	public class PlayerAnimator : NetworkBehaviour
 	{
-		[SerializeField]
-		Animator animator = default;
-
 		Player player;
 		public void Set(Player reference) => player = reference;
 
-		public Vector3 Velocity
-		{
-			get
-			{
-				if (Entity.IsMine)
-					return player.rigidbody.velocity;
-				else
-					return player.NetworkTransform.Position.Velocity.Vector;
-
-			}
-		}
-
 		public float Speed => player.Movement.Speed;
+
+		public SimpleNetworkAnimator NetworkAnimator => player.NetworkAnimator;
 
 		void Update()
 		{
-			animator.SetFloat("Move", Velocity.magnitude / Speed * 2);
+			if (Entity.IsMine == false) return;
+
+			var velocity = Vector3.Scale(player.rigidbody.velocity, Vector3.forward + Vector3.right);
+			NetworkAnimator.SetFloat("Move", velocity.magnitude / Speed * 2);
 		}
 	}
 }

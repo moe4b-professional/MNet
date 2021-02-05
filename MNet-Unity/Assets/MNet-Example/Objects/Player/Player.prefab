@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 573034543577270252}
   - component: {fileID: 573034543577270254}
+  - component: {fileID: 4651560066144241891}
   - component: {fileID: 573034543577270225}
   - component: {fileID: 573034543577270224}
   - component: {fileID: 573034543577270255}
@@ -50,6 +51,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1889af4b8cc73dd44bf202677196f59a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &4651560066144241891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573034543577270253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80aef3570b5d7be47bf5e216cb07c843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interval: 50
 --- !u!54 &573034543577270225
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -104,7 +118,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f0a89c1699a28f44aa3f02d135035a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncInterval: 50
+  syncTimer: {fileID: 4651560066144241891}
+  forceSync: 1
   position:
     minChange: 0.05
     speed: 10
@@ -173,6 +188,36 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   acceleration: 20
+--- !u!114 &5611628225437611180
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1656137401576317137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa27df8adf1e3a640b3e4240c4789d31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncTimer: {fileID: 4651560066144241891}
+  parameters:
+    triggers: []
+    bools: []
+    integers: []
+    floats:
+    - name: Move
+      value: 0
+      useHalf: 1
+      smooth: 1
+      speed: 10
+  layers:
+    list:
+    - name: Base Layer
+      value: 0
+      useHalf: 1
+      smooth: 1
+      speed: 10
 --- !u!1 &3324319883851870435
 GameObject:
   m_ObjectHideFlags: 0
@@ -393,7 +438,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17f0f131f939b5a4fae84467e9eead40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animator: {fileID: 5426895039923773457}
 --- !u!1001 &1890000980640849280
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -473,15 +517,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5388d09ffee4f004786e0428f79fcf44, type: 3}
---- !u!4 &2139236888450546283 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5388d09ffee4f004786e0428f79fcf44,
+--- !u!1 &1656137401576317137 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5388d09ffee4f004786e0428f79fcf44,
     type: 3}
   m_PrefabInstance: {fileID: 1890000980640849280}
   m_PrefabAsset: {fileID: 0}
---- !u!95 &5426895039923773457 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 5388d09ffee4f004786e0428f79fcf44,
+--- !u!4 &2139236888450546283 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5388d09ffee4f004786e0428f79fcf44,
     type: 3}
   m_PrefabInstance: {fileID: 1890000980640849280}
   m_PrefabAsset: {fileID: 0}

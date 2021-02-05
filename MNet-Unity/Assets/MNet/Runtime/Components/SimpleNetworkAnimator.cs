@@ -23,33 +23,31 @@ namespace MNet
 	public class SimpleNetworkAnimator : NetworkBehaviour
 	{
 		[SerializeField]
-		[SyncInterval(0, 200)]
-		[Tooltip("Sync Interval in ms, 1s = 1000ms")]
-		int syncInterval = 100;
-		public int SyncInterval => syncInterval;
+        NetworkEntitySyncTimer syncTimer = default;
+        public NetworkEntitySyncTimer SyncTimer => syncTimer;
 
-		[SerializeField]
-        ParametersProperty parameters;
-        public ParametersProperty Parameters => parameters;
-        [Serializable]
+        [SerializeField]
+		ParametersProperty parameters;
+		public ParametersProperty Parameters => parameters;
+		[Serializable]
 		public class ParametersProperty
-        {
+		{
 			[SerializeField]
-            List<TriggerProperty> triggers;
-            public List<TriggerProperty> Triggers => triggers;
+			List<TriggerProperty> triggers;
+			public List<TriggerProperty> Triggers => triggers;
 			[Serializable]
 			public class TriggerProperty : Property<bool>
-            {
+			{
 				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Trigger;
 
-                public override void ClearDirty()
-                {
-                    base.ClearDirty();
+				public override void ClearDirty()
+				{
+					base.ClearDirty();
 
 					value = false;
-                }
+				}
 
-                public override void Read(Animator animator)
+				public override void Read(Animator animator)
 				{
 					base.Read(animator);
 
@@ -63,8 +61,8 @@ namespace MNet
 			}
 
 			[SerializeField]
-            List<BoolProperty> bools;
-            public List<BoolProperty> Bools => bools;
+			List<BoolProperty> bools;
+			public List<BoolProperty> Bools => bools;
 			[Serializable]
 			public class BoolProperty : Property<bool>
 			{
@@ -84,11 +82,16 @@ namespace MNet
 			}
 
 			[SerializeField]
-            List<IntegerProperty> integers;
-            public List<IntegerProperty> Integers => integers;
+			List<IntegerProperty> integers;
+			public List<IntegerProperty> Integers => integers;
 			[Serializable]
 			public class IntegerProperty : Property<int>
-            {
+			{
+				[SerializeField]
+				[Tooltip("Serializes the parameter as a Short that uses 2 bytes instead of 4")]
+				bool useShort = true;
+				public bool UseShort => useShort;
+
 				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Int;
 
 				public override void Read(Animator animator)
@@ -105,19 +108,24 @@ namespace MNet
 			}
 
 			[SerializeField]
-            List<FloatProperty> floats;
-            public List<FloatProperty> Floats => floats;
+			List<FloatProperty> floats;
+			public List<FloatProperty> Floats => floats;
 			[Serializable]
-            public class FloatProperty : Property<float>
-            {
+			public class FloatProperty : Property<float>
+			{
+				[SerializeField]
+				[Tooltip("Serializes the parameter as a Half that uses 2 bytes instead of 4")]
+				bool useHalf = true;
+				public bool UseHalf => useHalf;
+
 				[Header("Translation")]
 				[SerializeField]
-                bool smooth = true;
-                public bool Smooth => smooth;
+				bool smooth = true;
+				public bool Smooth => smooth;
 
-                [SerializeField]
-                float speed = 10;
-                public float Speed => speed;
+				[SerializeField]
+				float speed = 10;
+				public float Speed => speed;
 
 				public float Target { get; protected set; }
 				internal void SetTarget(float value) => Target = value;
@@ -147,7 +155,7 @@ namespace MNet
 				{
 
 				}
-            }
+			}
 
 			[Serializable]
 			public abstract class Property
@@ -236,11 +244,11 @@ namespace MNet
 			public bool TryGet<TProperty>(string name, out TProperty property)
 				where TProperty : Property
 			{
-				if(TryGet(name, out var target) == false)
-                {
+				if (TryGet(name, out var target) == false)
+				{
 					property = default;
 					return false;
-                }
+				}
 
 				property = target as TProperty;
 
@@ -285,7 +293,7 @@ namespace MNet
 			}
 
 			public void ForAll(Action<Property> action)
-            {
+			{
 				for (int i = 0; i < triggers.Count; i++) action(triggers[i]);
 				for (int i = 0; i < bools.Count; i++) action(bools[i]);
 				for (int i = 0; i < integers.Count; i++) action(integers[i]);
@@ -331,10 +339,10 @@ namespace MNet
 			}
 
 			internal void Refresh<T>(ref List<T> list, IList<AnimatorControllerParameter> parameters)
-				where T: Property
+				where T : Property
 			{
-                for (int i = 0; i < parameters.Count; i++)
-                {
+				for (int i = 0; i < parameters.Count; i++)
+				{
 					if (TryGetFrom(parameters[i].name, list, out var existing))
 					{
 						existing.Parse(parameters[i]);
@@ -352,8 +360,8 @@ namespace MNet
 			}
 #endif
 
-            public ParametersProperty()
-            {
+			public ParametersProperty()
+			{
 				triggers = new List<TriggerProperty>();
 				bools = new List<BoolProperty>();
 				integers = new List<IntegerProperty>();
@@ -382,11 +390,11 @@ namespace MNet
 		}
 
 		[SerializeField]
-        LayersProperty layers;
-        public LayersProperty Layers => layers;
-        [Serializable]
+		LayersProperty layers;
+		public LayersProperty Layers => layers;
+		[Serializable]
 		public class LayersProperty
-        {
+		{
 			[SerializeField]
 			List<Property> list;
 			public List<Property> List => list;
@@ -401,6 +409,11 @@ namespace MNet
 				[SerializeField]
 				float value;
 				public float Value => value;
+
+				[SerializeField]
+				[Tooltip("Serializes the parameter as a Half that uses 2 bytes instead of 4")]
+				bool useHalf = true;
+				public bool UseHalf => useHalf;
 
 				[Header("Translation")]
 				[SerializeField]
@@ -452,7 +465,7 @@ namespace MNet
 				{
 					this.name = name;
 				}
-            }
+			}
 
 			public DualDictionary<string, byte, Property> Dictionary { get; protected set; }
 
@@ -494,8 +507,8 @@ namespace MNet
 
 				var layers = controller.layers;
 
-                for (int i = 0; i < layers.Length; i++)
-                {
+				for (int i = 0; i < layers.Length; i++)
+				{
 					if (TryGetFrom(layers[i].name, list, out var property))
 					{
 						continue;
@@ -540,12 +553,26 @@ namespace MNet
 
 		public Animator Component { get; protected set; }
 
-		void Awake()
+        protected override void Reset()
+        {
+            base.Reset();
+
+#if UNITY_EDITOR
+			syncTimer = NetworkEntitySyncTimer.Resolve(Entity);
+#endif
+		}
+
+        void Awake()
 		{
 			Component = GetComponent<Animator>();
 
 			parameters.Configure(this);
 			layers.Configure(this);
+		}
+
+		void Start()
+		{
+			syncTimer.OnInvoke += Sync;
 		}
 
 		#region Trigger Parameter
@@ -563,7 +590,7 @@ namespace MNet
 		}
 
 		void SyncParameter(ParametersProperty.TriggerProperty parameter)
-        {
+		{
 			BroadcastRPC(TriggerRPC, parameter.ID, exception: NetworkAPI.Client.Self);
 			parameter.ClearDirty();
 		}
@@ -598,7 +625,7 @@ namespace MNet
 		}
 
 		void SyncParameter(ParametersProperty.BoolProperty parameter)
-        {
+		{
 			BroadcastRPC(BoolRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
 			parameter.ClearDirty();
 		}
@@ -634,7 +661,11 @@ namespace MNet
 
 		void SyncParameter(ParametersProperty.IntegerProperty parameter)
 		{
-			BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+			if (parameter.UseShort)
+				BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value, exception: NetworkAPI.Client.Self);
+			else
+				BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+
 			parameter.ClearDirty();
 		}
 
@@ -649,6 +680,9 @@ namespace MNet
 
 			Component.SetInteger(parameter.Hash, value);
 		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void ShortRPC(byte id, short value, RpcInfo info) => IntergerRPC(id, value, info);
 		#endregion
 
 		#region Float Parameter
@@ -669,7 +703,11 @@ namespace MNet
 
 		void SyncParameter(ParametersProperty.FloatProperty parameter)
 		{
-			BroadcastRPC(FloatRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+			if (parameter.UseHalf)
+				BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value, exception: NetworkAPI.Client.Self);
+			else
+				BroadcastRPC(FloatRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+
 			parameter.ClearDirty();
 		}
 
@@ -687,11 +725,14 @@ namespace MNet
 			else
 				Component.SetFloat(parameter.Hash, value);
 		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void HalfRPC(byte id, Half value, RpcInfo info) => FloatRPC(id, value, info);
 		#endregion
 
-        #region Layer Weight
+		#region Layer Weight
 		public void SetLayerWeight(string name, float value, bool instant = false)
-        {
+		{
 			if (layers.TryGet(name, out var layer) == false)
 			{
 				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
@@ -706,13 +747,17 @@ namespace MNet
 		}
 
 		void SyncLayerWeight(LayersProperty.Property layer)
-        {
-			BroadcastRPC(LayerWeightRPC, layer.ID, layer.Value, exception: NetworkAPI.Client.Self);
+		{
+			if (layer.UseHalf)
+				BroadcastRPC(LayerWeightHalfRPC, layer.ID, (Half)layer.Value, exception: NetworkAPI.Client.Self);
+			else
+				BroadcastRPC(LayerWeightFloatRPC, layer.ID, layer.Value, exception: NetworkAPI.Client.Self);
+
 			layer.ClearDirty();
 		}
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void LayerWeightRPC(byte id, float value, RpcInfo info)
+		void LayerWeightFloatRPC(byte id, float value, RpcInfo info)
 		{
 			if (layers.TryGet(id, out var layer) == false)
 			{
@@ -725,29 +770,13 @@ namespace MNet
 			else
 				Component.SetLayerWeight(layer.Index, value);
 		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void LayerWeightHalfRPC(byte id, Half value, RpcInfo info) => LayerWeightFloatRPC(id, value, info);
 		#endregion
 
-		protected override void OnSpawn()
+		void Sync()
 		{
-			base.OnSpawn();
-
-			coroutine = StartCoroutine(Procedure());
-		}
-
-		Coroutine coroutine;
-        IEnumerator Procedure()
-		{
-			while(Entity.IsConnected)
-            {
-				if (Entity.IsMine)
-					yield return LocalProcedure();
-				else
-					yield return RemoteProcedure();
-			}
-		}
-
-		object LocalProcedure()
-        {
 			foreach (var parameter in parameters.Triggers)
 			{
 				if (parameter.IsDirty == false) continue;
@@ -776,18 +805,16 @@ namespace MNet
 				SyncParameter(parameter);
 			}
 
-            foreach (var layer in layers.List)
-            {
+			foreach (var layer in layers.List)
+			{
 				if (layer.IsDirty == false) continue;
 
 				SyncLayerWeight(layer);
-            }
-
-			return new WaitForSecondsRealtime(syncInterval / 1000f);
+			}
 		}
 
-		object RemoteProcedure()
-        {
+		void Update()
+		{
 			foreach (var parameter in parameters.Floats)
 			{
 				if (parameter.Smooth == false) continue;
@@ -805,20 +832,7 @@ namespace MNet
 
 				Component.SetLayerWeight(layer.Index, layer.Value);
 			}
-
-			return new WaitForEndOfFrame();
-        }
-
-        protected override void OnDespawn()
-        {
-            base.OnDespawn();
-
-			if (coroutine != null)
-            {
-				StopCoroutine(coroutine);
-				coroutine = null;
-			}
-        }
+		}
 
 		public SimpleNetworkAnimator()
 		{
@@ -833,7 +847,7 @@ namespace MNet
 
 			if (Component.runtimeAnimatorController == null)
 			{
-				Debug.LogWarning($"No Animator Controller Located on {Component}");
+				Debug.LogWarning($"No Animator Controller Located on {this}");
 				return;
 			}
 

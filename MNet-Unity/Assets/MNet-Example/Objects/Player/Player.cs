@@ -36,12 +36,14 @@ namespace MNet.Example
 		}
 
 		public SimpleNetworkTransform NetworkTransform { get; protected set; }
+		public SimpleNetworkAnimator NetworkAnimator { get; protected set; }
 
 		void Awake()
 		{
 			rigidbody = GetComponent<Rigidbody>();
 
 			NetworkTransform = GetComponent<SimpleNetworkTransform>();
+			NetworkAnimator = GetComponentInChildren<SimpleNetworkAnimator>();
 
 			Movement = GetComponentInChildren<PlayerMovement>();
 			Movement.Set(this);

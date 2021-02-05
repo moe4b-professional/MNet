@@ -158,10 +158,13 @@ namespace MNet
 
         protected virtual void Awake()
         {
-            if (Application.isPlaying == false)
+            if (Application.isPlaying)
+            {
+
+            }
+            else
             {
                 NetworkScene.Register(this);
-                return;
             }
         }
 
@@ -297,5 +300,20 @@ namespace MNet
         }
 
         public static bool CheckIfMasterObject(EntityType type) => type == EntityType.SceneObject || type == EntityType.Orphan;
+
+#if UNITY_EDITOR
+        public static NetworkEntity ResolveComponent(GameObject gameObject)
+        {
+            var component = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
+
+            if (component == null)
+            {
+                component = gameObject.AddComponent<NetworkEntity>();
+                ComponentUtility.MoveComponentUp(component);
+            }
+
+            return component;
+        }
+#endif
     }
 }

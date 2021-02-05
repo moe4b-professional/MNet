@@ -23,10 +23,12 @@ namespace MNet
     public class SimpleNetworkTransform : NetworkBehaviour
     {
         [SerializeField]
-        [SyncInterval(0, 200)]
-        [Tooltip("Sync Interval in ms, 1s = 1000ms")]
-        int syncInterval = 100;
-        public int SyncInterval => syncInterval;
+        NetworkEntitySyncTimer syncTimer = default;
+        public NetworkEntitySyncTimer SyncTimer => syncTimer;
+
+        [SerializeField]
+        bool forceSync = false;
+        public bool ForceSync => forceSync;
 
         [SerializeField]
         PositionProperty position = default;
@@ -73,18 +75,21 @@ namespace MNet
                 }
             }
 
-            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
+            public override Vector3 Value
+            {
+                get => Transform.Component.localPosition;
+                protected set => Transform.Component.localPosition = value;
+            }
 
-            protected override Vector3 ReadValue() => Transform.Component.localPosition;
-            public override void ApplyValue(Vector3 value) => Transform.Component.localPosition = value;
+            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
 
             internal override void Translate()
             {
-                var sample = ReadValue();
+                var sample = Value;
 
                 base.Translate();
 
-                sample = (ReadValue() - sample) / Time.deltaTime;
+                sample = (Value - sample) / Time.deltaTime;
 
                 velocity.Add(sample);
             }
@@ -115,10 +120,13 @@ namespace MNet
         [Serializable]
         public class RotationProperty : Property<Quaternion, VectorConstraint>
         {
-            protected override float CalculateDelta(Quaternion a, Quaternion b) => Quaternion.Angle(a, b);
+            public override Quaternion Value
+            {
+                get => Transform.Component.localRotation;
+                protected set => Transform.Component.localRotation = value;
+            }
 
-            protected override Quaternion ReadValue() => Transform.Component.localRotation;
-            public override void ApplyValue(Quaternion value) => Transform.Component.localRotation = value;
+            protected override float CalculateDelta(Quaternion a, Quaternion b) => Quaternion.Angle(a, b);
 
             protected override Quaternion Translate(Quaternion current, Quaternion target, float speed)
             {
@@ -146,10 +154,13 @@ namespace MNet
         [Serializable]
         public class ScaleProperty : Property<Vector3, VectorConstraint>
         {
-            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
+            public override Vector3 Value
+            {
+                get => Transform.Component.localScale;
+                protected set => Transform.Component.localScale = value;
+            }
 
-            protected override Vector3 ReadValue() => Transform.Component.localScale;
-            public override void ApplyValue(Vector3 value) => Transform.Component.localScale = value;
+            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
 
             protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
             {
@@ -171,6 +182,7 @@ namespace MNet
             }
         }
 
+        #region Properties
         [Serializable]
         public abstract class Property
         {
@@ -179,7 +191,21 @@ namespace MNet
             {
                 Transform = reference;
             }
+
+            #region Controls
+            internal abstract bool CheckChanges();
+
+            internal abstract void Update(NetworkWriter writer);
+
+            internal abstract void Sync(NetworkReader reader);
+
+            internal abstract void Translate();
+
+            internal abstract void Anchor();
+            #endregion
         }
+
+        public List<Property> Properties { get; protected set; }
 
         [Serializable]
         public abstract class Property<TValue, TConstraint> : Property
@@ -196,23 +222,20 @@ namespace MNet
             protected TConstraint constraints = default;
             public TConstraint Constraints => constraints;
 
-            public TValue Value { get; protected set; }
-
             public TValue Target { get; protected set; }
 
             internal override void Set(SimpleNetworkTransform reference)
             {
                 base.Set(reference);
 
-                Value = ReadValue();
-                Target = ReadValue();
+                Target = Value;
             }
 
             #region Controls
-            internal virtual bool CheckChanges()
+            internal override bool CheckChanges()
             {
-                var previous = Value;
-                var current = ReadValue();
+                var previous = Target;
+                var current = Value;
 
                 var delta = CalculateDelta(previous, current);
 
@@ -221,40 +244,35 @@ namespace MNet
                 return true;
             }
 
-            internal virtual void Update(NetworkWriter writer)
+            internal override void Update(NetworkWriter writer)
             {
-                Value = ReadValue();
+                Target = Value;
 
-                WriteBinary(writer, Value);
+                WriteBinary(writer, Target);
             }
 
-            internal virtual void Sync(NetworkReader reader)
+            internal override void Sync(NetworkReader reader)
             {
                 Target = ReadBinary(reader, Value);
             }
 
-            internal virtual void Translate()
+            internal override void Translate()
             {
                 Value = Translate(Value, Target, speed);
-
-                ApplyValue(Value);
             }
 
-            internal virtual void Anchor()
+            internal override void Anchor()
             {
                 Value = Target;
-
-                ApplyValue(Value);
             }
             #endregion
 
             #region Abstractions
+            public abstract TValue Value { get; protected set; }
+
             protected abstract TValue Translate(TValue current, TValue target, float speed);
 
             protected abstract float CalculateDelta(TValue a, TValue b);
-
-            protected abstract TValue ReadValue();
-            public abstract void ApplyValue(TValue value);
 
             protected abstract void WriteBinary(NetworkWriter writer, TValue value);
             protected abstract TValue ReadBinary(NetworkReader reader, TValue source);
@@ -275,6 +293,7 @@ namespace MNet
             }
             #endregion
 
+            #region Read Binary
             public static Vector3 ReadBinary(NetworkReader reader, Vector3 source, VectorConstraint constraints)
             {
                 var value = source;
@@ -292,7 +311,9 @@ namespace MNet
 
                 return Quaternion.Euler(vector);
             }
+            #endregion
         }
+        #endregion
 
         [Serializable]
         public class VectorConstraint
@@ -341,62 +362,63 @@ namespace MNet
         NetworkWriter writer;
         NetworkReader reader;
 
+        protected override void Reset()
+        {
+            base.Reset();
+
+#if UNITY_EDITOR
+            syncTimer = NetworkEntitySyncTimer.Resolve(Entity);
+#endif
+        }
+
         void Awake()
         {
             writer = new NetworkWriter(position.Constraints.BinarySize + rotation.Constraints.BinarySize + scale.Constraints.BinarySize);
             reader = new NetworkReader();
+
+            Properties = new List<Property>() { position, rotation, scale };
+        }
+
+        void Start()
+        {
+            syncTimer.OnInvoke += Sync;
         }
 
         protected override void OnSpawn()
         {
             base.OnSpawn();
 
-            position.Set(this);
-            rotation.Set(this);
-            scale.Set(this);
+            if (Entity.IsMine && forceSync)
+                Debug.LogWarning($"Force Sync is Enabled for {this}, This is Useful for Stress Testing but don't forget to turn it off");
+
+            for (int i = 0; i < Properties.Count; i++)
+                Properties[i].Set(this);
         }
 
-        protected override void OnReady()
+        void Sync()
         {
-            base.OnReady();
+            var changed = false;
 
-            coroutine = StartCoroutine(Procedure());
-        }
+            for (int i = 0; i < Properties.Count; i++)
+                changed |= Properties[i].CheckChanges();
 
-        Coroutine coroutine;
-        IEnumerator Procedure()
-        {
-            while (Entity.IsConnected)
+            if (changed || forceSync)
             {
-                if (Entity.IsMine) //Local Procedure
-                {
-                    var changed = false;
+                for (int i = 0; i < Properties.Count; i++)
+                    Properties[i].Update(writer);
 
-                    changed |= position.CheckChanges();
-                    changed |= rotation.CheckChanges();
-                    changed |= scale.CheckChanges();
+                var binary = writer.Flush();
 
-                    if(changed)
-                    {
-                        position.Update(writer);
-                        rotation.Update(writer);
-                        scale.Update(writer);
+                BroadcastRPC(Sync, binary, delivery: DeliveryMode.Unreliable, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
+            }
+        }
 
-                        var binary = writer.Flush();
-
-                        BroadcastRPC(Sync, binary, delivery: DeliveryMode.Unreliable, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
-                    }
-
-                    yield return new WaitForSecondsRealtime(syncInterval / 1000f);
-                }
-                else //Remote Procedure
-                {
-                    position.Translate();
-                    rotation.Translate();
-                    scale.Translate();
-
-                    yield return new WaitForEndOfFrame();
-                }
+        void Update()
+        {
+            if (Entity.IsMine == false)
+            {
+                for (int i = 0; i < Properties.Count; i++)
+                    Properties[i].Translate();
             }
         }
 
@@ -405,26 +427,13 @@ namespace MNet
         {
             reader.Set(binary);
 
-            position.Sync(reader);
-            rotation.Sync(reader);
-            scale.Sync(reader);
+            for (int i = 0; i < Properties.Count; i++)
+                Properties[i].Sync(reader);
 
             if (info.IsBuffered)
             {
-                position.Anchor();
-                rotation.Anchor();
-                scale.Anchor();
-            }
-        }
-
-        protected override void OnDespawn()
-        {
-            base.OnDespawn();
-
-            if (coroutine != null)
-            {
-                StopCoroutine(coroutine);
-                coroutine = null;
+                for (int i = 0; i < Properties.Count; i++)
+                    Properties[i].Anchor();
             }
         }
     }

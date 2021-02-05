@@ -39,7 +39,7 @@ namespace MNet
         protected virtual void Reset()
         {
 #if UNITY_EDITOR
-            ResolveEntity();
+            Entity = NetworkEntity.ResolveComponent(gameObject);
 #endif
         }
 
@@ -494,21 +494,6 @@ namespace MNet
         /// Invoked when the entity is despawned from the network
         /// </summary>
         protected virtual void OnDespawn() { }
-        #endregion
-
-        #region Editor
-#if UNITY_EDITOR
-        void ResolveEntity()
-        {
-            var entity = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
-
-            if (entity == null)
-            {
-                entity = gameObject.AddComponent<NetworkEntity>();
-                ComponentUtility.MoveComponentUp(entity);
-            }
-        }
-#endif
         #endregion
 
         public NetworkBehaviour()
