@@ -542,6 +542,7 @@ GameObject:
   - component: {fileID: 1784063831}
   - component: {fileID: 1784063830}
   - component: {fileID: 1784063829}
+  - component: {fileID: 1784063835}
   - component: {fileID: 1784063828}
   m_Layer: 0
   m_Name: Cube 2
@@ -562,29 +563,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f0a89c1699a28f44aa3f02d135035a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncInverval: 50
+  syncTimer: {fileID: 1784063835}
+  forceSync: 0
   position:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 1
       y: 1
       z: 1
-    epsilon: 0.01
-    speed: 10
+    velocity:
+      maxSamples: 5
   rotation:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 1
       y: 1
       z: 1
-    epsilon: 0.01
-    speed: 10
   scale:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 0
       y: 0
       z: 0
-    epsilon: 0.01
-    speed: 10
-  forceSync: 0
 --- !u!114 &1784063829
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -687,6 +690,19 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1784063835
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784063827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80aef3570b5d7be47bf5e216cb07c843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interval: 100
 --- !u!1 &2059382952
 GameObject:
   m_ObjectHideFlags: 0
@@ -701,6 +717,7 @@ GameObject:
   - component: {fileID: 2059382956}
   - component: {fileID: 2059382955}
   - component: {fileID: 2059382953}
+  - component: {fileID: 2059382960}
   - component: {fileID: 2059382954}
   m_Layer: 0
   m_Name: Cube 1
@@ -733,29 +750,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f0a89c1699a28f44aa3f02d135035a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncInverval: 50
+  syncTimer: {fileID: 2059382960}
+  forceSync: 0
   position:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 1
       y: 1
       z: 1
-    epsilon: 0.01
-    speed: 10
+    velocity:
+      maxSamples: 5
   rotation:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 1
       y: 1
       z: 1
-    epsilon: 0.01
-    speed: 10
   scale:
-    target:
+    minChange: 0.05
+    speed: 10
+    constraints:
       x: 0
       y: 0
       z: 0
-    epsilon: 0.01
-    speed: 10
-  forceSync: 0
 --- !u!54 &2059382955
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -846,3 +865,16 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2059382960
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2059382952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80aef3570b5d7be47bf5e216cb07c843, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interval: 100

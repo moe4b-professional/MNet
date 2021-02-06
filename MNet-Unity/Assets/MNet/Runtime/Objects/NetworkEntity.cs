@@ -158,22 +158,11 @@ namespace MNet
 
         protected virtual void Awake()
         {
-            if (Application.isPlaying)
-            {
-
-            }
-            else
+            if (Application.isPlaying == false)
             {
                 NetworkScene.Register(this);
+                return;
             }
-        }
-
-        internal void Setup(NetworkClient owner, EntityType type, PersistanceFlags persistance, AttributesCollection attributes)
-        {
-            this.Type = type;
-            this.Persistance = persistance;
-            this.Attributes = attributes;
-            this.Owner = owner;
 
             Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
 
@@ -188,8 +177,19 @@ namespace MNet
 
                 Behaviours[id] = targets[i];
 
-                targets[i].Setup(this, id);
+                targets[i].Set(this, id);
             }
+        }
+
+        internal void Setup(NetworkClient owner, EntityType type, PersistanceFlags persistance, AttributesCollection attributes)
+        {
+            this.Type = type;
+            this.Persistance = persistance;
+            this.Attributes = attributes;
+            this.Owner = owner;
+
+            foreach (var behaviour in Behaviours.Values)
+                behaviour.Setup();
 
             SetOwner(owner);
         }
@@ -235,16 +235,15 @@ namespace MNet
         }
 
         #region Remote Sync
-        public void InvokeRPC(RpcCommand command)
+        public bool InvokeRPC(IRpcCommand command)
         {
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
                 Debug.LogWarning($"No Behaviour with ID {command.Behaviour} found to Invoke RPC");
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                return;
+                return false;
             }
 
-            target.InvokeRPC(command);
+            return target.InvokeRPC(command);
         }
 
         public void InvokeSyncVar(SyncVarCommand command)

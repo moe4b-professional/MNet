@@ -188,8 +188,8 @@ namespace MNet
 
                 if (IsReady)
                 {
-                    SendRPC(DeliveryMethod.ReliableOrdered);
-                    SendRPC(DeliveryMethod.Unreliable);
+                    SendBroadcastRPC(DeliveryMethod.ReliableOrdered);
+                    SendBroadcastRPC(DeliveryMethod.Unreliable);
 
                     SendSyncVar(DeliveryMethod.ReliableOrdered);
                     SendSyncVar(DeliveryMethod.Unreliable);
@@ -199,9 +199,9 @@ namespace MNet
             }
         }
 
-        void SendRPC(DeliveryMethod delivery)
+        void SendBroadcastRPC(DeliveryMethod delivery)
         {
-            var request = RpcRequest.WriteBroadcast(EntityID, default, default, RemoteBufferMode.Last, default, null, Client.Payload);
+            var request = RpcBroadcastRequest.Write(EntityID, default, default, RemoteBufferMode.Last, default, null, Client.Payload);
 
             Send(ref request, delivery);
         }

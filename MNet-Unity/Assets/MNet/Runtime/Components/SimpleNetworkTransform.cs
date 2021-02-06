@@ -144,7 +144,7 @@ namespace MNet
 
             public RotationProperty()
             {
-                constraints = new VectorConstraint(false, true, false);
+                constraints = new VectorConstraint(true);
             }
         }
 
@@ -415,6 +415,8 @@ namespace MNet
 
         void Update()
         {
+            if (Entity.IsReady == false) return;
+
             if (Entity.IsMine == false)
             {
                 for (int i = 0; i < Properties.Count; i++)

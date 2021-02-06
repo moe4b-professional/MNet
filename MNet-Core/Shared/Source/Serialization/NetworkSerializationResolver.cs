@@ -758,14 +758,14 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, byte[] instance)
         {
-            writer.Write(instance.Length);
+            NetworkSerializationHelper.Length.Write(writer, instance.Length);
 
             writer.Insert(instance);
         }
 
         public override byte[] Deserialize(NetworkReader reader)
         {
-            reader.Read(out int length);
+            NetworkSerializationHelper.Length.Read(reader, out var length);
 
             var value = reader.BlockCopy(length);
 

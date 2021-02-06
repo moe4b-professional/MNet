@@ -43,8 +43,7 @@ namespace MNet
 #endif
         }
 
-        #region Setup
-        internal void Setup(NetworkEntity entity, NetworkBehaviourID id)
+        internal void Set(NetworkEntity entity, NetworkBehaviourID id)
         {
             this.ID = id;
             this.Entity = entity;
@@ -53,13 +52,17 @@ namespace MNet
 
             ParseRPCs();
             ParseSyncVars();
+        }
 
+        #region Setup
+        internal void Setup()
+        {
             OnSetup();
         }
 
         /// <summary>
         /// Stage 1 on entity startup procedure,
-        /// called when behaviour has its properties set (owner, type, persistance, attributes ... etc),
+        /// called when entity has its properties set (owner, type, persistance, attributes ... etc),
         /// entity still not ready to send and recieve messages and doesn't have a valid ID,
         /// useful for applying attributes and the like
         /// </summary>
@@ -102,6 +105,7 @@ namespace MNet
         }
 
         /// <summary>
+        /// Stage 3 on the entity startup procedure,
         /// Invoked when this behaviour is spawned and ready for use,
         /// entity will have all its buffered data applied and ready
         /// </summary>
@@ -109,7 +113,7 @@ namespace MNet
         #endregion
 
         #region RPC
-        protected DualDictionary<RpxMethodID, string, RpcBind> RPCs { get; private set; }
+        protected DualDictionary<RpcMethodID, string, RpcBind> RPCs { get; private set; }
 
         void ParseRPCs()
         {
@@ -144,11 +148,17 @@ namespace MNet
                 return false;
             }
 
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                return false;
+            }
+
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcRequest.WriteBroadcast(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
+            var request = RpcBroadcastRequest.Write(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
 
-            return SendRPC(bind, request, delivery);
+            return Send(ref request, delivery);
         }
 
         protected bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
@@ -159,11 +169,17 @@ namespace MNet
                 return false;
             }
 
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                return false;
+            }
+
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcRequest.WriteTarget(Entity.ID, ID, bind.MethodID, target.ID, raw);
+            var request = RpcTargetRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, raw);
 
-            return SendRPC(bind, request, delivery);
+            return Send(ref request, delivery);
         }
 
         protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
@@ -174,13 +190,19 @@ namespace MNet
                 return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
             }
 
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+            }
+
             var promise = NetworkAPI.Client.RPR.Promise(target);
 
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcRequest.WriteQuery(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
+            var request = RpcQueryRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
 
-            if (SendRPC(bind, request, delivery) == false)
+            if (Send(ref request, delivery) == false)
             {
                 Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
                 return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
@@ -194,30 +216,13 @@ namespace MNet
         }
         #endregion
 
-        internal bool SendRPC(RpcBind bind, RpcRequest request, DeliveryMode delivery)
-        {
-            if (NetworkAPI.Client.IsConnected == false)
-            {
-                Debug.LogWarning($"Attempting to Send RPC {request} when Client is not Connected, Ignoring");
-                return false;
-            }
-
-            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
-            {
-                Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
-                return false;
-            }
-
-            return Send(ref request, delivery);
-        }
-
-        internal void InvokeRPC(RpcCommand command)
+        internal bool InvokeRPC<T>(T command)
+            where T : IRpcCommand
         {
             if (RPCs.TryGetValue(command.Method, out var bind) == false)
             {
                 Debug.LogError($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                return;
+                return false;
             }
 
             object[] arguments;
@@ -233,15 +238,13 @@ namespace MNet
                     $"{ex}";
 
                 Debug.LogError(text, this);
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                return;
+                return false;
             }
 
             if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
             {
                 Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                return;
+                return false;
             }
 
             object result;
@@ -261,30 +264,26 @@ namespace MNet
                     $"{ex}";
 
                 Debug.LogError(text, this);
-                if (command.Type == RpcType.Query) NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                return;
+
+                return false;
             }
 
-            if (command.Type == RpcType.Query)
+            if (bind.IsCoroutine) ExceuteCoroutineRPC(result as IEnumerator);
+
+            if (command is RpcQueryCommand query)
             {
                 if (bind.IsAsync)
-                    AwaitAsyncQueryRPC(result as IUniTask, command, bind).Forget();
+                    AwaitAsyncQueryRPC(result as IUniTask, query, bind).Forget();
                 else
-                    NetworkAPI.Client.RPR.Respond(command, result, bind.ReturnType);
+                    NetworkAPI.Client.RPR.Respond(query, result, bind.ReturnType);
             }
-            else
-            {
-                if (bind.IsCoroutine)
-                    ExceuteCoroutineRPC(result as IEnumerator);
-            }
+
+            return true;
         }
 
-        void ExceuteCoroutineRPC(IEnumerator method)
-        {
-            StartCoroutine(method);
-        }
+        void ExceuteCoroutineRPC(IEnumerator method) => StartCoroutine(method);
 
-        async UniTask AwaitAsyncQueryRPC(IUniTask task, RpcCommand command, RpcBind bind)
+        async UniTask AwaitAsyncQueryRPC(IUniTask task, RpcQueryCommand command, RpcBind bind)
         {
             while (task.Status == UniTaskStatus.Pending) await UniTask.Yield();
 
@@ -348,9 +347,15 @@ namespace MNet
                 return false;
             }
 
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                return false;
+            }
+
             var request = bind.WriteRequest(value, group);
 
-            return SendSyncVar(bind, request, delivery);
+            return Send(ref request, delivery);
         }
         #endregion
 
@@ -392,23 +397,6 @@ namespace MNet
                 Debug.LogWarning($"No SyncVar Hook {hook.Method.Name} for SyncVar '{GetType().Name}->{name}' was Removed because it wasn't Registered to begin With");
         }
         #endregion
-
-        internal bool SendSyncVar(SyncVarBind bind, SyncVarRequest request, DeliveryMode delivery)
-        {
-            if (NetworkAPI.Client.IsConnected == false)
-            {
-                Debug.LogWarning($"Attempting to Send SyncVar {request} when Client is not Connected, Ignoring");
-                return false;
-            }
-
-            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
-            {
-                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
-                return false;
-            }
-
-            return Send(ref request, delivery);
-        }
 
         internal void InvokeSyncVar(SyncVarCommand command)
         {
@@ -498,7 +486,7 @@ namespace MNet
 
         public NetworkBehaviour()
         {
-            RPCs = new DualDictionary<RpxMethodID, string, RpcBind>();
+            RPCs = new DualDictionary<RpcMethodID, string, RpcBind>();
 
             SyncVars = new DualDictionary<SyncVarFieldID, string, SyncVarBind>();
         }

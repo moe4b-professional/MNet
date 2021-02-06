@@ -23,7 +23,6 @@ using Cysharp.Threading.Tasks;
 
 namespace MNet
 {
-    #region Call
     public class RpcBind
     {
         public string Name { get; protected set; }
@@ -40,7 +39,7 @@ namespace MNet
         #region Method
         public MethodInfo MethodInfo { get; protected set; }
 
-        public RpxMethodID MethodID { get; protected set; }
+        public RpcMethodID MethodID { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
 
@@ -69,9 +68,18 @@ namespace MNet
             return raw;
         }
 
-        public void ParseCommand(RpcCommand command, out object[] arguments, out RpcInfo info)
+        public void ParseCommand(IRpcCommand command, out object[] arguments, out RpcInfo info)
         {
-            arguments = command.Read(ParametersInfo, 1);
+            var reader = new NetworkReader(command.Raw);
+
+            arguments = new object[ParametersInfo.Length];
+
+            for (int i = 0; i < ParametersInfo.Length - 1; i++)
+            {
+                var value = reader.Read(ParametersInfo[i].ParameterType);
+
+                arguments[i] = value;
+            }
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
             info = new RpcInfo(sender);
@@ -87,7 +95,7 @@ namespace MNet
             this.Attribute = attribute;
 
             MethodInfo = method;
-            MethodID = new RpxMethodID(index);
+            MethodID = new RpcMethodID(index);
 
             ParametersInfo = method.GetParameters();
 
@@ -142,55 +150,4 @@ namespace MNet
 
         public static bool Defined(MethodInfo info) => Retrieve(info) != null;
     }
-    #endregion
-
-    #region Return
-    public class RprPromise
-    {
-        public NetworkClient Target { get; protected set; }
-        public RprChannelID Channel { get; protected set; }
-
-        public bool Complete { get; protected set; }
-        public bool IsComplete() => Complete;
-
-        public RemoteResponseType Response { get; protected set; }
-
-        public byte[] Raw { get; protected set; }
-        internal T Read<T>() => Response == RemoteResponseType.Success ? NetworkSerializer.Deserialize<T>(Raw) : default;
-
-        internal void Fullfil(RemoteResponseType response, byte[] raw)
-        {
-            Complete = true;
-
-            this.Response = response;
-            this.Raw = raw;
-        }
-
-        public RprPromise(NetworkClient target, RprChannelID channel)
-        {
-            this.Target = target;
-            this.Channel = channel;
-
-            Complete = false;
-        }
-    }
-
-    public struct RprAnswer<T>
-    {
-        public RemoteResponseType Response { get; private set; }
-
-        public bool Success => Response == RemoteResponseType.Success;
-        public bool Fail => Response != RemoteResponseType.Success;
-
-        public T Value { get; private set; }
-
-        internal RprAnswer(RemoteResponseType response, T value)
-        {
-            this.Response = response;
-            this.Value = value;
-        }
-        internal RprAnswer(RemoteResponseType response) : this(response, default) { }
-        internal RprAnswer(RprPromise promise) : this(promise.Response, promise.Read<T>()) { }
-    }
-    #endregion
 }

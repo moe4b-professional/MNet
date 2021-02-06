@@ -540,37 +540,25 @@ namespace MNet
             {
                 base.Start();
 
-                MessageDispatcher.RegisterHandler<RpcRequest>(InvokeRPC);
-                MessageDispatcher.RegisterHandler<SyncVarRequest>(InvokeSyncVar);
+                MessageDispatcher.RegisterHandler<RpcBroadcastRequest>(InvokeBroadcastRPC);
+                MessageDispatcher.RegisterHandler<RpcTargetRequest>(InvokeTargetRPC);
+                MessageDispatcher.RegisterHandler<RpcQueryRequest>(InvokeQueryRPC);
+
                 MessageDispatcher.RegisterHandler<RprRequest>(InvokeRPR);
+
+                MessageDispatcher.RegisterHandler<SyncVarRequest>(InvokeSyncVar);
             }
 
             #region RPC
-            void InvokeRPC(NetworkClient sender, ref RpcRequest request, DeliveryMode mode)
+            void InvokeBroadcastRPC(NetworkClient sender, ref RpcBroadcastRequest request, DeliveryMode mode)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
                     Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
-                    if (request.Type == RpcType.Query) ResolveRPR(sender, ref request, RemoteResponseType.InvalidEntity);
                     return;
                 }
 
-                switch (request.Type)
-                {
-                    case RpcType.Broadcast:
-                        InvokeBroadcastRPC(sender, entity, ref request, mode);
-                        break;
-
-                    case RpcType.Target:
-                    case RpcType.Query:
-                        InvokeDirectRPC(sender, entity, ref request, mode);
-                        break;
-                }
-            }
-
-            void InvokeBroadcastRPC(NetworkClient sender, NetworkEntity entity, ref RpcRequest request, DeliveryMode mode)
-            {
-                var command = RpcCommand.Write(sender.ID, request);
+                var command = RpcBroadcastCommand.Write(sender.ID, request);
 
                 var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
@@ -578,16 +566,41 @@ namespace MNet
                     entity.RpcBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
 
-            void InvokeDirectRPC(NetworkClient sender, NetworkEntity entity, ref RpcRequest request, DeliveryMode mode)
+            void InvokeTargetRPC(NetworkClient sender, ref RpcTargetRequest request, DeliveryMode mode)
             {
-                if (Clients.TryGet(request.Target, out var target) == false)
+                if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
-                    if (request.Type == RpcType.Query) ResolveRPR(sender, ref request, RemoteResponseType.InvalidClient);
+                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
                     return;
                 }
 
-                var command = RpcCommand.Write(sender.ID, request);
+                if (Clients.TryGet(request.Target, out var target) == false)
+                {
+                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
+                    return;
+                }
+
+                var command = RpcTargetCommand.Write(sender.ID, request);
+
+                Room.Send(ref command, target, mode);
+            }
+
+            void InvokeQueryRPC(NetworkClient sender, ref RpcQueryRequest request, DeliveryMode mode)
+            {
+                if (Entities.TryGet(request.Entity, out var entity) == false)
+                {
+                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+                    return;
+                }
+
+                if (Clients.TryGet(request.Target, out var target) == false)
+                {
+                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
+                    ResolveRPR(sender, ref request, RemoteResponseType.InvalidClient);
+                    return;
+                }
+
+                var command = RpcQueryCommand.Write(sender.ID, request);
 
                 Room.Send(ref command, target, mode);
             }
@@ -606,9 +619,9 @@ namespace MNet
                 Room.Send(ref command, target);
             }
 
-            void ResolveRPR(NetworkClient requester, ref RpcRequest request, RemoteResponseType response)
+            void ResolveRPR(NetworkClient requester, ref RpcQueryRequest request, RemoteResponseType response)
             {
-                var command = RprCommand.Write(request.ReturnChannel, response);
+                var command = RprCommand.Write(request.Channel, response);
                 Room.Send(ref command, requester);
             }
             #endregion

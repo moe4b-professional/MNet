@@ -19,7 +19,7 @@ namespace MNet
         [Test]
         public void DeliverySegmentation()
         {
-            var original = new List<RpcRequest>();
+            var original = new List<RpcTargetRequest>();
 
             var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable, 500);
 
@@ -27,10 +27,10 @@ namespace MNet
             {
                 var entity = new NetworkEntityID(i);
                 var behaviour = new NetworkBehaviourID(i);
-                var method = new RpxMethodID(i);
+                var method = new RpcMethodID(i);
                 var target = new NetworkClientID(i);
 
-                var payload = RpcRequest.WriteTarget(entity, behaviour, method, target, new byte[] { i, i });
+                var payload = RpcTargetRequest.Write(entity, behaviour, method, target, new byte[] { i, i });
 
                 var message = NetworkMessage.Write(ref payload);
                 original.Add(payload);
@@ -39,13 +39,13 @@ namespace MNet
                 delivery.Add(binary);
             }
 
-            var copy = new List<RpcRequest>();
+            var copy = new List<RpcTargetRequest>();
 
             foreach (var buffer in delivery.Read())
             {
                 foreach (var message in NetworkMessage.ReadAll(buffer))
                 {
-                    copy.Add(message.Read<RpcRequest>());
+                    copy.Add(message.Read<RpcTargetRequest>());
                 }
             }
 
@@ -54,9 +54,8 @@ namespace MNet
             for (int i = 0; i < original.Count; i++)
                 Compare(original[i], copy[i]);
 
-            static bool Compare(RpcRequest a, RpcRequest b)
+            static bool Compare(RpcTargetRequest a, RpcTargetRequest b)
             {
-                Assert.AreEqual(a.Type, b.Type);
                 Assert.AreEqual(a.Entity, b.Entity);
                 Assert.AreEqual(a.Behaviour, b.Behaviour);
                 Assert.AreEqual(a.Method, b.Method);

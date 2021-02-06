@@ -59,6 +59,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Source\Remote Sync\RPR.cs" />
     <Compile Include="Source\Structure\App.cs" />
     <Compile Include="Source\Collections\AttributesCollection.cs" />
     <Compile Include="Source\Collections\CollectionPrettyPrint.cs" />
@@ -89,7 +90,7 @@
     <Compile Include="Source\Remote Sync\RemoteAuthority.cs" />
     <Compile Include="Source\Data\RemoteConfig.cs" />
     <Compile Include="Source\Structure\Room.cs" />
-    <Compile Include="Source\Remote Sync\RPX.cs" />
+    <Compile Include="Source\Remote Sync\RPC.cs" />
     <Compile Include="Source\Remote Sync\SyncVar.cs" />
     <Compile Include="Source\Data\NetworkTimeSpan.cs" />
     <Compile Include="Source\Collections\UtilityCollections.cs" />

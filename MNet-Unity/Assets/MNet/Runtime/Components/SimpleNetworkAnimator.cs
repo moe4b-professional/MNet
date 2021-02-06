@@ -815,22 +815,27 @@ namespace MNet
 
 		void Update()
 		{
-			foreach (var parameter in parameters.Floats)
+			if (Entity.IsReady == false) return;
+
+			if (Entity.IsMine == false)
 			{
-				if (parameter.Smooth == false) continue;
+				foreach (var parameter in parameters.Floats)
+				{
+					if (parameter.Smooth == false) continue;
 
-				if (parameter.Translate() == false) continue;
+					if (parameter.Translate() == false) continue;
 
-				Component.SetFloat(parameter.Hash, parameter.Value);
-			}
+					Component.SetFloat(parameter.Hash, parameter.Value);
+				}
 
-			foreach (var layer in layers.List)
-			{
-				if (layer.Smooth == false) continue;
+				foreach (var layer in layers.List)
+				{
+					if (layer.Smooth == false) continue;
 
-				if (layer.Translate() == false) continue;
+					if (layer.Translate() == false) continue;
 
-				Component.SetLayerWeight(layer.Index, layer.Value);
+					Component.SetLayerWeight(layer.Index, layer.Value);
+				}
 			}
 		}
 

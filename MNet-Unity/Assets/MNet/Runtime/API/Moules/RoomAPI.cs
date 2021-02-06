@@ -474,7 +474,6 @@ namespace MNet
                 }
                 #endregion
 
-                #region Instantiate
                 internal static NetworkEntity Instantiate(ushort resource)
                 {
                     var prefab = NetworkAPI.Config.SyncedAssets[resource] as GameObject;
@@ -482,7 +481,7 @@ namespace MNet
                     if (prefab == null)
                         throw new Exception($"No Synced Asset GameObject with ID: {resource} Found to Spawn");
 
-                    var instance = InstantiateMethod(prefab);
+                    var instance = Object.Instantiate(prefab).GetComponent<NetworkEntity>();
 
                     if (instance == null) throw new Exception($"No {nameof(NetworkEntity)} Found on Resource {resource}");
 
@@ -490,17 +489,6 @@ namespace MNet
 
                     return instance;
                 }
-
-                public static InstantiateMethodDelegate InstantiateMethod { get; set; } = DefaultInstantiateMethod;
-                public delegate NetworkEntity InstantiateMethodDelegate(GameObject prefab);
-
-                public static NetworkEntity DefaultInstantiateMethod(GameObject prefab)
-                {
-                    var instance = Object.Instantiate(prefab);
-
-                    return instance.GetComponent<NetworkEntity>();
-                }
-                #endregion
 
                 #region Ownership
                 static void Transfer(ref TransferEntityPayload payload)
@@ -641,29 +629,34 @@ namespace MNet
             {
                 internal static void Configure()
                 {
-                    Client.MessageDispatcher.RegisterHandler<RpcCommand>(InvokeRPC);
+                    Client.MessageDispatcher.RegisterHandler<RpcBroadcastCommand>(InvokeBroadcastRPC);
+                    Client.MessageDispatcher.RegisterHandler<RpcTargetCommand>(InvokeTargetRPC);
+                    Client.MessageDispatcher.RegisterHandler<RpcQueryCommand>(InvokeQueryRPC);
+
                     Client.MessageDispatcher.RegisterHandler<SyncVarCommand>(InvokeSyncVar);
                 }
 
-                static void InvokeRPC(ref RpcCommand command)
-                {
-                    try
-                    {
-                        if (Entities.TryGet(command.Entity, out var target) == false)
-                        {
-                            Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
-                            if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                            return;
-                        }
+                #region RPC
+                static void InvokeBroadcastRPC(ref RpcBroadcastCommand command) => InvokeRPC(command);
+                static void InvokeTargetRPC(ref RpcTargetCommand command) => InvokeRPC(command);
+                static void InvokeQueryRPC(ref RpcQueryCommand command) => InvokeRPC(command);
 
-                        target.InvokeRPC(command);
-                    }
-                    catch (Exception)
+                static void InvokeRPC<T>(T command)
+                    where T : IRpcCommand
+                {
+                    if (Entities.TryGet(command.Entity, out var target) == false)
                     {
-                        if (command.Type == RpcType.Query) Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                        throw;
+                        Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
+                        if (command is RpcQueryCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
+                        return;
+                    }
+
+                    if (target.InvokeRPC(command) == false)
+                    {
+                        if (command is RpcQueryCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
                     }
                 }
+                #endregion
 
                 static void InvokeSyncVar(ref SyncVarCommand command)
                 {

@@ -22,15 +22,20 @@ namespace MNet.Example
     public class RoomBrowser : UIMenu
     {
         [SerializeField]
-        GameObject template = null;
+        GameObject template = default;
 
         [SerializeField]
         ScrollRect scroll = default;
 
-        List<RoomBasicUITemplate> templates = new List<RoomBasicUITemplate>();
+        List<RoomBasicUITemplate> templates;
 
         Core Core => Core.Instance;
         PopupPanel Popup => Core.UI.Popup;
+
+        void Awake()
+        {
+            templates = new List<RoomBasicUITemplate>();
+        }
 
         void Start()
         {
@@ -48,7 +53,7 @@ namespace MNet.Example
                 if (error == null)
                 {
                     if (lobby.Size == 0)
-                        Popup.Show($"Found {lobby.Size} Rooms", "Okay");
+                        Popup.Show($"No Rooms Found", "Okay");
                     else
                         Popup.Hide();
 

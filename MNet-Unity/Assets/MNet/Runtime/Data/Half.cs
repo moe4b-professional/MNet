@@ -6,6 +6,8 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 
+using MNet;
+
 /// <summary>
 /// Represents a half-precision floating point number. 
 /// </summary>
@@ -25,6 +27,7 @@ using System.Globalization;
 ///     - Fast Half Float Conversions, Jeroen van der Zijp, link: http://www.fox-toolkit.org/ftp/fasthalffloatconversion.pdf
 ///     - IEEE 754 revision, link: http://grouper.ieee.org/groups/754/
 /// </remarks>
+[Preserve]
 [Serializable]
 public struct Half : IComparable, IFormattable, IConvertible, IComparable<Half>, IEquatable<Half>
 {
@@ -889,8 +892,6 @@ public struct Half : IComparable, IFormattable, IConvertible, IComparable<Half>,
     #endregion
 }
 
-/// ================ HalfHelper.cs ====================
-
 /// <summary>
 /// Helper class for Half conversions and some low level operations.
 /// This class is internally used in the Half class.
@@ -900,6 +901,7 @@ public struct Half : IComparable, IFormattable, IConvertible, IComparable<Half>,
 ///     - Code retrieved from http://sourceforge.net/p/csharp-half/code/HEAD/tree/ on 2015-12-04
 ///     - Fast Half Float Conversions, Jeroen van der Zijp, link: http://www.fox-toolkit.org/ftp/fasthalffloatconversion.pdf
 /// </remarks>
+[Preserve]
 internal static class HalfHelper
 {
     private static readonly uint[] MantissaTable = GenerateMantissaTable();
@@ -1087,6 +1089,7 @@ internal static class HalfHelper
 
 namespace MNet.Example
 {
+    [Preserve]
     public class HalfNetworkSerializationResolver : NetworkSerializationExplicitResolver<Half>
     {
         public override void Serialize(NetworkWriter writer, Half instance)
