@@ -540,9 +540,10 @@ namespace MNet
             {
                 base.Start();
 
-                MessageDispatcher.RegisterHandler<RpcBroadcastRequest>(InvokeBroadcastRPC);
-                MessageDispatcher.RegisterHandler<RpcTargetRequest>(InvokeTargetRPC);
-                MessageDispatcher.RegisterHandler<RpcQueryRequest>(InvokeQueryRPC);
+                MessageDispatcher.RegisterHandler<BroadcastRpcRequest>(InvokeBroadcastRPC);
+                MessageDispatcher.RegisterHandler<TargetRpcRequest>(InvokeTargetRPC);
+                MessageDispatcher.RegisterHandler<QueryRpcRequest>(InvokeQueryRPC);
+                MessageDispatcher.RegisterHandler<BufferRpcRequest>(InvokeBufferRPC);
 
                 MessageDispatcher.RegisterHandler<RprRequest>(InvokeRPR);
 
@@ -550,7 +551,7 @@ namespace MNet
             }
 
             #region RPC
-            void InvokeBroadcastRPC(NetworkClient sender, ref RpcBroadcastRequest request, DeliveryMode mode)
+            void InvokeBroadcastRPC(NetworkClient sender, ref BroadcastRpcRequest request, DeliveryMode mode)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -558,15 +559,15 @@ namespace MNet
                     return;
                 }
 
-                var command = RpcBroadcastCommand.Write(sender.ID, request);
+                var command = BroadcastRpcCommand.Write(sender.ID, request);
 
                 var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
                 if (request.Group == NetworkGroupID.Default && request.BufferMode != RemoteBufferMode.None)
-                    entity.RpcBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                    entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
 
-            void InvokeTargetRPC(NetworkClient sender, ref RpcTargetRequest request, DeliveryMode mode)
+            void InvokeTargetRPC(NetworkClient sender, ref TargetRpcRequest request, DeliveryMode mode)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -580,12 +581,12 @@ namespace MNet
                     return;
                 }
 
-                var command = RpcTargetCommand.Write(sender.ID, request);
+                var command = TargetRpcCommand.Write(sender.ID, request);
 
                 Room.Send(ref command, target, mode);
             }
 
-            void InvokeQueryRPC(NetworkClient sender, ref RpcQueryRequest request, DeliveryMode mode)
+            void InvokeQueryRPC(NetworkClient sender, ref QueryRpcRequest request, DeliveryMode mode)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -600,9 +601,30 @@ namespace MNet
                     return;
                 }
 
-                var command = RpcQueryCommand.Write(sender.ID, request);
+                var command = QueryRpcCommand.Write(sender.ID, request);
 
                 Room.Send(ref command, target, mode);
+            }
+
+            void InvokeBufferRPC(NetworkClient sender, ref BufferRpcRequest request, DeliveryMode mode)
+            {
+                if (request.BufferMode == RemoteBufferMode.None)
+                {
+                    Log.Warning($"Recived Buffer RPC with Mode {request.BufferMode} Isn't Valid for Buffering!");
+                    return;
+                }
+
+                if (Entities.TryGet(request.Entity, out var entity) == false)
+                {
+                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+                    return;
+                }
+
+                var command = BufferRpcCommand.Write(sender.ID, request);
+
+                var message = NetworkMessage.Write(ref command);
+
+                entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
             #endregion
 
@@ -619,7 +641,7 @@ namespace MNet
                 Room.Send(ref command, target);
             }
 
-            void ResolveRPR(NetworkClient requester, ref RpcQueryRequest request, RemoteResponseType response)
+            void ResolveRPR(NetworkClient requester, ref QueryRpcRequest request, RemoteResponseType response)
             {
                 var command = RprCommand.Write(request.Channel, response);
                 Room.Send(ref command, requester);

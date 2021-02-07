@@ -629,17 +629,19 @@ namespace MNet
             {
                 internal static void Configure()
                 {
-                    Client.MessageDispatcher.RegisterHandler<RpcBroadcastCommand>(InvokeBroadcastRPC);
-                    Client.MessageDispatcher.RegisterHandler<RpcTargetCommand>(InvokeTargetRPC);
-                    Client.MessageDispatcher.RegisterHandler<RpcQueryCommand>(InvokeQueryRPC);
+                    Client.MessageDispatcher.RegisterHandler<BroadcastRpcCommand>(InvokeBroadcastRPC);
+                    Client.MessageDispatcher.RegisterHandler<TargetRpcCommand>(InvokeTargetRPC);
+                    Client.MessageDispatcher.RegisterHandler<QueryRpcCommand>(InvokeQueryRPC);
+                    Client.MessageDispatcher.RegisterHandler<BufferRpcCommand>(InvokeBufferRPC);
 
                     Client.MessageDispatcher.RegisterHandler<SyncVarCommand>(InvokeSyncVar);
                 }
 
                 #region RPC
-                static void InvokeBroadcastRPC(ref RpcBroadcastCommand command) => InvokeRPC(command);
-                static void InvokeTargetRPC(ref RpcTargetCommand command) => InvokeRPC(command);
-                static void InvokeQueryRPC(ref RpcQueryCommand command) => InvokeRPC(command);
+                static void InvokeBroadcastRPC(ref BroadcastRpcCommand command) => InvokeRPC(command);
+                static void InvokeTargetRPC(ref TargetRpcCommand command) => InvokeRPC(command);
+                static void InvokeQueryRPC(ref QueryRpcCommand command) => InvokeRPC(command);
+                static void InvokeBufferRPC(ref BufferRpcCommand command) => InvokeRPC(command);
 
                 static void InvokeRPC<T>(T command)
                     where T : IRpcCommand
@@ -647,13 +649,13 @@ namespace MNet
                     if (Entities.TryGet(command.Entity, out var target) == false)
                     {
                         Debug.LogWarning($"No {nameof(NetworkEntity)} found with ID {command.Entity} to Invoke RPC '{command}' On");
-                        if (command is RpcQueryCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
+                        if (command is QueryRpcCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
                         return;
                     }
 
                     if (target.InvokeRPC(command) == false)
                     {
-                        if (command is RpcQueryCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
+                        if (command is QueryRpcCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
                     }
                 }
                 #endregion

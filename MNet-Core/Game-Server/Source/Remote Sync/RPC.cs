@@ -18,7 +18,8 @@ namespace MNet
         public delegate void BufferDelegate(NetworkMessage message);
         public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> collection);
 
-        public void Set(NetworkMessage message, ref RpcBroadcastRequest request, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
+        public void Set<T>(NetworkMessage message, ref T request, RemoteBufferMode mode, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
+            where T: IRpcRequest
         {
             var key = (request.Behaviour, request.Method);
 
@@ -28,7 +29,7 @@ namespace MNet
                 Dictionary.Add(key, collection);
             }
 
-            if (request.BufferMode == RemoteBufferMode.Last)
+            if (mode == RemoteBufferMode.Last)
             {
                 unbuffer(collection.HashSet);
 

@@ -201,7 +201,7 @@ namespace MNet
 
         void SendBroadcastRPC(DeliveryMethod delivery)
         {
-            var request = RpcBroadcastRequest.Write(EntityID, default, default, RemoteBufferMode.Last, default, null, Client.Payload);
+            var request = BroadcastRpcRequest.Write(EntityID, default, default, RemoteBufferMode.Last, default, null, Client.Payload);
 
             Send(ref request, delivery);
         }

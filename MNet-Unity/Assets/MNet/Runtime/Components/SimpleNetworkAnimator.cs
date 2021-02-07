@@ -23,11 +23,42 @@ namespace MNet
 	public class SimpleNetworkAnimator : NetworkBehaviour
 	{
 		[SerializeField]
-        NetworkEntitySyncTimer syncTimer = default;
-        public NetworkEntitySyncTimer SyncTimer => syncTimer;
+		NetworkEntitySyncTimer syncTimer = default;
+		public NetworkEntitySyncTimer SyncTimer => syncTimer;
 
-        [SerializeField]
-		ParametersProperty parameters;
+		public Animator Component { get; protected set; }
+
+		NetworkWriter writer;
+		NetworkReader reader;
+
+		protected override void Reset()
+		{
+			base.Reset();
+
+#if UNITY_EDITOR
+			syncTimer = NetworkEntitySyncTimer.Resolve(Entity);
+#endif
+		}
+
+		void Awake()
+		{
+			Component = GetComponent<Animator>();
+
+			writer = new NetworkWriter(100);
+			reader = new NetworkReader();
+
+			parameters.Configure(this);
+			layers.Configure(this);
+		}
+
+		void Start()
+		{
+			syncTimer.OnInvoke += Sync;
+		}
+
+		#region Parameters
+		[SerializeField]
+		ParametersProperty parameters = default;
 		public ParametersProperty Parameters => parameters;
 		[Serializable]
 		public class ParametersProperty
@@ -38,21 +69,19 @@ namespace MNet
 			[Serializable]
 			public class TriggerProperty : Property<bool>
 			{
+				public override bool Value
+				{
+					get
+					{
+						return false;
+					}
+					internal set
+					{
+						if (value) animator.Component.SetTrigger(Hash);
+					}
+				}
+
 				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Trigger;
-
-				public override void ClearDirty()
-				{
-					base.ClearDirty();
-
-					value = false;
-				}
-
-				public override void Read(Animator animator)
-				{
-					base.Read(animator);
-
-					value = animator.GetBool(Hash);
-				}
 
 				public TriggerProperty(AnimatorControllerParameter parameter) : base(parameter)
 				{
@@ -66,14 +95,19 @@ namespace MNet
 			[Serializable]
 			public class BoolProperty : Property<bool>
 			{
-				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Bool;
-
-				public override void Read(Animator animator)
+				public override bool Value
 				{
-					base.Read(animator);
-
-					value = animator.GetBool(Hash);
+					get
+					{
+						return animator.Component.GetBool(Hash);
+					}
+					internal set
+					{
+						animator.Component.SetBool(Hash, value);
+					}
 				}
+
+				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Bool;
 
 				public BoolProperty(AnimatorControllerParameter parameter) : base(parameter)
 				{
@@ -87,6 +121,18 @@ namespace MNet
 			[Serializable]
 			public class IntegerProperty : Property<int>
 			{
+				public override int Value
+				{
+					get
+					{
+						return animator.Component.GetInteger(Hash);
+					}
+					internal set
+					{
+						animator.Component.SetInteger(Hash, value);
+					}
+				}
+
 				[SerializeField]
 				[Tooltip("Serializes the parameter as a Short that uses 2 bytes instead of 4")]
 				bool useShort = true;
@@ -94,11 +140,20 @@ namespace MNet
 
 				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Int;
 
-				public override void Read(Animator animator)
+				public override void WriteBinary(NetworkWriter writer)
 				{
-					base.Read(animator);
+					if (useShort)
+						writer.Write((short)Value);
+					else
+						writer.Write(Value);
+				}
 
-					value = animator.GetInteger(Hash);
+				public override void ReadBinary(NetworkReader reader)
+				{
+					if (useShort)
+						Value = reader.Read<short>();
+					else
+						Value = reader.Read<int>();
 				}
 
 				public IntegerProperty(AnimatorControllerParameter parameter) : base(parameter)
@@ -113,6 +168,18 @@ namespace MNet
 			[Serializable]
 			public class FloatProperty : Property<float>
 			{
+				public override float Value
+				{
+					get
+					{
+						return animator.Component.GetFloat(Hash);
+					}
+					internal set
+					{
+						animator.Component.SetFloat(Hash, value);
+					}
+				}
+
 				[SerializeField]
 				[Tooltip("Serializes the parameter as a Half that uses 2 bytes instead of 4")]
 				bool useHalf = true;
@@ -132,24 +199,35 @@ namespace MNet
 
 				public bool Translate()
 				{
-					if (Target == value) return false;
+					if (Compare(Value, Target)) return false;
 
 					//TODO use a translation method better than lerp
-					value = Mathf.Lerp(value, Target, speed * Time.deltaTime);
+					Value = Mathf.Lerp(Value, Target, speed * Time.deltaTime);
 
 					return true;
 				}
 
 				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Float;
 
-				public override void Read(Animator animator)
-				{
-					base.Read(animator);
+				public override bool Compare(float a, float b) => Mathf.Approximately(a, b);
 
-					value = animator.GetFloat(Hash);
+				public override void WriteBinary(NetworkWriter writer)
+				{
+					if (useHalf)
+						writer.Write((Half)Value);
+					else
+						writer.Write(Value);
 				}
 
-				public override bool Compare(float a, float b) => Mathf.Approximately(a, b);
+				public override void ReadBinary(NetworkReader reader)
+				{
+					if (useHalf)
+						Value = reader.Read<Half>();
+					else
+						Value = reader.Read<float>();
+
+					Target = Value;
+				}
 
 				public FloatProperty(AnimatorControllerParameter parameter) : base(parameter)
 				{
@@ -174,10 +252,16 @@ namespace MNet
 
 				public abstract AnimatorControllerParameterType Type { get; }
 
-				public virtual void Read(Animator animator)
+				protected SimpleNetworkAnimator animator;
+				internal void Set(SimpleNetworkAnimator reference)
 				{
+					animator = reference;
+
 					Hash = Animator.StringToHash(name);
 				}
+
+				public abstract void WriteBinary(NetworkWriter writer);
+				public abstract void ReadBinary(NetworkReader reader);
 
 				public virtual void Parse(AnimatorControllerParameter parameter)
 				{
@@ -216,20 +300,21 @@ namespace MNet
 			[Serializable]
 			public abstract class Property<TValue> : Property
 			{
-				[SerializeField]
-				protected TValue value;
-				public TValue Value => value;
+				public abstract TValue Value { get; internal set; }
 
 				public bool Update(TValue data)
 				{
-					if (Compare(data, value)) return false;
+					if (Compare(data, Value)) return false;
 
-					value = data;
+					Value = data;
 					IsDirty = true;
 					return true;
 				}
 
 				public virtual bool Compare(TValue a, TValue b) => Equals(a, b);
+
+				public override void WriteBinary(NetworkWriter writer) => writer.Write(Value);
+				public override void ReadBinary(NetworkReader reader) => Value = reader.Read<TValue>();
 
 				public Property(AnimatorControllerParameter parameter) : base(parameter)
 				{
@@ -316,7 +401,7 @@ namespace MNet
 				for (byte i = 0; i < All.Count; i++)
 				{
 					All[i].SetID(i);
-					All[i].Read(animator.Component);
+					All[i].Set(animator);
 
 					Dictionary.Add(All[i].Name, i, All[i]);
 				}
@@ -389,8 +474,277 @@ namespace MNet
 			}
 		}
 
+		#region Trigger
+		public void SetTrigger(string name, bool instant = true)
+		{
+			if (Parameters.TryGet<ParametersProperty.TriggerProperty>(name, out var parameter) == false)
+			{
+				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Update(true) == false) return;
+
+			if (instant) SendTrigger(parameter);
+		}
+
+		void SendTrigger(ParametersProperty.TriggerProperty parameter)
+		{
+			BroadcastRPC(TriggerRPC, parameter.ID, exception: NetworkAPI.Client.Self);
+			parameter.ClearDirty();
+		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void TriggerRPC(byte id, RpcInfo info)
+		{
+			if (parameters.TryGet<ParametersProperty.TriggerProperty>(id, out var parameter) == false)
+			{
+				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
+				return;
+			}
+
+			parameter.Value = true;
+		}
+
+		void SyncTriggers()
+		{
+			foreach (var parameter in parameters.Triggers)
+			{
+				if (parameter.IsDirty == false) continue;
+
+				SendTrigger(parameter);
+			}
+		}
+		#endregion
+
+		#region Bool
+		public void SetBool(string name, bool value, bool instant = true)
+		{
+			if (Parameters.TryGet<ParametersProperty.BoolProperty>(name, out var parameter) == false)
+			{
+				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Update(value) == false) return;
+
+			if (instant)
+			{
+				SendBool(parameter);
+				BufferBools();
+			}
+		}
+
+		void SendBool(ParametersProperty.BoolProperty parameter)
+		{
+			BroadcastRPC(BoolRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+			parameter.ClearDirty();
+		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void BoolRPC(byte id, bool value, RpcInfo info)
+		{
+			if (parameters.TryGet<ParametersProperty.BoolProperty>(id, out var parameter) == false)
+			{
+				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
+				return;
+			}
+
+			parameter.Value = value;
+		}
+
+		void BufferBools()
+		{
+			var binary = WriteAll(parameters.Floats);
+			BufferRPC(BufferBools, binary);
+		}
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void BufferBools(byte[] binary, RpcInfo info)
+		{
+			ReadAll(parameters.Bools, binary);
+		}
+
+		void SyncBools()
+		{
+			var dirty = false;
+
+			foreach (var parameter in parameters.Bools)
+			{
+				if (parameter.IsDirty == false) continue;
+
+				SendBool(parameter);
+				dirty = true;
+			}
+
+			if (dirty) BufferBools();
+		}
+		#endregion
+
+		#region Integer
+		public void SetInteger(string name, int value, bool instant = true)
+		{
+			if (Parameters.TryGet<ParametersProperty.IntegerProperty>(name, out var parameter) == false)
+			{
+				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Update(value) == false) return;
+
+			if (instant)
+			{
+				SendInteger(parameter);
+				BufferIntergers();
+			}
+		}
+
+		void SendInteger(ParametersProperty.IntegerProperty parameter)
+		{
+			if (parameter.UseShort)
+				BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value, exception: NetworkAPI.Client.Self);
+			else
+				BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+
+			parameter.ClearDirty();
+		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void IntergerRPC(byte id, int value, RpcInfo info)
+		{
+			if (parameters.TryGet<ParametersProperty.IntegerProperty>(id, out var parameter) == false)
+			{
+				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
+				return;
+			}
+
+			parameter.Value = value;
+		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void ShortRPC(byte id, short value, RpcInfo info) => IntergerRPC(id, value, info);
+
+		void BufferIntergers()
+		{
+			var binary = WriteAll(parameters.Floats);
+			BufferRPC(BufferIntergers, binary);
+		}
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void BufferIntergers(byte[] binary, RpcInfo info)
+		{
+			ReadAll(parameters.Integers, binary);
+		}
+
+		void SyncIntegers()
+		{
+			var dirty = false;
+
+			foreach (var parameter in parameters.Integers)
+			{
+				if (parameter.IsDirty == false) continue;
+
+				SendInteger(parameter);
+				dirty = true;
+			}
+
+			if (dirty) BufferIntergers();
+		}
+		#endregion
+
+		#region Float
+		public void SetFloat(string name, float value, bool instant = false)
+		{
+			if (Parameters.TryGet<ParametersProperty.FloatProperty>(name, out var parameter) == false)
+			{
+				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Update(value) == false) return;
+
+			if (instant)
+			{
+				SendFloat(parameter);
+				BufferFloats();
+			}
+		}
+
+		void SendFloat(ParametersProperty.FloatProperty parameter)
+		{
+			if (parameter.UseHalf)
+				BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value, exception: NetworkAPI.Client.Self);
+			else
+				BroadcastRPC(FloatRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+
+			parameter.ClearDirty();
+		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void FloatRPC(byte id, float value, RpcInfo info)
+		{
+			if (parameters.TryGet<ParametersProperty.FloatProperty>(id, out var parameter) == false)
+			{
+				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
+				return;
+			}
+
+			if (parameter.Smooth)
+				parameter.SetTarget(value);
+			else
+				parameter.Value = value;
+		}
+
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void HalfRPC(byte id, Half value, RpcInfo info) => FloatRPC(id, value, info);
+
+		void BufferFloats()
+		{
+			var binary = WriteAll(parameters.Floats);
+
+			BufferRPC(BufferFloats, binary);
+		}
+		[NetworkRPC(Authority = RemoteAuthority.Owner)]
+		void BufferFloats(byte[] binary, RpcInfo info)
+		{
+			ReadAll(parameters.Floats, binary);
+		}
+
+		void SyncFloats()
+		{
+			var dirty = false;
+
+			foreach (var parameter in parameters.Floats)
+			{
+				if (parameter.IsDirty == false) continue;
+
+				SendFloat(parameter);
+				dirty = true;
+			}
+
+			if (dirty) BufferFloats();
+		}
+		#endregion
+
+		byte[] WriteAll<T>(IList<T> list)
+			where T : ParametersProperty.Property
+		{
+			for (int i = 0; i < list.Count; i++)
+				list[i].WriteBinary(writer);
+
+			return writer.Flush();
+		}
+		void ReadAll<T>(IList<T> list, byte[] binary)
+			where T : ParametersProperty.Property
+		{
+			reader.Set(binary);
+
+			for (int i = 0; i < list.Count; i++)
+				list[i].ReadBinary(reader);
+		}
+		#endregion
+
+		#region Layers
 		[SerializeField]
-		LayersProperty layers;
+		LayersProperty layers = default;
 		public LayersProperty Layers => layers;
 		[Serializable]
 		public class LayersProperty
@@ -399,6 +753,10 @@ namespace MNet
 			List<Property> list;
 			public List<Property> List => list;
 
+			public int Count => list.Count;
+
+			public Property this[int index] => list[index];
+
 			[Serializable]
 			public class Property
 			{
@@ -406,9 +764,17 @@ namespace MNet
 				protected string name;
 				public string Name => name;
 
-				[SerializeField]
-				float value;
-				public float Value => value;
+				public float Value
+				{
+					get
+					{
+						return animator.Component.GetLayerWeight(Index);
+					}
+					internal set
+					{
+						animator.Component.SetLayerWeight(Index, value);
+					}
+				}
 
 				[SerializeField]
 				[Tooltip("Serializes the parameter as a Half that uses 2 bytes instead of 4")]
@@ -427,16 +793,6 @@ namespace MNet
 				public float Target { get; protected set; }
 				internal void SetTarget(float value) => Target = value;
 
-				public bool Translate()
-				{
-					if (Target == value) return false;
-
-					//TODO use a translation method better than lerp
-					value = Mathf.Lerp(value, Target, speed * Time.deltaTime);
-
-					return true;
-				}
-
 				public byte ID { get; protected set; }
 				public void SetID(byte value) => ID = value;
 
@@ -445,20 +801,49 @@ namespace MNet
 				public bool IsDirty { get; protected set; }
 				public virtual void ClearDirty() => IsDirty = false;
 
-				internal void Read(Animator component)
+				SimpleNetworkAnimator animator;
+				internal void Set(SimpleNetworkAnimator reference)
 				{
-					Index = component.GetLayerIndex(Name);
+					animator = reference;
 
-					value = component.GetLayerWeight(Index);
+					Index = animator.Component.GetLayerIndex(Name);
 				}
 
 				public bool Update(float data)
 				{
-					if (Mathf.Approximately(data, value)) return false;
+					if (Mathf.Approximately(data, Value)) return false;
 
-					value = data;
+					Value = data;
 					IsDirty = true;
 					return true;
+				}
+
+				public bool Translate()
+				{
+					if (Mathf.Approximately(Target, Value)) return false;
+
+					//TODO use a translation method better than lerp
+					Value = Mathf.Lerp(Value, Target, speed * Time.deltaTime);
+
+					return true;
+				}
+
+				public void WriteBinary(NetworkWriter writer)
+				{
+					if (useHalf)
+						writer.Write((Half)Value);
+					else
+						writer.Write(Value);
+				}
+
+				public void ReadBinary(NetworkReader reader)
+				{
+					if (useHalf)
+						Value = reader.Read<Half>();
+					else
+						Value = reader.Read<float>();
+
+					Target = Value;
 				}
 
 				public Property(string name)
@@ -494,7 +879,7 @@ namespace MNet
 				for (byte i = 0; i < list.Count; i++)
 				{
 					list[i].SetID(i);
-					list[i].Read(animator.Component);
+					list[i].Set(animator);
 
 					Dictionary.Add(list[i].Name, i, list[i]);
 				}
@@ -551,186 +936,7 @@ namespace MNet
 			}
 		}
 
-		public Animator Component { get; protected set; }
-
-        protected override void Reset()
-        {
-            base.Reset();
-
-#if UNITY_EDITOR
-			syncTimer = NetworkEntitySyncTimer.Resolve(Entity);
-#endif
-		}
-
-        void Awake()
-		{
-			Component = GetComponent<Animator>();
-
-			parameters.Configure(this);
-			layers.Configure(this);
-		}
-
-		void Start()
-		{
-			syncTimer.OnInvoke += Sync;
-		}
-
-		#region Trigger Parameter
-		public void SetTrigger(string name, bool instant = true)
-		{
-			if (Parameters.TryGet<ParametersProperty.TriggerProperty>(name, out var parameter) == false)
-			{
-				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
-				return;
-			}
-
-			Component.SetTrigger(parameter.Hash);
-
-			if (instant) SyncParameter(parameter);
-		}
-
-		void SyncParameter(ParametersProperty.TriggerProperty parameter)
-		{
-			BroadcastRPC(TriggerRPC, parameter.ID, exception: NetworkAPI.Client.Self);
-			parameter.ClearDirty();
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void TriggerRPC(byte id, RpcInfo info)
-		{
-			if (parameters.TryGet<ParametersProperty.TriggerProperty>(id, out var parameter) == false)
-			{
-				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
-				return;
-			}
-
-			Component.SetTrigger(parameter.Hash);
-		}
-		#endregion
-
-		#region Bool Parameter
-		public void SetBool(string name, bool value, bool instant = true)
-		{
-			if (Parameters.TryGet<ParametersProperty.BoolProperty>(name, out var parameter) == false)
-			{
-				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
-				return;
-			}
-
-			Component.SetBool(parameter.Hash, value);
-
-			if (parameter.Update(value) == false) return;
-
-			if (instant) SyncParameter(parameter);
-		}
-
-		void SyncParameter(ParametersProperty.BoolProperty parameter)
-		{
-			BroadcastRPC(BoolRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
-			parameter.ClearDirty();
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void BoolRPC(byte id, bool value, RpcInfo info)
-		{
-			if (parameters.TryGet<ParametersProperty.BoolProperty>(id, out var parameter) == false)
-			{
-				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
-				return;
-			}
-
-			Component.SetBool(parameter.Hash, value);
-		}
-		#endregion
-
-		#region Integer Parameter
-		public void SetInteger(string name, int value, bool instant = true)
-		{
-			if (Parameters.TryGet<ParametersProperty.IntegerProperty>(name, out var parameter) == false)
-			{
-				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
-				return;
-			}
-
-			Component.SetInteger(parameter.Hash, value);
-
-			if (parameter.Update(value) == false) return;
-
-			if (instant) SyncParameter(parameter);
-		}
-
-		void SyncParameter(ParametersProperty.IntegerProperty parameter)
-		{
-			if (parameter.UseShort)
-				BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value, exception: NetworkAPI.Client.Self);
-			else
-				BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
-
-			parameter.ClearDirty();
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void IntergerRPC(byte id, int value, RpcInfo info)
-		{
-			if (parameters.TryGet<ParametersProperty.IntegerProperty>(id, out var parameter) == false)
-			{
-				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
-				return;
-			}
-
-			Component.SetInteger(parameter.Hash, value);
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void ShortRPC(byte id, short value, RpcInfo info) => IntergerRPC(id, value, info);
-		#endregion
-
-		#region Float Parameter
-		public void SetFloat(string name, float value, bool instant = false)
-		{
-			if (Parameters.TryGet<ParametersProperty.FloatProperty>(name, out var parameter) == false)
-			{
-				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
-				return;
-			}
-
-			Component.SetFloat(parameter.Hash, value);
-
-			if (parameter.Update(value) == false) return;
-
-			if (instant) SyncParameter(parameter);
-		}
-
-		void SyncParameter(ParametersProperty.FloatProperty parameter)
-		{
-			if (parameter.UseHalf)
-				BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value, exception: NetworkAPI.Client.Self);
-			else
-				BroadcastRPC(FloatRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
-
-			parameter.ClearDirty();
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void FloatRPC(byte id, float value, RpcInfo info)
-		{
-			if (parameters.TryGet<ParametersProperty.FloatProperty>(id, out var parameter) == false)
-			{
-				Debug.LogWarning($"Recieved Network Animator RPC for {this} with Invalid Parameter ID of {id}");
-				return;
-			}
-
-			if (parameter.Smooth)
-				parameter.SetTarget(value);
-			else
-				Component.SetFloat(parameter.Hash, value);
-		}
-
-		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void HalfRPC(byte id, Half value, RpcInfo info) => FloatRPC(id, value, info);
-		#endregion
-
-		#region Layer Weight
+		#region Set Weight
 		public void SetLayerWeight(string name, float value, bool instant = false)
 		{
 			if (layers.TryGet(name, out var layer) == false)
@@ -743,10 +949,14 @@ namespace MNet
 
 			if (layer.Update(value) == false) return;
 
-			if (instant) SyncLayerWeight(layer);
+			if (instant)
+			{
+				SendLayerWeight(layer);
+				BufferLayerWeights();
+			}
 		}
 
-		void SyncLayerWeight(LayersProperty.Property layer)
+		void SendLayerWeight(LayersProperty.Property layer)
 		{
 			if (layer.UseHalf)
 				BroadcastRPC(LayerWeightHalfRPC, layer.ID, (Half)layer.Value, exception: NetworkAPI.Client.Self);
@@ -773,76 +983,74 @@ namespace MNet
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void LayerWeightHalfRPC(byte id, Half value, RpcInfo info) => LayerWeightFloatRPC(id, value, info);
-		#endregion
 
-		void Sync()
+		void BufferLayerWeights()
 		{
-			foreach (var parameter in parameters.Triggers)
-			{
-				if (parameter.IsDirty == false) continue;
+			for (int i = 0; i < layers.Count; i++)
+				layers[i].WriteBinary(writer);
 
-				SyncParameter(parameter);
-			}
+			var binary = writer.Flush();
 
-			foreach (var parameter in parameters.Bools)
-			{
-				if (parameter.IsDirty == false) continue;
+			BufferRPC(BufferLayerWeights, binary);
+		}
+		[NetworkRPC]
+		void BufferLayerWeights(byte[] binary, RpcInfo info)
+		{
+			reader.Set(binary);
 
-				SyncParameter(parameter);
-			}
+			for (int i = 0; i < layers.Count; i++)
+				layers[i].ReadBinary(reader);
+		}
 
-			foreach (var parameter in parameters.Integers)
-			{
-				if (parameter.IsDirty == false) continue;
-
-				SyncParameter(parameter);
-			}
-
-			foreach (var parameter in parameters.Floats)
-			{
-				if (parameter.IsDirty == false) continue;
-
-				SyncParameter(parameter);
-			}
+		void SyncLayerWeights()
+		{
+			var dirty = false;
 
 			foreach (var layer in layers.List)
 			{
 				if (layer.IsDirty == false) continue;
 
-				SyncLayerWeight(layer);
+				SendLayerWeight(layer);
+				dirty = true;
 			}
+
+			if (dirty) BufferLayerWeights();
+		}
+		#endregion
+		#endregion
+
+		void Sync()
+		{
+			SyncTriggers();
+			SyncBools();
+			SyncIntegers();
+			SyncFloats();
+
+			SyncLayerWeights();
 		}
 
 		void Update()
 		{
 			if (Entity.IsReady == false) return;
 
-			if (Entity.IsMine == false)
-			{
-				foreach (var parameter in parameters.Floats)
-				{
-					if (parameter.Smooth == false) continue;
-
-					if (parameter.Translate() == false) continue;
-
-					Component.SetFloat(parameter.Hash, parameter.Value);
-				}
-
-				foreach (var layer in layers.List)
-				{
-					if (layer.Smooth == false) continue;
-
-					if (layer.Translate() == false) continue;
-
-					Component.SetLayerWeight(layer.Index, layer.Value);
-				}
-			}
+			if (Entity.IsMine == false) Translate();
 		}
 
-		public SimpleNetworkAnimator()
+		void Translate()
 		{
-			parameters = new ParametersProperty();
-			layers = new LayersProperty();
+			foreach (var parameter in parameters.Floats)
+			{
+				if (parameter.Smooth == false) continue;
+
+				if (parameter.Translate() == false) continue;
+			}
+
+			foreach (var layer in layers.List)
+			{
+				if (layer.Smooth == false) continue;
+
+				if (layer.Translate() == false) continue;
+			}
 		}
 
 #if UNITY_EDITOR

@@ -23,7 +23,9 @@ namespace MNet
 {
     public partial class NetworkBehaviour
     {
-        #region Broadcast Void
+        #region Broadcast
+
+        #region Void
         protected void BroadcastRPC(
             VoidRpcMethod rpc,
             RemoteBufferMode buffer = RemoteBufferMode.None,
@@ -123,7 +125,7 @@ namespace MNet
         }
         #endregion
 
-        #region Broadcast Return
+        #region Return
         protected void BroadcastRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             RemoteBufferMode buffer = RemoteBufferMode.None,
@@ -223,7 +225,11 @@ namespace MNet
         }
         #endregion
 
-        #region Target Void
+        #endregion
+
+        #region Target
+
+        #region Void
         protected void TargetRPC(
             VoidRpcMethod rpc,
             NetworkClient target,
@@ -309,7 +315,7 @@ namespace MNet
         }
         #endregion
 
-        #region Target Return
+        #region Return
         protected void TargetRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             NetworkClient target,
@@ -395,7 +401,11 @@ namespace MNet
         }
         #endregion
 
-        #region Query Synchronous
+        #endregion
+
+        #region Query
+
+        #region Synchronous
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             NetworkClient target,
@@ -481,7 +491,7 @@ namespace MNet
         }
         #endregion
 
-        #region Query Asynchronous
+        #region Asynchronous
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult>(
             AsyncReturnRpcMethod<TResult> rpc,
             NetworkClient target,
@@ -565,6 +575,184 @@ namespace MNet
             var name = RpcBind.GetName(rpc.Method);
             return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
         }
+        #endregion
+
+        #endregion
+
+        #region Buffer
+
+        #region Void
+        protected void BufferRPC(
+            VoidRpcMethod rpc,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery);
+        }
+
+        protected void BufferRPC<T1>(
+            VoidRpcMethod<T1> rpc,
+            T1 arg1,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer: buffer, delivery, arg1);
+        }
+
+        protected void BufferRPC<T1, T2>(
+            VoidRpcMethod<T1, T2> rpc,
+            T1 arg1,
+            T2 arg2,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer: buffer, delivery, arg1, arg2);
+        }
+
+        protected void BufferRPC<T1, T2, T3>(
+            VoidRpcMethod<T1, T2, T3> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3);
+        }
+
+        protected void BufferRPC<T1, T2, T3, T4>(
+            VoidRpcMethod<T1, T2, T3, T4> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3, arg4);
+        }
+
+        protected void BufferRPC<T1, T2, T3, T4, T5>(
+            VoidRpcMethod<T1, T2, T3, T4, T5> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected void BufferRPC<T1, T2, T3, T4, T5, T6>(
+            VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
+        #endregion
+
+        #region Return
+        protected void BufferRPC<TResult>(
+            ReturnRpcMethod<TResult> rpc,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery);
+        }
+
+        protected void BufferRPC<TResult, T1>(
+            ReturnRpcMethod<TResult, T1> rpc,
+            T1 arg1,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery, arg1);
+        }
+
+        protected void BufferRPC<TResult, T1, T2>(
+            ReturnRpcMethod<TResult, T1, T2> rpc,
+            T1 arg1,
+            T2 arg2,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery, arg1, arg2);
+        }
+
+        protected void BufferRPC<TResult, T1, T2, T3>(
+            ReturnRpcMethod<TResult, T1, T2, T3> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery, arg1, arg2, arg3);
+        }
+
+        protected void BufferRPC<TResult, T1, T2, T3, T4>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery, arg1, arg2, arg3, arg4);
+        }
+
+        protected void BufferRPC<TResult, T1, T2, T3, T4, T5>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery, arg1, arg2, arg3, arg4, arg5);
+        }
+
+        protected void BufferRPC<TResult, T1, T2, T3, T4, T5, T6>(
+            ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc,
+            T1 arg1,
+            T2 arg2,
+            T3 arg3,
+            T4 arg4,
+            T5 arg5,
+            T6 arg6,
+            RemoteBufferMode buffer = RemoteBufferMode.Last,
+            DeliveryMode delivery = DeliveryMode.Reliable)
+        {
+            var name = RpcBind.GetName(rpc.Method);
+            BufferRPC(name, buffer, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+        }
+        #endregion
+
         #endregion
 
         #region Delegates

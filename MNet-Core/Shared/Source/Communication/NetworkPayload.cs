@@ -116,14 +116,17 @@ namespace MNet
             #endregion
 
             #region RPC
-            Add<RpcBroadcastRequest>();
-            Add<RpcBroadcastCommand>();
+            Add<BroadcastRpcRequest>();
+            Add<BroadcastRpcCommand>();
 
-            Add<RpcTargetRequest>();
-            Add<RpcTargetCommand>();
+            Add<TargetRpcRequest>();
+            Add<TargetRpcCommand>();
 
-            Add<RpcQueryRequest>();
-            Add<RpcQueryCommand>();
+            Add<QueryRpcRequest>();
+            Add<QueryRpcCommand>();
+
+            Add<BufferRpcRequest>();
+            Add<BufferRpcCommand>();
             #endregion
 
             #region RPR

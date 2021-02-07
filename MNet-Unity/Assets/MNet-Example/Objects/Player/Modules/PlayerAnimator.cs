@@ -28,9 +28,15 @@ namespace MNet.Example
 
 		public SimpleNetworkAnimator NetworkAnimator => player.NetworkAnimator;
 
+		bool toggle = true;
+
 		void Update()
 		{
 			if (Entity.IsMine == false) return;
+
+			if (Input.GetKeyDown(KeyCode.G)) toggle = !toggle;
+
+			if (toggle == false) return;
 
 			var velocity = Vector3.Scale(player.rigidbody.velocity, Vector3.forward + Vector3.right);
 			NetworkAnimator.SetFloat("Move", velocity.magnitude / Speed * 2);

@@ -215,13 +215,13 @@ namespace MNet
                         case DestroyEntityPayload instance:
                             return DestroyEntity(ref instance, mode);
 
-                        case RpcBroadcastRequest instance:
+                        case BroadcastRpcRequest instance:
                             return InvokeBroadcastRPC(ref instance, mode);
 
-                        case RpcTargetRequest instance:
+                        case TargetRpcRequest instance:
                             return InvokeTargetRPC(ref instance, mode);
 
-                        case RpcQueryRequest instance:
+                        case QueryRpcRequest instance:
                             return InvokeQueryRPC(ref instance, mode);
 
                         case RprRequest instance:
@@ -327,11 +327,11 @@ namespace MNet
                 #endregion
 
                 #region RPC
-                static Response InvokeBroadcastRPC(ref RpcBroadcastRequest request, DeliveryMode mode)
+                static Response InvokeBroadcastRPC(ref BroadcastRpcRequest request, DeliveryMode mode)
                 {
                     if (request.Exception != Client.ID)
                     {
-                        var command = RpcBroadcastCommand.Write(Client.ID, request);
+                        var command = BroadcastRpcCommand.Write(Client.ID, request);
 
                         MessageDispatcher.Invoke(ref command, mode);
                     }
@@ -341,11 +341,11 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeTargetRPC(ref RpcTargetRequest request, DeliveryMode mode)
+                static Response InvokeTargetRPC(ref TargetRpcRequest request, DeliveryMode mode)
                 {
                     if (request.Target == Client.ID)
                     {
-                        var command = RpcTargetCommand.Write(Client.ID, request);
+                        var command = TargetRpcCommand.Write(Client.ID, request);
 
                         MessageDispatcher.Invoke(ref command, mode);
 
@@ -361,11 +361,11 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeQueryRPC(ref RpcQueryRequest request, DeliveryMode mode)
+                static Response InvokeQueryRPC(ref QueryRpcRequest request, DeliveryMode mode)
                 {
                     if (request.Target == Client.ID)
                     {
-                        var command = RpcQueryCommand.Write(Client.ID, request);
+                        var command = QueryRpcCommand.Write(Client.ID, request);
 
                         MessageDispatcher.Invoke(ref command, mode);
 
@@ -761,7 +761,7 @@ namespace MNet
                 }
 
                 #region Respond
-                internal static bool Respond(RpcQueryCommand command, RemoteResponseType response)
+                internal static bool Respond(QueryRpcCommand command, RemoteResponseType response)
                 {
                     if (response == RemoteResponseType.Success)
                     {
@@ -773,7 +773,7 @@ namespace MNet
                     return Send(ref request);
                 }
 
-                internal static bool Respond(RpcQueryCommand command, object value, Type type)
+                internal static bool Respond(QueryRpcCommand command, object value, Type type)
                 {
                     var request = RprRequest.Write(command.Sender, command.Channel, value, type);
                     return Send(ref request);

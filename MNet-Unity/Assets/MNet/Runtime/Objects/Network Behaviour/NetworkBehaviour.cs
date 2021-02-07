@@ -156,7 +156,7 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcBroadcastRequest.Write(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
+            var request = BroadcastRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
 
             return Send(ref request, delivery);
         }
@@ -177,7 +177,7 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcTargetRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, raw);
+            var request = TargetRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, raw);
 
             return Send(ref request, delivery);
         }
@@ -200,7 +200,7 @@ namespace MNet
 
             var raw = bind.WriteArguments(arguments);
 
-            var request = RpcQueryRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
+            var request = QueryRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
 
             if (Send(ref request, delivery) == false)
             {
@@ -213,6 +213,27 @@ namespace MNet
             var answer = new RprAnswer<TResult>(promise);
 
             return answer;
+        }
+
+        protected bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, params object[] arguments)
+        {
+            if (RPCs.TryGetValue(method, out var bind) == false)
+            {
+                Debug.LogWarning($"No RPC Found With Name {method}");
+                return false;
+            }
+
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                return false;
+            }
+
+            var raw = bind.WriteArguments(arguments);
+
+            var request = BufferRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, raw);
+
+            return Send(ref request, delivery);
         }
         #endregion
 
@@ -270,7 +291,7 @@ namespace MNet
 
             if (bind.IsCoroutine) ExceuteCoroutineRPC(result as IEnumerator);
 
-            if (command is RpcQueryCommand query)
+            if (command is QueryRpcCommand query)
             {
                 if (bind.IsAsync)
                     AwaitAsyncQueryRPC(result as IUniTask, query, bind).Forget();
@@ -283,7 +304,7 @@ namespace MNet
 
         void ExceuteCoroutineRPC(IEnumerator method) => StartCoroutine(method);
 
-        async UniTask AwaitAsyncQueryRPC(IUniTask task, RpcQueryCommand command, RpcBind bind)
+        async UniTask AwaitAsyncQueryRPC(IUniTask task, QueryRpcCommand command, RpcBind bind)
         {
             while (task.Status == UniTaskStatus.Pending) await UniTask.Yield();
 
