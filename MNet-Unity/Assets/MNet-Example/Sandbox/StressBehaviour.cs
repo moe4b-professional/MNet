@@ -48,7 +48,7 @@ namespace MNet.Example
 			{
 				if (Entity.IsMine)
 				{
-					SyncVar(nameof(var), var, "Hello World");
+					BroadcastSyncVar(nameof(var), var, "Hello World");
 					BroadcastRPC(Call, "Hello World");
 				}
 

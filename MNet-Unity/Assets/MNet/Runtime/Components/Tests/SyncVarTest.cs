@@ -42,7 +42,7 @@ namespace MNet
 
             if (Entity.IsMine == false) return;
 
-            SyncVar(nameof(field), field, NetworkAPI.Client.Profile.Name);
+            BroadcastSyncVar(nameof(field), field, NetworkAPI.Client.Profile.Name);
         }
     }
 }

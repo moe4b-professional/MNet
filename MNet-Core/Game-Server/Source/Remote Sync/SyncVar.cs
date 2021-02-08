@@ -15,7 +15,8 @@ namespace MNet
         public delegate void UnBufferDelegate(NetworkMessage message);
         public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> message);
 
-        public void Set(NetworkMessage message, SyncVarRequest request, BufferDelegate buffer, UnBufferDelegate unbuffer)
+        public void Set<T>(NetworkMessage message, ref T request, BufferDelegate buffer, UnBufferDelegate unbuffer)
+            where T : ISyncVarRequest
         {
             var id = (request.Behaviour, request.Field);
 

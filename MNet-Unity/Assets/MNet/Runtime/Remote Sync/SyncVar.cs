@@ -96,14 +96,7 @@ namespace MNet
         }
         #endregion
 
-        public SyncVarRequest WriteRequest(object value, NetworkGroupID group)
-        {
-            var request = SyncVarRequest.Write(Entity.ID, Behaviour.ID, FieldID, group, value);
-
-            return request;
-        }
-
-        public void ParseCommand(SyncVarCommand command, out object value, out SyncVarInfo info)
+        public void ParseCommand(ISyncVarCommand command, out object value, out SyncVarInfo info)
         {
             value = command.Read(Type);
 

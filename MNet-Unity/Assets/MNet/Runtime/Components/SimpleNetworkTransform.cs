@@ -81,8 +81,6 @@ namespace MNet
                 protected set => Transform.Component.localPosition = value;
             }
 
-            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
-
             internal override void Translate()
             {
                 var sample = Value;
@@ -94,23 +92,35 @@ namespace MNet
                 velocity.Add(sample);
             }
 
+            protected override ChangeFlags ConstraintToChangeFlag(VectorConstraint constraints) => constraints.ToChangeFlag(AllFlags);
+
+            protected override ChangeFlags CheckChanges(Vector3 previous, Vector3 current)
+            {
+                return ReadChanges(previous, current, AllFlags, ConstraintFlag, minChange);
+            }
+
             protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
             {
                 return Vector3.Lerp(current, target, speed * Time.deltaTime);
             }
 
-            protected override void WriteBinary(NetworkWriter writer, Vector3 value)
+            protected override void WriteTo(ref CoordinatesPacket packet, Vector3 value) => packet.SetPosition(value);
+
+            protected override Vector3 ReadFrom(ref CoordinatesPacket packet, Vector3 source)
             {
-                WriteBinary(writer, value, constraints);
-            }
-            protected override Vector3 ReadBinary(NetworkReader reader, Vector3 source)
-            {
-                return ReadBinary(reader, source, constraints);
+                return ReadFrom(packet.Position, Value, AllFlags, packet.Changes);
             }
 
             public PositionProperty()
             {
                 constraints = new VectorConstraint(true);
+
+                AllFlags = new ChangeFlags[]
+                {
+                    ChangeFlags.PositionX,
+                    ChangeFlags.PositionY,
+                    ChangeFlags.PositionZ,
+                };
             }
         }
 
@@ -126,25 +136,35 @@ namespace MNet
                 protected set => Transform.Component.localRotation = value;
             }
 
-            protected override float CalculateDelta(Quaternion a, Quaternion b) => Quaternion.Angle(a, b);
+            protected override ChangeFlags ConstraintToChangeFlag(VectorConstraint constraints) => constraints.ToChangeFlag(AllFlags);
+
+            protected override ChangeFlags CheckChanges(Quaternion previous, Quaternion current)
+            {
+                return ReadChanges(previous, current, AllFlags, ConstraintFlag, minChange);
+            }
 
             protected override Quaternion Translate(Quaternion current, Quaternion target, float speed)
             {
                 return Quaternion.Lerp(current, target, speed * Time.deltaTime);
             }
 
-            protected override void WriteBinary(NetworkWriter writer, Quaternion value)
+            protected override void WriteTo(ref CoordinatesPacket packet, Quaternion value) => packet.SetRotation(value.eulerAngles);
+
+            protected override Quaternion ReadFrom(ref CoordinatesPacket packet, Quaternion source)
             {
-                WriteBinary(writer, value, constraints);
-            }
-            protected override Quaternion ReadBinary(NetworkReader reader, Quaternion source)
-            {
-                return ReadBinary(reader, source, constraints);
+                return ReadFrom(packet.Rotation, Value, AllFlags, packet.Changes);
             }
 
             public RotationProperty()
             {
                 constraints = new VectorConstraint(true);
+
+                AllFlags = new ChangeFlags[]
+                {
+                    ChangeFlags.RotationX,
+                    ChangeFlags.RotationY,
+                    ChangeFlags.RotationZ,
+                };
             }
         }
 
@@ -152,7 +172,7 @@ namespace MNet
         ScaleProperty scale = default;
         public ScaleProperty Scale => scale;
         [Serializable]
-        public class ScaleProperty : Property<Vector3, VectorConstraint>
+        public class ScaleProperty : Property<Vector3, bool>
         {
             public override Vector3 Value
             {
@@ -160,32 +180,45 @@ namespace MNet
                 protected set => Transform.Component.localScale = value;
             }
 
-            protected override float CalculateDelta(Vector3 a, Vector3 b) => Vector3.Distance(a, b);
+            protected override ChangeFlags ConstraintToChangeFlag(bool constraints) => constraints ? ChangeFlags.Scale : ChangeFlags.None;
+
+            protected override ChangeFlags CheckChanges(Vector3 previous, Vector3 current)
+            {
+                return ReadChanges(previous, current, AllFlags, ConstraintFlag, minChange);
+            }
 
             protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
             {
                 return Vector3.Lerp(current, target, speed * Time.deltaTime);
             }
 
-            protected override void WriteBinary(NetworkWriter writer, Vector3 value)
+            protected override void WriteTo(ref CoordinatesPacket packet, Vector3 value) => packet.SetScale(value);
+
+            protected override Vector3 ReadFrom(ref CoordinatesPacket packet, Vector3 source)
             {
-                WriteBinary(writer, value, constraints);
-            }
-            protected override Vector3 ReadBinary(NetworkReader reader, Vector3 source)
-            {
-                return ReadBinary(reader, source, constraints);
+                return ReadFrom(packet.Scale, Value, AllFlags, packet.Changes);
             }
 
             public ScaleProperty()
             {
-                constraints = new VectorConstraint(false);
+                constraints = false;
+
+                AllFlags = new ChangeFlags[]
+                {
+                    ChangeFlags.Scale,
+                    ChangeFlags.Scale,
+                    ChangeFlags.Scale,
+                };
             }
         }
 
-        #region Properties
         [Serializable]
         public abstract class Property
         {
+            public ChangeFlags[] AllFlags { get; protected set; }
+
+            public ChangeFlags ConstraintFlag { get; protected set; }
+
             public SimpleNetworkTransform Transform { get; protected set; }
             internal virtual void Set(SimpleNetworkTransform reference)
             {
@@ -193,15 +226,61 @@ namespace MNet
             }
 
             #region Controls
-            internal abstract bool CheckChanges();
-
-            internal abstract void Update(NetworkWriter writer);
-
-            internal abstract void Sync(NetworkReader reader);
+            internal abstract ChangeFlags CheckChanges();
 
             internal abstract void Translate();
-
             internal abstract void Anchor();
+
+            internal abstract void WriteTo(ref CoordinatesPacket packet);
+            internal abstract void ReadFrom(ref CoordinatesPacket packet);
+            #endregion
+
+            //Static Utility
+            #region Read Changes
+            public static ChangeFlags ReadChanges(Vector3 previous, Vector3 current, ChangeFlags[] flags, ChangeFlags constraint, float epsilon)
+            {
+                var change = ChangeFlags.None;
+
+                var delta = previous - current;
+
+                delta = new Vector3()
+                {
+                    x = Mathf.Abs(delta.x),
+                    y = Mathf.Abs(delta.y),
+                    z = Mathf.Abs(delta.z),
+                };
+
+                if (constraint.HasFlag(flags[0])) if (delta.x >= epsilon) change |= flags[0];
+                if (constraint.HasFlag(flags[1])) if (delta.y >= epsilon) change |= flags[1];
+                if (constraint.HasFlag(flags[2])) if (delta.z >= epsilon) change |= flags[2];
+
+                return change;
+            }
+
+            public static ChangeFlags ReadChanges(Quaternion previous, Quaternion current, ChangeFlags[] flags, ChangeFlags constraint, float epsilon)
+            {
+                return ReadChanges(previous.eulerAngles, current.eulerAngles, flags, constraint, epsilon);
+            }
+            #endregion
+
+            #region Read From
+            public static Vector3 ReadFrom(Vector3 target, Vector3 source, ChangeFlags[] flags, ChangeFlags change)
+            {
+                var copy = source;
+
+                if (change.HasFlag(flags[0])) copy.x = target.x;
+                if (change.HasFlag(flags[1])) copy.y = target.y;
+                if (change.HasFlag(flags[2])) copy.z = target.z;
+
+                return copy;
+            }
+
+            public static Quaternion ReadFrom(Vector3 target, Quaternion source, ChangeFlags[] flags, ChangeFlags change)
+            {
+                var vector = ReadFrom(target, source.eulerAngles, flags, change);
+
+                return Quaternion.Euler(vector);
+            }
             #endregion
         }
 
@@ -229,31 +308,16 @@ namespace MNet
                 base.Set(reference);
 
                 Target = Value;
+
+                ConstraintFlag = ConstraintToChangeFlag(constraints);
             }
 
             #region Controls
-            internal override bool CheckChanges()
+            internal override ChangeFlags CheckChanges()
             {
-                var previous = Target;
-                var current = Value;
+                var changes = CheckChanges(Target, Value);
 
-                var delta = CalculateDelta(previous, current);
-
-                if (delta < minChange) return false;
-
-                return true;
-            }
-
-            internal override void Update(NetworkWriter writer)
-            {
-                Target = Value;
-
-                WriteBinary(writer, Target);
-            }
-
-            internal override void Sync(NetworkReader reader)
-            {
-                Target = ReadBinary(reader, Value);
+                return changes;
             }
 
             internal override void Translate()
@@ -265,55 +329,33 @@ namespace MNet
             {
                 Value = Target;
             }
+
+            internal override void WriteTo(ref CoordinatesPacket packet)
+            {
+                Target = Value;
+
+                WriteTo(ref packet, Value);
+            }
+
+            internal override void ReadFrom(ref CoordinatesPacket packet)
+            {
+                Target = ReadFrom(ref packet, Value);
+            }
             #endregion
 
             #region Abstractions
             public abstract TValue Value { get; protected set; }
 
+            protected abstract ChangeFlags CheckChanges(TValue previous, TValue current);
+
+            protected abstract ChangeFlags ConstraintToChangeFlag(TConstraint constraints);
+
             protected abstract TValue Translate(TValue current, TValue target, float speed);
 
-            protected abstract float CalculateDelta(TValue a, TValue b);
-
-            protected abstract void WriteBinary(NetworkWriter writer, TValue value);
-            protected abstract TValue ReadBinary(NetworkReader reader, TValue source);
-            #endregion
-
-            //Static Utility
-            #region Write Binary
-            public static void WriteBinary(NetworkWriter writer, Vector3 value, VectorConstraint constraints)
-            {
-                if (constraints.X) writer.Write(value.x);
-                if (constraints.Y) writer.Write(value.y);
-                if (constraints.Z) writer.Write(value.z);
-            }
-
-            public static void WriteBinary(NetworkWriter writer, Quaternion value, VectorConstraint constraints)
-            {
-                WriteBinary(writer, value.eulerAngles, constraints);
-            }
-            #endregion
-
-            #region Read Binary
-            public static Vector3 ReadBinary(NetworkReader reader, Vector3 source, VectorConstraint constraints)
-            {
-                var value = source;
-
-                if (constraints.X) value.x = reader.Read<float>();
-                if (constraints.Y) value.y = reader.Read<float>();
-                if (constraints.Z) value.z = reader.Read<float>();
-
-                return value;
-            }
-
-            public static Quaternion ReadBinary(NetworkReader reader, Quaternion source, VectorConstraint constraints)
-            {
-                var vector = ReadBinary(reader, source.eulerAngles, constraints);
-
-                return Quaternion.Euler(vector);
-            }
+            protected abstract void WriteTo(ref CoordinatesPacket packet, TValue value);
+            protected abstract TValue ReadFrom(ref CoordinatesPacket packet, TValue source);
             #endregion
         }
-        #endregion
 
         [Serializable]
         public class VectorConstraint
@@ -348,6 +390,17 @@ namespace MNet
 
             public bool Any => x | y | z;
 
+            public ChangeFlags ToChangeFlag(ChangeFlags[] flags)
+            {
+                var flag = ChangeFlags.None;
+
+                if (x) flag |= flags[0];
+                if (y) flag |= flags[1];
+                if (z) flag |= flags[2];
+
+                return flag;
+            }
+
             public VectorConstraint(bool value) : this(value, value, value) { }
             public VectorConstraint(bool x, bool y, bool z)
             {
@@ -357,10 +410,103 @@ namespace MNet
             }
         }
 
-        public Transform Component => transform;
+        [Flags]
+        public enum ChangeFlags
+        {
+            None = 0,
 
-        NetworkWriter writer;
-        NetworkReader reader;
+            PositionX = 1 << 1,
+            PositionY = 1 << 2,
+            PositionZ = 1 << 3,
+
+            RotationX = 1 << 4,
+            RotationY = 1 << 5,
+            RotationZ = 1 << 6,
+
+            Scale = 1 << 7,
+        }
+
+        public struct CoordinatesPacket : INetworkSerializable
+        {
+            ChangeFlags changes;
+            public ChangeFlags Changes => changes;
+
+            #region Position
+            float positionX;
+            float positionY;
+            float positionZ;
+
+            public void SetPosition(Vector3 value)
+            {
+                positionX = value.x;
+                positionY = value.y;
+                positionZ = value.z;
+            }
+
+            public Vector3 Position => new Vector3(positionX, positionY, positionZ);
+            #endregion
+
+            #region Rotation
+            float rotationX;
+            float rotationY;
+            float rotationZ;
+
+            public void SetRotation(Vector3 value)
+            {
+                rotationX = value.x;
+                rotationY = value.y;
+                rotationZ = value.z;
+            }
+
+            public Vector3 Rotation => new Vector3(rotationX, rotationY, rotationZ);
+            #endregion
+
+            #region Scale
+            Vector3 scale;
+            public Vector3 Scale => scale;
+
+            public void SetScale(Vector3 value)
+            {
+                scale = value;
+            }
+            #endregion
+
+            public void Select(ref NetworkSerializationContext context)
+            {
+                context.Select(ref changes);
+
+                if (changes.HasFlag(ChangeFlags.PositionX)) context.Select(ref positionX);
+                if (changes.HasFlag(ChangeFlags.PositionY)) context.Select(ref positionY);
+                if (changes.HasFlag(ChangeFlags.PositionZ)) context.Select(ref positionZ);
+
+                if (changes.HasFlag(ChangeFlags.RotationX)) context.Select(ref rotationX);
+                if (changes.HasFlag(ChangeFlags.RotationY)) context.Select(ref rotationY);
+                if (changes.HasFlag(ChangeFlags.RotationZ)) context.Select(ref rotationZ);
+
+                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scale);
+            }
+
+            public override string ToString() => $"( {changes} ):\n{Position} | {Rotation} | {scale}";
+
+            public CoordinatesPacket(ChangeFlags changes, Vector3 position, Vector3 rotation, Vector3 scale)
+            {
+                this.changes = changes;
+
+                positionX = position.x;
+                positionY = position.y;
+                positionZ = position.z;
+
+                rotationX = rotation.x;
+                rotationY = rotation.y;
+                rotationZ = rotation.z;
+
+                this.scale = scale;
+            }
+
+            public CoordinatesPacket(ChangeFlags changes) : this(changes, Vector3.zero, Vector3.zero, Vector3.zero) { }
+        }
+
+        public Transform Component => transform;
 
         protected override void Reset()
         {
@@ -373,9 +519,6 @@ namespace MNet
 
         void Awake()
         {
-            writer = new NetworkWriter(position.Constraints.BinarySize + rotation.Constraints.BinarySize + scale.Constraints.BinarySize);
-            reader = new NetworkReader();
-
             Properties = new List<Property>() { position, rotation, scale };
         }
 
@@ -397,42 +540,85 @@ namespace MNet
 
         void Sync()
         {
-            var changed = false;
+            if (SendDelta() == false) return;
+
+            SendBuffer();
+        }
+
+        bool SendDelta()
+        {
+            var changes = ChangeFlags.None;
 
             for (int i = 0; i < Properties.Count; i++)
-                changed |= Properties[i].CheckChanges();
+                changes |= Properties[i].CheckChanges();
 
-            if (changed || forceSync)
+            if (forceSync)
             {
                 for (int i = 0; i < Properties.Count; i++)
-                    Properties[i].Update(writer);
-
-                var binary = writer.Flush();
-
-                BroadcastRPC(Sync, binary, delivery: DeliveryMode.Unreliable, buffer: RemoteBufferMode.Last, exception: Entity.Owner);
+                    changes |= Properties[i].ConstraintFlag;
             }
+
+            if (changes == ChangeFlags.None) return false;
+
+            var coordinates = new CoordinatesPacket(changes);
+
+            for (int i = 0; i < Properties.Count; i++)
+                Properties[i].WriteTo(ref coordinates);
+
+            Debug.Log(coordinates);
+
+            BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, exception: Entity.Owner);
+            return true;
+        }
+
+        void SendBuffer()
+        {
+            var changes = ChangeFlags.None;
+
+            for (int i = 0; i < Properties.Count; i++)
+                changes |= Properties[i].ConstraintFlag;
+
+            if (changes == ChangeFlags.None) return;
+
+            var coordinates = new CoordinatesPacket(changes);
+
+            for (int i = 0; i < Properties.Count; i++)
+                Properties[i].WriteTo(ref coordinates);
+
+            BufferRPC(Buffer, coordinates, delivery: DeliveryMode.Reliable);
         }
 
         void Update()
         {
             if (Entity.IsReady == false) return;
 
-            if (Entity.IsMine == false)
-            {
-                for (int i = 0; i < Properties.Count; i++)
-                    Properties[i].Translate();
-            }
+            if (Entity.IsMine == false) Translate();
         }
 
-        [NetworkRPC]
-        void Sync(byte[] binary, RpcInfo info)
+        void Translate()
         {
-            reader.Set(binary);
-
             for (int i = 0; i < Properties.Count; i++)
-                Properties[i].Sync(reader);
+                Properties[i].Translate();
+        }
 
-            if (info.IsBuffered)
+        [NetworkRPC(Authority = RemoteAuthority.Owner)]
+        void Delta(CoordinatesPacket coordinates, RpcInfo info)
+        {
+            Apply(ref coordinates, info.IsBuffered);
+        }
+
+        [NetworkRPC(Authority = RemoteAuthority.Owner)]
+        void Buffer(CoordinatesPacket coordinates, RpcInfo info)
+        {
+            Apply(ref coordinates, info.IsBuffered);
+        }
+
+        void Apply(ref CoordinatesPacket coordinates, bool anchor)
+        {
+            for (int i = 0; i < Properties.Count; i++)
+                Properties[i].ReadFrom(ref coordinates);
+
+            if (anchor)
             {
                 for (int i = 0; i < Properties.Count; i++)
                     Properties[i].Anchor();

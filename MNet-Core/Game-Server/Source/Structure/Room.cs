@@ -547,7 +547,8 @@ namespace MNet
 
                 MessageDispatcher.RegisterHandler<RprRequest>(InvokeRPR);
 
-                MessageDispatcher.RegisterHandler<SyncVarRequest>(InvokeSyncVar);
+                MessageDispatcher.RegisterHandler<BroadcastSyncVarRequest>(InvokeBroadcastSyncVar);
+                MessageDispatcher.RegisterHandler<BufferSyncVarRequest>(InvokeBufferSyncVar);
             }
 
             #region RPC
@@ -648,7 +649,8 @@ namespace MNet
             }
             #endregion
 
-            void InvokeSyncVar(NetworkClient sender, ref SyncVarRequest request, DeliveryMode mode)
+            #region Sync Var
+            void InvokeBroadcastSyncVar(NetworkClient sender, ref BroadcastSyncVarRequest request, DeliveryMode mode)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -660,8 +662,24 @@ namespace MNet
 
                 var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID);
 
-                entity.SyncVarBuffer.Set(message, request, MessageBuffer.Add, MessageBuffer.Remove);
+                entity.SyncVarBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.Remove);
             }
+
+            void InvokeBufferSyncVar(NetworkClient sender, ref BufferSyncVarRequest request, DeliveryMode mode)
+            {
+                if (Entities.TryGet(request.Entity, out var entity) == false)
+                {
+                    Log.Warning($"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}");
+                    return;
+                }
+
+                var command = SyncVarCommand.Write(sender.ID, request);
+
+                var message = NetworkMessage.Write(ref command);
+
+                entity.SyncVarBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.Remove);
+            }
+            #endregion
         }
 
         public MessageBufferProperty MessageBuffer = new MessageBufferProperty();

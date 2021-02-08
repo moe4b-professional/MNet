@@ -136,7 +136,7 @@ namespace MNet
             #endregion
 
             #region SyncVar
-            Add<SyncVarRequest>();
+            Add<BroadcastSyncVarRequest>();
             Add<SyncVarCommand>();
             #endregion
 

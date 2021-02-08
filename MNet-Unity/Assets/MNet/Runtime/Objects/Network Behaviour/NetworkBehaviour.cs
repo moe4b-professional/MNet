@@ -237,7 +237,7 @@ namespace MNet
         }
         #endregion
 
-        internal bool InvokeRPC<T>(T command)
+        internal bool InvokeRPC<T>(ref T command)
             where T : IRpcCommand
         {
             if (RPCs.TryGetValue(command.Method, out var bind) == false)
@@ -358,9 +358,11 @@ namespace MNet
         /// <summary>
         /// Overload for ensuring type safety
         /// </summary>
-        protected bool SyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default) => SyncVar(name, value, delivery, group);
-
-        protected bool SyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        protected bool BroadcastSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        {
+            return BroadcastSyncVar(name, value, delivery, group);
+        }
+        protected bool BroadcastSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
         {
             if (SyncVars.TryGetValue(name, out var bind) == false)
             {
@@ -374,7 +376,30 @@ namespace MNet
                 return false;
             }
 
-            var request = bind.WriteRequest(value, group);
+            var request = BroadcastSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
+
+            return Send(ref request, delivery);
+        }
+
+        protected bool BufferSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        {
+            return BufferSyncVar(name, value, delivery, group);
+        }
+        protected bool BufferSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        {
+            if (SyncVars.TryGetValue(name, out var bind) == false)
+            {
+                Debug.LogError($"No SyncVar Found With Name {name}");
+                return false;
+            }
+
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                return false;
+            }
+
+            var request = BufferSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
 
             return Send(ref request, delivery);
         }

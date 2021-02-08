@@ -235,7 +235,8 @@ namespace MNet
         }
 
         #region Remote Sync
-        public bool InvokeRPC(IRpcCommand command)
+        public bool InvokeRPC<T>(ref T command)
+            where T : IRpcCommand
         {
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {
@@ -243,7 +244,7 @@ namespace MNet
                 return false;
             }
 
-            return target.InvokeRPC(command);
+            return target.InvokeRPC(ref command);
         }
 
         public void InvokeSyncVar(SyncVarCommand command)

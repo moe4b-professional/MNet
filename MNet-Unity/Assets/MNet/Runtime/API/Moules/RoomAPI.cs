@@ -638,12 +638,12 @@ namespace MNet
                 }
 
                 #region RPC
-                static void InvokeBroadcastRPC(ref BroadcastRpcCommand command) => InvokeRPC(command);
-                static void InvokeTargetRPC(ref TargetRpcCommand command) => InvokeRPC(command);
-                static void InvokeQueryRPC(ref QueryRpcCommand command) => InvokeRPC(command);
-                static void InvokeBufferRPC(ref BufferRpcCommand command) => InvokeRPC(command);
+                static void InvokeBroadcastRPC(ref BroadcastRpcCommand command) => InvokeRPC(ref command);
+                static void InvokeTargetRPC(ref TargetRpcCommand command) => InvokeRPC(ref command);
+                static void InvokeQueryRPC(ref QueryRpcCommand command) => InvokeRPC(ref command);
+                static void InvokeBufferRPC(ref BufferRpcCommand command) => InvokeRPC(ref command);
 
-                static void InvokeRPC<T>(T command)
+                static void InvokeRPC<T>(ref T command)
                     where T : IRpcCommand
                 {
                     if (Entities.TryGet(command.Entity, out var target) == false)
@@ -653,7 +653,7 @@ namespace MNet
                         return;
                     }
 
-                    if (target.InvokeRPC(command) == false)
+                    if (target.InvokeRPC(ref command) == false)
                     {
                         if (command is QueryRpcCommand query) Client.RPR.Respond(query, RemoteResponseType.FatalFailure);
                     }

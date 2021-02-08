@@ -208,7 +208,7 @@ namespace MNet
 
         void SendSyncVar(DeliveryMethod delivery)
         {
-            var request = SyncVarRequest.Write(EntityID, default, default, default, Client.Payload);
+            var request = BroadcastSyncVarRequest.Write(EntityID, default, default, default, Client.Payload);
 
             Send(ref request, delivery);
         }

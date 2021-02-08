@@ -224,10 +224,16 @@ namespace MNet
                         case QueryRpcRequest instance:
                             return InvokeQueryRPC(ref instance, mode);
 
+                        case BufferRpcRequest instance:
+                            return InvokeBufferRPC(ref instance, mode);
+
                         case RprRequest instance:
                             return InvokeRPR(ref instance, mode);
 
-                        case SyncVarRequest instance:
+                        case BroadcastSyncVarRequest instance:
+                            return InvokeSyncVar(ref instance, mode);
+
+                        case BufferSyncVarRequest instance:
                             return InvokeSyncVar(ref instance, mode);
 
                         case LoadScenesPayload instance:
@@ -380,6 +386,16 @@ namespace MNet
 
                     return Response.Send;
                 }
+
+                static Response InvokeBufferRPC(ref BufferRpcRequest request, DeliveryMode mode)
+                {
+                    if(OfflineMode.On)
+                    {
+                        return Response.Consume;
+                    }
+
+                    return Response.Send;
+                }
                 #endregion
 
                 static Response InvokeRPR(ref RprRequest request, DeliveryMode mode)
@@ -402,7 +418,8 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeSyncVar(ref SyncVarRequest request, DeliveryMode mode)
+                static Response InvokeSyncVar<T>(ref T request, DeliveryMode mode)
+                    where T : ISyncVarRequest
                 {
                     var command = SyncVarCommand.Write(Client.ID, request);
 
