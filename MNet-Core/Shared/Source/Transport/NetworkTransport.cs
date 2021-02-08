@@ -16,21 +16,28 @@ namespace MNet
     {
         Normal,
         Unknown,
-        Rejected,
-        NetworkUnreachable,
-        ServerUnreachable,
+
         ConnectionFailed,
-        Timeout,
-        FullCapacity,
-        InvalidContext,
-        InvalidData,
+        ConnectionClosed,
+        ConnectionTimeout,
+        ConnectionRejected,
+
         ServerClosed,
+        ServerUnreachable,
+        NetworkUnreachable,
+
+        NoCapacity,
+
+        InvalidData,
+        InvalidContext,
+
         HostDisconnected,
     }
 
     [Preserve]
     public enum DeliveryMode : byte
     {
+        //Relaible
         /// <summary>
         /// Reliable and ordered. Packets won't be dropped, won't be duplicated, will arrive in order.
         /// </summary>
@@ -46,6 +53,7 @@ namespace MNet
         /// </summary>
         ReliableSequenced,
 
+        //Unreliable
         /// <summary>
         /// Unreliable. Packets can be dropped, can be duplicated, can arrive without order.
         /// </summary>

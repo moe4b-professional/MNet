@@ -23,34 +23,19 @@ namespace MNet
                         return ushort.MaxValue;
                 }
 
-                return 400;
+                return 1024;
             }
 
             public static class Disconnect
             {
-                public static byte[] CodeToBinary(DisconnectCode code)
-                {
-                    var value = Convert.ToByte(code);
-
-                    return new byte[] { value };
-                }
-
                 public static DisconnectCode InfoToCode(DisconnectInfo info)
                 {
                     if (info.Reason == DisconnectReason.RemoteConnectionClose || info.Reason == DisconnectReason.ConnectionRejected)
                     {
-                        try
-                        {
-                            var value = info.AdditionalData.GetByte();
+                        if(info.AdditionalData.TryGetByte(out var value))
+                            return BinaryToCode(value);
 
-                            var code = (DisconnectCode)value;
-
-                            return code;
-                        }
-                        catch (Exception)
-                        {
-                            return DisconnectCode.Unknown;
-                        }
+                        return DisconnectCode.Unknown;
                     }
 
                     switch (info.Reason)
@@ -62,7 +47,7 @@ namespace MNet
                             return DisconnectCode.ConnectionFailed;
 
                         case DisconnectReason.Timeout:
-                            return DisconnectCode.Timeout;
+                            return DisconnectCode.ConnectionTimeout;
 
                         case DisconnectReason.HostUnreachable:
                             return DisconnectCode.ServerUnreachable;
@@ -71,22 +56,28 @@ namespace MNet
                             return DisconnectCode.NetworkUnreachable;
 
                         case DisconnectReason.ConnectionRejected:
-                            return DisconnectCode.Rejected;
+                            return DisconnectCode.ConnectionRejected;
 
                         case DisconnectReason.RemoteConnectionClose:
-                            return DisconnectCode.ServerClosed;
+                            return DisconnectCode.ConnectionClosed;
                     }
 
                     return DisconnectCode.Unknown;
                 }
 
-                public static DisconnectCode BinaryToCode(byte[] binary) => ByteToCode(binary[0]);
-                public static DisconnectCode ByteToCode(byte value) => (DisconnectCode)value;
+                public static byte[] CodeToBinary(DisconnectCode code)
+                {
+                    var value = Convert.ToByte(code);
+
+                    return new byte[] { value };
+                }
+
+                public static DisconnectCode BinaryToCode(byte value) => (DisconnectCode)value;
             }
 
             public static class Delivery
             {
-                public static Glossary<DeliveryMode, DeliveryMethod> Glossary { get; private set; }
+                public static readonly Glossary<DeliveryMode, DeliveryMethod> Glossary;
 
                 static Delivery()
                 {

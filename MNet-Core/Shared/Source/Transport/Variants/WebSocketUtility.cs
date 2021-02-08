@@ -14,7 +14,7 @@ namespace MNet
         {
             public const ushort Port = 9191;
 
-            public static int CheckMTU(DeliveryMode mode) => int.MaxValue;
+            public static int CheckMTU() => ushort.MaxValue;
 
             public static class Disconnect
             {

@@ -108,7 +108,7 @@ namespace MNet
 
         public const int Port = Utility.Port;
 
-        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU();
 
         public override void Connect(GameServerID server, RoomID room)
         {

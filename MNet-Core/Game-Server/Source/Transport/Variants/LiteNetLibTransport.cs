@@ -18,7 +18,7 @@ namespace MNet
     {
         public NetManager Server { get; protected set; }
 
-        public static ushort Port => Utility.Port;
+        public const ushort Port = Utility.Port;
 
         public Dictionary<NetPeer, LiteNetLibTransportContext> Routes { get; protected set; }
 
@@ -46,11 +46,15 @@ namespace MNet
         #region Callbacks
         public void OnConnectionRequest(ConnectionRequest request)
         {
-            var key = request.Data.GetString();
+            if (request.Data.TryGetString(out var key) == false)
+            {
+                Reject(request, DisconnectCode.ConnectionRejected);
+                return;
+            }
 
             if (RoomID.TryParse(key, out var room) == false)
             {
-                Reject(request, DisconnectCode.InvalidContext);
+                Reject(request, DisconnectCode.ConnectionRejected);
                 return;
             }
 
@@ -67,7 +71,7 @@ namespace MNet
 
         public void OnPeerConnected(NetPeer peer)
         {
-            if(Routes.TryGetValue(peer, out var context) == false)
+            if (Routes.TryGetValue(peer, out var context) == false)
             {
                 Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
                 return;
@@ -81,13 +85,14 @@ namespace MNet
             if (Routes.TryGetValue(peer, out var context) == false)
             {
                 Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
+                Disconnect(peer, DisconnectCode.InvalidData);
                 return;
             }
 
             var raw = reader.GetRemainingBytes();
             reader.Recycle();
 
-            if(Utility.Delivery.Glossary.TryGetKey(delivery, out var mode) == false)
+            if (Utility.Delivery.Glossary.TryGetKey(delivery, out var mode) == false)
             {
                 Log.Error($"LiteNetLib: Recieved Packet with Undefined Delivery Method of {delivery}");
                 Disconnect(peer, DisconnectCode.InvalidData);

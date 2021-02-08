@@ -126,7 +126,7 @@ namespace MNet
             {
                 if (Room.IsFull)
                 {
-                    Disconnect(id, DisconnectCode.FullCapacity);
+                    Disconnect(id, DisconnectCode.NoCapacity);
                     return;
                 }
 

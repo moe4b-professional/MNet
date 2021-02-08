@@ -15,9 +15,9 @@ namespace MNet
     {
         public WebSocketServer Server { get; protected set; }
 
-        public static ushort Port => Utility.Port;
+        public const ushort Port = Utility.Port;
 
-        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU();
 
         public override void Start()
         {
@@ -33,7 +33,7 @@ namespace MNet
 
         public override void Stop()
         {
-            var value = Utility.Disconnect.CodeToValue(DisconnectCode.ServerClosed);
+            var value = Utility.Disconnect.CodeToValue(DisconnectCode.ConnectionClosed);
 
             Server.Stop(value, null);
         }
