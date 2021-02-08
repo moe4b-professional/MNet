@@ -61,7 +61,7 @@ namespace MNet
                 {
                     while (Pause.Value) await UniTask.WaitWhile(Pause.IsOn);
 
-                    MessageCallback(list[i], DeliveryMode.Reliable);
+                    MessageCallback(list[i], DeliveryMode.ReliableOrdered);
                 }
 
                 IsOnBuffer = false;
@@ -171,7 +171,7 @@ namespace MNet
                 Transport.Connect(server, room);
             }
 
-            internal static bool Send(byte[] raw, DeliveryMode mode)
+            internal static bool Send(byte[] raw, DeliveryMode mode, byte channel)
             {
                 if (IsConnected == false)
                 {
@@ -187,7 +187,7 @@ namespace MNet
                     return false;
                 }
 
-                Transport.Send(raw, mode);
+                Transport.Send(raw, mode, channel);
                 return true;
             }
 

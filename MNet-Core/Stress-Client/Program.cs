@@ -161,7 +161,7 @@ namespace MNet
             IsReady = true;
         }
 
-        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod, byte deliveryChannel)
         {
             var raw = reader.GetRemainingBytes();
 

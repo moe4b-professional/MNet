@@ -94,11 +94,11 @@ namespace MNet
         public void OnConnectionRequest(ConnectionRequest request) { }
         #endregion
 
-        public override void Send(byte[] raw, DeliveryMode mode)
+        public override void Send(byte[] raw, DeliveryMode mode, byte channel)
         {
             var method = Utility.Delivery.Glossary[mode];
 
-            Peer.Send(raw, method);
+            Peer.Send(raw, channel, method);
         }
 
         public override void Close()
@@ -110,6 +110,7 @@ namespace MNet
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
+            Client.ChannelsCount = 64;
             Client.UpdateTime = 1;
 
             new Thread(Run).Start();

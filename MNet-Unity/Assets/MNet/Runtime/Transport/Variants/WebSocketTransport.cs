@@ -125,7 +125,7 @@ namespace MNet
 
         void OpenCallback(object sender, EventArgs args) => InvokeConnect();
 
-        void RecievedMessageCallback(object sender, MessageEventArgs args) => InvokeMessages(args.RawData, DeliveryMode.Reliable);
+        void RecievedMessageCallback(object sender, MessageEventArgs args) => InvokeMessages(args.RawData, DeliveryMode.ReliableOrdered);
 
         void CloseCallback(object sender, CloseEventArgs args)
         {
@@ -134,7 +134,7 @@ namespace MNet
             InvokeDisconnect(code);
         }
 
-        public override void Send(byte[] raw, DeliveryMode mode) => Socket.Send(raw);
+        public override void Send(byte[] raw, DeliveryMode mode, byte channel) => Socket.Send(raw);
 
         public override void Close() => Socket.Close(CloseStatusCode.Normal);
 

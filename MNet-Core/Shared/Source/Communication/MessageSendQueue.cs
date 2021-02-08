@@ -11,24 +11,53 @@ namespace MNet
 {
     public class MessageSendQueue
     {
-        public Dictionary<DeliveryMode, Delivery> Dictionary { get; protected set; }
-
         public CheckMTUDelegate CheckMTU { get; protected set; }
         public delegate int CheckMTUDelegate(DeliveryMode mode);
 
-        public List<Delivery> Deliveries { get; protected set; }
+        public Dictionary<DeliveryMode, Delivery> Deliveries;
 
         public class Delivery
         {
             public DeliveryMode Mode { get; protected set; }
 
+            public int MTU { get; protected set; }
+
+            public Dictionary<byte, Channel> Channels;
+
+            public Channel Add(byte[] message, byte channel)
+            {
+                if (Channels.TryGetValue(channel, out var element) == false)
+                {
+                    element = new Channel(channel, MTU);
+
+                    Channels.Add(channel, element);
+                }
+
+                element.Add(message);
+
+                return element;
+            }
+
+            public Delivery(DeliveryMode mode, int mtu)
+            {
+                this.Mode = mode;
+                this.MTU = mtu;
+
+                Channels = new Dictionary<byte, Channel>();
+            }
+        }
+
+        public class Channel
+        {
+            public readonly byte Index;
+
+            public readonly int MTU;
+
             List<byte[]> buffers;
 
             public bool Empty => buffers.Count == 0 && writer.Size == 0;
 
-            public int MTU { get; protected set; }
-
-            NetworkWriter writer;
+            readonly NetworkWriter writer;
 
             public void Add(byte[] message)
             {
@@ -69,46 +98,81 @@ namespace MNet
                 buffers.Clear();
             }
 
-            public Delivery(DeliveryMode mode, int mtu)
+            public Channel(byte index, int mtu)
             {
-                this.Mode = mode;
+                this.Index = index;
+                this.MTU = mtu;
 
                 buffers = new List<byte[]>();
-
-                this.MTU = mtu;
 
                 writer = new NetworkWriter(1024);
             }
         }
 
-        public void Add(byte[] message, DeliveryMode mode)
+        public HashSet<(Delivery delivery, Channel channel)> Dirty;
+
+        public void Add(byte[] message, DeliveryMode mode, byte channel)
         {
-            if (Dictionary.TryGetValue(mode, out var delivery) == false)
+            if (Deliveries.TryGetValue(mode, out var element) == false)
             {
                 var mtu = CheckMTU(mode);
 
-                delivery = new Delivery(mode, mtu);
+                element = new Delivery(mode, mtu);
 
-                Dictionary.Add(mode, delivery);
-                Deliveries.Add(delivery);
+                Deliveries.Add(mode, element);
             }
 
-            delivery.Add(message);
+            var target = element.Add(message, channel);
+
+            Dirty.Add((element, target));
+        }
+
+        public IEnumerable<MessageQueuePacket> Iterate()
+        {
+            foreach (var selection in Dirty)
+            {
+                var buffers = selection.channel.Read();
+
+                for (int i = 0; i < buffers.Count; i++)
+                {
+                    var packet = new MessageQueuePacket(buffers[i], selection.delivery.Mode, selection.channel.Index);
+
+                    yield return packet;
+                }
+
+                selection.channel.Clear();
+            }
+
+            Dirty.Clear();
         }
 
         public void Clear()
         {
-            for (int i = 0; i < Deliveries.Count; i++)
-                Deliveries[i].Clear();
+            Deliveries.Clear();
+            Dirty.Clear();
         }
 
         public MessageSendQueue(CheckMTUDelegate checkMTU)
         {
-            Dictionary = new Dictionary<DeliveryMode, Delivery>();
-
             this.CheckMTU = checkMTU;
 
-            Deliveries = new List<Delivery>();
+            Deliveries = new Dictionary<DeliveryMode, Delivery>();
+            Dirty = new HashSet<(Delivery, Channel)>();
+        }
+    }
+
+    [Preserve]
+    public struct MessageQueuePacket
+    {
+        public readonly byte[] raw;
+        public readonly DeliveryMode delivery;
+        public readonly byte channel;
+
+        public MessageQueuePacket(byte[] raw, DeliveryMode delivery, byte channel)
+        {
+            this.raw = raw;
+            this.delivery = delivery;
+            this.channel = channel;
         }
     }
 }

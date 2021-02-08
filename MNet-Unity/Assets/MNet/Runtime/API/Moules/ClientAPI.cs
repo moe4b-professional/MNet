@@ -49,7 +49,7 @@ namespace MNet
                 Realtime.OnDisconnect += DisconnectedCallback;
             }
 
-            public static bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable)
+            public static bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
             {
                 if (IsConnected == false)
                 {
@@ -70,9 +70,9 @@ namespace MNet
                 var raw = NetworkSerializer.Serialize(message);
 
                 if (AppAPI.Config.QueueMessages)
-                    SendQueue.Add(raw, mode);
+                    SendQueue.Add(raw, mode, channel);
                 else
-                    Realtime.Send(raw, mode);
+                    Realtime.Send(raw, mode, channel);
 
                 return true;
             }
@@ -161,22 +161,11 @@ namespace MNet
 
                 static void Resolve()
                 {
-                    var deliveries = Queue.Deliveries;
-
-                    for (int d = 0; d < deliveries.Count; d++)
-                    {
-                        if (deliveries[d].Empty) continue;
-
-                        var buffers = deliveries[d].Read();
-
-                        for (int b = 0; b < buffers.Count; b++)
-                            Realtime.Send(buffers[b], deliveries[d].Mode);
-
-                        deliveries[d].Clear();
-                    }
+                    foreach (var packet in Queue.Iterate())
+                        Realtime.Send(packet.raw, packet.delivery, packet.channel);
                 }
 
-                public static void Add(byte[] raw, DeliveryMode mode) => Queue.Add(raw, mode);
+                public static void Add(byte[] raw, DeliveryMode mode, byte channel) => Queue.Add(raw, mode, channel);
 
                 internal static void Clear()
                 {
@@ -319,7 +308,7 @@ namespace MNet
 
                 static Response DestroyEntity(ref DestroyEntityPayload request, DeliveryMode mode)
                 {
-                    MessageDispatcher.Invoke(ref request, DeliveryMode.Reliable);
+                    MessageDispatcher.Invoke(ref request, DeliveryMode.ReliableOrdered);
 
                     if (OfflineMode.On)
                     {

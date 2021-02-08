@@ -565,8 +565,6 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            Debug.Log(coordinates);
-
             BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, exception: Entity.Owner);
             return true;
         }
@@ -585,7 +583,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            BufferRPC(Buffer, coordinates, delivery: DeliveryMode.Reliable);
+            BufferRPC(Buffer, coordinates, delivery: DeliveryMode.ReliableSequenced);
         }
 
         void Update()

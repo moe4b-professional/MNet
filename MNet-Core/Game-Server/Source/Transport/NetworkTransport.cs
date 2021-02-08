@@ -84,7 +84,7 @@ namespace MNet
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
 
-        void Send(NetworkClientID target, byte[] raw, DeliveryMode mode);
+        void Send(NetworkClientID target, byte[] raw, DeliveryMode mode, byte channel);
 
         void Disconnect(NetworkClientID clientID, DisconnectCode code);
 
@@ -135,16 +135,16 @@ namespace MNet
 
         #region Message
         public event NetworkTransportMessageDelegate OnMessage;
-        void InvokeMessage(TClient client, NetworkMessage message, DeliveryMode mode)
+        void InvokeMessage(TClient client, NetworkMessage message, DeliveryMode mode, byte channel)
         {
-            OnMessage?.Invoke(client.ClientID, message, mode);
+            OnMessage?.Invoke(client.ClientID, message, mode, channel);
         }
 
-        protected virtual void QueueMessage(TClient client, NetworkMessage message, DeliveryMode mode)
+        protected virtual void QueueMessage(TClient client, NetworkMessage message, DeliveryMode mode, byte channel)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeMessage(client, message, mode);
+            void Action() => InvokeMessage(client, message, mode, channel);
         }
         #endregion
 
@@ -230,7 +230,7 @@ namespace MNet
         #endregion
 
         #region Register Messages
-        public virtual void RegisterMessages(TConnection connection, byte[] raw, DeliveryMode mode)
+        public virtual void RegisterMessages(TConnection connection, byte[] raw, DeliveryMode mode, byte channel)
         {
             if (Connections.TryGetValue(connection, out var client) == false)
             {
@@ -238,15 +238,15 @@ namespace MNet
                 return;
             }
 
-            RegisterMessages(client, raw, mode);
+            RegisterMessages(client, raw, mode, channel);
         }
 
-        public virtual void RegisterMessages(TClient sender, byte[] raw, DeliveryMode mode)
+        public virtual void RegisterMessages(TClient sender, byte[] raw, DeliveryMode mode, byte channel)
         {
             try
             {
                 foreach (var message in NetworkMessage.ReadAll(raw))
-                    QueueMessage(sender, message, mode);
+                    QueueMessage(sender, message, mode, channel);
             }
             catch (Exception ex)
             {
@@ -261,7 +261,7 @@ namespace MNet
         protected virtual void DestroyClient(TClient client) { }
 
         #region Send
-        public void Send(NetworkClientID target, byte[] raw, DeliveryMode mode)
+        public void Send(NetworkClientID target, byte[] raw, DeliveryMode mode, byte channel)
         {
             if (Clients.TryGetValue(target, out var client) == false)
             {
@@ -269,10 +269,10 @@ namespace MNet
                 return;
             }
 
-            Send(client, raw, mode);
+            Send(client, raw, mode, channel);
         }
 
-        public abstract void Send(TClient target, byte[] raw, DeliveryMode mode);
+        public abstract void Send(TClient target, byte[] raw, DeliveryMode mode, byte channel);
         #endregion
 
         #region Disconnect
@@ -333,7 +333,7 @@ namespace MNet
 
     #region Delegates
     public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
-    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, DeliveryMode mode);
+    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, DeliveryMode mode, byte channel);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
     #endregion
 }

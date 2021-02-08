@@ -140,7 +140,7 @@ namespace MNet
         }
 
         #region Methods
-        protected bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, NetworkGroupID group, NetworkClient exception, params object[] arguments)
+        protected bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, NetworkGroupID group, NetworkClient exception, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -158,10 +158,10 @@ namespace MNet
 
             var request = BroadcastRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
 
-            return Send(ref request, delivery);
+            return Send(ref request, delivery, channel);
         }
 
-        protected bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
+        protected bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -179,10 +179,10 @@ namespace MNet
 
             var request = TargetRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, raw);
 
-            return Send(ref request, delivery);
+            return Send(ref request, delivery, channel);
         }
 
-        protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, params object[] arguments)
+        protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -202,7 +202,7 @@ namespace MNet
 
             var request = QueryRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
 
-            if (Send(ref request, delivery) == false)
+            if (Send(ref request, delivery, channel) == false)
             {
                 Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
                 return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
@@ -215,7 +215,7 @@ namespace MNet
             return answer;
         }
 
-        protected bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, params object[] arguments)
+        protected bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, params object[] arguments)
         {
             if (RPCs.TryGetValue(method, out var bind) == false)
             {
@@ -233,7 +233,7 @@ namespace MNet
 
             var request = BufferRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, raw);
 
-            return Send(ref request, delivery);
+            return Send(ref request, delivery, channel);
         }
         #endregion
 
@@ -358,11 +358,11 @@ namespace MNet
         /// <summary>
         /// Overload for ensuring type safety
         /// </summary>
-        protected bool BroadcastSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        protected bool BroadcastSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
         {
-            return BroadcastSyncVar(name, value, delivery, group);
+            return BroadcastSyncVar(name, value, delivery, channel, group);
         }
-        protected bool BroadcastSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        protected bool BroadcastSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
         {
             if (SyncVars.TryGetValue(name, out var bind) == false)
             {
@@ -378,14 +378,14 @@ namespace MNet
 
             var request = BroadcastSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
 
-            return Send(ref request, delivery);
+            return Send(ref request, delivery: delivery, channel : channel);
         }
 
-        protected bool BufferSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        protected bool BufferSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
         {
-            return BufferSyncVar(name, value, delivery, group);
+            return BufferSyncVar(name, value, delivery, channel, group);
         }
-        protected bool BufferSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.Reliable, NetworkGroupID group = default)
+        protected bool BufferSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
         {
             if (SyncVars.TryGetValue(name, out var bind) == false)
             {
@@ -401,7 +401,7 @@ namespace MNet
 
             var request = BufferSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
 
-            return Send(ref request, delivery);
+            return Send(ref request, delivery : delivery, channel : channel);
         }
         #endregion
 
@@ -504,7 +504,7 @@ namespace MNet
         }
         #endregion
 
-        protected virtual bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable)
+        protected virtual bool Send<T>(ref T payload, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0)
         {
             if (Entity.IsReady == false)
             {
@@ -512,7 +512,7 @@ namespace MNet
                 return false;
             }
 
-            return NetworkAPI.Client.Send(ref payload, mode);
+            return NetworkAPI.Client.Send(ref payload, mode : delivery, channel : channel);
         }
 
         #region Despawn

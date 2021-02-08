@@ -47,7 +47,7 @@ namespace MNet
                 MessageDispatcher.RegisterHandler<ChangeRoomInfoPayload>(Change);
             }
 
-            void Change(NetworkClient sender, ref ChangeRoomInfoPayload payload, DeliveryMode mode)
+            void Change(NetworkClient sender, ref ChangeRoomInfoPayload payload)
             {
                 if (payload.ModifyVisiblity) Room.Visible = payload.Visibile;
 
@@ -552,7 +552,7 @@ namespace MNet
             }
 
             #region RPC
-            void InvokeBroadcastRPC(NetworkClient sender, ref BroadcastRpcRequest request, DeliveryMode mode)
+            void InvokeBroadcastRPC(NetworkClient sender, ref BroadcastRpcRequest request, DeliveryMode mode, byte channel)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -562,13 +562,13 @@ namespace MNet
 
                 var command = BroadcastRpcCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID, exception2: request.Exception);
+                var message = Room.Broadcast(ref command, mode: mode, channel : channel, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
                 if (request.Group == NetworkGroupID.Default && request.BufferMode != RemoteBufferMode.None)
                     entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
 
-            void InvokeTargetRPC(NetworkClient sender, ref TargetRpcRequest request, DeliveryMode mode)
+            void InvokeTargetRPC(NetworkClient sender, ref TargetRpcRequest request, DeliveryMode mode, byte channel)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -584,10 +584,10 @@ namespace MNet
 
                 var command = TargetRpcCommand.Write(sender.ID, request);
 
-                Room.Send(ref command, target, mode);
+                Room.Send(ref command, target, mode: mode, channel: channel);
             }
 
-            void InvokeQueryRPC(NetworkClient sender, ref QueryRpcRequest request, DeliveryMode mode)
+            void InvokeQueryRPC(NetworkClient sender, ref QueryRpcRequest request, DeliveryMode mode, byte channel)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -604,10 +604,10 @@ namespace MNet
 
                 var command = QueryRpcCommand.Write(sender.ID, request);
 
-                Room.Send(ref command, target, mode);
+                Room.Send(ref command, target, mode : mode, channel : channel);
             }
 
-            void InvokeBufferRPC(NetworkClient sender, ref BufferRpcRequest request, DeliveryMode mode)
+            void InvokeBufferRPC(NetworkClient sender, ref BufferRpcRequest request)
             {
                 if (request.BufferMode == RemoteBufferMode.None)
                 {
@@ -650,7 +650,7 @@ namespace MNet
             #endregion
 
             #region Sync Var
-            void InvokeBroadcastSyncVar(NetworkClient sender, ref BroadcastSyncVarRequest request, DeliveryMode mode)
+            void InvokeBroadcastSyncVar(NetworkClient sender, ref BroadcastSyncVarRequest request, DeliveryMode mode, byte channel)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -660,12 +660,12 @@ namespace MNet
 
                 var command = SyncVarCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, group: request.Group, exception1: sender.ID);
+                var message = Room.Broadcast(ref command, mode: mode, channel : channel, group: request.Group, exception1: sender.ID);
 
                 entity.SyncVarBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.Remove);
             }
 
-            void InvokeBufferSyncVar(NetworkClient sender, ref BufferSyncVarRequest request, DeliveryMode mode)
+            void InvokeBufferSyncVar(NetworkClient sender, ref BufferSyncVarRequest request)
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
@@ -735,29 +735,28 @@ namespace MNet
         public class MessageDispatcherProperty : Property
         {
             Dictionary<Type, MessageCallbackDelegate> Dictionary;
-            public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkMessage message, DeliveryMode mode);
+            public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel);
 
-            public void Invoke(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
+            public void Invoke(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
             {
                 if (Dictionary.TryGetValue(message.Type, out var callback))
-                    callback(sender, message, mode);
+                    callback(sender, message, mode, channel);
                 else
                     Log.Warning($"No Message Handler Registered for Payload {message.Type}");
             }
 
-            #region Register
-            public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode);
+            public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode, byte channel);
             public void RegisterHandler<TPayload>(MessageHandler1Delegate<TPayload> handler)
             {
                 var type = typeof(TPayload);
 
                 RegisterHandler(type, Callback);
 
-                void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
+                void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
                 {
                     var payload = message.Read<TPayload>();
 
-                    handler.Invoke(sender, ref payload, mode);
+                    handler.Invoke(sender, ref payload, mode, channel);
                 }
             }
 
@@ -768,7 +767,7 @@ namespace MNet
 
                 RegisterHandler(type, Callback);
 
-                void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode)
+                void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
                 {
                     var payload = message.Read<TPayload>();
 
@@ -783,7 +782,6 @@ namespace MNet
 
                 Dictionary.Add(type, callback);
             }
-            #endregion
 
             public MessageDispatcherProperty()
             {
@@ -796,9 +794,9 @@ namespace MNet
         {
             HashSet<NetworkClient> hash;
 
-            public void Add(byte[] message, NetworkClient target, DeliveryMode mode)
+            public void Add(byte[] message, NetworkClient target, DeliveryMode mode, byte channel)
             {
-                target.SendQueue.Add(message, mode);
+                target.SendQueue.Add(message, mode, channel);
 
                 hash.Add(target);
             }
@@ -808,21 +806,8 @@ namespace MNet
             public void Resolve()
             {
                 foreach (var client in hash)
-                {
-                    var deliveries = client.SendQueue.Deliveries;
-
-                    for (int d = 0; d < deliveries.Count; d++)
-                    {
-                        if (deliveries[d].Empty) continue;
-
-                        var buffers = deliveries[d].Read();
-
-                        for (int b = 0; b < buffers.Count; b++)
-                            TransportContext.Send(client.ID, buffers[b], deliveries[d].Mode);
-
-                        deliveries[d].Clear();
-                    }
-                }
+                    foreach (var packet in client.SendQueue.Iterate())
+                        TransportContext.Send(client.ID, packet.raw, packet.delivery, packet.channel);
 
                 hash.Clear();
             }
@@ -925,21 +910,21 @@ namespace MNet
         public INetworkTransportContext TransportContext;
 
         #region Communication
-        NetworkMessage Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.Reliable)
+        NetworkMessage Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
         {
             var message = NetworkMessage.Write(ref payload);
 
             var raw = NetworkSerializer.Serialize(message);
 
             if (App.QueueMessages)
-                SendQueue.Add(raw, target, mode);
+                SendQueue.Add(raw, target, mode, channel);
             else
-                TransportContext.Send(target.ID, raw, mode);
+                TransportContext.Send(target.ID, raw, mode, channel);
 
             return message;
         }
 
-        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.Reliable, NetworkGroupID group = default, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
+        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
         {
             var message = NetworkMessage.Write(ref payload);
 
@@ -953,7 +938,7 @@ namespace MNet
                     if (exception1 == Clients[i].ID) continue;
                     if (exception2 == Clients[i].ID) continue;
 
-                    SendQueue.Add(raw, Clients[i], mode);
+                    SendQueue.Add(raw, Clients[i], mode, channel);
                 }
             }
             else
@@ -964,7 +949,7 @@ namespace MNet
                     if (exception1 == Clients[i].ID) continue;
                     if (exception2 == Clients[i].ID) continue;
 
-                    TransportContext.Send(Clients[i].ID, raw, mode);
+                    TransportContext.Send(Clients[i].ID, raw, mode, channel);
                 }
             }
 
@@ -1010,11 +995,11 @@ namespace MNet
             OnTick?.Invoke();
         }
 
-        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode)
+        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode, byte channel)
         {
             if (Clients.TryGet(id, out var sender))
             {
-                MessageDispatcher.Invoke(sender, message, mode);
+                MessageDispatcher.Invoke(sender, message, mode, channel);
             }
             else
             {

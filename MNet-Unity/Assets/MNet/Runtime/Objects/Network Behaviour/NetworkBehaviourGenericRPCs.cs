@@ -29,24 +29,26 @@ namespace MNet
         protected void BroadcastRPC(
             VoidRpcMethod rpc,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception);
         }
 
         protected void BroadcastRPC<T1>(
             VoidRpcMethod<T1> rpc,
             T1 arg1,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer: buffer, delivery, group, exception, arg1);
+            BroadcastRPC(name, buffer: buffer, delivery, channel,group, exception, arg1);
         }
 
         protected void BroadcastRPC<T1, T2>(
@@ -54,12 +56,13 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer: buffer, delivery, group, exception, arg1, arg2);
+            BroadcastRPC(name, buffer: buffer, delivery, channel,group, exception, arg1, arg2);
         }
 
         protected void BroadcastRPC<T1, T2, T3>(
@@ -68,12 +71,13 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer: buffer, delivery, group, exception, arg1, arg2, arg3);
+            BroadcastRPC(name, buffer: buffer, delivery, channel,group, exception, arg1, arg2, arg3);
         }
 
         protected void BroadcastRPC<T1, T2, T3, T4>(
@@ -83,12 +87,13 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer: buffer, delivery, group, exception, arg1, arg2, arg3, arg4);
+            BroadcastRPC(name, buffer: buffer, delivery, channel,group, exception, arg1, arg2, arg3, arg4);
         }
 
         protected void BroadcastRPC<T1, T2, T3, T4, T5>(
@@ -99,12 +104,13 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer: buffer, delivery, group, exception, arg1, arg2, arg3, arg4, arg5);
+            BroadcastRPC(name, buffer: buffer, delivery, channel,group, exception, arg1, arg2, arg3, arg4, arg5);
         }
 
         protected void BroadcastRPC<T1, T2, T3, T4, T5, T6>(
@@ -116,12 +122,13 @@ namespace MNet
             T5 arg5,
             T6 arg6,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer: buffer, delivery, group, exception, arg1, arg2, arg3, arg4, arg5, arg6);
+            BroadcastRPC(name, buffer: buffer, delivery, channel,group, exception, arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -129,24 +136,26 @@ namespace MNet
         protected void BroadcastRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception);
         }
 
         protected void BroadcastRPC<TResult, T1>(
             ReturnRpcMethod<TResult, T1> rpc,
             T1 arg1,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception, arg1);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception, arg1);
         }
 
         protected void BroadcastRPC<TResult, T1, T2>(
@@ -154,12 +163,13 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception, arg1, arg2);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception, arg1, arg2);
         }
 
         protected void BroadcastRPC<TResult, T1, T2, T3>(
@@ -168,12 +178,13 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception, arg1, arg2, arg3);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception, arg1, arg2, arg3);
         }
 
         protected void BroadcastRPC<TResult, T1, T2, T3, T4>(
@@ -183,12 +194,13 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception, arg1, arg2, arg3, arg4);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception, arg1, arg2, arg3, arg4);
         }
 
         protected void BroadcastRPC<TResult, T1, T2, T3, T4, T5>(
@@ -199,12 +211,13 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception, arg1, arg2, arg3, arg4, arg5);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception, arg1, arg2, arg3, arg4, arg5);
         }
 
         protected void BroadcastRPC<TResult, T1, T2, T3, T4, T5, T6>(
@@ -216,12 +229,13 @@ namespace MNet
             T5 arg5,
             T6 arg6,
             RemoteBufferMode buffer = RemoteBufferMode.None,
-            DeliveryMode delivery = DeliveryMode.Reliable,
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0,
             NetworkGroupID group = default,
             NetworkClient exception = null)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BroadcastRPC(name, buffer, delivery, group, exception, arg1, arg2, arg3, arg4, arg5, arg6);
+            BroadcastRPC(name, buffer, delivery, channel,group, exception, arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -233,20 +247,23 @@ namespace MNet
         protected void TargetRPC(
             VoidRpcMethod rpc,
             NetworkClient target,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0
+            )
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery);
+            TargetRPC(name, target, delivery, channel);
         }
 
         protected void TargetRPC<T1>(
             VoidRpcMethod<T1> rpc,
             NetworkClient target,
             T1 arg1,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1);
+            TargetRPC(name, target, delivery, channel,arg1);
         }
 
         protected void TargetRPC<T1, T2>(
@@ -254,10 +271,11 @@ namespace MNet
             NetworkClient target,
             T1 arg1,
             T2 arg2,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2);
+            TargetRPC(name, target, delivery, channel,arg1, arg2);
         }
 
         protected void TargetRPC<T1, T2, T3>(
@@ -266,10 +284,11 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             T3 arg3,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3);
         }
 
         protected void TargetRPC<T1, T2, T3, T4>(
@@ -279,10 +298,11 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             T4 arg4,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3, arg4);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3, arg4);
         }
 
         protected void TargetRPC<T1, T2, T3, T4, T5>(
@@ -293,10 +313,11 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             T5 arg5,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3, arg4, arg5);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5);
         }
 
         protected void TargetRPC<T1, T2, T3, T4, T5, T6>(
@@ -308,10 +329,11 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             T6 arg6,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -319,20 +341,22 @@ namespace MNet
         protected void TargetRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             NetworkClient target,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery);
+            TargetRPC(name, target, delivery, channel);
         }
 
         protected void TargetRPC<TResult, T1>(
             ReturnRpcMethod<TResult, T1> rpc,
             NetworkClient target,
             T1 arg1,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1);
+            TargetRPC(name, target, delivery, channel,arg1);
         }
 
         protected void TargetRPC<TResult, T1, T2>(
@@ -340,10 +364,11 @@ namespace MNet
             NetworkClient target,
             T1 arg1,
             T2 arg2,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2);
+            TargetRPC(name, target, delivery, channel,arg1, arg2);
         }
 
         protected void TargetRPC<TResult, T1, T2, T3>(
@@ -352,10 +377,11 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             T3 arg3,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3);
         }
 
         protected void TargetRPC<TResult, T1, T2, T3, T4>(
@@ -365,10 +391,11 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             T4 arg4,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3, arg4);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3, arg4);
         }
 
         protected void TargetRPC<TResult, T1, T2, T3, T4, T5>(
@@ -379,10 +406,11 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             T5 arg5,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3, arg4, arg5);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5);
         }
 
         protected void TargetRPC<TResult, T1, T2, T3, T4, T5, T6>(
@@ -394,10 +422,11 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             T6 arg6,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            TargetRPC(name, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+            TargetRPC(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -409,20 +438,22 @@ namespace MNet
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             NetworkClient target,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery);
+            return QueryRPC<TResult>(name, target, delivery, channel);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1>(
             ReturnRpcMethod<TResult, T1> rpc,
             NetworkClient target,
             T1 arg1,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2>(
@@ -430,10 +461,11 @@ namespace MNet
             NetworkClient target,
             T1 arg1,
             T2 arg2,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3>(
@@ -442,10 +474,11 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             T3 arg3,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4>(
@@ -455,10 +488,11 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             T4 arg4,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3, arg4);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5>(
@@ -469,10 +503,11 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             T5 arg5,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4, arg5);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(
@@ -484,10 +519,11 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             T6 arg6,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -495,20 +531,22 @@ namespace MNet
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult>(
             AsyncReturnRpcMethod<TResult> rpc,
             NetworkClient target,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery);
+            return QueryRPC<TResult>(name, target, delivery, channel);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1>(
             AsyncReturnRpcMethod<TResult, T1> rpc,
             NetworkClient target,
             T1 arg1,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2>(
@@ -516,10 +554,11 @@ namespace MNet
             NetworkClient target,
             T1 arg1,
             T2 arg2,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3>(
@@ -528,10 +567,11 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             T3 arg3,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4>(
@@ -541,10 +581,11 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             T4 arg4,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3, arg4);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5>(
@@ -555,10 +596,11 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             T5 arg5,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4, arg5);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5);
         }
 
         protected UniTask<RprAnswer<TResult>> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5, T6>(
@@ -570,10 +612,11 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             T6 arg6,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            return QueryRPC<TResult>(name, target, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+            return QueryRPC<TResult>(name, target, delivery, channel,arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -585,20 +628,22 @@ namespace MNet
         protected void BufferRPC(
             VoidRpcMethod rpc,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery);
+            BufferRPC(name, buffer, delivery, channel);
         }
 
         protected void BufferRPC<T1>(
             VoidRpcMethod<T1> rpc,
             T1 arg1,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer: buffer, delivery, arg1);
+            BufferRPC(name, buffer: buffer, delivery, channel,arg1);
         }
 
         protected void BufferRPC<T1, T2>(
@@ -606,10 +651,11 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer: buffer, delivery, arg1, arg2);
+            BufferRPC(name, buffer: buffer, delivery, channel,arg1, arg2);
         }
 
         protected void BufferRPC<T1, T2, T3>(
@@ -618,10 +664,11 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3);
+            BufferRPC(name, buffer: buffer, delivery, channel,arg1, arg2, arg3);
         }
 
         protected void BufferRPC<T1, T2, T3, T4>(
@@ -631,10 +678,11 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3, arg4);
+            BufferRPC(name, buffer: buffer, delivery, channel,arg1, arg2, arg3, arg4);
         }
 
         protected void BufferRPC<T1, T2, T3, T4, T5>(
@@ -645,10 +693,11 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3, arg4, arg5);
+            BufferRPC(name, buffer: buffer, delivery, channel,arg1, arg2, arg3, arg4, arg5);
         }
 
         protected void BufferRPC<T1, T2, T3, T4, T5, T6>(
@@ -660,10 +709,11 @@ namespace MNet
             T5 arg5,
             T6 arg6,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer: buffer, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+            BufferRPC(name, buffer: buffer, delivery, channel,arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 
@@ -671,20 +721,22 @@ namespace MNet
         protected void BufferRPC<TResult>(
             ReturnRpcMethod<TResult> rpc,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery);
+            BufferRPC(name, buffer, delivery, channel);
         }
 
         protected void BufferRPC<TResult, T1>(
             ReturnRpcMethod<TResult, T1> rpc,
             T1 arg1,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery, arg1);
+            BufferRPC(name, buffer, delivery, channel,arg1);
         }
 
         protected void BufferRPC<TResult, T1, T2>(
@@ -692,10 +744,11 @@ namespace MNet
             T1 arg1,
             T2 arg2,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery, arg1, arg2);
+            BufferRPC(name, buffer, delivery, channel,arg1, arg2);
         }
 
         protected void BufferRPC<TResult, T1, T2, T3>(
@@ -704,10 +757,11 @@ namespace MNet
             T2 arg2,
             T3 arg3,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery, arg1, arg2, arg3);
+            BufferRPC(name, buffer, delivery, channel,arg1, arg2, arg3);
         }
 
         protected void BufferRPC<TResult, T1, T2, T3, T4>(
@@ -717,10 +771,11 @@ namespace MNet
             T3 arg3,
             T4 arg4,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery, arg1, arg2, arg3, arg4);
+            BufferRPC(name, buffer, delivery, channel,arg1, arg2, arg3, arg4);
         }
 
         protected void BufferRPC<TResult, T1, T2, T3, T4, T5>(
@@ -731,10 +786,11 @@ namespace MNet
             T4 arg4,
             T5 arg5,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery, arg1, arg2, arg3, arg4, arg5);
+            BufferRPC(name, buffer, delivery, channel,arg1, arg2, arg3, arg4, arg5);
         }
 
         protected void BufferRPC<TResult, T1, T2, T3, T4, T5, T6>(
@@ -746,10 +802,11 @@ namespace MNet
             T5 arg5,
             T6 arg6,
             RemoteBufferMode buffer = RemoteBufferMode.Last,
-            DeliveryMode delivery = DeliveryMode.Reliable)
+            DeliveryMode delivery = DeliveryMode.ReliableOrdered,
+            byte channel = 0)
         {
             var name = RpcBind.GetName(rpc.Method);
-            BufferRPC(name, buffer, delivery, arg1, arg2, arg3, arg4, arg5, arg6);
+            BufferRPC(name, buffer, delivery, channel,arg1, arg2, arg3, arg4, arg5, arg6);
         }
         #endregion
 

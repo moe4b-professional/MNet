@@ -18,8 +18,9 @@ namespace MNet
             {
                 switch (mode)
                 {
-                    case DeliveryMode.Reliable:
-                        return int.MaxValue;
+                    case DeliveryMode.ReliableOrdered:
+                    case DeliveryMode.ReliableUnordered:
+                        return ushort.MaxValue;
                 }
 
                 return 400;
@@ -91,8 +92,12 @@ namespace MNet
                 {
                     Glossary = new Glossary<DeliveryMode, DeliveryMethod>();
 
-                    Glossary.Add(DeliveryMode.Reliable, DeliveryMethod.ReliableOrdered);
+                    Glossary.Add(DeliveryMode.ReliableOrdered, DeliveryMethod.ReliableOrdered);
+                    Glossary.Add(DeliveryMode.ReliableUnordered, DeliveryMethod.ReliableUnordered);
+                    Glossary.Add(DeliveryMode.ReliableSequenced, DeliveryMethod.ReliableSequenced);
+
                     Glossary.Add(DeliveryMode.Unreliable, DeliveryMethod.Unreliable);
+                    Glossary.Add(DeliveryMode.UnreliableSequenced, DeliveryMethod.Sequenced);
                 }
             }
         }

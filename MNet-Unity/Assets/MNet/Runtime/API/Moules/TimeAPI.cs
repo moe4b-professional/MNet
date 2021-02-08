@@ -83,7 +83,7 @@ namespace MNet
             {
                 var payload = TimeRequest.Write();
 
-                Client.Send(ref payload, DeliveryMode.Reliable);
+                Client.Send(ref payload);
             }
 
             static void ClientRegisterCallback(RegisterClientResponse response)

@@ -1,113 +1,21 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EB8C277E-AECA-4B4E-A12A-B4CED8C82F55}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MNet</RootNamespace>
-    <AssemblyName>Shared</AssemblyName>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-  </PropertyGroup>
-  <PropertyGroup>
-    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="LiteNetLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiteNetLib.0.9.3.2\lib\net35\LiteNetLib.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-    <Reference Include="websocket-sharp, Version=1.0.1.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebSocketSharp-netstandard.1.0.1\lib\net45\websocket-sharp.dll</HintPath>
-    </Reference>
+    <None Remove="..\\**\*.meta" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Source\Remote Sync\RPR.cs" />
-    <Compile Include="Source\Structure\App.cs" />
-    <Compile Include="Source\Collections\AttributesCollection.cs" />
-    <Compile Include="Source\Collections\CollectionPrettyPrint.cs" />
-    <Compile Include="Source\Constants.cs" />
-    <Compile Include="Source\Structure\GameServer.cs" />
-    <Compile Include="Source\Structure\RestAPI.cs" />
-    <Compile Include="Source\Structure\Scene.cs" />
-    <Compile Include="Source\Tool\ObjectPooler.cs" />
-    <Compile Include="Source\Utility\GeneralExtensions.cs" />
-    <Compile Include="Source\Structure\Lobby.cs" />
-    <Compile Include="Source\Tool\Log.cs" />
-    <Compile Include="Source\Communication\MessageSendQueue.cs" />
-    <Compile Include="Source\Serialization\NetworkSerializationHelper.cs" />
-    <Compile Include="Source\Serialization\NetworkSerializationResolver.cs" />
-    <Compile Include="Source\Serialization\NetworkSerializer.cs" />
-    <Compile Include="Source\Serialization\NetworkStream.cs" />
-    <Compile Include="Source\Transport\Variants\LiteNetLibTransport.cs" />
-    <Compile Include="Source\Transport\Variants\WebSocketTransport.cs" />
-    <Compile Include="Source\Objects\NetworkClient.cs" />
-    <Compile Include="Source\Objects\NetworkBehaviour.cs" />
-    <Compile Include="Source\Objects\NetworkEntity.cs" />
-    <Compile Include="Source\Collections\NetworkGenericDictionary.cs" />
-    <Compile Include="Source\Communication\NetworkMessage.cs" />
-    <Compile Include="Source\Communication\NetworkPayload.cs" />
-    <Compile Include="Source\Transport\NetworkTransport.cs" />
-    <Compile Include="Source\Utility\PreserveAttribute.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\Remote Sync\RemoteAuthority.cs" />
-    <Compile Include="Source\Data\RemoteConfig.cs" />
-    <Compile Include="Source\Structure\Room.cs" />
-    <Compile Include="Source\Remote Sync\RPC.cs" />
-    <Compile Include="Source\Remote Sync\SyncVar.cs" />
-    <Compile Include="Source\Data\NetworkTimeSpan.cs" />
-    <Compile Include="Source\Collections\UtilityCollections.cs" />
-    <Compile Include="Source\Data\Version.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj" />
+    <ProjectReference Include="..\Shared-Extra\Shared-Extra.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Shared-Extra\Shared-Extra.csproj">
-      <Project>{116cb491-07e9-467d-8f54-351c323b7696}</Project>
-      <Name>Shared-Extra</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
+
 </Project>

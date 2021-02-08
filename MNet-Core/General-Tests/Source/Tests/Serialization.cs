@@ -36,12 +36,12 @@ namespace MNet
                 original.Add(payload);
 
                 var binary = NetworkSerializer.Serialize(message);
-                delivery.Add(binary);
+                delivery.Add(binary, 0);
             }
 
             var copy = new List<TargetRpcRequest>();
 
-            foreach (var buffer in delivery.Read())
+            foreach (var buffer in delivery.Channels[0].Read())
             {
                 foreach (var message in NetworkMessage.ReadAll(buffer))
                 {

@@ -53,7 +53,7 @@ namespace MNet
             OnDisconnect?.Invoke(code);
         }
 
-        public abstract void Send(byte[] raw, DeliveryMode mode);
+        public abstract void Send(byte[] raw, DeliveryMode mode, byte channel);
 
         protected void InvokeMessages(byte[] raw, DeliveryMode mode)
         {

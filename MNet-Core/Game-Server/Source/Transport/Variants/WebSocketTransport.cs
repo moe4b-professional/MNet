@@ -77,7 +77,7 @@ namespace MNet
             {
                 base.OnMessage(args);
 
-                TransportContext.RegisterMessages(Client, args.RawData, DeliveryMode.Reliable);
+                TransportContext.RegisterMessages(Client, args.RawData, DeliveryMode.ReliableOrdered, 0);
             }
 
             protected override void OnClose(CloseEventArgs args)
@@ -96,7 +96,7 @@ namespace MNet
             return client;
         }
 
-        public override void Send(WebSocketTransportClient client, byte[] raw, DeliveryMode mode)
+        public override void Send(WebSocketTransportClient client, byte[] raw, DeliveryMode mode, byte channel)
         {
             if (client.IsOpen == false) return;
 

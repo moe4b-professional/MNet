@@ -76,7 +76,7 @@ namespace MNet
             {
                 var request = PingRequest.Write();
 
-                Client.Send(ref request, DeliveryMode.Reliable);
+                Client.Send(ref request, DeliveryMode.ReliableOrdered);
             }
 
             static void Calculate(ref PingResponse response)

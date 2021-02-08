@@ -76,7 +76,7 @@ namespace MNet
             context.RegisterClient(peer);
         }
 
-        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod delivery, byte channel)
         {
             if (Routes.TryGetValue(peer, out var context) == false)
             {
@@ -87,14 +87,14 @@ namespace MNet
             var raw = reader.GetRemainingBytes();
             reader.Recycle();
 
-            if(Utility.Delivery.Glossary.TryGetKey(deliveryMethod, out var mode) == false)
+            if(Utility.Delivery.Glossary.TryGetKey(delivery, out var mode) == false)
             {
-                Log.Error($"LiteNetLib: Recieved Packet with Undefined Delivery Method of {deliveryMethod}");
+                Log.Error($"LiteNetLib: Recieved Packet with Undefined Delivery Method of {delivery}");
                 Disconnect(peer, DisconnectCode.InvalidData);
                 return;
             }
 
-            context.RegisterMessages(peer, raw, mode);
+            context.RegisterMessages(peer, raw, mode, channel);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -128,6 +128,7 @@ namespace MNet
         public LiteNetLibTransport()
         {
             Server = new NetManager(this);
+            Server.ChannelsCount = 64;
             Server.UpdateTime = 1;
 
             Routes = new Dictionary<NetPeer, LiteNetLibTransportContext>();
@@ -159,11 +160,11 @@ namespace MNet
             return new LiteNetLibTransportClient(this, clientID, connection);
         }
 
-        public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryMode mode)
+        public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryMode mode, byte channel)
         {
             var method = Utility.Delivery.Glossary[mode];
 
-            client.Peer.Send(raw, method);
+            client.Peer.Send(raw, channel, method);
         }
 
         public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code)

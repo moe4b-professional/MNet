@@ -41,7 +41,7 @@ namespace MNet
         {
             var raw = BitConverter.GetBytes(Room.Value);
 
-            Send(raw, DeliveryMode.Reliable);
+            Send(raw, DeliveryMode.ReliableOrdered, 0);
         }
 
         protected virtual void ProcessRegistration(byte[] raw) => ProcessRegistration(raw[0]);

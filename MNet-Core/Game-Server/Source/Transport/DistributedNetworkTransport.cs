@@ -65,17 +65,17 @@ namespace MNet
             Send(connection, Utility.Registeration.Success);
         }
 
-        protected virtual void ProcessMessage(TConnection connection, byte[] raw, DeliveryMode mode)
+        protected virtual void ProcessMessage(TConnection connection, byte[] raw, DeliveryMode mode, byte channel)
         {
             var iid = GetIID(connection);
 
             if (UnregisteredClients.Contains(iid))
                 RegisterConnection(connection, raw);
             else
-                RouteMessage(connection, raw, mode);
+                RouteMessage(connection, raw, mode, channel);
         }
 
-        protected virtual void RouteMessage(TConnection connection, byte[] raw, DeliveryMode mode)
+        protected virtual void RouteMessage(TConnection connection, byte[] raw, DeliveryMode mode, byte channel)
         {
             var iid = GetIID(connection);
 
@@ -87,7 +87,7 @@ namespace MNet
 
             var context = client.Context;
 
-            context.RegisterMessages(client, raw, mode);
+            context.RegisterMessages(client, raw, mode, channel);
         }
 
         protected virtual void RemoveConnection(TConnection connection)

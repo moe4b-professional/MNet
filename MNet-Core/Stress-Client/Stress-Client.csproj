@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,10 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LiteNetLib" Version="0.9.3.2" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
   </ItemGroup>
