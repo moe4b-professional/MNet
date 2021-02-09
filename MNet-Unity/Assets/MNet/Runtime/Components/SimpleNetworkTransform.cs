@@ -22,6 +22,7 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Simple Network Transform")]
     public class SimpleNetworkTransform : NetworkBehaviour
     {
+        [Header("Sync")]
         [SerializeField]
         NetworkEntitySyncTimer syncTimer = default;
         public NetworkEntitySyncTimer SyncTimer => syncTimer;
@@ -30,11 +31,12 @@ namespace MNet
         bool forceSync = false;
         public bool ForceSync => forceSync;
 
+        [Header("Properties")]
         [SerializeField]
         PositionProperty position = default;
         public PositionProperty Position => position;
         [Serializable]
-        public class PositionProperty : Property<Vector3, VectorConstraint>
+        public class PositionProperty : Property<Vector3, VectorControl>
         {
             [SerializeField]
             VelocityProperty velocity = default;
@@ -92,11 +94,11 @@ namespace MNet
                 velocity.Add(sample);
             }
 
-            protected override ChangeFlags ConstraintToChangeFlag(VectorConstraint constraints) => constraints.ToChangeFlag(AllFlags);
+            protected override ChangeFlags ConstraintToChangeFlag(VectorControl constraints) => constraints.ToChangeFlag(Flags);
 
             protected override ChangeFlags CheckChanges(Vector3 previous, Vector3 current)
             {
-                return ReadChanges(previous, current, AllFlags, ConstraintFlag, minChange);
+                return ReadChanges(previous, current, Flags, Constraint, minChange);
             }
 
             protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
@@ -108,14 +110,14 @@ namespace MNet
 
             protected override Vector3 ReadFrom(ref CoordinatesPacket packet, Vector3 source)
             {
-                return ReadFrom(packet.Position, Value, AllFlags, packet.Changes);
+                return ReadFrom(packet.Position, Value, Flags, packet.Changes);
             }
 
             public PositionProperty()
             {
-                constraints = new VectorConstraint(true);
+                control = new VectorControl(true);
 
-                AllFlags = new ChangeFlags[]
+                Flags = new ChangeFlags[]
                 {
                     ChangeFlags.PositionX,
                     ChangeFlags.PositionY,
@@ -128,7 +130,7 @@ namespace MNet
         RotationProperty rotation = default;
         public RotationProperty Rotation => rotation;
         [Serializable]
-        public class RotationProperty : Property<Quaternion, VectorConstraint>
+        public class RotationProperty : Property<Quaternion, VectorControl>
         {
             public override Quaternion Value
             {
@@ -136,11 +138,11 @@ namespace MNet
                 protected set => Transform.Component.localRotation = value;
             }
 
-            protected override ChangeFlags ConstraintToChangeFlag(VectorConstraint constraints) => constraints.ToChangeFlag(AllFlags);
+            protected override ChangeFlags ConstraintToChangeFlag(VectorControl constraints) => constraints.ToChangeFlag(Flags);
 
             protected override ChangeFlags CheckChanges(Quaternion previous, Quaternion current)
             {
-                return ReadChanges(previous, current, AllFlags, ConstraintFlag, minChange);
+                return ReadChanges(previous, current, Flags, Constraint, minChange);
             }
 
             protected override Quaternion Translate(Quaternion current, Quaternion target, float speed)
@@ -152,14 +154,14 @@ namespace MNet
 
             protected override Quaternion ReadFrom(ref CoordinatesPacket packet, Quaternion source)
             {
-                return ReadFrom(packet.Rotation, Value, AllFlags, packet.Changes);
+                return ReadFrom(packet.Rotation, Value, Flags, packet.Changes);
             }
 
             public RotationProperty()
             {
-                constraints = new VectorConstraint(true);
+                control = new VectorControl(true);
 
-                AllFlags = new ChangeFlags[]
+                Flags = new ChangeFlags[]
                 {
                     ChangeFlags.RotationX,
                     ChangeFlags.RotationY,
@@ -184,7 +186,7 @@ namespace MNet
 
             protected override ChangeFlags CheckChanges(Vector3 previous, Vector3 current)
             {
-                return ReadChanges(previous, current, AllFlags, ConstraintFlag, minChange);
+                return ReadChanges(previous, current, Flags, Constraint, minChange);
             }
 
             protected override Vector3 Translate(Vector3 current, Vector3 target, float speed)
@@ -196,14 +198,14 @@ namespace MNet
 
             protected override Vector3 ReadFrom(ref CoordinatesPacket packet, Vector3 source)
             {
-                return ReadFrom(packet.Scale, Value, AllFlags, packet.Changes);
+                return ReadFrom(packet.Scale, Value, Flags, packet.Changes);
             }
 
             public ScaleProperty()
             {
-                constraints = false;
+                control = false;
 
-                AllFlags = new ChangeFlags[]
+                Flags = new ChangeFlags[]
                 {
                     ChangeFlags.Scale,
                     ChangeFlags.Scale,
@@ -212,17 +214,24 @@ namespace MNet
             }
         }
 
+        public List<Property> Properties { get; protected set; }
+
         [Serializable]
         public abstract class Property
         {
-            public ChangeFlags[] AllFlags { get; protected set; }
+            public ChangeFlags[] Flags { get; protected set; }
 
-            public ChangeFlags ConstraintFlag { get; protected set; }
+            public ChangeFlags Constraint { get; protected set; }
 
             public SimpleNetworkTransform Transform { get; protected set; }
             internal virtual void Set(SimpleNetworkTransform reference)
             {
                 Transform = reference;
+            }
+
+            internal virtual void Init()
+            {
+
             }
 
             #region Controls
@@ -284,10 +293,8 @@ namespace MNet
             #endregion
         }
 
-        public List<Property> Properties { get; protected set; }
-
         [Serializable]
-        public abstract class Property<TValue, TConstraint> : Property
+        public abstract class Property<TValue, TControl> : Property
         {
             [SerializeField]
             protected float minChange = 0.05f;
@@ -298,8 +305,8 @@ namespace MNet
             public float Speed => speed;
 
             [SerializeField]
-            protected TConstraint constraints = default;
-            public TConstraint Constraints => constraints;
+            protected TControl control = default;
+            public TControl Control => control;
 
             public TValue Target { get; protected set; }
 
@@ -307,9 +314,14 @@ namespace MNet
             {
                 base.Set(reference);
 
-                Target = Value;
+                Constraint = ConstraintToChangeFlag(control);
+            }
 
-                ConstraintFlag = ConstraintToChangeFlag(constraints);
+            internal override void Init()
+            {
+                base.Init();
+
+                Target = Value;
             }
 
             #region Controls
@@ -348,7 +360,7 @@ namespace MNet
 
             protected abstract ChangeFlags CheckChanges(TValue previous, TValue current);
 
-            protected abstract ChangeFlags ConstraintToChangeFlag(TConstraint constraints);
+            protected abstract ChangeFlags ConstraintToChangeFlag(TControl constraints);
 
             protected abstract TValue Translate(TValue current, TValue target, float speed);
 
@@ -357,8 +369,68 @@ namespace MNet
             #endregion
         }
 
+        [Space]
+        [SerializeField]
+        DeliveryProperty delivery = default;
+        public DeliveryProperty Delivery => delivery;
         [Serializable]
-        public class VectorConstraint
+        public class DeliveryProperty
+        {
+            [SerializeField]
+            [Range(0, NetworkAPI.MaxChannel)]
+            byte channel = 0;
+            public byte Channel => channel;
+
+            [SerializeField]
+            BufferProperty buffer = default;
+            public BufferProperty Buffer => buffer;
+            [Serializable]
+            public class BufferProperty
+            {
+                [SerializeField]
+                bool sequence = false;
+                public bool Sequence => sequence;
+
+                public DeliveryMode Mode => sequence ? DeliveryMode.ReliableSequenced : DeliveryMode.ReliableUnordered;
+            }
+        }
+
+        [SerializeField]
+        ReliabilityProperty reliability = default;
+        public ReliabilityProperty Reliability => reliability;
+        [Serializable]
+        public class ReliabilityProperty
+        {
+            [SerializeField]
+            float timer = 5f;
+            public float Timer => timer;
+
+            public float Timestamp { get; protected set; }
+
+            public bool Dirty { get; protected set; }
+            public void SetDirty() => Dirty = true;
+
+            public bool Update()
+            {
+                if (Time.time - Timestamp >= timer)
+                {
+                    Timestamp = Time.time;
+
+                    if (Dirty)
+                    {
+                        Dirty = false;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                return false;
+            }
+        }
+
+        [Serializable]
+        public class VectorControl
         {
             [SerializeField]
             bool x = false;
@@ -401,8 +473,8 @@ namespace MNet
                 return flag;
             }
 
-            public VectorConstraint(bool value) : this(value, value, value) { }
-            public VectorConstraint(bool x, bool y, bool z)
+            public VectorControl(bool value) : this(value, value, value) { }
+            public VectorControl(bool x, bool y, bool z)
             {
                 this.x = x;
                 this.y = y;
@@ -432,9 +504,9 @@ namespace MNet
             public ChangeFlags Changes => changes;
 
             #region Position
-            float positionX;
-            float positionY;
-            float positionZ;
+            float positionX, positionY, positionZ;
+
+            public Vector3 Position => new Vector3(positionX, positionY, positionZ);
 
             public void SetPosition(Vector3 value)
             {
@@ -442,14 +514,12 @@ namespace MNet
                 positionY = value.y;
                 positionZ = value.z;
             }
-
-            public Vector3 Position => new Vector3(positionX, positionY, positionZ);
             #endregion
 
             #region Rotation
-            float rotationX;
-            float rotationY;
-            float rotationZ;
+            float rotationX, rotationY, rotationZ;
+
+            public Vector3 Rotation => new Vector3(rotationX, rotationY, rotationZ);
 
             public void SetRotation(Vector3 value)
             {
@@ -457,17 +527,18 @@ namespace MNet
                 rotationY = value.y;
                 rotationZ = value.z;
             }
-
-            public Vector3 Rotation => new Vector3(rotationX, rotationY, rotationZ);
             #endregion
 
             #region Scale
-            Vector3 scale;
-            public Vector3 Scale => scale;
+            float scaleX, scaleY, scaleZ;
+
+            public Vector3 Scale => new Vector3(scaleX, scaleY, scaleZ);
 
             public void SetScale(Vector3 value)
             {
-                scale = value;
+                scaleX = value.x;
+                scaleY = value.y;
+                scaleZ = value.z;
             }
             #endregion
 
@@ -483,10 +554,12 @@ namespace MNet
                 if (changes.HasFlag(ChangeFlags.RotationY)) context.Select(ref rotationY);
                 if (changes.HasFlag(ChangeFlags.RotationZ)) context.Select(ref rotationZ);
 
-                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scale);
+                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scaleX);
+                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scaleY);
+                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scaleZ);
             }
 
-            public override string ToString() => $"( {changes} ):\n{Position} | {Rotation} | {scale}";
+            public override string ToString() => $"( {changes} ):\n{Position} | {Rotation} | {Scale}";
 
             public CoordinatesPacket(ChangeFlags changes, Vector3 position, Vector3 rotation, Vector3 scale)
             {
@@ -500,11 +573,15 @@ namespace MNet
                 rotationY = rotation.y;
                 rotationZ = rotation.z;
 
-                this.scale = scale;
+                scaleX = rotation.x;
+                scaleY = rotation.y;
+                scaleZ = rotation.z;
             }
 
             public CoordinatesPacket(ChangeFlags changes) : this(changes, Vector3.zero, Vector3.zero, Vector3.zero) { }
         }
+
+        public ChangeFlags Constraints { get; protected set; }
 
         public Transform Component => transform;
 
@@ -520,6 +597,15 @@ namespace MNet
         void Awake()
         {
             Properties = new List<Property>() { position, rotation, scale };
+
+            Constraints = ChangeFlags.None;
+
+            for (int i = 0; i < Properties.Count; i++)
+            {
+                Properties[i].Set(this);
+
+                Constraints |= Properties[i].Constraint;
+            }
         }
 
         void Start()
@@ -534,15 +620,38 @@ namespace MNet
             if (Entity.IsMine && forceSync)
                 Debug.LogWarning($"Force Sync is Enabled for {this}, This is Useful for Stress Testing but don't forget to turn it off");
 
+            reliability.Update();
+
             for (int i = 0; i < Properties.Count; i++)
-                Properties[i].Set(this);
+                Properties[i].Init();
         }
 
         void Sync()
         {
-            if (SendDelta() == false) return;
+            if (reliability.Update())
+            {
+                SendReliable();
+            }
+            else
+            {
+                if (SendDelta() == false) return;
+
+                reliability.SetDirty();
+            }
 
             SendBuffer();
+        }
+
+        void SendReliable()
+        {
+            if (Constraints == ChangeFlags.None) return;
+
+            var coordinates = new CoordinatesPacket(Constraints);
+
+            for (int i = 0; i < Properties.Count; i++)
+                Properties[i].WriteTo(ref coordinates);
+
+            BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.ReliableUnordered, exception: Entity.Owner);
         }
 
         bool SendDelta()
@@ -552,11 +661,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 changes |= Properties[i].CheckChanges();
 
-            if (forceSync)
-            {
-                for (int i = 0; i < Properties.Count; i++)
-                    changes |= Properties[i].ConstraintFlag;
-            }
+            if (forceSync) changes = Constraints;
 
             if (changes == ChangeFlags.None) return false;
 
@@ -565,25 +670,20 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, exception: Entity.Owner);
+            BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, channel: delivery.Channel, exception: Entity.Owner);
             return true;
         }
 
         void SendBuffer()
         {
-            var changes = ChangeFlags.None;
+            if (Constraints == ChangeFlags.None) return;
 
-            for (int i = 0; i < Properties.Count; i++)
-                changes |= Properties[i].ConstraintFlag;
-
-            if (changes == ChangeFlags.None) return;
-
-            var coordinates = new CoordinatesPacket(changes);
+            var coordinates = new CoordinatesPacket(Constraints);
 
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            BufferRPC(Buffer, coordinates, delivery: DeliveryMode.ReliableSequenced);
+            BufferRPC(Buffer, coordinates, delivery: delivery.Buffer.Mode, channel: delivery.Channel);
         }
 
         void Update()

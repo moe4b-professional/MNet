@@ -33,7 +33,7 @@ namespace MNet
 
         public override void Stop()
         {
-            var value = Utility.Disconnect.CodeToValue(DisconnectCode.ConnectionClosed);
+            var value = Utility.Disconnect.CodeToValue(DisconnectCode.ServerClosed);
 
             Server.Stop(value, null);
         }

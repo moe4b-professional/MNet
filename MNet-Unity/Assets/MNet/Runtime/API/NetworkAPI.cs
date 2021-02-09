@@ -29,6 +29,8 @@ namespace MNet
 
         public static bool IsRunning { get; private set; }
 
+        public const byte MaxChannel = 64;
+
         public static void Configure()
         {
             Config = NetworkAPIConfig.Load();

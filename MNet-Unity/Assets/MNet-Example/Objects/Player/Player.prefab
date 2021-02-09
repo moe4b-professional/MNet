@@ -123,7 +123,7 @@ MonoBehaviour:
   position:
     minChange: 0.05
     speed: 10
-    constraints:
+    control:
       x: 1
       y: 1
       z: 1
@@ -132,17 +132,20 @@ MonoBehaviour:
   rotation:
     minChange: 0.05
     speed: 10
-    constraints:
+    control:
       x: 0
       y: 1
       z: 0
   scale:
     minChange: 0.05
     speed: 10
-    constraints:
-      x: 0
-      y: 0
-      z: 0
+    control: 0
+  delivery:
+    channel: 2
+    buffer:
+      sequence: 1
+  reliability:
+    timer: 5
 --- !u!1 &573034544643323621
 GameObject:
   m_ObjectHideFlags: 0
@@ -207,14 +210,12 @@ MonoBehaviour:
     integers: []
     floats:
     - name: Move
-      value: 0
       useHalf: 1
       smooth: 1
       speed: 10
   layers:
     list:
     - name: Base Layer
-      value: 0
       useHalf: 1
       smooth: 1
       speed: 10
