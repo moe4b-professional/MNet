@@ -45,6 +45,8 @@ namespace MNet
 
         public Type ReturnType => MethodInfo.ReturnType;
 
+        public bool IsBinaryExchange { get; protected set; }
+
         public bool IsAsync { get; protected set; }
         public bool IsCoroutine { get; protected set; }
         #endregion
@@ -56,6 +58,14 @@ namespace MNet
 
         public byte[] WriteArguments(object[] arguments)
         {
+            if (IsBinaryExchange)
+            {
+                if (arguments[0] is byte[] buffer)
+                    return buffer;
+                else
+                    throw new Exception($"RPC {this} Marked as Binary Exchange but the Only Parameter isn't a byte[]");
+            }
+
             var writer = NetworkWriter.Pool.Any;
 
             for (int i = 0; i < arguments.Length; i++)
@@ -68,18 +78,30 @@ namespace MNet
             return raw;
         }
 
-        public void ParseCommand(IRpcCommand command, out object[] arguments, out RpcInfo info)
+        public object[] ReadArguments<T>(T command)
+            where T : IRpcCommand
         {
             var reader = new NetworkReader(command.Raw);
 
-            arguments = new object[ParametersInfo.Length];
+            var arguments = new object[ParametersInfo.Length];
 
-            for (int i = 0; i < ParametersInfo.Length - 1; i++)
+            if (IsBinaryExchange)
             {
-                var value = reader.Read(ParametersInfo[i].ParameterType);
-
-                arguments[i] = value;
+                arguments[0] = command.Raw;
             }
+            else
+            {
+                for (int i = 0; i < ParametersInfo.Length - 1; i++)
+                    arguments[i] = reader.Read(ParametersInfo[i].ParameterType);
+            }
+
+            return arguments;
+        }
+
+        public void ParseCommand<T>(T command, out object[] arguments, out RpcInfo info)
+            where T : IRpcCommand
+        {
+            arguments = ReadArguments(command);
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
             info = new RpcInfo(sender);
@@ -103,6 +125,8 @@ namespace MNet
                 throw new Exception($"Cannot use '{Behaviour}->{MethodInfo.Name}' as RPC, the Last Parameter needs to be of Type {nameof(RpcInfo)} for it to be a Valid RPC");
 
             Name = GetName(MethodInfo);
+
+            IsBinaryExchange = ParametersInfo.Length == 2 && ParametersInfo[0].ParameterType == typeof(byte[]);
 
             IsAsync = typeof(IUniTask).IsAssignableFrom(ReturnType);
             IsCoroutine = ReturnType == typeof(IEnumerator);

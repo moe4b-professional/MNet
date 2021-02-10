@@ -28,6 +28,7 @@ namespace MNet
 
         public bool coroutine;
         public bool uniTask;
+        public bool binary;
 
         public bool success = false;
 
@@ -41,6 +42,7 @@ namespace MNet
 
             coroutine = false;
             uniTask = false;
+            binary = false;
             success = false;
 
             TargetRPC(Call0, NetworkAPI.Client.Self);
@@ -53,6 +55,7 @@ namespace MNet
 
             TargetRPC(CoroutineRPC, NetworkAPI.Client.Self);
             TargetRPC(UniTaskRPC, NetworkAPI.Client.Self);
+            TargetRPC(BinaryRPC, NetworkAPI.Client.Self, new byte[] { 0, 1, 2, 3, 4, 5 });
         }
 
         [NetworkRPC] void Call0(RpcInfo info) => Call();
@@ -94,9 +97,21 @@ namespace MNet
             UpdateState();
         }
 
+        [NetworkRPC]
+        void BinaryRPC(byte[] raw, RpcInfo info)
+        {
+            for (int i = 0; i < raw.Length; i++)
+                if (raw[i] != i)
+                    return;
+
+            binary = true;
+
+            UpdateState();
+        }
+
         void UpdateState()
         {
-            success = results.All(x => x) && coroutine && uniTask;
+            success = results.All(x => x) && coroutine && uniTask && binary;
         }
     }
 }

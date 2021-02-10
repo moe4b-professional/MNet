@@ -242,6 +242,10 @@ namespace MNet
 				protected string name;
 				public string Name => name;
 
+				[SerializeField]
+				bool ignore = false;
+				public bool Ignore => ignore;
+
 				public byte ID { get; protected set; }
 				public void SetID(byte value) => ID = value;
 
@@ -483,6 +487,12 @@ namespace MNet
 				return;
 			}
 
+			if (parameter.Ignore == true)
+			{
+				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
+				return;
+			}
+
 			if (parameter.Update(true) == false) return;
 
 			if (instant) SendTrigger(parameter);
@@ -510,6 +520,7 @@ namespace MNet
 		{
 			foreach (var parameter in parameters.Triggers)
 			{
+				if (parameter.Ignore) continue;
 				if (parameter.IsDirty == false) continue;
 
 				SendTrigger(parameter);
@@ -523,6 +534,12 @@ namespace MNet
 			if (Parameters.TryGet<ParametersProperty.BoolProperty>(name, out var parameter) == false)
 			{
 				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Ignore == true)
+			{
+				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
 			}
 
@@ -570,6 +587,7 @@ namespace MNet
 
 			foreach (var parameter in parameters.Bools)
 			{
+				if (parameter.Ignore) continue;
 				if (parameter.IsDirty == false) continue;
 
 				SendBool(parameter);
@@ -586,6 +604,12 @@ namespace MNet
 			if (Parameters.TryGet<ParametersProperty.IntegerProperty>(name, out var parameter) == false)
 			{
 				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Ignore == true)
+			{
+				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
 			}
 
@@ -640,6 +664,7 @@ namespace MNet
 
 			foreach (var parameter in parameters.Integers)
 			{
+				if (parameter.Ignore) continue;
 				if (parameter.IsDirty == false) continue;
 
 				SendInteger(parameter);
@@ -656,6 +681,12 @@ namespace MNet
 			if (Parameters.TryGet<ParametersProperty.FloatProperty>(name, out var parameter) == false)
 			{
 				Debug.LogWarning($"No Network Animator Parameter Found with name {name}");
+				return;
+			}
+
+			if (parameter.Ignore == true)
+			{
+				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
 			}
 
@@ -714,6 +745,7 @@ namespace MNet
 
 			foreach (var parameter in parameters.Floats)
 			{
+				if (parameter.Ignore) continue;
 				if (parameter.IsDirty == false) continue;
 
 				SendFloat(parameter);
@@ -728,7 +760,11 @@ namespace MNet
 			where T : ParametersProperty.Property
 		{
 			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i].Ignore) continue;
+
 				list[i].WriteBinary(writer);
+			}
 
 			return writer.Flush();
 		}
@@ -738,7 +774,11 @@ namespace MNet
 			reader.Set(binary);
 
 			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i].Ignore) continue;
+
 				list[i].ReadBinary(reader);
+			}
 		}
 		#endregion
 
@@ -763,6 +803,10 @@ namespace MNet
 				[SerializeField]
 				protected string name;
 				public string Name => name;
+
+				[SerializeField]
+				bool ignore = false;
+				public bool Ignore => ignore;
 
 				public float Value
 				{
@@ -945,6 +989,12 @@ namespace MNet
 				return;
 			}
 
+			if (layer.Ignore == true)
+			{
+				Debug.LogWarning($"Recieved Set For Ignored Animator Layer {name}, This will be ignored");
+				return;
+			}
+
 			Component.SetLayerWeight(layer.Index, value);
 
 			if (layer.Update(value) == false) return;
@@ -987,7 +1037,11 @@ namespace MNet
 		void BufferLayerWeights()
 		{
 			for (int i = 0; i < layers.Count; i++)
+			{
+				if (layers[i].Ignore) continue;
+
 				layers[i].WriteBinary(writer);
+			}
 
 			var binary = writer.Flush();
 
@@ -999,7 +1053,11 @@ namespace MNet
 			reader.Set(binary);
 
 			for (int i = 0; i < layers.Count; i++)
+			{
+				if (layers[i].Ignore) continue;
+
 				layers[i].ReadBinary(reader);
+			}
 		}
 
 		void SyncLayerWeights()
@@ -1008,6 +1066,7 @@ namespace MNet
 
 			foreach (var layer in layers.List)
 			{
+				if (layer.Ignore == false) continue;
 				if (layer.IsDirty == false) continue;
 
 				SendLayerWeight(layer);
@@ -1040,6 +1099,7 @@ namespace MNet
 		{
 			foreach (var parameter in parameters.Floats)
 			{
+				if (parameter.Ignore == false) continue;
 				if (parameter.Smooth == false) continue;
 
 				if (parameter.Translate() == false) continue;
@@ -1047,6 +1107,7 @@ namespace MNet
 
 			foreach (var layer in layers.List)
 			{
+				if (layer.Ignore == false) continue;
 				if (layer.Smooth == false) continue;
 
 				if (layer.Translate() == false) continue;
