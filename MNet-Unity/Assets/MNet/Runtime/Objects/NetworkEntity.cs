@@ -154,13 +154,14 @@ namespace MNet
 
         public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
 
-        public Scene Scene => gameObject.scene;
+        public Scene UnityScene => gameObject.scene;
+        public NetworkScene NetworkScene { get; protected set; }
 
         protected virtual void Awake()
         {
             if (Application.isPlaying == false)
             {
-                NetworkScene.Register(this);
+                NetworkScene.RegisterLocal(this);
                 return;
             }
 
@@ -195,9 +196,11 @@ namespace MNet
         }
 
         public event Action OnSpawn;
-        internal void Spawn(NetworkEntityID id)
+        internal void Spawn(NetworkEntityID id, NetworkScene scene)
         {
             this.ID = id;
+
+            this.NetworkScene = scene;
 
             if (IsDynamic || IsOrphan) name += $" {id}";
 
@@ -271,7 +274,7 @@ namespace MNet
 
         protected virtual void OnDestroy()
         {
-            if (Scene.isLoaded && Application.isPlaying == false) NetworkScene.Unregister(this);
+            if (UnityScene.isLoaded && Application.isPlaying == false) NetworkScene.UnregisterLocal(this);
 
             NetworkAPI.Realtime.OnBufferEnd -= ReadyAfterBufferCallback;
         }

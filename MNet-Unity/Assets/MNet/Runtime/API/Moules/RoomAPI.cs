@@ -30,9 +30,9 @@ namespace MNet
             {
                 OfflineMode.Configure();
                 Info.Configure();
-                Scenes.Configure();
                 RemoteSync.Configure();
                 Clients.Configure();
+                Scenes.Configure();
                 Master.Configure();
                 Entities.Configure();
             }
@@ -310,7 +310,7 @@ namespace MNet
                 {
                     Dictionary.Remove(client.ID);
 
-                    Entities.DestroyFor(client);
+                    Entities.DestroyForClient(client);
 
                     OnRemove?.Invoke(client);
                 }
@@ -321,7 +321,7 @@ namespace MNet
                 {
                     if (Dictionary.ContainsKey(payload.ID))
                     {
-                        Debug.Log($"Connecting Client {payload.ID} Already Registered With Room");
+                        Debug.LogWarning($"Connecting Client {payload.ID} Already Registered With Room");
                         return;
                     }
 
@@ -353,6 +353,225 @@ namespace MNet
                 {
                     Dictionary.Clear();
                 }
+            }
+
+            public static class Scenes
+            {
+                internal static void Configure()
+                {
+                    Load.Configure();
+                    Unload.Configure();
+                }
+
+                public static class Load
+                {
+                    public static bool IsProcessing { get; private set; } = false;
+
+                    internal static void Configure()
+                    {
+                        Client.MessageDispatcher.RegisterHandler<LoadScenePayload>(Procedure);
+                    }
+
+                    #region Procedure
+                    /// <summary>
+                    /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
+                    /// no need to pause realtime or any of that in custom method, just load the scenes
+                    /// </summary>
+                    public static MethodDeleagate ProcdureMethod { get; set; } = DefaultProcedure;
+                    public delegate UniTask MethodDeleagate(byte index, LoadSceneMode mode);
+
+                    public static async UniTask DefaultProcedure(byte index, LoadSceneMode mode)
+                    {
+                        var scene = SceneManager.GetSceneByBuildIndex(index);
+
+                        if (scene.isLoaded && mode == LoadSceneMode.Additive)
+                        {
+                            Log.Warning($"Got Command to Load Scene at Index {index} but That Scene is Already Loaded, " +
+                                $"Loading The Same Scene Multiple Times is not Supported, Ignoring");
+                            return;
+                        }
+
+                        await SceneManager.LoadSceneAsync(index, mode);
+                    }
+
+                    static void Procedure(ref LoadScenePayload payload)
+                    {
+                        if (IsProcessing) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
+
+                        var index = payload.Index;
+                        var mode = ConvertLoadMode(payload.Mode);
+
+                        Procedure(index, mode).Forget();
+                    }
+
+                    public static event EventDelegate OnBegin;
+                    static async UniTask Procedure(byte index, LoadSceneMode mode)
+                    {
+                        IsProcessing = true;
+                        var pauseLock = Realtime.Pause.AddLock();
+                        OnBegin?.Invoke(index, mode);
+
+                        if (mode == LoadSceneMode.Single) NetworkScene.UnregisterAll();
+
+                        await ProcdureMethod(index, mode);
+
+                        IsProcessing = false;
+                        Realtime.Pause.RemoveLock(pauseLock);
+                        OnEnd?.Invoke(index, mode);
+                    }
+                    public static event EventDelegate OnEnd;
+
+                    public delegate void EventDelegate(byte index, LoadSceneMode mode);
+                    #endregion
+
+                    #region Request
+                    public static void Request(GameScene scene) => Request(scene, LoadSceneMode.Single);
+                    public static void Request(GameScene scene, LoadSceneMode mode)
+                    {
+                        var index = (byte)scene.BuildIndex;
+
+                        Request(index, mode);
+                    }
+
+                    public static void Request(byte index) => Request(index, LoadSceneMode.Single);
+                    public static void Request(byte index, LoadSceneMode mode)
+                    {
+                        if (Client.IsMaster == false)
+                        {
+                            Debug.LogWarning($"Only the Master Client may Load Scenes, Ignoring Request");
+                            return;
+                        }
+
+                        if (NetworkScene.Contains(index) && mode == LoadSceneMode.Additive)
+                        {
+                            Debug.LogWarning($"Cannot Load Scene {index} Additively as it's Already Loaded, " +
+                                $"Loading the Same Scene Multiple Times is not Supported");
+                            return;
+                        }
+
+                        var request = new LoadScenePayload(index, ConvertLoadMode(mode));
+
+                        Client.Send(ref request);
+                    }
+                    #endregion
+
+                    internal static void Clear()
+                    {
+                        IsProcessing = false;
+                    }
+                }
+
+                public static class Unload
+                {
+                    public static bool IsProcessing { get; private set; } = false;
+
+                    internal static void Configure()
+                    {
+                        Client.MessageDispatcher.RegisterHandler<UnloadScenePayload>(Procedure);
+                    }
+
+                    #region Procedure
+                    /// <summary>
+                    /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
+                    /// no need to pause realtime or any of that in custom method, just load the scenes
+                    /// </summary>
+                    public static MethodDeleagate ProcdureMethod { get; set; } = DefaultProcedure;
+                    public delegate UniTask MethodDeleagate(NetworkScene scene);
+
+                    public static async UniTask DefaultProcedure(NetworkScene scene)
+                    {
+                        if (scene == null)
+                        {
+                            Debug.LogError($"Scene to Unload is Null");
+                            return;
+                        }
+
+                        var index = scene.Index;
+
+                        await SceneManager.UnloadSceneAsync(index);
+                    }
+
+                    static void Procedure(ref UnloadScenePayload payload)
+                    {
+                        if (NetworkScene.TryGet(payload.Index, out var scene) == false)
+                        {
+                            Debug.LogError($"Recieved Request to Unload Scene {payload.Index} But that Scene is no Loaded");
+                            return;
+                        }
+
+                        if (IsProcessing) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
+
+                        Procedure(scene).Forget();
+                    }
+
+                    public static event EventDelegate OnBegin;
+                    static async UniTask Procedure(NetworkScene scene)
+                    {
+                        IsProcessing = true;
+                        var pauseLock = Realtime.Pause.AddLock();
+                        OnBegin?.Invoke(scene);
+
+                        NetworkScene.Unregister(scene);
+
+                        await ProcdureMethod(scene);
+
+                        IsProcessing = false;
+                        Realtime.Pause.RemoveLock(pauseLock);
+                        OnEnd?.Invoke(scene);
+                    }
+                    public static event EventDelegate OnEnd;
+
+                    public delegate void EventDelegate(NetworkScene scene);
+                    #endregion
+
+                    #region Request
+                    public static void Request(GameScene scene)
+                    {
+                        var index = (byte)scene.BuildIndex;
+
+                        Request(index);
+                    }
+
+                    public static void Request(byte index)
+                    {
+                        if (Client.IsMaster == false)
+                        {
+                            Debug.LogWarning($"Only the Master Client may Load Scenes, Ignoring Request");
+                            return;
+                        }
+
+                        if (NetworkScene.Contains(index) == false)
+                        {
+                            Debug.LogWarning($"Cannot Unload Scene {index} Because It's not Loaded");
+                            return;
+                        }
+
+                        if (NetworkScene.Count == 1)
+                        {
+                            Log.Warning($"Cannot Unload Scene {index} as It's the only Loaded Scene");
+                            return;
+                        }
+
+                        var request = new UnloadScenePayload(index);
+
+                        Client.Send(ref request);
+                    }
+                    #endregion
+
+                    internal static void Clear()
+                    {
+                        IsProcessing = false;
+                    }
+                }
+
+                internal static void Clear()
+                {
+                    Load.Clear();
+                    Unload.Clear();
+                }
+
+                static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
+                static LoadSceneMode ConvertLoadMode(NetworkSceneLoadMode mode) => (LoadSceneMode)mode;
             }
 
             public static class Entities
@@ -401,6 +620,8 @@ namespace MNet
                     var persistance = command.Persistance;
                     var attributes = command.Attributes;
 
+                    if (FindSceneFrom(ref command, out var scene) == false) return;
+
                     var entity = Assimilate(command);
 
                     var owner = FindOwner(command);
@@ -410,29 +631,80 @@ namespace MNet
 
                     entity.Setup(owner, type, persistance, attributes);
 
-                    Spawn(entity, id);
+                    Spawn(entity, id, scene);
                 }
 
-                internal static void SpawnLocal(NetworkEntity entity, NetworkEntityID id)
+                static bool FindSceneFrom(ref SpawnEntityCommand command, out NetworkScene scene)
                 {
-                    Spawn(entity, id);
+                    switch (command.Type)
+                    {
+                        case EntityType.SceneObject:
+                            {
+                                if (NetworkScene.TryGet(command.Scene, out scene) == false)
+                                {
+                                    Log.Info(NetworkScene.Dictionary);
+                                    Debug.LogWarning($"Scene {command.Scene} Not Found, Cannot Spawn Scene Object");
+                                    return false;
+                                }
+
+                                return true;
+                            }
+
+                        case EntityType.Dynamic:
+                        case EntityType.Orphan:
+                            {
+                                if (command.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                                {
+                                    scene = null;
+                                    return true;
+                                }
+
+                                if (NetworkScene.Active == null)
+                                {
+                                    Debug.LogWarning("Cannot Spawn Entity, No Active Scene Loaded");
+                                    scene = null;
+                                    return false;
+                                }
+
+                                scene = NetworkScene.Active;
+                                return true;
+                            }
+
+                        default:
+                            throw new NotImplementedException($"No Condition Set For {command.Type}");
+                    }
+                }
+
+                internal static void SpawnLocal(NetworkEntity entity, ref SpawnEntityResponse response)
+                {
+                    var id = response.ID;
+                    var scene = NetworkScene.Active;
+
+                    if (scene == null)
+                        throw new Exception($"No Active NetworkScene Found to Spawn Local Entity {entity}");
+
+                    Spawn(entity, id, scene);
                 }
 
                 public delegate void SpawnEntityDelegate(NetworkEntity entity);
                 public static event SpawnEntityDelegate OnSpawn;
-                static void Spawn(NetworkEntity entity, NetworkEntityID id)
+                static void Spawn(NetworkEntity entity, NetworkEntityID id, NetworkScene scene)
                 {
                     Debug.Log($"Spawning Entity '{entity.name}' with ID: {id}, Owned By Client {entity.Owner}");
 
+                    if (entity.IsDynamic)
+                    {
+                        if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                            Object.DontDestroyOnLoad(entity);
+                        else
+                            scene.AddDynamic(entity);
+                    }
+
                     Dictionary.Add(id, entity);
-
                     entity.Owner?.Entities.Add(entity);
-
                     if (entity.IsMasterObject) MasterObjects.Add(entity);
 
-                    if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Object.DontDestroyOnLoad(entity);
-
-                    entity.Spawn(id);
+                    entity.Spawn(id, scene);
 
                     OnSpawn?.Invoke(entity);
                 }
@@ -560,6 +832,7 @@ namespace MNet
 
                     Dictionary.Remove(entity.ID);
                     entity.Owner?.Entities.Remove(entity);
+                    entity.NetworkScene?.RemoveDynamic(entity);
                     if (entity.IsMasterObject) MasterObjects.Remove(entity);
 
                     Despawn(entity);
@@ -569,19 +842,7 @@ namespace MNet
                     Object.Destroy(entity.gameObject);
                 }
 
-                internal static void DestroyAllNonPersistant()
-                {
-                    var entities = Dictionary.Values.ToArray();
-
-                    for (int i = 0; i < entities.Length; i++)
-                    {
-                        if (entities[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
-
-                        Destroy(entities[i]);
-                    }
-                }
-
-                internal static void DestroyFor(NetworkClient client)
+                internal static void DestroyForClient(NetworkClient client)
                 {
                     var entities = client.Entities.ToArray();
 
@@ -598,13 +859,22 @@ namespace MNet
                         Destroy(entities[i]);
                     }
                 }
+
+                internal static void DestroyInScene(NetworkScene scene)
+                {
+                    var entities = scene.Entities.ToArray();
+
+                    for (int i = 0; i < entities.Length; i++)
+                        Destroy(entities[i]);
+                }
                 #endregion
 
                 internal static void Despawn(NetworkEntity entity)
                 {
                     entity.Despawn();
 
-                    if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad)) Scenes.MoveToActive(entity);
+                    if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                        SceneManager.MoveGameObjectToScene(entity.gameObject, SceneManager.GetActiveScene());
                 }
 
                 internal static void Clear()
@@ -677,126 +947,14 @@ namespace MNet
                 }
             }
 
-            public static class Scenes
-            {
-                public static Scene Active => SceneManager.GetActiveScene();
-
-                internal static void Configure()
-                {
-                    Client.MessageDispatcher.RegisterHandler<LoadScenesPayload>(Load);
-                }
-
-                internal static void Clear()
-                {
-
-                }
-
-                #region Load
-                public static bool IsLoading { get; private set; } = false;
-
-                /// <summary>
-                /// Method used to load scenes, change value to control scene loading so you can add loading screen and such,
-                /// no need to pause realtime or any of that in custom method, just load the scenes
-                /// </summary>
-                public static LoadMethodDeleagate LoadMethod { get; set; } = DefaultLoadMethod;
-                public delegate UniTask LoadMethodDeleagate(byte[] scenes, LoadSceneMode mode);
-
-                public static async UniTask DefaultLoadMethod(byte[] scenes, LoadSceneMode mode)
-                {
-                    for (int i = 0; i < scenes.Length; i++)
-                    {
-                        var scene = SceneManager.GetSceneByBuildIndex(scenes[i]);
-
-                        if (scene.isLoaded && mode == LoadSceneMode.Additive)
-                        {
-                            Log.Warning($"Got Command to Load Scene at Index {scenes[i]} but That Scene is Already Loaded, " +
-                                $"Loading The Same Scene Multiple Times is not Supported, Ignoring");
-                            continue;
-                        }
-
-                        await SceneManager.LoadSceneAsync(scenes[i], mode);
-
-                        if (i == 0) mode = LoadSceneMode.Additive;
-                    }
-                }
-
-                static void Load(ref LoadScenesPayload payload)
-                {
-                    if (IsLoading) throw new Exception("Scene API Already Loading Scene Recieved new Load Scene Command While Already Loading a Previous Command");
-
-                    var scenes = payload.Scenes;
-                    var mode = ConvertLoadMode(payload.Mode);
-
-                    Load(scenes, mode).Forget();
-                }
-
-                public static event LoadDelegate OnLoadBegin;
-                static async UniTask Load(byte[] scenes, LoadSceneMode mode)
-                {
-                    IsLoading = true;
-                    var pauseLock = Realtime.Pause.AddLock();
-                    OnLoadBegin?.Invoke(scenes, mode);
-
-                    if (mode == LoadSceneMode.Single) Entities.DestroyAllNonPersistant();
-
-                    await LoadMethod(scenes, mode);
-
-                    IsLoading = false;
-                    Realtime.Pause.RemoveLock(pauseLock);
-                    OnLoadEnd?.Invoke(scenes, mode);
-                }
-                public static event LoadDelegate OnLoadEnd;
-
-                public delegate void LoadDelegate(byte[] indexes, LoadSceneMode mode);
-                #endregion
-
-                #region Request
-                public static void Load(params GameScene[] scenes) => Load(LoadSceneMode.Single, scenes);
-                public static void Load(LoadSceneMode mode, params GameScene[] scenes)
-                {
-                    var indexes = Array.ConvertAll(scenes, Convert);
-
-                    byte Convert(GameScene element)
-                    {
-                        if (element.BuildIndex > byte.MaxValue)
-                            throw new Exception($"Trying to Load at Build Index {element.BuildIndex}, Maximum Allowed Build Index is {byte.MaxValue}");
-
-                        return (byte)element.BuildIndex;
-                    }
-
-                    Load(mode, indexes);
-                }
-
-                public static void Load(params byte[] indexes) => Load(LoadSceneMode.Single, indexes);
-                public static void Load(LoadSceneMode mode, params byte[] indexes)
-                {
-                    if (Client.IsMaster == false)
-                    {
-                        Debug.LogWarning($"Only the Master Client may Load Scenes, Ignoring Request");
-                        return;
-                    }
-
-                    var request = new LoadScenesPayload(indexes, ConvertLoadMode(mode));
-
-                    Client.Send(ref request);
-                }
-                #endregion
-
-                static NetworkSceneLoadMode ConvertLoadMode(LoadSceneMode mode) => (NetworkSceneLoadMode)mode;
-                static LoadSceneMode ConvertLoadMode(NetworkSceneLoadMode mode) => (LoadSceneMode)mode;
-
-                internal static void MoveToActive(Component target) => MoveToActive(target.gameObject);
-                internal static void MoveToActive(GameObject gameObject) => SceneManager.MoveGameObjectToScene(gameObject, Active);
-            }
-
             public static void Leave() => Client.Disconnect();
 
             internal static void Clear()
             {
                 Info.Clear();
-                Scenes.Clear();
                 RemoteSync.Clear();
                 Clients.Clear();
+                Scenes.Clear();
                 Master.Clear();
                 Entities.Clear();
 

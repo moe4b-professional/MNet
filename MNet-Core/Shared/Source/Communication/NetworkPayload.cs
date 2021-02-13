@@ -150,7 +150,10 @@ namespace MNet
             Add<PingResponse>();
             #endregion
 
-            Add<LoadScenesPayload>();
+            #region Scenes
+            Add<LoadScenePayload>();
+            Add<UnloadScenePayload>();
+            #endregion
 
             #region Network Groups
             Add<JoinNetworkGroupsPayload>();
@@ -421,9 +424,6 @@ namespace MNet
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
-        NetworkClientID? owner;
-        public NetworkClientID? Owner => owner;
-
         byte scene;
         public byte Scene => scene;
 
@@ -439,7 +439,6 @@ namespace MNet
                     context.Select(ref token);
                     context.Select(ref persistance);
                     context.Select(ref attributes);
-                    context.Select(ref owner);
                     break;
 
                 case EntityType.SceneObject:
@@ -452,7 +451,7 @@ namespace MNet
             }
         }
 
-        public static SpawnEntityRequest Write(ushort resource, EntitySpawnToken token, PersistanceFlags persistance, AttributesCollection attributes, NetworkClientID? owner = null)
+        public static SpawnEntityRequest Write(ushort resource, EntitySpawnToken token, PersistanceFlags persistance, AttributesCollection attributes)
         {
             var request = new SpawnEntityRequest()
             {
@@ -461,7 +460,6 @@ namespace MNet
                 token = token,
                 persistance = persistance,
                 attributes = attributes,
-                owner = owner,
             };
 
             return request;
@@ -581,7 +579,7 @@ namespace MNet
                 persistance = request.Persistance,
                 resource = request.Resource,
                 attributes = request.Attributes,
-                scene = request.Scene,
+                scene = request.Scene
             };
 
             return command;
@@ -901,6 +899,54 @@ namespace MNet
         }
     }
 
+    #region Scene
+    [Preserve]
+    public struct LoadScenePayload : INetworkSerializable
+    {
+        byte index;
+        public byte Index => index;
+
+        NetworkSceneLoadMode mode;
+        public NetworkSceneLoadMode Mode => mode;
+
+        public LoadScenePayload SetMode(NetworkSceneLoadMode value)
+        {
+            mode = value;
+            return this;
+        }
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref index);
+            context.Select(ref mode);
+        }
+
+        public LoadScenePayload(byte index, NetworkSceneLoadMode mode)
+        {
+            this.index = index;
+            this.mode = mode;
+        }
+    }
+
+    [Preserve]
+    public struct UnloadScenePayload : INetworkSerializable
+    {
+        byte index;
+        public byte Index => index;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref index);
+        }
+
+        public UnloadScenePayload(byte index)
+        {
+            this.index = index;
+        }
+    }
+    #endregion
+
+    #region Network Group
     [Preserve]
     public struct JoinNetworkGroupsPayload : INetworkSerializable
     {
@@ -938,5 +984,6 @@ namespace MNet
             this.selection = selection;
         }
     }
+    #endregion
     #endregion
 }

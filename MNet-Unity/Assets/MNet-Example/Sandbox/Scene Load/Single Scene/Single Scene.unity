@@ -511,9 +511,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf439ea1fd52a144390287ae73764733, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  list:
-  - {fileID: 2059382953}
+  locals:
   - {fileID: 1784063829}
+  - {fileID: 2059382953}
 --- !u!4 &1491651731
 Transform:
   m_ObjectHideFlags: 0

@@ -160,7 +160,7 @@ namespace MNet
                 Room.Send(ref response, client);
 
                 var payload = new ClientConnectedPayload(client.ID, client.Profile);
-                Room.Broadcast(ref payload);
+                Room.Broadcast(ref payload, exception1: client.ID);
             }
 
             NetworkClient Add(NetworkClientID id, NetworkClientProfile profile)
@@ -191,7 +191,7 @@ namespace MNet
 
             void Remove(NetworkClient client)
             {
-                Entities.DestroyFor(client);
+                Entities.DestroyForClient(client);
 
                 Dictionary.Remove(client.ID);
                 List.Remove(client);
@@ -288,6 +288,128 @@ namespace MNet
             }
         }
 
+        public ScenesProperty Scenes = new ScenesProperty();
+        public class ScenesProperty : Property
+        {
+            public Dictionary<byte, Scene> Dictionary;
+            public List<Scene> List;
+
+            public int Count => Dictionary.Count;
+
+            public bool TryGet(byte index, out Scene scene) => Dictionary.TryGetValue(index, out scene);
+
+            public Scene Active;
+
+            public override void Start()
+            {
+                base.Start();
+
+                MessageDispatcher.RegisterHandler<LoadScenePayload>(Load);
+                MessageDispatcher.RegisterHandler<UnloadScenePayload>(Unload);
+            }
+
+            void Load(NetworkClient sender, ref LoadScenePayload payload)
+            {
+                if (sender != Master.Client)
+                {
+                    Log.Warning($"Non Master Client {sender} Trying to Load Scenes in Room, Ignoring");
+                    return;
+                }
+
+                if (Dictionary.ContainsKey(payload.Index) && payload.Mode == NetworkSceneLoadMode.Additive)
+                {
+                    Log.Warning($"Scene {payload.Index} Already Loaded, Cannot Load the Same Scene Additively Multiple Times");
+                    return;
+                }
+
+                if (payload.Mode == NetworkSceneLoadMode.Single) RemoveAll();
+
+                var message = Room.Broadcast(ref payload, exception1: sender.ID);
+
+                Add(payload.Index, payload.Mode, message);
+            }
+
+            void Unload(NetworkClient sender, ref UnloadScenePayload payload)
+            {
+                if (sender != Master.Client)
+                {
+                    Log.Warning($"Non Master Client {sender} Trying to Unload Scenes in Room, Ignoring");
+                    return;
+                }
+
+                if (Dictionary.TryGetValue(payload.Index, out var scene) == false)
+                {
+                    Log.Warning($"Cannot Unload Scene {payload.Index} Because It's not Loaded");
+                    return;
+                }
+
+                if (Count == 1)
+                {
+                    Log.Warning($"Cannot Unload Scene {payload.Index} as It's the only Loaded Scene");
+                    return;
+                }
+
+                Remove(scene);
+
+                Room.Broadcast(ref payload, exception1: sender.ID);
+            }
+
+            Scene Add(byte index, NetworkSceneLoadMode loadMode, NetworkMessage loadMessage)
+            {
+                var scene = new Scene(index, loadMode, loadMessage);
+
+                Dictionary.Add(index, scene);
+                List.Add(scene);
+
+                MessageBuffer.Add(loadMessage);
+
+                if (Active == null) SelectActive();
+
+                return scene;
+            }
+
+            void Remove(Scene scene)
+            {
+                Entities.DestroyInScene(scene);
+
+                Dictionary.Remove(scene.Index);
+                List.Remove(scene);
+
+                MessageBuffer.Remove(scene.LoadMessage);
+
+                if (scene == Active)
+                {
+                    SelectActive();
+                }
+            }
+
+            void RemoveAll()
+            {
+                for (int i = List.Count; i-- > 0;)
+                    Remove(List[i]);
+            }
+
+            void SelectActive()
+            {
+                var modifyBuffer = Active != null;
+
+                Active = List.FirstOrDefault();
+
+                if (modifyBuffer)
+                {
+                    var payload = Active.LoadMessage.Read<LoadScenePayload>().SetMode(NetworkSceneLoadMode.Single);
+
+                    Active.LoadMessage.Set(payload);
+                }
+            }
+
+            public ScenesProperty()
+            {
+                Dictionary = new Dictionary<byte, Scene>();
+                List = new List<Scene>();
+            }
+        }
+
         public EntitiesProperty Entities = new EntitiesProperty();
         public class EntitiesProperty : Property
         {
@@ -332,34 +454,18 @@ namespace MNet
                     return;
                 }
 
-                if (request.Owner != null && sender != Master.Client)
-                {
-                    Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Object for Client {request.Owner}");
-                    return;
-                }
+                if (FindSceneFrom(ref request, out var scene) == false) return;
 
                 var id = Dictionary.Reserve();
 
-                NetworkClient owner;
+                var entity = new NetworkEntity(sender, id, request.Type, request.Persistance, scene);
 
-                if (request.Owner.HasValue)
-                    Clients.TryGet(request.Owner.Value, out owner);
-                else
-                    owner = sender;
-
-                if (owner == null)
-                {
-                    Log.Warning($"No Owner Found For Spawned Entity Request");
-                    return;
-                }
-
-                var entity = new NetworkEntity(owner, id, request.Type, request.Persistance);
-
+                sender.Entities.Add(entity);
                 Dictionary.Assign(id, entity);
-                owner?.Entities.Add(entity);
+                scene?.Entities.Add(entity);
                 if (entity.IsMasterObject) MasterObjects.Add(entity);
 
-                Log.Info($"Room {Room.ID}: Client {owner.ID} Spawned Entity {entity.ID}");
+                Log.Info($"Room {Room.ID}: Client {sender.ID} Spawned Entity {entity.ID}");
 
                 if (entity.IsDynamic)
                 {
@@ -369,9 +475,48 @@ namespace MNet
 
                 NetworkClientID? exception = entity.IsDynamic ? sender.ID : null;
 
-                var command = SpawnEntityCommand.Write(owner.ID, entity.ID, request);
+                var command = SpawnEntityCommand.Write(sender.ID, entity.ID, request);
                 entity.SpawnMessage = Room.Broadcast(ref command, exception1: exception);
                 MessageBuffer.Add(entity.SpawnMessage);
+            }
+
+            bool FindSceneFrom(ref SpawnEntityRequest request, out Scene scene)
+            {
+                switch (request.Type)
+                {
+                    case EntityType.SceneObject:
+                        {
+                            if (Scenes.TryGet(request.Scene, out scene) == false)
+                            {
+                                Log.Warning($"Scene {request.Scene} Not Loaded, Cannot Spawn Scene Object");
+                                return false;
+                            }
+
+                            return true;
+                        }
+
+                    case EntityType.Dynamic:
+                        {
+                            if (request.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                            {
+                                scene = null;
+                                return true;
+                            }
+
+                            if (Scenes.Active == null)
+                            {
+                                Log.Warning("Cannot Spawn Entity, No Active Scene Loaded");
+                                scene = null;
+                                return false;
+                            }
+
+                            scene = Scenes.Active;
+                            return true;
+                        }
+
+                    default:
+                        throw new NotImplementedException($"No Condition Set For {request.Type}");
+                }
             }
 
             #region Ownership
@@ -444,20 +589,13 @@ namespace MNet
 
             public void MakeOrphan(NetworkEntity entity)
             {
-                if (MessageBuffer.TryGetIndex(entity.SpawnMessage, out var bufferIndex) == false)
-                {
-                    Log.Error($"Trying to Make Entity {entity} an Orphan but It's spawn message was not found in the MessageBuffer, Ignoring");
-                    return;
-                }
-
                 entity.Type = EntityType.Orphan;
                 entity.SetOwner(Master.Client);
 
                 MasterObjects.Add(entity);
 
                 var command = entity.SpawnMessage.Read<SpawnEntityCommand>().MakeOrphan();
-                var message = NetworkMessage.Write(ref command);
-                MessageBuffer.Set(bufferIndex, message);
+                entity.SpawnMessage.Set(command);
             }
 
             #region Destroy
@@ -488,41 +626,36 @@ namespace MNet
                 entity.RpcBuffer.Clear(MessageBuffer.RemoveAll);
                 entity.SyncVarBuffer.Clear(MessageBuffer.RemoveAll);
 
-                entity.Owner?.Entities.Remove(entity);
-
                 Dictionary.Remove(entity.ID);
-
+                entity.Owner?.Entities.Remove(entity);
+                entity.Scene?.Entities.Remove(entity);
                 if (entity.IsMasterObject) MasterObjects.Remove(entity);
             }
 
-            public void DestroyFor(NetworkClient client)
+            public void DestroyForClient(NetworkClient client)
             {
-                var targets = client.Entities;
+                var entities = client.Entities.ToArray();
 
-                for (int i = targets.Count; i-- > 0;)
+                for (int i = 0; i < entities.Length; i++)
                 {
-                    if (targets[i].Type == EntityType.SceneObject) continue;
+                    if (entities[i].Type == EntityType.SceneObject) continue;
 
-                    if (targets[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                    if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
                     {
-                        MakeOrphan(targets[i]);
+                        MakeOrphan(entities[i]);
                         continue;
                     }
 
-                    Destroy(client.Entities[i]);
+                    Destroy(entities[i]);
                 }
             }
 
-            public void DestroyAllNonPersistant()
+            public void DestroyInScene(Scene scene)
             {
-                var targets = List.ToArray();
+                var entities = scene.Entities.ToArray();
 
-                for (int i = 0; i < targets.Length; i++)
-                {
-                    if (targets[i].Persistance.HasFlag(PersistanceFlags.SceneLoad)) continue;
-
-                    Destroy(targets[i]);
-                }
+                for (int i = 0; i < entities.Length; i++)
+                    Destroy(entities[i]);
             }
             #endregion
 
@@ -562,7 +695,7 @@ namespace MNet
 
                 var command = BroadcastRpcCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, channel : channel, group: request.Group, exception1: sender.ID, exception2: request.Exception);
+                var message = Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
                 if (request.Group == NetworkGroupID.Default && request.BufferMode != RemoteBufferMode.None)
                     entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
@@ -604,7 +737,7 @@ namespace MNet
 
                 var command = QueryRpcCommand.Write(sender.ID, request);
 
-                Room.Send(ref command, target, mode : mode, channel : channel);
+                Room.Send(ref command, target, mode: mode, channel: channel);
             }
 
             void InvokeBufferRPC(NetworkClient sender, ref BufferRpcRequest request)
@@ -660,7 +793,7 @@ namespace MNet
 
                 var command = SyncVarCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, channel : channel, group: request.Group, exception1: sender.ID);
+                var message = Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID);
 
                 entity.SyncVarBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.Remove);
             }
@@ -688,22 +821,6 @@ namespace MNet
             public List<NetworkMessage> List { get; protected set; }
 
             public NetworkMessage[] ToArray() => List.ToArray();
-
-            public bool TryGetIndex(NetworkMessage message, out int index)
-            {
-                for (index = 0; index < List.Count; index++)
-                {
-                    if (Equals(List[index], message))
-                        return true;
-                }
-
-                return false;
-            }
-
-            public void Set(int index, NetworkMessage message)
-            {
-                List[index] = message;
-            }
 
             public void Add(NetworkMessage message)
             {
@@ -818,46 +935,6 @@ namespace MNet
             }
         }
 
-        public ScenesProperty Scenes = new ScenesProperty();
-        public class ScenesProperty : Property
-        {
-            List<NetworkMessage> LoadMessages;
-
-            public override void Start()
-            {
-                base.Start();
-
-                MessageDispatcher.RegisterHandler<LoadScenesPayload>(Load);
-            }
-
-            void Load(NetworkClient sender, ref LoadScenesPayload payload)
-            {
-                if (sender != Master.Client)
-                {
-                    Log.Warning($"Non Master Client {sender} Trying to Load Scenes in Room, Ignoring");
-                    return;
-                }
-
-                if (payload.Mode == NetworkSceneLoadMode.Single) Entities.DestroyAllNonPersistant();
-
-                var message = Room.Broadcast(ref payload, exception1: sender.ID);
-
-                if (payload.Mode == NetworkSceneLoadMode.Single)
-                {
-                    MessageBuffer.RemoveAll(LoadMessages);
-                    LoadMessages.Clear();
-                }
-
-                LoadMessages.Add(message);
-                MessageBuffer.Add(message);
-            }
-
-            public ScenesProperty()
-            {
-                LoadMessages = new List<NetworkMessage>();
-            }
-        }
-
         void ForAllProperties(Action<Property> action)
         {
             action(Info);
@@ -865,12 +942,12 @@ namespace MNet
             action(Clients);
             action(Master);
             action(Groups);
+            action(Scenes);
             action(Entities);
             action(RemoteCalls);
             action(MessageBuffer);
             action(MessageDispatcher);
             action(SendQueue);
-            action(Scenes);
         }
 
         public class Property
@@ -886,6 +963,8 @@ namespace MNet
             public MasterProperty Master => Room.Master;
 
             public EntitiesProperty Entities => Room.Entities;
+
+            public ScenesProperty Scenes => Room.Scenes;
 
             public MessageDispatcherProperty MessageDispatcher => Room.MessageDispatcher;
 

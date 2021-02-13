@@ -487,7 +487,7 @@ namespace MNet
 				return;
 			}
 
-			if (parameter.Ignore == true)
+			if (parameter.Ignore)
 			{
 				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
@@ -537,7 +537,7 @@ namespace MNet
 				return;
 			}
 
-			if (parameter.Ignore == true)
+			if (parameter.Ignore)
 			{
 				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
@@ -607,7 +607,7 @@ namespace MNet
 				return;
 			}
 
-			if (parameter.Ignore == true)
+			if (parameter.Ignore)
 			{
 				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
@@ -684,7 +684,7 @@ namespace MNet
 				return;
 			}
 
-			if (parameter.Ignore == true)
+			if (parameter.Ignore)
 			{
 				Debug.LogWarning($"Recieved Set For Ignored Animator Parameter {name}, This will be ignored");
 				return;
@@ -989,7 +989,7 @@ namespace MNet
 				return;
 			}
 
-			if (layer.Ignore == true)
+			if (layer.Ignore)
 			{
 				Debug.LogWarning($"Recieved Set For Ignored Animator Layer {name}, This will be ignored");
 				return;
@@ -1099,7 +1099,7 @@ namespace MNet
 		{
 			foreach (var parameter in parameters.Floats)
 			{
-				if (parameter.Ignore == false) continue;
+				if (parameter.Ignore) continue;
 				if (parameter.Smooth == false) continue;
 
 				if (parameter.Translate() == false) continue;
@@ -1107,7 +1107,7 @@ namespace MNet
 
 			foreach (var layer in layers.List)
 			{
-				if (layer.Ignore == false) continue;
+				if (layer.Ignore) continue;
 				if (layer.Smooth == false) continue;
 
 				if (layer.Translate() == false) continue;

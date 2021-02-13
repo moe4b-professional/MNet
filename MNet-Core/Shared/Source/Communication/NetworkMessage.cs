@@ -24,6 +24,11 @@ namespace MNet
 
         public T Read<T>() => (T)payload;
 
+        public void Set<T>(T target)
+        {
+            payload = target;
+        }
+
         public void Serialize(NetworkWriter writer)
         {
             writer.Write(Type);
@@ -40,7 +45,7 @@ namespace MNet
         public NetworkMessage() { }
         NetworkMessage(object payload)
         {
-            this.payload = payload;
+            Set(payload);
         }
 
         //Static Utility

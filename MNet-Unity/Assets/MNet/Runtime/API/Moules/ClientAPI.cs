@@ -192,6 +192,7 @@ namespace MNet
                         case RegisterClientRequest instance:
                             return RegisterClient(ref instance, mode);
 
+                        #region Entity
                         case SpawnEntityRequest instance:
                             return SpawnEntity(ref instance, mode);
 
@@ -203,7 +204,9 @@ namespace MNet
 
                         case DestroyEntityPayload instance:
                             return DestroyEntity(ref instance, mode);
+                        #endregion
 
+                        #region RPC
                         case BroadcastRpcRequest instance:
                             return InvokeBroadcastRPC(ref instance, mode);
 
@@ -215,18 +218,26 @@ namespace MNet
 
                         case BufferRpcRequest instance:
                             return InvokeBufferRPC(ref instance, mode);
+                        #endregion
 
                         case RprRequest instance:
                             return InvokeRPR(ref instance, mode);
 
+                        #region SyncVar
                         case BroadcastSyncVarRequest instance:
-                            return InvokeSyncVar(ref instance, mode);
+                            return InvokeBroadcastSyncVar(ref instance, mode);
 
                         case BufferSyncVarRequest instance:
-                            return InvokeSyncVar(ref instance, mode);
+                            return InvokeBufferSyncVar(ref instance, mode);
+                        #endregion
 
-                        case LoadScenesPayload instance:
-                            return LoadScenes(ref instance, mode);
+                        #region Scenes
+                        case LoadScenePayload instance:
+                            return LoadScene(ref instance, mode);
+
+                        case UnloadScenePayload instance:
+                            return UnloadScene(ref instance, mode);
+                        #endregion
 
                         case ChangeRoomInfoPayload instance:
                             return ChangeRoomInfo(ref instance, mode);
@@ -267,20 +278,29 @@ namespace MNet
                     {
                         var id = OfflineMode.EntityIDs.Reserve();
 
-                        if (request.Type == EntityType.Dynamic)
+                        switch (request.Type)
                         {
-                            var response = SpawnEntityResponse.Write(id, request.Token);
+                            case EntityType.Dynamic:
+                                {
+                                    var response = SpawnEntityResponse.Write(id, request.Token);
 
-                            MessageDispatcher.Invoke(ref response, mode);
+                                    MessageDispatcher.Invoke(ref response, mode);
+
+                                    return Response.Consume;
+                                }
+
+                            case EntityType.SceneObject:
+                                {
+                                    var command = SpawnEntityCommand.Write(Client.ID, id, request);
+
+                                    MessageDispatcher.Invoke(ref command, mode);
+
+                                    return Response.Consume;
+                                }
+
+                            default:
+                                throw new NotImplementedException($"No Case Defined for {request.Type}");
                         }
-                        else
-                        {
-                            var command = SpawnEntityCommand.Write(Client.ID, id, request);
-
-                            MessageDispatcher.Invoke(ref command, mode);
-                        }
-
-                        return Response.Consume;
                     }
 
                     return Response.Send;
@@ -378,7 +398,7 @@ namespace MNet
 
                 static Response InvokeBufferRPC(ref BufferRpcRequest request, DeliveryMode mode)
                 {
-                    if(OfflineMode.On)
+                    if (OfflineMode.On)
                     {
                         return Response.Consume;
                     }
@@ -407,8 +427,8 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeSyncVar<T>(ref T request, DeliveryMode mode)
-                    where T : ISyncVarRequest
+                #region Sync Var
+                static Response InvokeBroadcastSyncVar(ref BroadcastSyncVarRequest request, DeliveryMode mode)
                 {
                     var command = SyncVarCommand.Write(Client.ID, request);
 
@@ -419,7 +439,16 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response LoadScenes(ref LoadScenesPayload payload, DeliveryMode mode)
+                static Response InvokeBufferSyncVar(ref BufferSyncVarRequest request, DeliveryMode mode)
+                {
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+                #endregion
+
+                #region Scenes
+                static Response LoadScene(ref LoadScenePayload payload, DeliveryMode mode)
                 {
                     MessageDispatcher.Invoke(ref payload, mode);
 
@@ -427,6 +456,16 @@ namespace MNet
 
                     return Response.Send;
                 }
+
+                static Response UnloadScene(ref UnloadScenePayload payload, DeliveryMode mode)
+                {
+                    MessageDispatcher.Invoke(ref payload, mode);
+
+                    if (OfflineMode.On) return Response.Consume;
+
+                    return Response.Send;
+                }
+                #endregion
 
                 static Response ChangeRoomInfo(ref ChangeRoomInfoPayload payload, DeliveryMode mode)
                 {
@@ -585,7 +624,7 @@ namespace MNet
 
             public static class Entities
             {
-                public static IReadOnlyList<NetworkEntity> List => Self?.Entities;
+                public static ICollection<NetworkEntity> List => Self?.Entities;
 
                 internal static void Configure()
                 {
@@ -605,30 +644,26 @@ namespace MNet
                 #region Spawn
                 static AutoKeyDictionary<EntitySpawnToken, NetworkEntity> Tokens;
 
-                public static NetworkEntity Spawn(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
+                public static NetworkEntity Spawn(GameObject prefab, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null)
                 {
                     if (NetworkAPI.Config.SyncedAssets.TryGetIndex(prefab, out var resource) == false)
                         throw new Exception($"Prefab '{prefab}' Not Registerd as a Network Spawnable Object");
 
-                    return Spawn(resource, persistance: persistance, attributes: attributes, owner: owner);
+                    return Spawn(resource, persistance: persistance, attributes: attributes);
                 }
 
-                public static NetworkEntity Spawn(ushort resource, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null, NetworkClientID? owner = null)
+                public static NetworkEntity Spawn(ushort resource, PersistanceFlags persistance = PersistanceFlags.None, AttributesCollection attributes = null)
                 {
-                    if (owner != null && IsMaster == false)
-                    {
-                        Debug.LogError($"Only the Master Client can Spawn Entities for other Clients");
-                        return null;
-                    }
-
                     var token = Tokens.Reserve();
 
                     var instance = Room.Entities.Instantiate(resource);
                     instance.Setup(Self, EntityType.Dynamic, persistance, attributes);
 
+                    Object.DontDestroyOnLoad(instance);
+
                     Tokens.Assign(token, instance);
 
-                    var request = SpawnEntityRequest.Write(resource, token, persistance, attributes, owner);
+                    var request = SpawnEntityRequest.Write(resource, token, persistance, attributes);
 
                     Send(ref request);
 
@@ -645,7 +680,7 @@ namespace MNet
 
                     Tokens.Remove(payload.Token);
 
-                    Room.Entities.SpawnLocal(entity, payload.ID);
+                    Room.Entities.SpawnLocal(entity, ref payload);
                 }
 
                 public delegate void SpawnDelegate(NetworkEntity entity);

@@ -26,30 +26,81 @@ namespace MNet
     {
         public const int ExecutionOrder = NetworkEntity.ExecutionOrder + -50;
 
+        #region Locals
         [SerializeField]
-        protected List<NetworkEntity> list = new List<NetworkEntity>();
-        public List<NetworkEntity> List => list;
+        protected List<NetworkEntity> locals = new List<NetworkEntity>();
+        public List<NetworkEntity> Locals => locals;
 
-        public int Count => list.Count;
-
-        public NetworkEntity this[ushort index] => list[index];
-
-        public bool Find(ushort index, out NetworkEntity entity)
+        public bool FindLocal(ushort index, out NetworkEntity entity)
         {
-            if (index < 0 || index >= Count)
+            if (index < 0 || index >= locals.Count)
             {
                 entity = null;
                 return false;
             }
             else
             {
-                entity = list[index];
+                entity = locals[index];
                 return true;
             }
         }
 
-        public Scene Scene => gameObject.scene;
-        bool IsInSameScene(NetworkEntity entity) => entity.Scene == this.Scene;
+        public bool AddLocal(NetworkEntity target)
+        {
+            int? vacancy = null;
+
+            for (int i = 0; i < locals.Count; i++)
+            {
+                if (locals[i] == null)
+                {
+                    vacancy = i;
+                    break;
+                }
+
+                if (locals[i] == target) return false;
+            }
+
+            if (vacancy == null)
+                locals.Add(target);
+            else
+                locals[vacancy.Value] = target;
+
+            return true;
+        }
+
+        public bool RemoveLocal(NetworkEntity target)
+        {
+            return locals.Remove(target);
+        }
+        #endregion
+
+        #region Dynamics
+        public HashSet<NetworkEntity> Dynamics { get; protected set; }
+
+        public void AddDynamic(NetworkEntity target)
+        {
+            SceneManager.MoveGameObjectToScene(target.gameObject, UnityScene);
+
+            Dynamics.Add(target);
+
+            Entities.Add(target);
+        }
+
+        public void RemoveDynamic(NetworkEntity target)
+        {
+            Dynamics.Remove(target);
+
+            Entities.Remove(target);
+        }
+        #endregion
+
+        public HashSet<NetworkEntity> Entities { get; protected set; }
+
+        public Scene UnityScene => gameObject.scene;
+
+        public byte Index { get; protected set; }
+
+        bool IsInSameScene(NetworkEntity entity) => entity.UnityScene == this.UnityScene;
 
         void Reset()
         {
@@ -60,11 +111,15 @@ namespace MNet
 
         void Awake()
         {
-            if (Application.isPlaying == false)
-            {
-                Register(this);
-                return;
-            }
+            Index = (byte)UnityScene.buildIndex;
+
+            Register(this);
+
+            if (Application.isPlaying == false) return;
+
+            Dynamics = new HashSet<NetworkEntity>();
+
+            Entities = new HashSet<NetworkEntity>(locals);
         }
 
         void Start()
@@ -72,13 +127,9 @@ namespace MNet
             if (Application.isPlaying == false) return;
 
             if (NetworkAPI.Client.IsRegistered) EvaluateSpawn();
-
-            NetworkAPI.Client.Register.OnCallback += EvaluateSpawnOnClientRegister;
         }
 
         #region Spawn
-        void EvaluateSpawnOnClientRegister(RegisterClientResponse response) => EvaluateSpawn();
-
         void EvaluateSpawn()
         {
             if (NetworkAPI.Client.IsMaster == false) return;
@@ -88,60 +139,76 @@ namespace MNet
 
         public void Spawn()
         {
-            for (ushort resource = 0; resource < list.Count; resource++)
+            for (ushort resource = 0; resource < locals.Count; resource++)
             {
-                if (list[resource] == null) continue;
+                if (locals[resource] == null) continue;
 
-                if (list[resource].IsReady) continue;
+                if (locals[resource].IsReady) continue;
 
-                NetworkAPI.Room.Entities.SpawnSceneObject(resource, Scene);
+                NetworkAPI.Room.Entities.SpawnSceneObject(resource, UnityScene);
             }
         }
         #endregion
 
-        public bool Add(NetworkEntity target)
-        {
-            int? vacancy = null;
-
-            for (int i = 0; i < list.Count; i++)
-            {
-                if (list[i] == null) vacancy = i;
-
-                if (list[i] == target) return false;
-            }
-
-            if (vacancy == null)
-                list.Add(target);
-            else
-                list[vacancy.Value] = target;
-
-            return true;
-        }
-
-        public bool Remove(NetworkEntity target) => list.Remove(target);
-
         void OnDestroy()
         {
-            NetworkAPI.Client.Register.OnCallback -= EvaluateSpawnOnClientRegister;
-
             Unregister(this);
         }
 
         public NetworkScene()
         {
-            list = new List<NetworkEntity>();
+            locals = new List<NetworkEntity>();
         }
 
         //Static Utility
-        static Dictionary<Scene, NetworkScene> collection;
 
-        static void Register(NetworkScene component)
+        public static Dictionary<byte, NetworkScene> Dictionary { get; protected set; }
+        public static List<NetworkScene> List { get; protected set; }
+
+        public static int Count => Dictionary.Count;
+
+        public static NetworkScene Active { get; protected set; }
+
+        static void SelectActive()
         {
-            collection[component.Scene] = component;
+            Active = List.FirstOrDefault();
         }
-        static bool Unregister(NetworkScene component)
+
+        static void Register(NetworkScene scene)
         {
-            return collection.Remove(component.Scene);
+            Dictionary.Add(scene.Index, scene);
+
+            List.Add(scene);
+
+            if (Active == null) SelectActive();
+        }
+
+        public static bool Unregister(byte index)
+        {
+            if (Dictionary.TryGetValue(index, out var scene) == false) return false;
+
+            return Unregister(scene);
+        }
+        public static bool Unregister(NetworkScene scene)
+        {
+            if (Dictionary.Remove(scene.Index) == false) return false;
+
+            List.Remove(scene);
+
+            if (scene == Active) SelectActive();
+
+            if (NetworkAPI.Client.IsConnected)
+                NetworkAPI.Room.Entities.DestroyInScene(scene);
+
+            return true;
+        }
+
+        public static void UnregisterAll()
+        {
+            if (Application.isPlaying == false) throw new InvalidOperationException("Method can Only be Invoked when Application is Playing");
+
+            for (int i = List.Count; i-- > 0;)
+                Unregister(List[i]);
         }
 
         static NetworkScene Create(Scene scene)
@@ -155,69 +222,68 @@ namespace MNet
             return component;
         }
 
-        public static NetworkScene Find(int sceneIndex)
-        {
-            var scene = SceneManager.GetSceneByBuildIndex(sceneIndex);
+        public static bool Contains(byte index) => Dictionary.ContainsKey(index);
 
-            return Find(scene);
+        public static bool TryGet(Scene uscene, out NetworkScene scene)
+        {
+            var index = (byte)uscene.buildIndex;
+
+            return TryGet(index, out scene);
         }
-        public static NetworkScene Find(Scene scene)
+        public static bool TryGet(byte index, out NetworkScene scene)
         {
-            NetworkScene component;
+            if (Dictionary.TryGetValue(index, out scene)) return true;
 
-            if (collection.TryGetValue(scene, out component)) return component;
+            if (Application.isPlaying) return false;
 
             foreach (var target in FindObjectsOfType<NetworkScene>())
-                Register(target);
+                if (Contains(target.Index) == false)
+                    Register(target);
 
-            if (collection.TryGetValue(scene, out component)) return component;
+            if (Dictionary.TryGetValue(index, out scene)) return true;
 
-            return null;
+            return false;
         }
 
-        public static NetworkEntity LocateEntity(int sceneIndex, ushort resource)
+        public static NetworkEntity LocateEntity(byte index, ushort resource)
         {
-            var scene = Find(sceneIndex);
+            if(TryGet(index, out var scene) == false) throw new Exception($"Couldn't Find Scene with Index {index}");
 
-            if (scene == null) throw new Exception($"Couldn't Find Scene with Index {sceneIndex}");
-
-            if (scene.Find(resource, out var entity) == false)
-                throw new Exception($"Couldn't Find NetworkBehaviour {resource} In Scene {sceneIndex}");
+            if (scene.FindLocal(resource, out var entity) == false)
+                throw new Exception($"Couldn't Find NetworkBehaviour {resource} In Scene {index}");
 
             return entity;
         }
 
-        public static void Register(NetworkEntity entity)
+        public static void RegisterLocal(NetworkEntity entity)
         {
-            var component = Find(entity.Scene);
+            if(TryGet(entity.UnityScene, out var scene) == false)
+                scene = Create(entity.UnityScene);
 
-            if (component == null) component = Create(entity.Scene);
-
-            component.Add(entity);
+            scene.AddLocal(entity);
         }
-        public static void Unregister(NetworkEntity entity)
+        public static void UnregisterLocal(NetworkEntity entity)
         {
-            var scene = Find(entity.Scene);
-
-            if (scene == null)
-                Create(entity.Scene);
+            if (TryGet(entity.UnityScene, out var scene) == false)
+                Create(entity.UnityScene);
             else
-                scene.Remove(entity);
+                scene.RemoveLocal(entity);
         }
 
         static NetworkScene()
         {
-            collection = new Dictionary<Scene, NetworkScene>();
+            Dictionary = new Dictionary<byte, NetworkScene>();
+            List = new List<NetworkScene>();
         }
 
 #if UNITY_EDITOR
         void FindAll()
         {
-            list.Clear();
+            locals.Clear();
 
             var targets = FindObjectsOfType<NetworkEntity>().Where(IsInSameScene);
 
-            list.AddRange(targets);
+            locals.AddRange(targets);
 
             EditorUtility.SetDirty(this);
         }

@@ -17,41 +17,37 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-using Cysharp.Threading.Tasks;
-
 namespace MNet
 {
-	public class ScenesLoad : NetworkBehaviour
+	public class ScenesUnload : MonoBehaviour
 	{
 		public GameScene scene = default;
 
-		public LoadSceneMode mode = LoadSceneMode.Single;
-
 		void Request()
-        {
-			NetworkAPI.Room.Scenes.Load.Request(scene, mode);
+		{
+			NetworkAPI.Room.Scenes.Unload.Request(scene);
 		}
 
 #if UNITY_EDITOR
-		[CustomEditor(typeof(ScenesLoad))]
+		[CustomEditor(typeof(ScenesUnload))]
 		class Inspector : Editor
-        {
-            public override void OnInspectorGUI()
-            {
-                base.OnInspectorGUI();
+		{
+			public override void OnInspectorGUI()
+			{
+				base.OnInspectorGUI();
 
 				EditorGUILayout.Space();
 
 				GUI.enabled = Application.isPlaying;
 
-				if(GUILayout.Button("Load"))
-                {
-					var target = base.target as ScenesLoad;
+				if (GUILayout.Button("Unload"))
+				{
+					var target = base.target as ScenesUnload;
 
 					target.Request();
-                }
-            }
-        }
+				}
+			}
+		}
 #endif
-    }
+	}
 }

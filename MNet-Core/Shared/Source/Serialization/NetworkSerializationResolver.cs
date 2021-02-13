@@ -518,7 +518,6 @@ namespace MNet
             return value;
         }
     }
-
     [Preserve]
     public sealed class ULongNetworkSerializationResolver : NetworkSerializationExplicitResolver<ulong>
     {

@@ -32,7 +32,7 @@ namespace MNet
 
         public bool IsMaster => this == NetworkAPI.Room.Master.Client;
 
-        public List<NetworkEntity> Entities { get; protected set; }
+        public HashSet<NetworkEntity> Entities { get; protected set; }
 
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
@@ -40,7 +40,7 @@ namespace MNet
 
             this.Profile = profile;
 
-            Entities = new List<NetworkEntity>();
+            Entities = new HashSet<NetworkEntity>();
         }
 
         public override string ToString() => ID.ToString();

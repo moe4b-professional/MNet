@@ -180,5 +180,44 @@ namespace MNet
 
             Assert.AreEqual(original, copy);
         }
+
+        [Test]
+        public void Bool8Flags()
+        {
+            var flag = new Bool8Flags();
+            BoolFlag(flag);
+        }
+
+        [Test]
+        public void Bool16Flags()
+        {
+            var flag = new Bool16Flags();
+            BoolFlag(flag);
+        }
+
+        [Test]
+        public void Bool32Flags()
+        {
+            var flag = new Bool32Flags();
+            BoolFlag(flag);
+        }
+
+        [Test]
+        public void Bool64Flags()
+        {
+            var flag = new Bool64Flags();
+            BoolFlag(flag);
+        }
+
+        void BoolFlag<T>(T flag)
+            where T : IBoolFlags
+        {
+            for (byte i = 0; i < flag.Length; i++)
+                flag[i] = i % 2 == 0;
+
+            var clone = NetworkSerializer.Clone(flag);
+
+            Assert.AreEqual(flag, clone);
+        }
     }
 }

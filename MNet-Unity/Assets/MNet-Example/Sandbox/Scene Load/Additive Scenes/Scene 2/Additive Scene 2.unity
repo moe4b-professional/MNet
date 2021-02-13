@@ -150,7 +150,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf439ea1fd52a144390287ae73764733, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  list:
+  locals:
   - {fileID: 2049694739}
 --- !u!4 &360345131
 Transform:

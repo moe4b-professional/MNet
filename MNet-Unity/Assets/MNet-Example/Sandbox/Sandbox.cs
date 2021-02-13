@@ -21,39 +21,24 @@ using Cysharp.Threading.Tasks;
 
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace MNet.Example
 {
     public class Sandbox : NetworkBehaviour
     {
-        public SimpleNetworkAnimator animator;
-
-        public float speed = 5;
-
-        public float acceleration = 20;
-
-        public float value;
-
-        void Update()
-        {
-            if (Entity == null) return;
-            if (Entity.IsReady == false) return;
-            if (Entity.IsMine == false) return;
-
-            var target = Input.GetAxisRaw("Vertical") * speed;
-
-            target = Mathf.Abs(target);
-
-            value = Mathf.MoveTowards(value, target, acceleration * Time.deltaTime);
-
-            animator.SetFloat("Move", value / speed * 2f);
-            animator.SetLayerWeight("Locomotion", value / speed);
-        }
-
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
 
         }
+
+#if UNITY_EDITOR
+        [MenuItem("Sandbox/Execute")]
+        static void Excute()
+        {
+            
+        }
+#endif
     }
 }

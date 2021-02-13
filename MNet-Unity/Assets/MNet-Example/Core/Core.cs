@@ -61,19 +61,19 @@ namespace MNet.Example
 			{
 				base.Configure();
 
-				NetworkAPI.Room.Scenes.LoadMethod = Load;
+				NetworkAPI.Room.Scenes.Load.ProcdureMethod = Load;
 			}
 
 			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
 
 			async UniTask Load(GameScene scene, LoadSceneMode mode)
 			{
-				var array = new byte[] { (byte)scene.BuildIndex };
+				var index = (byte)scene.BuildIndex;
 
-				await Load(array, mode);
+				await Load(index, mode);
 			}
 
-			async UniTask Load(byte[] scenes, LoadSceneMode mode)
+			async UniTask Load(byte scene, LoadSceneMode mode)
 			{
 				if (mode == LoadSceneMode.Single)
 				{
@@ -82,7 +82,7 @@ namespace MNet.Example
 					await UniTask.Delay(400);
 				}
 
-				await NetworkAPI.Room.Scenes.DefaultLoadMethod(scenes, mode);
+				await NetworkAPI.Room.Scenes.Load.DefaultProcedure(scene, mode);
 
 				if (mode == LoadSceneMode.Single)
 				{
@@ -222,7 +222,7 @@ namespace MNet.Example
 				{
 					var level = Core.levels.ReadAttribute(NetworkAPI.Room.Info.Attributes);
 
-					NetworkAPI.Room.Scenes.Load(LoadSceneMode.Single, level.Scene);
+					NetworkAPI.Room.Scenes.Load.Request(level.Scene, LoadSceneMode.Single);
 				}
 
 				Popup.Hide();

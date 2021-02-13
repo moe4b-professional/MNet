@@ -26,8 +26,9 @@ namespace MNet
 
         public PersistanceFlags Persistance { get; protected set; }
 
-        public NetworkMessage SpawnMessage { get; set; }
+        public Scene Scene { get; protected set; }
 
+        public NetworkMessage SpawnMessage { get; set; }
         public NetworkMessage OwnershipMessage { get; set; }
 
         public RpcBuffer RpcBuffer { get; protected set; }
@@ -35,7 +36,7 @@ namespace MNet
 
         public override string ToString() => ID.ToString();
 
-        public NetworkEntity(NetworkClient owner, NetworkEntityID id, EntityType type, PersistanceFlags persistance)
+        public NetworkEntity(NetworkClient owner, NetworkEntityID id, EntityType type, PersistanceFlags persistance, Scene scene)
         {
             SetOwner(owner);
 
@@ -43,6 +44,8 @@ namespace MNet
 
             this.Type = type;
             this.Persistance = persistance;
+
+            this.Scene = scene;
 
             RpcBuffer = new RpcBuffer();
             SyncVarBuffer = new SyncVarBuffer();

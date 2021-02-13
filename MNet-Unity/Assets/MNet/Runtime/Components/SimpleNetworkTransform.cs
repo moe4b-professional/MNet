@@ -377,7 +377,7 @@ namespace MNet
         public class DeliveryProperty
         {
             [SerializeField]
-            [Range(0, NetworkAPI.MaxChannel)]
+            [Range(0, NetworkAPI.Channels.Max)]
             byte channel = 0;
             public byte Channel => channel;
 

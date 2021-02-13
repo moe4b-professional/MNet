@@ -20,7 +20,7 @@ namespace MNet
 
         public AttributesCollection Attributes => Profile.Attributes;
 
-        public List<NetworkEntity> Entities;
+        public HashSet<NetworkEntity> Entities;
 
         public HashSet<NetworkGroupID> Groups;
 
@@ -36,7 +36,7 @@ namespace MNet
             this.ID = id;
             this.Profile = profile;
 
-            Entities = new List<NetworkEntity>();
+            Entities = new HashSet<NetworkEntity>();
 
             Groups = new HashSet<NetworkGroupID>() { NetworkGroupID.Default };
 

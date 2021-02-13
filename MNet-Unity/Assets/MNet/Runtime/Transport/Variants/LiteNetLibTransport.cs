@@ -110,7 +110,7 @@ namespace MNet
         public LiteNetLibTransport()
         {
             Client = new NetManager(this);
-            Client.ChannelsCount = 64;
+            Client.ChannelsCount = NetworkAPI.Channels.Max;
             Client.UpdateTime = 1;
 
             new Thread(Run).Start();
