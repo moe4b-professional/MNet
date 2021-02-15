@@ -260,7 +260,7 @@ namespace MNet
         public ulong Binary => binary;
 
         public byte Length => Capacity;
-        public const byte Capacity = 32;
+        public const byte Capacity = 64;
 
         public bool this[byte index]
         {

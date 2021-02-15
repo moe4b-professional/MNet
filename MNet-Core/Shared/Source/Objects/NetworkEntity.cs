@@ -30,7 +30,7 @@ namespace MNet
         /// <summary>
         /// Entity Will Not Persist
         /// </summary>
-        None = 1 << 0,
+        None = 0,
         /// <summary>
         /// Entity Will Persist Through Player Disconnection
         /// </summary>

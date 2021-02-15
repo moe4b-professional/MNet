@@ -380,6 +380,8 @@ namespace MNet
                 if (scene == Active)
                 {
                     SelectActive();
+
+                    if (Active != null) ModifyActive();
                 }
             }
 
@@ -391,16 +393,14 @@ namespace MNet
 
             void SelectActive()
             {
-                var modifyBuffer = Active != null;
-
                 Active = List.FirstOrDefault();
+            }
 
-                if (modifyBuffer)
-                {
-                    var payload = Active.LoadMessage.Read<LoadScenePayload>().SetMode(NetworkSceneLoadMode.Single);
+            void ModifyActive()
+            {
+                var payload = Active.LoadMessage.Read<LoadScenePayload>().SetMode(NetworkSceneLoadMode.Single);
 
-                    Active.LoadMessage.Set(payload);
-                }
+                Active.LoadMessage.Set(payload);
             }
 
             public ScenesProperty()

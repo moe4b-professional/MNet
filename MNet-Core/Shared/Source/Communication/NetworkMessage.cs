@@ -15,19 +15,16 @@ namespace MNet
     [Serializable]
     public class NetworkMessage
     {
-        object payload = default;
+        object payload;
         public object Payload => payload;
 
         public Type Type => payload.GetType();
 
+        public void Set<T>(T target) => payload = target;
+
         public bool Is<TType>() => payload is TType;
 
         public T Read<T>() => (T)payload;
-
-        public void Set<T>(T target)
-        {
-            payload = target;
-        }
 
         public void Serialize(NetworkWriter writer)
         {
