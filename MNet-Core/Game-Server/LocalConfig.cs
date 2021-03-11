@@ -12,10 +12,10 @@ namespace MNet
     public partial class LocalConfig : LocalConfig<LocalConfig>
     {
         [JsonProperty]
-        public IPAddress PersonalAddress { get; protected set; }
+        public string MasterAddress { get; protected set; }
 
         [JsonProperty]
-        public IPAddress MasterAddress { get; protected set; }
+        public IPAddress PersonalAddress { get; protected set; }
 
         [JsonProperty]
         public GameServerRegion Region { get; protected set; }

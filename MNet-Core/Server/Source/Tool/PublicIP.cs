@@ -9,7 +9,9 @@ namespace MNet
 {
     public static class PublicIP
     {
-        public const string URL = "http://checkip.amazonaws.com";
+        public static string Host = "checkip.amazonaws.com";
+
+        public static string URL = $"http://{Host}";
 
         public static IPAddress Retrieve() => Retrieve(4);
         public static IPAddress Retrieve(byte retries)

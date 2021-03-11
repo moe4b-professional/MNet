@@ -1,6 +1,12 @@
 {
   "MasterAddress": "localhost",
+
+  //Setting persona address to null will use your public ip, retrieved from: https://checkip.amazonaws.com
   "PersonalAddress": null,
+
+  //Setting region to local will configure this server to communicate over loopback ip address
+  //Only for development purposes
   "Region": "Local",
+
   "RestScheme": "HTTP"
 }

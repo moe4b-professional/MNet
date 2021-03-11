@@ -19,7 +19,7 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
-    [AddComponentMenu(Constants.Path + "Network Stats Info")]
+	[AddComponentMenu(Constants.Path + "Network Stats Info")]
 	public class NetworkStatsInfo : MonoBehaviour
 	{
 		public float time;
@@ -27,7 +27,7 @@ namespace MNet
 		public PingProperty ping;
 		[Serializable]
 		public struct PingProperty
-        {
+		{
 			public double average;
 
 			public double min;
@@ -35,7 +35,7 @@ namespace MNet
 			public double max;
 
 			public static PingProperty Read()
-            {
+			{
 				var ping = new PingProperty()
 				{
 					average = NetworkAPI.Ping.Average,
@@ -44,14 +44,35 @@ namespace MNet
 				};
 
 				return ping;
-            }
-        }
+			}
+		}
+
+		public bool showGUI = true;
 
 		void Update()
-        {
+		{
 			time = NetworkAPI.Time.Seconds;
 
 			ping = PingProperty.Read();
-        }
-	}
+		}
+
+        void OnGUI()
+        {
+			if (showGUI == false) return;
+
+			var style = new GUIStyle(GUI.skin.label);
+
+			style.fontSize = 20;
+			style.fontStyle = FontStyle.Bold;
+			style.normal.textColor = Color.black;
+
+			GUILayout.BeginVertical();
+
+			GUILayout.Label($" Average Ping: {ping.average}", style);
+			GUILayout.Label($" Min Ping: {ping.min}", style);
+			GUILayout.Label($" Max Ping: {ping.max}", style);
+
+			GUILayout.EndVertical();
+		}
+    }
 }
