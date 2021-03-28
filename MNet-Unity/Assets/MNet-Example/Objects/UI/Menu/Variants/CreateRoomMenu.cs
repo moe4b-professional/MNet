@@ -22,19 +22,22 @@ namespace MNet.Example
 	public class CreateRoomMenu : UIElement
 	{
 		[SerializeField]
-		new InputField name = null;
+		new InputField name = default;
 
 		[SerializeField]
-		Dropdown capacity = null;
+		Dropdown capacity = default;
 
 		[SerializeField]
-		Dropdown level = null;
+		Dropdown level = default;
 
 		[SerializeField]
-		Toggle offline = null;
+		InputField password = default;
 
 		[SerializeField]
-		Button button = null;
+		Toggle offline = default;
+
+		[SerializeField]
+		Button button = default;
 
 		public Core Core => Core.Instance;
 		PopupPanel Popup => Core.UI.Popup;
@@ -57,33 +60,34 @@ namespace MNet.Example
 			var capacity = this.capacity.GetOption(Core.Network.Capacities);
 			var level = this.level.value;
 			var offline = this.offline.isOn;
+			var password = this.password.text;
 
-			Create(name, capacity, (byte)level, offline);
+			Create(name, capacity, password,(byte)level, offline);
 		}
 
-		void Create(string name, byte capacity, byte level, bool offline)
+		void Create(string name, byte capacity, string password, byte level, bool offline)
 		{
 			Popup.Show("Creating Room");
 
 			var attributes = new AttributesCollection();
 			Core.Levels.WriteAttribute(attributes, level);
 
-			NetworkAPI.Room.Create(name, capacity, attributes: attributes, offline: offline, handler: Callback);
+			NetworkAPI.Room.Create(name, capacity, password: password, attributes: attributes, offline: offline, handler: Callback);
 
 			void Callback(RoomInfo room, RestError error)
 			{
 				if (error == null)
-					Join(room);
+					Join(room, password);
 				else
 					Popup.Show("Failed to Create Room", "Okay");
 			}
 		}
 
-		void Join(RoomInfo info)
+		void Join(RoomInfo info, string password)
         {
 			Popup.Show("Joining Room");
 
-			NetworkAPI.Room.Join(info);
+			NetworkAPI.Room.Join(info, password);
 		}
 	}
 }

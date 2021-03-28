@@ -40,7 +40,7 @@ namespace MNet
             {
                 On = true;
 
-                RoomInfo = new RoomInfo(default, name, capacity, 1, visibile, attributes);
+                RoomInfo = new RoomInfo(default, name, capacity, 1, visibile, false, attributes);
 
                 return RoomInfo;
             }

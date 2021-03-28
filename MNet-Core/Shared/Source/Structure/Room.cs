@@ -26,6 +26,9 @@ namespace MNet
         bool visibile;
         public bool Visibile => visibile;
 
+        bool locked;
+        public bool Locked => locked;
+
         AttributesCollection attributes;
         public AttributesCollection Attributes => attributes;
 
@@ -38,11 +41,12 @@ namespace MNet
             context.Select(ref occupancy);
 
             context.Select(ref visibile);
+            context.Select(ref locked);
 
             context.Select(ref attributes);
         }
 
-        public RoomInfo(RoomID id, string name, byte capacity, byte occupancy, bool visibile, AttributesCollection attributes)
+        public RoomInfo(RoomID id, string name, byte capacity, byte occupancy, bool visibile, bool locked, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
@@ -51,6 +55,7 @@ namespace MNet
             this.occupancy = occupancy;
 
             this.visibile = visibile;
+            this.locked = locked;
 
             this.attributes = attributes;
         }

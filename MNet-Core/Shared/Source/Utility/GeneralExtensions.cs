@@ -67,5 +67,7 @@ namespace MNet
             index = default;
             return false;
         }
+
+        public static string ToPrettyString<T>(this T value) => GeneralUtility.PrettifyName(value);
     }
 }

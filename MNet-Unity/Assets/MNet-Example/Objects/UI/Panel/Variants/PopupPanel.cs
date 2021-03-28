@@ -16,20 +16,19 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
-using WebSocketSharp;
 
 namespace MNet.Example
 {
 	public class PopupPanel : UIPanel
 	{
 		[SerializeField]
-		Text label = null;
+		Text label = default;
 
 		[SerializeField]
-		Button button = null;
+		Button button = default;
 
 		[SerializeField]
-		Text instruction = null;
+		Text instruction = default;
 
 		Action callback;
 
@@ -55,18 +54,9 @@ namespace MNet.Example
 			Show();
 		}
 
-        public override void Hide()
-        {
-            base.Hide();
-
-			callback = null;
-		}
-
         void ClickAction()
 		{
-			if (callback == null) return;
-
-			callback();
+			callback?.Invoke();
 			callback = null;
 		}
 	}

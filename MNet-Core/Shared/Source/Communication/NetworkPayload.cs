@@ -190,6 +190,9 @@ namespace MNet
         bool visibile;
         public bool Visibile => visibile;
 
+        string password;
+        public string Password => password;
+
         MigrationPolicy migrationPolicy;
         public MigrationPolicy MigrationPolicy => migrationPolicy;
 
@@ -204,17 +207,27 @@ namespace MNet
             context.Select(ref name);
             context.Select(ref capacity);
             context.Select(ref visibile);
+            context.Select(ref password);
             context.Select(ref migrationPolicy);
             context.Select(ref attributes);
         }
 
-        public CreateRoomRequest(AppID appID, Version version, string name, byte capacity, bool visibile, MigrationPolicy migrationPolicy, AttributesCollection attributes)
+        public CreateRoomRequest(
+            AppID appID,
+            Version version,
+            string name,
+            byte capacity,
+            bool visibile,
+            string password,
+            MigrationPolicy migrationPolicy,
+            AttributesCollection attributes)
         {
             this.appID = appID;
             this.version = version;
             this.name = name;
             this.capacity = capacity;
             this.visibile = visibile;
+            this.password = password;
             this.migrationPolicy = migrationPolicy;
             this.attributes = attributes;
         }
@@ -337,26 +350,31 @@ namespace MNet
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
+        string password;
+        public string Password => password;
+
         TimeRequest time;
         public TimeRequest Time => time;
 
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref profile);
+            context.Select(ref password);
             context.Select(ref time);
         }
 
-        public RegisterClientRequest(NetworkClientProfile profile, TimeRequest time)
+        public RegisterClientRequest(NetworkClientProfile profile, string password, TimeRequest time)
         {
             this.profile = profile;
+            this.password = password;
             this.time = time;
         }
 
-        public static RegisterClientRequest Write(NetworkClientProfile profile)
+        public static RegisterClientRequest Write(NetworkClientProfile profile, string password)
         {
             var time = TimeRequest.Write();
 
-            return new RegisterClientRequest(profile, time);
+            return new RegisterClientRequest(profile, password, time);
         }
     }
 

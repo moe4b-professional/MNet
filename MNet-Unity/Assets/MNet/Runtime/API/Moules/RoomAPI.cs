@@ -38,10 +38,12 @@ namespace MNet
             }
 
             #region Join
-            public static void Join(RoomInfo info) => Join(info.ID);
-            public static void Join(RoomID id)
+            public static void Join(RoomInfo info, string password = null) => Join(info.ID, password);
+            public static void Join(RoomID id, string password = null)
             {
                 var server = OfflineMode.On ? default : Server.Game.ID;
+
+                Client.Register.Password = password;
 
                 Realtime.Connect(server, id);
             }
@@ -54,6 +56,7 @@ namespace MNet
                 string name,
                 byte capacity,
                 bool visibile = true,
+                string password = null,
                 MigrationPolicy migrationPolicy = MigrationPolicy.Continue,
                 AttributesCollection attributes = null,
                 bool offline = false,
@@ -67,7 +70,7 @@ namespace MNet
                 }
                 else
                 {
-                    var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, migrationPolicy, attributes);
+                    var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, password, migrationPolicy, attributes);
 
                     Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
                 }

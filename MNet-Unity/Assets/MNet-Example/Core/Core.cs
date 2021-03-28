@@ -242,6 +242,8 @@ namespace MNet.Example
 
 			public PopupPanel Popup => Container.Popup;
 
+			public TextInputPanel TextInput => Container.TextInput;
+
 			public FaderUI Fader => Container.Fader;
 
 			protected override void Configure()

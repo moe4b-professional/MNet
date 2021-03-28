@@ -61,7 +61,7 @@ namespace MNet
                 Assert.AreEqual(a.Method, b.Method);
                 Assert.AreEqual(a.Target, b.Target);
 
-                Utility.Compare(a.Raw, b.Raw);
+                GeneralUtility.Compare(a.Raw, b.Raw);
 
                 return true;
             }
@@ -105,7 +105,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            Utility.Compare(original, copy);
+            GeneralUtility.Compare(original, copy);
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            Utility.Compare(original, copy);
+            GeneralUtility.Compare(original, copy);
         }
 
         [Test]
@@ -158,7 +158,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            Utility.Compare(original, copy);
+            GeneralUtility.Compare(original, copy);
         }
 
         [Test]
@@ -168,7 +168,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            Utility.Compare(original, copy);
+            GeneralUtility.Compare(original, copy);
         }
 
         [Test]

@@ -31,6 +31,9 @@ namespace MNet.Example
         [SerializeField]
         Text capacity = default;
 
+        [SerializeField]
+        Text locked = default;
+
         Core Core => Core.Instance;
 
         Button button;
@@ -70,6 +73,7 @@ namespace MNet.Example
             title.text = Data.Name;
             level.text = Core.Levels.ReadAttribute(Data.Attributes).Name;
             capacity.text = $"{Data.Occupancy}/{Data.Capacity}";
+            locked.text = Data.Locked ? "Locked" : "Open";
         }
     }
 }

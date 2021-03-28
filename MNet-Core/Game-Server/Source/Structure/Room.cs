@@ -31,6 +31,10 @@ namespace MNet
 
         public bool Visible { get; protected set; }
 
+        public string Password { get; protected set; }
+
+        public bool Locked => string.IsNullOrEmpty(Password) == false;
+
         public AttributesCollection Attributes { get; protected set; }
 
         public MigrationPolicy MigrationPolicy { get; protected set; }
@@ -38,7 +42,7 @@ namespace MNet
         public InfoProperty Info = new InfoProperty();
         public class InfoProperty : Property
         {
-            public RoomInfo Get() => new RoomInfo(Room.ID, Room.Name, Room.Capacity, Room.Occupancy, Room.Visible, Room.Attributes);
+            public RoomInfo Get() => new RoomInfo(Room.ID, Room.Name, Room.Capacity, Room.Occupancy, Room.Visible, Room.Locked, Room.Attributes);
 
             public override void Start()
             {
@@ -124,6 +128,15 @@ namespace MNet
 
             public void Register(NetworkClientID id, ref RegisterClientRequest request)
             {
+                if(Room.Locked)
+                {
+                    if (Room.Password != request.Password)
+                    {
+                        Disconnect(id, DisconnectCode.WrongPassword);
+                        return;
+                    }
+                }
+
                 if (Room.IsFull)
                 {
                     Disconnect(id, DisconnectCode.NoCapacity);
@@ -1111,7 +1124,15 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, AppConfig app, Version version, string name, byte capacity, bool visible, MigrationPolicy migrationPolicy, AttributesCollection attributes)
+        public Room(RoomID id,
+            AppConfig app,
+            Version version,
+            string name,
+            byte capacity,
+            bool visible,
+            string password,
+            MigrationPolicy migrationPolicy,
+            AttributesCollection attributes)
         {
             this.ID = id;
 
@@ -1121,6 +1142,7 @@ namespace MNet
             this.Name = name;
             this.Capacity = capacity;
             this.Visible = visible;
+            this.Password = password;
             this.MigrationPolicy = migrationPolicy;
             this.Attributes = attributes;
 

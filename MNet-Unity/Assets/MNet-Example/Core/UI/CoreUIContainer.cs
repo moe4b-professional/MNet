@@ -26,6 +26,10 @@ namespace MNet.Example
 		public PopupPanel Popup => popup;
 
 		[SerializeField]
+        TextInputPanel textInput = default;
+        public TextInputPanel TextInput => textInput;
+
+        [SerializeField]
         FaderUI fader = default;
         public FaderUI Fader => fader;
     }

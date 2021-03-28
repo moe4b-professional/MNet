@@ -32,6 +32,8 @@ namespace MNet
         InvalidContext,
 
         HostDisconnected,
+
+        WrongPassword,
     }
 
     [Preserve]

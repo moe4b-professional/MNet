@@ -518,6 +518,8 @@ namespace MNet
 
                 public static NetworkClientProfile Profile { get; private set; }
 
+                public static string Password { get; internal set; }
+
                 internal static void Configure()
                 {
                     GetProfileMethod = DefaultGetProfileMethod;
@@ -536,7 +538,7 @@ namespace MNet
                 {
                     Profile = GetProfileMethod();
 
-                    var request = RegisterClientRequest.Write(Profile);
+                    var request = RegisterClientRequest.Write(Profile, Password);
 
                     Send(ref request);
                 }
@@ -566,6 +568,7 @@ namespace MNet
                 internal static void Clear()
                 {
                     Profile = default;
+                    Password = default;
                 }
             }
 

@@ -31,6 +31,7 @@ namespace MNet.Example
 
         Core Core => Core.Instance;
         PopupPanel Popup => Core.UI.Popup;
+        TextInputPanel TextInput => Core.UI.TextInput;
 
         void Awake()
         {
@@ -89,10 +90,29 @@ namespace MNet.Example
 
         void TemplateClickCallback(RoomBasicUITemplate template)
         {
+            if (template.Data.Locked)
+            {
+                TextInput.Show("Please Enter Password", Callback);
+
+                TextInput.ContentType = InputField.ContentType.Password;
+
+                void Callback(bool confirmed, string value)
+                {
+                    if (confirmed)
+                        Join(template.Data, value);
+                }
+            }
+            else
+            {
+                Join(template.Data);
+            }
+        }
+
+        void Join(RoomInfo room, string password = null)
+        {
             Popup.Show("Joining Room");
 
-            var info = template.Data;
-            NetworkAPI.Room.Join(info);
+            NetworkAPI.Room.Join(room, password);
         }
 
         void Clear()
