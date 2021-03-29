@@ -18,8 +18,8 @@ MonoBehaviour:
     - _ID: Game 1 (Web)
       platforms: 11000000
   masterAddress:
-    local: 0
-    value: moe4b.ddns.net
+    local: 1
+    value: localhost
   restScheme: 0
   gameVersion:
     infer: 1

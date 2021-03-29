@@ -31,7 +31,7 @@ namespace MNet.Example
 
         void ClientDisconnectCallback(DisconnectCode code)
         {
-            Popup.Show($"Client Disconnected{Environment.NewLine}Reason: {code.ToPrettyString()}", "Okay");
+            Popup.Show($"Client Disconnected{"\n"}Reason: {code.ToPrettyString()}", "Okay");
         }
 
         void OnDestroy()
