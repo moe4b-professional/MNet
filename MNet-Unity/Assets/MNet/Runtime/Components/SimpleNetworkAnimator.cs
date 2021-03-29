@@ -20,25 +20,12 @@ using Random = UnityEngine.Random;
 namespace MNet
 {
 	[RequireComponent(typeof(Animator))]
-	public class SimpleNetworkAnimator : NetworkBehaviour
+	public class SimpleNetworkAnimator : NetworkBehaviour, NetworkEntity.ISync
 	{
-		[SerializeField]
-		NetworkEntitySyncTimer syncTimer = default;
-		public NetworkEntitySyncTimer SyncTimer => syncTimer;
-
 		public Animator Component { get; protected set; }
 
 		NetworkWriter writer;
 		NetworkReader reader;
-
-		protected override void Reset()
-		{
-			base.Reset();
-
-#if UNITY_EDITOR
-			syncTimer = NetworkEntitySyncTimer.Resolve(Entity);
-#endif
-		}
 
 		void Awake()
 		{
@@ -49,11 +36,6 @@ namespace MNet
 
 			parameters.Configure(this);
 			layers.Configure(this);
-		}
-
-		void Start()
-		{
-			syncTimer.OnInvoke += Sync;
 		}
 
 		#region Parameters
@@ -1078,7 +1060,7 @@ namespace MNet
 		#endregion
 		#endregion
 
-		void Sync()
+		public void Sync()
 		{
 			SyncTriggers();
 			SyncBools();

@@ -20,13 +20,8 @@ using Random = UnityEngine.Random;
 namespace MNet
 {
     [AddComponentMenu(Constants.Path + "Simple Network Transform")]
-    public class SimpleNetworkTransform : NetworkBehaviour
+    public class SimpleNetworkTransform : NetworkBehaviour, NetworkEntity.ISync
     {
-        [Header("Sync")]
-        [SerializeField]
-        NetworkEntitySyncTimer syncTimer = default;
-        public NetworkEntitySyncTimer SyncTimer => syncTimer;
-
         [SerializeField]
         bool forceSync = false;
         public bool ForceSync => forceSync;
@@ -585,15 +580,6 @@ namespace MNet
 
         public Transform Component => transform;
 
-        protected override void Reset()
-        {
-            base.Reset();
-
-#if UNITY_EDITOR
-            syncTimer = NetworkEntitySyncTimer.Resolve(Entity);
-#endif
-        }
-
         void Awake()
         {
             Properties = new List<Property>() { position, rotation, scale };
@@ -606,11 +592,6 @@ namespace MNet
 
                 Constraints |= Properties[i].Constraint;
             }
-        }
-
-        void Start()
-        {
-            syncTimer.OnInvoke += Sync;
         }
 
         protected override void OnSpawn()
@@ -626,7 +607,7 @@ namespace MNet
                 Properties[i].Init();
         }
 
-        void Sync()
+        public void Sync()
         {
             if (reliability.Update())
             {

@@ -27,6 +27,74 @@ namespace MNet
     {
         public const int ExecutionOrder = -400;
 
+        [SerializeField]
+        SyncProperty sync = default;
+        public SyncProperty Sync => sync;
+        [Serializable]
+        public class SyncProperty
+        {
+            [SerializeField]
+            [SyncInterval(0, 200)]
+            [Tooltip("Sync Interval in ms, 1s = 1000ms")]
+            int interval = 100;
+            public int Interval => interval;
+
+            public List<ISync> List { get; protected set; }
+
+            public event Action OnInvoke;
+
+            public bool Active => List.Count > 0;
+
+            NetworkEntity entity;
+            internal void Set(NetworkEntity reference)
+            {
+                entity = reference;
+
+                List = entity.GetComponentsInChildren<ISync>(true).ToList();
+
+                entity.OnReady += ReadyCallback;
+                entity.OnDespawn += DespawnCallback;
+            }
+
+            void ReadyCallback()
+            {
+                if (Active) coroutine = entity.StartCoroutine(Procedure());
+            }
+
+            Coroutine coroutine;
+            IEnumerator Procedure()
+            {
+                while (true)
+                {
+                    if (entity.IsMine) Invoke();
+
+                    yield return new WaitForSecondsRealtime(interval / 1000f);
+                }
+            }
+
+            void Invoke()
+            {
+                for (int i = 0; i < List.Count; i++)
+                    List[i].Sync();
+
+                OnInvoke?.Invoke();
+            }
+
+            void DespawnCallback()
+            {
+                if (coroutine != null)
+                {
+                    entity.StopCoroutine(coroutine);
+                    coroutine = null;
+                }
+            }
+        }
+
+        public interface ISync
+        {
+            void Sync();
+        }
+
         public NetworkEntityID ID { get; protected set; }
 
         public bool IsConnected => NetworkAPI.Client.IsConnected;
@@ -188,6 +256,8 @@ namespace MNet
             this.Persistance = persistance;
             this.Attributes = attributes;
             this.Owner = owner;
+
+            sync.Set(this);
 
             foreach (var behaviour in Behaviours.Values)
                 behaviour.Setup();
