@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.t4.script-creation-preprocessor": "https://github.com/moe4b-packages/Script-Creation-Preprocessor.git",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",

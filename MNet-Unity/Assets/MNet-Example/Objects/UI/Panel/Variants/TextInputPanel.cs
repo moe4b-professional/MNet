@@ -52,14 +52,15 @@ namespace MNet.Example
 
 		public virtual void Show(string instructions, CallbackDelegate callback)
 		{
-			label.text = instructions;
+			Show();
 
+			label.text = instructions;
 			this.callback = callback;
 
-			Show();
+			Selection = input.gameObject;
 		}
 
-        public override void Show()
+		public override void Show()
         {
             base.Show();
 
