@@ -15,6 +15,8 @@ using System.Runtime.CompilerServices;
 
 using System.Linq.Expressions;
 
+using Helper = MNet.NetworkSerializationHelper;
+
 namespace MNet
 {
     [Preserve]
@@ -45,7 +47,7 @@ namespace MNet
                 return true;
             }
 
-            if (NetworkSerializationHelper.Nullable.Any.Check(type)) writer.Insert(0); //Is Not Null Flag
+            if (Helper.Nullable.Any.Check(type)) writer.Insert(0); //Is Not Null Flag
 
             return false;
         }
@@ -58,7 +60,7 @@ namespace MNet
         }
         protected static bool ReadNull(NetworkReader reader, Type type)
         {
-            if (NetworkSerializationHelper.Nullable.Any.Check(type) == false) return false;
+            if (Helper.Nullable.Any.Check(type) == false) return false;
 
             return ReadNull(reader);
         }
@@ -195,7 +197,7 @@ namespace MNet
         {
             if (EnumNetworkSerializationResolver.IsValid(type) == false) return;
 
-            var backing = NetworkSerializationHelper.Enum.UnderlyingType.Retrieve(type);
+            var backing = Helper.Enum.UnderlyingType.Retrieve(type);
 
             resolver = ConstructResolver(typeof(EnumNetworkSerializationResolver<,>), type, backing);
         }
@@ -204,7 +206,7 @@ namespace MNet
         {
             if (NullableNetworkSerializationResolver.IsValid(type) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             resolver = ConstructResolver(typeof(NullableNetworkSerializationResolver<>), argument);
         }
@@ -214,7 +216,7 @@ namespace MNet
             if (type.IsGenericType == false) return;
             if (type.GetGenericTypeDefinition() != typeof(ValueTuple<>)) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
+            Helper.GenericArguments.Retrieve(type, out Type[] arguments);
 
             switch (arguments.Length)
             {
@@ -252,7 +254,7 @@ namespace MNet
         {
             if (ArrayNetworkSerializationResolver.IsValid(type) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             resolver = ConstructResolver(typeof(ArrayNetworkSerializationResolver<>), argument);
         }
@@ -260,7 +262,7 @@ namespace MNet
         {
             if (ArraySegmentNetworkSerializationResolver.IsValid(type) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             resolver = ConstructResolver(typeof(ArraySegmentNetworkSerializationResolver<>), argument);
         }
@@ -268,7 +270,7 @@ namespace MNet
         {
             if (ListNetworkSerializationResolver.IsValid(type) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             resolver = ConstructResolver(typeof(ListNetworkSerializationResolver<>), argument);
         }
@@ -276,7 +278,7 @@ namespace MNet
         {
             if (HashSetNetworkSerializationResolver.IsValid(type) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             resolver = ConstructResolver(typeof(HashSetNetworkSerializationResolver<>), argument);
         }
@@ -284,7 +286,7 @@ namespace MNet
         {
             if (DictionaryNetworkSerializationResolver.IsValid(type) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type key, out Type value);
+            Helper.GenericArguments.Retrieve(type, out Type key, out Type value);
 
             resolver = ConstructResolver(typeof(DictionaryNetworkSerializationResolver<,>), key, value);
         }
@@ -585,19 +587,17 @@ namespace MNet
         {
             if (instance == null)
             {
-                NetworkSerializationHelper.Length.Write(writer, 0);
+                Helper.Length.Collection.WriteNull(writer);
             }
             else if (instance.Length == 0)
             {
-                NetworkSerializationHelper.Length.Write(writer, 1);
+                Helper.Length.Collection.WriteValue(writer, 0);
             }
             else
             {
                 var binary = Encoding.UTF8.GetBytes(instance);
 
-                var length = binary.Length + 1;
-
-                NetworkSerializationHelper.Length.Write(writer, length);
+                Helper.Length.Collection.WriteValue(writer, binary.Length);
 
                 writer.Insert(binary);
             }
@@ -605,12 +605,9 @@ namespace MNet
 
         public override string Deserialize(NetworkReader reader)
         {
-            NetworkSerializationHelper.Length.Read(reader, out var length);
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
 
-            if (length == 0) return null;
-            if (length == 1) return string.Empty;
-
-            length -= 1;
+            if (length == 0) return string.Empty;
 
             var value = Encoding.UTF8.GetString(reader.Data, reader.Position, length);
 
@@ -757,14 +754,15 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, byte[] instance)
         {
-            NetworkSerializationHelper.Length.Write(writer, instance.Length);
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
 
             writer.Insert(instance);
         }
 
         public override byte[] Deserialize(NetworkReader reader)
         {
-            NetworkSerializationHelper.Length.Read(reader, out var length);
+            if (Helper.Length.Collection.Read(reader, out var length) == false)
+                return null;
 
             var value = reader.BlockCopy(length);
 
@@ -819,7 +817,7 @@ namespace MNet
 
         public INetworkSerializableResolver()
         {
-            nullable = NetworkSerializationHelper.Nullable.Generic<T>.Is;
+            nullable = Helper.Nullable.Generic<T>.Is;
         }
     }
 
@@ -849,7 +847,7 @@ namespace MNet
 
         public IManualNetworkSerializableResolver()
         {
-            nullable = NetworkSerializationHelper.Nullable.Generic<T>.Is;
+            nullable = Helper.Nullable.Generic<T>.Is;
         }
     }
 
@@ -1102,18 +1100,14 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, TElement[] instance)
         {
-            if (WriteNull(writer, instance)) return;
-
-            NetworkSerializationHelper.Length.Write(writer, instance.Length);
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
 
             for (int i = 0; i < instance.Length; i++) writer.Write(instance[i]);
         }
 
         public override TElement[] Deserialize(NetworkReader reader)
         {
-            if (ReadNull(reader)) return null;
-
-            NetworkSerializationHelper.Length.Read(reader, out var length);
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
 
             var array = new TElement[length];
 
@@ -1128,19 +1122,15 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, ArraySegment<TElement> instance)
         {
-            NetworkSerializationHelper.Length.Write(writer, instance.Count);
+            Helper.Length.Write(writer, instance.Count);
 
-            for (int i = 0; i < instance.Count; i++)
-            {
-                var element = instance.Array[instance.Offset + i];
-
-                writer.Write(element);
-            }
+            for (int i = instance.Offset; i < instance.Array.Length; i++)
+                writer.Write(instance.Array[i]);
         }
 
         public override ArraySegment<TElement> Deserialize(NetworkReader reader)
         {
-            NetworkSerializationHelper.Length.Read(reader, out var length);
+            Helper.Length.Read(reader, out var length);
 
             var array = new TElement[length];
 
@@ -1157,18 +1147,14 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, List<TElement> instance)
         {
-            if (WriteNull(writer, instance)) return;
-
-            NetworkSerializationHelper.Length.Write(writer, instance.Count);
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
 
             for (int i = 0; i < instance.Count; i++) writer.Write(instance[i]);
         }
 
         public override List<TElement> Deserialize(NetworkReader reader)
         {
-            if (ReadNull(reader)) return null;
-
-            NetworkSerializationHelper.Length.Read(reader, out var count);
+            if (Helper.Length.Collection.Read(reader, out var count) == false) return null;
 
             var list = new List<TElement>(count);
 
@@ -1188,25 +1174,25 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, HashSet<TElement> instance)
         {
-            if (WriteNull(writer, instance)) return;
-
-            NetworkSerializationHelper.Length.Write(writer, instance.Count);
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
 
             foreach (var item in instance) writer.Write(item);
         }
 
         public override HashSet<TElement> Deserialize(NetworkReader reader)
         {
-            if (ReadNull(reader)) return null;
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
 
-            NetworkSerializationHelper.Length.Read(reader, out var length);
+            var set = new HashSet<TElement>();
 
-            var array = new TElement[length];
+            for (int i = 0; i < length; i++)
+            {
+                var element = reader.Read<TElement>();
 
-            for (int i = 0; i < length; i++) array[i] = reader.Read<TElement>();
+                set.Add(element);
+            }
 
-            return new HashSet<TElement>(array);
-            //Hashset doesn't expose a capacity constructor, that's why I'm creating it from an array
+            return set;
         }
     }
 
@@ -1215,9 +1201,7 @@ namespace MNet
     {
         public override void Serialize(NetworkWriter writer, Dictionary<TKey, TValue> instance)
         {
-            if (WriteNull(writer, instance)) return;
-
-            NetworkSerializationHelper.Length.Write(writer, instance.Count);
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
 
             foreach (var pair in instance)
             {
@@ -1228,9 +1212,7 @@ namespace MNet
 
         public override Dictionary<TKey, TValue> Deserialize(NetworkReader reader)
         {
-            if (ReadNull(reader)) return null;
-
-            NetworkSerializationHelper.Length.Read(reader, out var count);
+            if (Helper.Length.Collection.Read(reader, out var count) == false) return null;
 
             var dictionary = new Dictionary<TKey, TValue>(count);
 
@@ -1336,7 +1318,7 @@ namespace MNet
 
             var values = TupleUtility.Extract(instance);
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
+            Helper.GenericArguments.Retrieve(type, out Type[] arguments);
 
             for (int i = 0; i < values.Length; i++)
                 writer.Write(values[i], arguments[i]);
@@ -1346,7 +1328,7 @@ namespace MNet
         {
             if (ReadNull(reader, type)) return null;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type[] arguments);
+            Helper.GenericArguments.Retrieve(type, out Type[] arguments);
 
             var items = new object[arguments.Length];
 
@@ -1382,7 +1364,7 @@ namespace MNet
         {
             if (ReadNull(reader)) return null;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type underlying);
+            Helper.GenericArguments.Retrieve(type, out Type underlying);
 
             var value = reader.Read(underlying);
 
@@ -1399,14 +1381,14 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            var value = NetworkSerializationHelper.Enum.Value.Retrieve(instance);
+            var value = Helper.Enum.Value.Retrieve(instance);
 
             writer.Write(value);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            var backing = NetworkSerializationHelper.Enum.UnderlyingType.Retrieve(type);
+            var backing = Helper.Enum.UnderlyingType.Retrieve(type);
 
             var value = reader.Read(backing);
 
@@ -1426,24 +1408,20 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            if (WriteNull(writer, instance)) return;
-
             var array = instance as IList;
 
-            NetworkSerializationHelper.Length.Write(writer, array.Count);
+            if (Helper.Length.Collection.WriteExplicit(writer, array) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             for (int i = 0; i < array.Count; i++) writer.Write(array[i], argument);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            if (ReadNull(reader)) return null;
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
 
-            NetworkSerializationHelper.Length.Read(reader, out var length);
-
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             var array = Array.CreateInstance(argument, length);
 
@@ -1472,29 +1450,25 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            if (WriteNull(writer, instance)) return;
-
             var value = instance as IEnumerable;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             //TODO find a way to get the count to optimize this surrogate creation
-            var list = NetworkSerializationHelper.List.Instantiate(argument, 0);
+            var list = Helper.List.Instantiate(argument, 0);
 
             foreach (var item in value) list.Add(item);
 
-            NetworkSerializationHelper.Length.Write(writer, list.Count);
+            Helper.Length.Write(writer, list.Count);
 
             for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            if (ReadNull(reader)) return null;
+            Helper.Length.Read(reader, out var count);
 
-            NetworkSerializationHelper.Length.Read(reader, out var count);
-
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             var array = Array.CreateInstance(argument, count) as IList;
 
@@ -1521,26 +1495,22 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            if (WriteNull(writer, instance)) return;
-
             var list = instance as IList;
 
-            NetworkSerializationHelper.Length.Write(writer, list.Count);
+            if (Helper.Length.Collection.WriteExplicit(writer, list) == false) return;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            if (ReadNull(reader)) return null;
+            if (Helper.Length.Collection.Read(reader, out var count) == false) return null;
 
-            NetworkSerializationHelper.Length.Read(reader, out var count);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
-
-            var list = NetworkSerializationHelper.List.Instantiate(argument, count);
+            var list = Helper.List.Instantiate(argument, count);
 
             for (int i = 0; i < count; i++)
             {
@@ -1567,29 +1537,31 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            if (WriteNull(writer, instance)) return;
+            if (instance == null)
+            {
+                Helper.Length.Collection.WriteNull(writer);
+                return;
+            }
 
             var value = instance as IEnumerable;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             //TODO find a way to get the count to optimize this surrogate creation
-            var list = NetworkSerializationHelper.List.Instantiate(argument, 0);
+            var list = Helper.List.Instantiate(argument, 0);
 
             foreach (var item in value) list.Add(item);
 
-            NetworkSerializationHelper.Length.Write(writer, list.Count);
+            Helper.Length.Collection.WriteValue(writer, list.Count);
 
             for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
         }
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            if (ReadNull(reader)) return null;
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out Type argument);
-
-            NetworkSerializationHelper.Length.Read(reader, out var length);
+            Helper.GenericArguments.Retrieve(type, out Type argument);
 
             var array = Array.CreateInstance(argument, length) as IList;
 
@@ -1618,13 +1590,11 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, object instance, Type type)
         {
-            if (WriteNull(writer, instance)) return;
+            var dictionary = instance as IDictionary;
 
-            var dictionary = (IDictionary)instance;
+            if (Helper.Length.Collection.WriteExplicit(writer, dictionary) == false) return;
 
-            NetworkSerializationHelper.Length.Write(writer, dictionary.Count);
-
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
+            Helper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
 
             foreach (DictionaryEntry entry in dictionary)
             {
@@ -1635,13 +1605,11 @@ namespace MNet
 
         public override object Deserialize(NetworkReader reader, Type type)
         {
-            if (ReadNull(reader)) return null;
-
-            NetworkSerializationHelper.Length.Read(reader, out var count);
+            if (Helper.Length.Collection.Read(reader, out var count) == false) return null;
 
             var dictionary = Activator.CreateInstance(type, count) as IDictionary;
 
-            NetworkSerializationHelper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
+            Helper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
 
             for (int i = 0; i < count; i++)
             {

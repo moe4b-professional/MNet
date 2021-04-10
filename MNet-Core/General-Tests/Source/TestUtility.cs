@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 using System.Runtime.CompilerServices;
 
-public static class Utility
+public static class TestUtility
 {
     public static object[] TupleToArray(ITuple tuple)
     {

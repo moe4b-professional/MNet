@@ -82,7 +82,7 @@ namespace MNet
             var attributes = new AttributesCollection();
             attributes.Set(0, (byte)0);
 
-            var request = new CreateRoomRequest(AppID, GameVersion, name, capacity, true, MigrationPolicy.Continue, attributes);
+            var request = new CreateRoomRequest(AppID, GameVersion, name, capacity, true, null, MigrationPolicy.Continue, attributes);
 
             var info = await RestAPI.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
 
@@ -137,7 +137,7 @@ namespace MNet
         {
             var profile = new NetworkClientProfile($"Player {Index}");
 
-            var request = new RegisterClientRequest(profile, default);
+            var request = new RegisterClientRequest(profile, null, default);
 
             Send(ref request, DeliveryMethod.ReliableOrdered);
         }

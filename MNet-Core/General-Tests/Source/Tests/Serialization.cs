@@ -13,7 +13,7 @@ namespace MNet
         [SetUp]
         public void Setup()
         {
-            
+
         }
 
         [Test]
@@ -61,7 +61,7 @@ namespace MNet
                 Assert.AreEqual(a.Method, b.Method);
                 Assert.AreEqual(a.Target, b.Target);
 
-                GeneralUtility.Compare(a.Raw, b.Raw);
+                TestUtility.Compare(a.Raw, b.Raw);
 
                 return true;
             }
@@ -105,7 +105,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            GeneralUtility.Compare(original, copy);
+            TestUtility.Compare(original, copy);
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            GeneralUtility.Compare(original, copy);
+            TestUtility.Compare(original, copy);
         }
 
         [Test]
@@ -152,13 +152,65 @@ namespace MNet
         }
 
         [Test]
+        public void NullString()
+        {
+            string original = null;
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, copy);
+        }
+
+        [Test]
+        public void EmptyString()
+        {
+            string original = "";
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, copy);
+        }
+
+        [Test]
         public void NullableList()
         {
             var original = new List<int?>() { 42, null, 12, 420, null, 69 };
 
             var copy = NetworkSerializer.Clone(original);
 
-            GeneralUtility.Compare(original, copy);
+            TestUtility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Array()
+        {
+            var original = new int[] { 42, 43, 44, 45 };
+
+            var copy = NetworkSerializer.Clone(original);
+
+            TestUtility.Compare(original, copy);
+        }
+
+        [Test]
+        public void ArraySegment()
+        {
+            var array = new int[] { 42, 43, 44, 45 };
+
+            var original = new ArraySegment<int>(array, 1, 3);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            TestUtility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Dictionary()
+        {
+            var original = new Dictionary<string, string> { { "Hello", "World" }, { "Rustle", "Mania" }, { "David", "Hayter" } };
+
+            var clone = NetworkSerializer.Clone(original);
+
+            TestUtility.Compare(original, clone);
         }
 
         [Test]
@@ -168,7 +220,7 @@ namespace MNet
 
             var copy = NetworkSerializer.Clone(original);
 
-            GeneralUtility.Compare(original, copy);
+            TestUtility.Compare(original, copy);
         }
 
         [Test]

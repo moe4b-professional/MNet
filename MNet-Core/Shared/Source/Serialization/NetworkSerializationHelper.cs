@@ -16,11 +16,11 @@ namespace MNet
         {
             public static class Any
             {
-                public static ConcurrentDictionary<Type, bool> Dictionary { get; private set; }
+                static ConcurrentDictionary<Type, bool> dictionary;
 
                 public static bool Check(Type type)
                 {
-                    if (Dictionary.TryGetValue(type, out var value)) return value;
+                    if (dictionary.TryGetValue(type, out var value)) return value;
 
                     value = Evaluate(type);
 
@@ -29,53 +29,50 @@ namespace MNet
                     return value;
                 }
 
-                public static void Add(Type type, bool value)
+                static void Add(Type type, bool value)
                 {
-                    Dictionary.TryAdd(type, value);
+                    dictionary.TryAdd(type, value);
                 }
 
                 static Any()
                 {
-                    Dictionary = new ConcurrentDictionary<Type, bool>();
+                    dictionary = new ConcurrentDictionary<Type, bool>();
                 }
             }
 
             public static class Generic<T>
             {
-                static int value = -1;
+                static State state;
+                public enum State
+                {
+                    Undefined, True, False
+                }
 
                 public static bool Is
                 {
                     get
                     {
-                        switch (value)
+                        switch (state)
                         {
-                            case -1:
+                            case State.Undefined:
                                 return Check();
-                            case 0:
+
+                            case State.False:
                                 return false;
-                            case 1:
+
+                            case State.True:
                                 return true;
                         }
 
                         return true;
                     }
-                    set
-                    {
-                        Set(value);
-                    }
                 }
 
                 static bool Check()
                 {
-                    var result = Evaluate<T>();
+                    var nullable = Evaluate<T>();
 
-                    return Set(result);
-                }
-
-                public static bool Set(bool nullable)
-                {
-                    value = nullable ? 1 : 0;
+                    state = nullable ? State.True : State.False;
 
                     return nullable;
                 }
@@ -98,14 +95,6 @@ namespace MNet
 
                 return true;
             }
-
-            static void Add<T>(bool value)
-            {
-                var type = typeof(T);
-
-                Any.Add(type, value);
-                Generic<T>.Is = value;
-            }
         }
 
         public static class Length
@@ -122,6 +111,56 @@ namespace MNet
 
             public static void Read(NetworkReader reader, out ushort length) => length = Read(reader);
             public static ushort Read(NetworkReader reader) => reader.Read<ushort>();
+
+            public static class Collection
+            {
+                public static bool WriteExplicit(NetworkWriter writer, ICollection collection)
+                {
+                    if (collection == null)
+                    {
+                        WriteNull(writer);
+                        return false;
+                    }
+                    else
+                    {
+                        WriteValue(writer, collection.Count);
+                        return true;
+                    }
+                }
+
+                public static bool WriteGeneric<T>(NetworkWriter writer, ICollection<T> collection)
+                {
+                    if (collection == null)
+                    {
+                        WriteNull(writer);
+                        return false;
+                    }
+                    else
+                    {
+                        WriteValue(writer, collection.Count);
+                        return true;
+                    }
+                }
+
+                public static void WriteNull(NetworkWriter writer)
+                {
+                    writer.Write<ushort>(0);
+                }
+                public static void WriteValue(NetworkWriter writer, int value)
+                {
+                    writer.Write((ushort)(value + 1));
+                }
+
+                public static bool Read(NetworkReader reader, out ushort value)
+                {
+                    value = reader.Read<ushort>();
+
+                    if (value == 0) return false;
+
+                    value -= 1;
+                    return true;
+                }
+            }
         }
 
         public static class GenericArguments
@@ -213,7 +252,7 @@ namespace MNet
 
         public static class List
         {
-            public static Type GenericDefinition => typeof(List<>);
+            public static Type GenericDefinition { get; private set; } = typeof(List<>);
 
             public static Type Construct(Type argument) => GenericDefinition.MakeGenericType(argument);
 
