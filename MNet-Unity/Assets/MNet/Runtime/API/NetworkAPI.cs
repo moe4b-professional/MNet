@@ -29,6 +29,14 @@ namespace MNet
 
         public static bool IsRunning { get; private set; }
 
+#if UNITY_EDITOR
+        [InitializeOnLoadMethod]
+        static void EditorInitialize()
+        {
+            Log.Output = LogOutput;
+        }
+#endif
+
         public static void Configure()
         {
             Config = NetworkAPIConfig.Load();

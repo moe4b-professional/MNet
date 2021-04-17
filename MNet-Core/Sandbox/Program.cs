@@ -14,11 +14,16 @@ namespace MNet
 {
     static class Program
     {
-        public const long Count = 10_00_000_000;
-
         public static void Main(string[] args)
         {
+            Procedure();
+
             while (true) Console.ReadKey();
+        }
+
+        static void Procedure()
+        {
+
         }
     }
 

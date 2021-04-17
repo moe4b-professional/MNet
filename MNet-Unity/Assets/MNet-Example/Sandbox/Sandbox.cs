@@ -27,6 +27,9 @@ namespace MNet.Example
 {
     public class Sandbox : NetworkBehaviour
     {
+        [SerializeField]
+        VarInt number;
+
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
@@ -37,8 +40,22 @@ namespace MNet.Example
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
-            
+            Debug.Log(XVarInt.BinaryToString(VarInt.MaxValue));
+            Debug.Log(XVarInt.BinaryToString(UVarInt.MaxValue));
         }
 #endif
+
+        static void Measure(Action action, string name = null)
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+            action.Invoke();
+
+            watch.Stop();
+
+            if (name == null) name = action.Method.Name;
+
+            Debug.Log($"{name} Took {watch.ElapsedMilliseconds}ms");
+        }
     }
 }
