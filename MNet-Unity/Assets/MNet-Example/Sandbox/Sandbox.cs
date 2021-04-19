@@ -27,8 +27,16 @@ namespace MNet.Example
 {
     public class Sandbox : NetworkBehaviour
     {
+        [SyncVar]
         [SerializeField]
         VarInt number;
+
+        protected override void OnSpawn()
+        {
+            base.OnSpawn();
+
+            if (NetworkAPI.Client.IsMaster) BroadcastSyncVar(nameof(number), number, new VarInt(4200));
+        }
 
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
@@ -40,8 +48,7 @@ namespace MNet.Example
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
-            Debug.Log(XVarInt.BinaryToString(VarInt.MaxValue));
-            Debug.Log(XVarInt.BinaryToString(UVarInt.MaxValue));
+            
         }
 #endif
 

@@ -6,7 +6,7 @@
 
   //Setting region to local will configure this server to communicate over loopback ip address
   //Only for development purposes
-  "Region": "Local",
+  "Region": "Europe",
 
   "RestScheme": "HTTP"
 }
