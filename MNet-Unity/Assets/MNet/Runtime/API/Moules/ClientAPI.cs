@@ -43,6 +43,7 @@ namespace MNet
                 Groups.Configure();
                 Entities.Configure();
                 RPR.Configure();
+                System.Configure();
 
                 Realtime.OnConnect += ConnectCallback;
                 Realtime.OnMessage += MessageCallback;
@@ -823,6 +824,21 @@ namespace MNet
                     return Send(ref request);
                 }
                 #endregion
+            }
+
+            public static class System
+            {
+                public static void Configure()
+                {
+                    MessageDispatcher.RegisterHandler<SystemMessagePayload>(MessageHandler);
+                }
+
+                public delegate void MessageDelegate(SystemMessagePayload payload);
+                public static event MessageDelegate OnMessage;
+                static void MessageHandler(ref SystemMessagePayload payload)
+                {
+                    OnMessage?.Invoke(payload);
+                }
             }
 
             public static void Disconnect() => Realtime.Disconnect();

@@ -17,14 +17,17 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using static MNet.RichTextMarker;
+
 namespace MNet.Example
 {
 	public class RoomLog : NetworkBehaviour
 	{
         void Start()
         {
-            if (NetworkAPI.Client.IsConnected)
-                Add("You Connected");
+            if (NetworkAPI.Client.IsConnected) Add("Connected to Room");
+
+            NetworkAPI.Client.System.OnMessage += SystemMessageCallback;
 
             NetworkAPI.Room.Clients.OnConnected += ClientConnectedCallback;
             NetworkAPI.Room.Clients.OnDisconnected += ClientDisconnectedCallback;
@@ -33,21 +36,23 @@ namespace MNet.Example
         }
 
         #region Callbacks
+        void SystemMessageCallback(SystemMessagePayload payload) => Add($"{Bold("System:")} {payload.Text}");
+
         void ClientConnectedCallback(NetworkClient client)
         {
-            Add($"<b>{client.Name}</b> Connected");
+            Add($"<b>{Bold(client.Name)}</b> Connected");
         }
 
         void ClientDisconnectedCallback(NetworkClient client)
         {
             if (client == null) return;
 
-            Add($"<b>{client.Name}</b> Disconnected");
+            Add($"<b>{Bold(client.Name)}</b> Disconnected");
         }
 
         void ChangeMasterCallback(NetworkClient client)
         {
-            Add($"<b>{client?.Name}</b> Set as Room Master");
+            Add($"<b>{Bold(client?.Name)}</b> Set as Room Master");
         }
         #endregion
 
@@ -80,8 +85,11 @@ namespace MNet.Example
 
         void OnDestroy()
         {
+            NetworkAPI.Client.System.OnMessage -= SystemMessageCallback;
+
             NetworkAPI.Room.Clients.OnConnected -= ClientConnectedCallback;
             NetworkAPI.Room.Clients.OnDisconnected -= ClientDisconnectedCallback;
+
             NetworkAPI.Room.Master.OnChange -= ChangeMasterCallback;
         }
 

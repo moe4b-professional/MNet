@@ -159,6 +159,8 @@ namespace MNet
             Add<JoinNetworkGroupsPayload>();
             Add<LeaveNetworkGroupsPayload>();
             #endregion
+
+            Add<SystemMessagePayload>();
         }
 
         static NetworkPayload()
@@ -1003,5 +1005,22 @@ namespace MNet
         }
     }
     #endregion
+
+    [Preserve]
+    public struct SystemMessagePayload : INetworkSerializable
+    {
+        string text;
+        public string Text => text;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref text);
+        }
+
+        public SystemMessagePayload(string text)
+        {
+            this.text = text;
+        }
+    }
     #endregion
 }

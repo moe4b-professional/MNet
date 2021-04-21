@@ -234,6 +234,44 @@ namespace MNet
         }
 
         [Test]
+        public void VarInt()
+        {
+            for (long i = short.MinValue * 4; i < short.MaxValue * 4; i++)
+                Test(i);
+
+            Test(MNet.VarInt.MaxValue);
+            Test(MNet.VarInt.MinValue);
+
+            void Test(long value)
+            {
+                var original = new VarInt(value);
+
+                var copy = NetworkSerializer.Clone(original);
+
+                Assert.AreEqual(original, copy);
+            }
+        }
+
+        [Test]
+        public void UVarInt()
+        {
+            for (ulong i = ushort.MinValue * 4; i < ushort.MaxValue * 4; i++)
+                Test(i);
+
+            Test(MNet.UVarInt.MaxValue);
+            Test(MNet.UVarInt.MinValue);
+
+            void Test(ulong value)
+            {
+                var original = new UVarInt(value);
+
+                var copy = NetworkSerializer.Clone(original);
+
+                Assert.AreEqual(original, copy);
+            }
+        }
+
+        [Test]
         public void Bool8Flags()
         {
             var flag = new Bool8Flags();

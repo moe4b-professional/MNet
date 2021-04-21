@@ -257,7 +257,7 @@ namespace MNet
         #region Conversions
         //From VarInt
         public static implicit operator long(VarInt value) => value.value;
-        public static implicit operator int(VarInt value) => checked((int)value.value);
+        public static implicit operator int(VarInt value) => (int)value.value;
 
         //To VarInt
         public static implicit operator VarInt(long value) => new VarInt(value);
@@ -388,7 +388,7 @@ namespace MNet
         #region Conversions
         //From VarInt
         public static implicit operator ulong(UVarInt target) => target.value;
-        public static implicit operator uint(UVarInt target) => checked((uint)target.value);
+        public static implicit operator uint(UVarInt target) => (uint)target.value;
 
         //To VarInt
         public static implicit operator UVarInt(ulong value) => new UVarInt(value);

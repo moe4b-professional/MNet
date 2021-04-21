@@ -679,6 +679,26 @@ namespace MNet
             }
         }
 
+        public SystemProperty System = new SystemProperty();
+        public class SystemProperty : Property
+        {
+            public void SendMessage(NetworkClient target, string text)
+            {
+                var payload = new SystemMessagePayload(text);
+
+                SendMessage(target, payload);
+            }
+            public void SendMessage(NetworkClient target, SystemMessagePayload payload) => Room.Send(ref payload, target);
+
+            public void BroadcastMessage(string text, NetworkGroupID group = default)
+            {
+                var payload = new SystemMessagePayload(text);
+
+                BroadcastMessage(payload, group);
+            }
+            public void BroadcastMessage(SystemMessagePayload payload, NetworkGroupID group = default) => Room.Broadcast(ref payload, group: group);
+        }
+
         public RemoteCallsProperty RemoteCalls = new RemoteCallsProperty();
         public class RemoteCallsProperty : Property
         {
@@ -961,6 +981,7 @@ namespace MNet
             action(MessageBuffer);
             action(MessageDispatcher);
             action(SendQueue);
+            action(System);
         }
 
         public class Property
@@ -986,6 +1007,8 @@ namespace MNet
             public SendQueueProperty SendQueue => Room.SendQueue;
 
             public TimeProperty Time => Room.Time;
+
+            public SystemProperty System => Room.System;
             #endregion
 
             public INetworkTransportContext TransportContext => Room.TransportContext;

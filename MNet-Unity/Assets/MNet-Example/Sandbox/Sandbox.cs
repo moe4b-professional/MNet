@@ -29,7 +29,7 @@ namespace MNet.Example
     {
         [SyncVar]
         [SerializeField]
-        VarInt number;
+        VarInt number = default;
 
         protected override void OnSpawn()
         {
