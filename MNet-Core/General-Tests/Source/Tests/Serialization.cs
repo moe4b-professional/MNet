@@ -226,7 +226,7 @@ namespace MNet
         [Test]
         public void Enum()
         {
-            var original = RemoteAuthority.Any;
+            var original = RemoteAuthority.Owner | RemoteAuthority.Master;
 
             var copy = NetworkSerializer.Clone(original);
 
