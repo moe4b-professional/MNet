@@ -53,7 +53,12 @@ namespace MNet
 				this.hex = hex;
 			}
 
-			public static implicit operator ColorSurrogate (string text) => new ColorSurrogate(text);
+			public static implicit operator ColorSurrogate (string text)
+            {
+				text = text.TrimStart('#');
+
+				return new ColorSurrogate(text);
+			}
 
 #if UNITY
 			public static implicit operator ColorSurrogate (Color color)
@@ -61,7 +66,7 @@ namespace MNet
 				var text = ColorUtility.ToHtmlStringRGBA(color);
 
 				return new ColorSurrogate(text);
-            }
+			}
 #endif
 		}
 	}
