@@ -298,13 +298,13 @@ namespace MNet
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
-                    Debug.LogWarning($"No RPC Found With Name {method}");
+                    Debug.LogWarning($"No RPC Found With Name {method} on {Component}", Component);
                     return false;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
-                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
                     return false;
                 }
 
@@ -319,13 +319,13 @@ namespace MNet
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
-                    Debug.LogWarning($"No RPC Found With Name {method}");
+                    Debug.LogWarning($"No RPC Found With Name {method} on {Component}", Component);
                     return false;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
-                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
                     return false;
                 }
 
@@ -340,13 +340,13 @@ namespace MNet
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
-                    Debug.LogError($"No RPC With Name '{method}' Found on Entity '{Entity}'");
+                    Debug.LogError($"No RPC With Name '{method}' Found on '{Component}', Component");
                     return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
-                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
                     return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
                 }
 
@@ -358,7 +358,7 @@ namespace MNet
 
                 if (Send(ref request, delivery, channel) == false)
                 {
-                    Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
+                    Debug.LogError($"Couldn't Send Query RPC {method} to {target}", Component);
                     return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
                 }
 
@@ -373,13 +373,13 @@ namespace MNet
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
-                    Debug.LogWarning($"No RPC Found With Name {method}");
+                    Debug.LogWarning($"No RPC Found With Name {method} on {Component}", Component);
                     return false;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
-                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
                     return false;
                 }
 
@@ -396,7 +396,7 @@ namespace MNet
             {
                 if (RPCs.TryGetValue(command.Method, out var bind) == false)
                 {
-                    Debug.LogError($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
+                    Debug.LogError($"Can't Invoke Non-Existant RPC '{Entity}->{Component}->{command.Method}'", Component);
                     return false;
                 }
 
@@ -412,13 +412,13 @@ namespace MNet
                         $"Exception: \n" +
                         $"{ex}";
 
-                    Debug.LogError(text);
+                    Debug.LogError(text, Component);
                     return false;
                 }
 
                 if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
                 {
-                    Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
+                    Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'", Component);
                     return false;
                 }
 
@@ -438,7 +438,7 @@ namespace MNet
                         $"Exception: \n" +
                         $"{ex}";
 
-                    Debug.LogError(text);
+                    Debug.LogError(text, Component);
 
                     return false;
                 }
@@ -520,13 +520,13 @@ namespace MNet
             {
                 if (SyncVars.TryGetValue(name, out var bind) == false)
                 {
-                    Debug.LogError($"No SyncVar Found With Name {name}");
+                    Debug.LogError($"No SyncVar Found With Name {name} on {Component}", Component);
                     return false;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
-                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'", Component);
                     return false;
                 }
 
@@ -543,13 +543,13 @@ namespace MNet
             {
                 if (SyncVars.TryGetValue(name, out var bind) == false)
                 {
-                    Debug.LogError($"No SyncVar Found With Name {name}");
+                    Debug.LogError($"No SyncVar Found With Name {name} on {Component}");
                     return false;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
-                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'", Component);
                     return false;
                 }
 
@@ -568,13 +568,13 @@ namespace MNet
             {
                 if (SyncVars.TryGetValue(name, out var bind) == false)
                 {
-                    Debug.LogWarning($"No SyncVar '{GetType().Name}->{name}' Found on Register Hook on");
+                    Debug.LogWarning($"No SyncVar '{name}' Found on {Component} to Register Hook on", Component);
                     return;
                 }
 
                 if (bind.Hooks.Contains(hook))
                 {
-                    Debug.LogWarning($"SyncVar Hook {hook.Method.Name} Already Registered for SyncVar '{GetType().Name}->{name}' Cannot Register Hook More than Once");
+                    Debug.LogWarning($"SyncVar Hook {hook.Method.Name} Already Registered for SyncVar '{Component}->{name}' Cannot Register Hook More than Once", Component);
                     return;
                 }
 
@@ -594,7 +594,7 @@ namespace MNet
                 }
 
                 if (bind.Hooks.Remove(hook) == false)
-                    Debug.LogWarning($"No SyncVar Hook {hook.Method.Name} for SyncVar '{GetType().Name}->{name}' was Removed because it wasn't Registered to begin With");
+                    Debug.LogWarning($"No SyncVar Hook {hook.Method.Name} for SyncVar '{Component}->{name}' was Removed because it wasn't Registered to begin With", Component);
             }
             #endregion
 
@@ -602,7 +602,7 @@ namespace MNet
             {
                 if (SyncVars.TryGetValue(command.Field, out var bind) == false)
                 {
-                    Debug.LogWarning($"No SyncVar '{GetType().Name}->{command.Field}' Found on to Invoke");
+                    Debug.LogWarning($"No SyncVar '{Component}->{command.Field}' Found on to Invoke", Component);
                     return;
                 }
 
@@ -620,13 +620,13 @@ namespace MNet
                         $"Exception: \n" +
                         $"{ex}";
 
-                    Debug.LogWarning(text);
+                    Debug.LogWarning(text, Component);
                     return;
                 }
 
                 if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
                 {
-                    Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
+                    Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'", Component);
                     return;
                 }
 
@@ -639,7 +639,7 @@ namespace MNet
                     var text = $"Error Trying to Set SyncVar '{bind}' With Value '{newValue}', " +
                         $"Please Ensure SyncVar is Implemented Correctly";
 
-                    Debug.LogWarning(text);
+                    Debug.LogWarning(text, Component);
                     return;
                 }
 
@@ -652,7 +652,7 @@ namespace MNet
                     var text = $"Error Trying to Invoke SyncVar Hooks for '{bind}' With Values '{oldValue}'/'{newValue}', " +
                         $"Please Ensure SyncVar is Implemented Correctly";
 
-                    Debug.LogWarning(text);
+                    Debug.LogWarning(text, Component);
                     return;
                 }
             }
@@ -662,7 +662,7 @@ namespace MNet
             {
                 if (Entity.IsReady == false)
                 {
-                    Debug.LogError($"Trying to Send Payload '{payload}' Before Entity '{this}' is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}");
+                    Debug.LogError($"Trying to Send Payload '{payload}' from {Component} Before Entity '{Entity}' is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}", Component);
                     return false;
                 }
 

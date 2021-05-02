@@ -38,9 +38,6 @@ namespace MNet
 
         public NetworkEntity Entity => Network.Entity;
 
-        public virtual void OnNetwork()
-        {
-
-        }
+        public virtual void OnNetwork() { }
     }
 }
