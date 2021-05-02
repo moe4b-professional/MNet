@@ -27,7 +27,8 @@ namespace MNet
     {
         public string Name { get; protected set; }
 
-        public NetworkBehaviour Behaviour { get; protected set; }
+        public NetworkEntity.Behaviour Behaviour { get; protected set; }
+        public Component Component => Behaviour.Component;
         public NetworkEntity Entity => Behaviour.Entity;
 
         #region Attribute
@@ -53,7 +54,7 @@ namespace MNet
 
         public object Invoke(params object[] arguments)
         {
-            return MethodInfo.Invoke(Behaviour, arguments);
+            return MethodInfo.Invoke(Component, arguments);
         }
 
         public byte[] WriteArguments(object[] arguments)
@@ -111,7 +112,7 @@ namespace MNet
 
         public override string ToString() => $"{Behaviour}->{Name}";
 
-        public RpcBind(NetworkBehaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index)
+        public RpcBind(NetworkEntity.Behaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index)
         {
             this.Behaviour = behaviour;
             this.Attribute = attribute;

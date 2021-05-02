@@ -19,8 +19,8 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class Actor : NetworkBehaviour
-	{
-        
+    public class Actor : NetworkBehaviour
+    {
+
     }
 }

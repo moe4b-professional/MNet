@@ -35,10 +35,15 @@ namespace MNet.Example
 				renderers[i].SetPropertyBlock(block);
 		}
 
-        protected override void OnSetup()
+        public override void OnNetwork()
         {
-            base.OnSetup();
+            base.OnNetwork();
 
+            Network.OnSetup += SetupCallback;
+        }
+
+        void SetupCallback()
+        {
 			ReadAttributes(Entity.Attributes, out var color);
 
 			SetColor(color);

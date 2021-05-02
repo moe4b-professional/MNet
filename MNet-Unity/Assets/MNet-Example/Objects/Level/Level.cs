@@ -40,7 +40,14 @@ namespace MNet.Example
 		static Core Core => Core.Instance;
 		PopupPanel Popup => Core.UI.Popup;
 
-		void Awake()
+        public override void OnNetwork()
+        {
+            base.OnNetwork();
+
+            Network.OnSpawn += SpawnCallback;
+        }
+
+        void Awake()
 		{
 			Instance = this;
 
@@ -56,10 +63,8 @@ namespace MNet.Example
 			}
 		}
 
-		protected override void OnSpawn()
+		void SpawnCallback()
 		{
-			base.OnSpawn();
-
 			Player.Spawn(player, 4f);
 		}
 

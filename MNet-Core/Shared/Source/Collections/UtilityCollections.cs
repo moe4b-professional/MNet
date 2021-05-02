@@ -200,10 +200,24 @@ namespace MNet
         public Dictionary<TKey1, TValue> Dictionary1 { get; protected set; }
         public Dictionary<TKey2, TValue> Dictionary2 { get; protected set; }
 
+        public ICollection<TKey1> Keys1 => Dictionary1.Keys;
+        public ICollection<TKey2> Keys2 => Dictionary2.Keys;
+
+        public ICollection<TValue> Values => Dictionary1.Values;
+
         public int Count => Dictionary1.Count;
 
         public TValue this[TKey1 key] => Dictionary1[key];
         public TValue this[TKey2 key] => Dictionary2[key];
+
+        public TValue this[TKey1 key1, TKey2 key2]
+        {
+            set
+            {
+                Dictionary1[key1] = value;
+                Dictionary2[key2] = value;
+            }
+        }
 
         public void Add(TKey1 key1, TKey2 key2, TValue value)
         {

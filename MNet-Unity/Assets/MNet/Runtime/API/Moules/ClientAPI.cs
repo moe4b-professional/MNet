@@ -698,7 +698,7 @@ namespace MNet
                 #endregion
 
                 #region Destroy
-                public static void Destroy(NetworkBehaviour behaviour) => Destroy(behaviour.Entity);
+                public static void Destroy(INetworkBehaviour behaviour) => Destroy(behaviour.Network.Entity);
                 public static void Destroy(NetworkEntity entity)
                 {
                     if (entity.IsReady == false)

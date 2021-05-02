@@ -34,15 +34,20 @@ namespace MNet
         [SerializeField]
         bool success = false;
 
-        protected override void OnSpawn()
+        public override void OnNetwork()
         {
-            base.OnSpawn();
+            base.OnNetwork();
 
-            RegisterSyncVarHook(nameof(field), field, FieldSyncHook);
+            Network.OnSpawn += OnSpawn;
+        }
+
+        void OnSpawn()
+        {
+            Network.RegisterSyncVarHook(nameof(field), field, FieldSyncHook);
 
             if (Entity.IsMine == false) return;
 
-            BroadcastSyncVar(nameof(field), field, NetworkAPI.Client.Profile.Name);
+            Network.BroadcastSyncVar(nameof(field), field, NetworkAPI.Client.Profile.Name);
         }
     }
 }

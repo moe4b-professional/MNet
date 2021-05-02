@@ -23,7 +23,8 @@ namespace MNet
 {
     public class SyncVarBind
     {
-        public NetworkBehaviour Behaviour { get; protected set; }
+        public NetworkEntity.Behaviour Behaviour { get; protected set; }
+        public Component Component => Behaviour.Component;
         public NetworkEntity Entity => Behaviour.Entity;
 
         #region Attribute
@@ -70,10 +71,10 @@ namespace MNet
         public object GetValue()
         {
             if (IsField)
-                return FieldInfo.GetValue(Behaviour);
+                return FieldInfo.GetValue(Component);
 
             if (IsProperty)
-                return PropertyInfo.GetValue(Behaviour);
+                return PropertyInfo.GetValue(Component);
 
             throw new NotImplementedException();
         }
@@ -82,13 +83,13 @@ namespace MNet
         {
             if (IsField)
             {
-                FieldInfo.SetValue(Behaviour, value);
+                FieldInfo.SetValue(Component, value);
                 return;
             }
 
             if (IsProperty)
             {
-                PropertyInfo.SetValue(Behaviour, value);
+                PropertyInfo.SetValue(Component, value);
                 return;
             }
 
@@ -106,7 +107,7 @@ namespace MNet
 
         public override string ToString() => $"{Behaviour}->{Name}";
 
-        public SyncVarBind(NetworkBehaviour behaviour, SyncVarAttribute attribute, MemberInfo member, byte index)
+        public SyncVarBind(NetworkEntity.Behaviour behaviour, SyncVarAttribute attribute, MemberInfo member, byte index)
         {
             this.Behaviour = behaviour;
 

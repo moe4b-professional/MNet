@@ -34,10 +34,15 @@ namespace MNet.Example
             Entity.Attributes.TryGetValue(2, out area);
         }
 
-        protected override void OnSpawn()
+        public override void OnNetwork()
         {
-            base.OnSpawn();
+            base.OnNetwork();
 
+            Network.OnSpawn += SpawnCallback;
+        }
+
+        void SpawnCallback()
+        {
             name = $"Sample {Entity.ID}";
 
             ReadAttributes(out var position, out var angle, out area);
@@ -63,7 +68,7 @@ namespace MNet.Example
 
             var angle = transform.eulerAngles.y + Random.Range(0, 40);
 
-            BroadcastRPC(Call, position, angle, delivery: DeliveryMode.Unreliable);
+            Network.BroadcastRPC(Call, position, angle, delivery: DeliveryMode.Unreliable);
         }
 
         [NetworkRPC]

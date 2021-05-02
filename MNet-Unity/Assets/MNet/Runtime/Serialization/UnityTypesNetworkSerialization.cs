@@ -216,17 +216,17 @@ namespace MNet
     }
 
     [Preserve]
-    public class NetworkBehaviourNetworkSerializationResolver : NetworkSerializationExplicitResolver<NetworkBehaviour>
+    public class NetworkBehaviourNetworkSerializationResolver : NetworkSerializationExplicitResolver<INetworkBehaviour>
     {
         public override bool CanResolveDerivatives => true;
 
-        public override void Serialize(NetworkWriter writer, NetworkBehaviour instance)
+        public override void Serialize(NetworkWriter writer, INetworkBehaviour instance)
         {
-            writer.Write(instance.Entity);
-            writer.Write(instance.ID);
+            writer.Write(instance.Network.Entity);
+            writer.Write(instance.Network.ID);
         }
 
-        public override NetworkBehaviour Deserialize(NetworkReader reader)
+        public override INetworkBehaviour Deserialize(NetworkReader reader)
         {
             reader.Read(out NetworkEntity entity);
             reader.Read(out NetworkBehaviourID id);
@@ -239,7 +239,7 @@ namespace MNet
                 return null;
             }
 
-            return behaviour;
+            return behaviour.Contract;
         }
     }
 

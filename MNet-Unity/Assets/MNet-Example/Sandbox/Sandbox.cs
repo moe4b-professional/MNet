@@ -31,11 +31,16 @@ namespace MNet.Example
         [SerializeField]
         VarInt number = default;
 
-        protected override void OnSpawn()
+        public override void OnNetwork()
         {
-            base.OnSpawn();
+            base.OnNetwork();
 
-            if (NetworkAPI.Client.IsMaster) BroadcastSyncVar(nameof(number), number, new VarInt(4200));
+            Network.OnSpawn += SpawnCallback;
+        }
+
+        void SpawnCallback()
+        {
+            if (NetworkAPI.Client.IsMaster) Network.BroadcastSyncVar(nameof(number), number, new VarInt(4200));
         }
 
         [RuntimeInitializeOnLoadMethod]

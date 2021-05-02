@@ -16,6 +16,9 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using System.Threading;
+using System.Reflection;
+using Cysharp.Threading.Tasks;
 
 namespace MNet
 {
@@ -23,9 +26,9 @@ namespace MNet
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(ExecutionOrder)]
     [AddComponentMenu(Constants.Path + "Network Entity")]
-    public class NetworkEntity : MonoBehaviour
+    public partial class NetworkEntity : MonoBehaviour
     {
-        public const int ExecutionOrder = -400;
+        public const int ExecutionOrder = -500;
 
         [SerializeField]
         SyncProperty sync = default;
@@ -133,8 +136,6 @@ namespace MNet
         {
             Owner = client;
 
-            foreach (var behaviour in Behaviours.Values) behaviour.SetOwner(Owner);
-
             OnOwnerSet?.Invoke(Owner);
         }
 
@@ -220,7 +221,488 @@ namespace MNet
 
         public AttributesCollection Attributes { get; protected set; }
 
-        public Dictionary<NetworkBehaviourID, NetworkBehaviour> Behaviours { get; protected set; }
+        public DualDictionary<NetworkBehaviourID, MonoBehaviour, Behaviour> Behaviours { get; protected set; }
+
+        public partial class Behaviour
+        {
+            public NetworkEntity Entity { get; protected set; }
+
+            public INetworkBehaviour Contract { get; protected set; }
+            public MonoBehaviour Component { get; protected set; }
+
+            public NetworkBehaviourID ID { get; protected set; }
+
+            public CancellationTokenSource DespawnASyncCancellation { get; protected set; }
+
+            #region Events
+            public event SetupDelegate OnSetup
+            {
+                add => Entity.OnSetup += value;
+                remove => Entity.OnSetup -= value;
+            }
+
+            public event OwnerSetDelegate OnOwnerSet
+            {
+                add => Entity.OnOwnerSet += value;
+                remove => Entity.OnOwnerSet -= value;
+            }
+
+            public event SpawnDelegate OnSpawn
+            {
+                add => Entity.OnSpawn += value;
+                remove => Entity.OnSpawn -= value;
+            }
+
+            public event ReadyDelegate OnReady
+            {
+                add => Entity.OnReady += value;
+                remove => Entity.OnReady -= value;
+            }
+
+            public event DespawnDelegate OnDespawn
+            {
+                add => Entity.OnDespawn += value;
+                remove => Entity.OnDespawn -= value;
+            }
+            #endregion
+
+            #region RPC
+            internal DualDictionary<RpcMethodID, string, RpcBind> RPCs { get; private set; }
+
+            void ParseRPCs()
+            {
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+                var type = Component.GetType();
+
+                var methods = type.GetMethods(flags).Where(NetworkRPCAttribute.Defined).OrderBy(RpcBind.GetName).ToArray();
+
+                if (methods.Length > byte.MaxValue)
+                    throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} RPCs Defined");
+
+                for (byte i = 0; i < methods.Length; i++)
+                {
+                    var attribute = NetworkRPCAttribute.Retrieve(methods[i]);
+
+                    var bind = new RpcBind(this, attribute, methods[i], i);
+
+                    if (RPCs.Contains(bind.Name))
+                        throw new Exception($"Rpc '{bind.Name}' Already Registered On '{GetType()}', Please Assign Every RPC a Unique Name And Don't Overload RPC Methods");
+
+                    RPCs.Add(bind.MethodID, bind.Name, bind);
+                }
+            }
+
+            #region Methods
+            protected bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, NetworkGroupID group, NetworkClient exception, params object[] arguments)
+            {
+                if (RPCs.TryGetValue(method, out var bind) == false)
+                {
+                    Debug.LogWarning($"No RPC Found With Name {method}");
+                    return false;
+                }
+
+                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+                {
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    return false;
+                }
+
+                var raw = bind.WriteArguments(arguments);
+
+                var request = BroadcastRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
+
+                return Send(ref request, delivery, channel);
+            }
+
+            protected bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
+            {
+                if (RPCs.TryGetValue(method, out var bind) == false)
+                {
+                    Debug.LogWarning($"No RPC Found With Name {method}");
+                    return false;
+                }
+
+                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+                {
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    return false;
+                }
+
+                var raw = bind.WriteArguments(arguments);
+
+                var request = TargetRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, raw);
+
+                return Send(ref request, delivery, channel);
+            }
+
+            protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
+            {
+                if (RPCs.TryGetValue(method, out var bind) == false)
+                {
+                    Debug.LogError($"No RPC With Name '{method}' Found on Entity '{Entity}'");
+                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                }
+
+                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+                {
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                }
+
+                var promise = NetworkAPI.Client.RPR.Promise(target);
+
+                var raw = bind.WriteArguments(arguments);
+
+                var request = QueryRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
+
+                if (Send(ref request, delivery, channel) == false)
+                {
+                    Debug.LogError($"Couldn't Send Query RPC {method} to {target}");
+                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                }
+
+                await UniTask.WaitUntil(promise.IsComplete);
+
+                var answer = new RprAnswer<TResult>(promise);
+
+                return answer;
+            }
+
+            protected bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, params object[] arguments)
+            {
+                if (RPCs.TryGetValue(method, out var bind) == false)
+                {
+                    Debug.LogWarning($"No RPC Found With Name {method}");
+                    return false;
+                }
+
+                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+                {
+                    Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'");
+                    return false;
+                }
+
+                var raw = bind.WriteArguments(arguments);
+
+                var request = BufferRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, raw);
+
+                return Send(ref request, delivery, channel);
+            }
+            #endregion
+
+            internal bool InvokeRPC<T>(ref T command)
+                where T : IRpcCommand
+            {
+                if (RPCs.TryGetValue(command.Method, out var bind) == false)
+                {
+                    Debug.LogError($"Can't Invoke Non-Existant RPC '{GetType().Name}->{command.Method}'");
+                    return false;
+                }
+
+                object[] arguments;
+                RpcInfo info;
+                try
+                {
+                    bind.ParseCommand(command, out arguments, out info);
+                }
+                catch (Exception ex)
+                {
+                    var text = $"Error trying to Parse RPC Arguments of {bind}', Invalid Data Sent Most Likely \n" +
+                        $"Exception: \n" +
+                        $"{ex}";
+
+                    Debug.LogError(text);
+                    return false;
+                }
+
+                if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
+                {
+                    Debug.LogWarning($"RPC Command for '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
+                    return false;
+                }
+
+                object result;
+                try
+                {
+                    result = bind.Invoke(arguments);
+                }
+                catch (TargetInvocationException ex)
+                {
+                    throw ex;
+                }
+                catch (Exception ex)
+                {
+                    var text = $"Error Trying to Invoke RPC {bind}', " +
+                        $"Please Ensure Method is Implemented And Invoked Correctly\n" +
+                        $"Exception: \n" +
+                        $"{ex}";
+
+                    Debug.LogError(text);
+
+                    return false;
+                }
+
+                if (bind.IsCoroutine) ExceuteCoroutineRPC(result as IEnumerator);
+
+                if (command is QueryRpcCommand query)
+                {
+                    if (bind.IsAsync)
+                        AwaitAsyncQueryRPC(result as IUniTask, query, bind).Forget();
+                    else
+                        NetworkAPI.Client.RPR.Respond(query, result, bind.ReturnType);
+                }
+
+                return true;
+            }
+
+            void ExceuteCoroutineRPC(IEnumerator method) => Component.StartCoroutine(method);
+
+            async UniTask AwaitAsyncQueryRPC(IUniTask task, QueryRpcCommand command, RpcBind bind)
+            {
+                while (task.Status == UniTaskStatus.Pending) await UniTask.Yield();
+
+                if (NetworkAPI.Client.IsConnected == false)
+                {
+                    //Debug.LogWarning($"Will not Respond to Async Query RPC {bind} Because Client Disconnected, The Server Will Provide a Default Response to the Requester");
+                    return;
+                }
+
+                if (task.Status != UniTaskStatus.Succeeded)
+                {
+                    NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
+                    return;
+                }
+
+                NetworkAPI.Client.RPR.Respond(command, task.Result, task.Type);
+            }
+            #endregion
+
+            #region SyncVar
+            internal DualDictionary<SyncVarFieldID, string, SyncVarBind> SyncVars { get; private set; }
+
+            void ParseSyncVars()
+            {
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+                var type = Component.GetType();
+
+                var fields = type.GetFields(flags).Cast<MemberInfo>();
+                var properties = type.GetProperties(flags).Cast<MemberInfo>();
+
+                var members = fields.Union(properties).Where(SyncVarAttribute.Defined).OrderBy(SyncVarBind.GetName).ToArray();
+
+                if (members.Length > byte.MaxValue)
+                    throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} SyncVars Defined");
+
+                for (byte i = 0; i < members.Length; i++)
+                {
+                    var attribute = SyncVarAttribute.Retrieve(members[i]);
+
+                    var bind = new SyncVarBind(this, attribute, members[i], i);
+
+                    if (SyncVars.Contains(bind.Name))
+                        throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
+
+                    SyncVars.Add(bind.FieldID, bind.Name, bind);
+                }
+            }
+
+            #region Methods
+            /// <summary>
+            /// Overload for ensuring type safety
+            /// </summary>
+            public bool BroadcastSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+            {
+                return BroadcastSyncVar(name, value, delivery, channel, group);
+            }
+            public bool BroadcastSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+            {
+                if (SyncVars.TryGetValue(name, out var bind) == false)
+                {
+                    Debug.LogError($"No SyncVar Found With Name {name}");
+                    return false;
+                }
+
+                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+                {
+                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                    return false;
+                }
+
+                var request = BroadcastSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
+
+                return Send(ref request, delivery: delivery, channel: channel);
+            }
+
+            public bool BufferSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+            {
+                return BufferSyncVar(name, value, delivery, channel, group);
+            }
+            public bool BufferSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+            {
+                if (SyncVars.TryGetValue(name, out var bind) == false)
+                {
+                    Debug.LogError($"No SyncVar Found With Name {name}");
+                    return false;
+                }
+
+                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
+                {
+                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'");
+                    return false;
+                }
+
+                var request = BufferSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
+
+                return Send(ref request, delivery: delivery, channel: channel);
+            }
+            #endregion
+
+            #region Hooks
+            public void RegisterSyncVarHook<T>(string name, T field, SyncVarHook<T> hook)
+            {
+                RegisterSyncVarHook<T>(name, hook);
+            }
+            public void RegisterSyncVarHook<T>(string name, SyncVarHook<T> hook)
+            {
+                if (SyncVars.TryGetValue(name, out var bind) == false)
+                {
+                    Debug.LogWarning($"No SyncVar '{GetType().Name}->{name}' Found on Register Hook on");
+                    return;
+                }
+
+                if (bind.Hooks.Contains(hook))
+                {
+                    Debug.LogWarning($"SyncVar Hook {hook.Method.Name} Already Registered for SyncVar '{GetType().Name}->{name}' Cannot Register Hook More than Once");
+                    return;
+                }
+
+                bind.Hooks.Add(hook);
+            }
+
+            public void UnregisterSyncVarHook<T>(string name, T field, SyncVarHook<T> hook)
+            {
+                UnregisterSyncVarHook(name, hook);
+            }
+            public void UnregisterSyncVarHook<T>(string name, SyncVarHook<T> hook)
+            {
+                if (SyncVars.TryGetValue(name, out var bind) == false)
+                {
+                    Debug.LogWarning($"No SyncVar '{GetType().Name}->{name}' Found on Register Hook on");
+                    return;
+                }
+
+                if (bind.Hooks.Remove(hook) == false)
+                    Debug.LogWarning($"No SyncVar Hook {hook.Method.Name} for SyncVar '{GetType().Name}->{name}' was Removed because it wasn't Registered to begin With");
+            }
+            #endregion
+
+            internal void InvokeSyncVar(SyncVarCommand command)
+            {
+                if (SyncVars.TryGetValue(command.Field, out var bind) == false)
+                {
+                    Debug.LogWarning($"No SyncVar '{GetType().Name}->{command.Field}' Found on to Invoke");
+                    return;
+                }
+
+                var oldValue = bind.GetValue();
+
+                object newValue;
+                SyncVarInfo info;
+                try
+                {
+                    bind.ParseCommand(command, out newValue, out info);
+                }
+                catch (Exception ex)
+                {
+                    var text = $"Error trying to Parse Value for SyncVar '{bind}', Invalid Data Sent Most Likely \n" +
+                        $"Exception: \n" +
+                        $"{ex}";
+
+                    Debug.LogWarning(text);
+                    return;
+                }
+
+                if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
+                {
+                    Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'");
+                    return;
+                }
+
+                try
+                {
+                    bind.SetValue(newValue);
+                }
+                catch (Exception)
+                {
+                    var text = $"Error Trying to Set SyncVar '{bind}' With Value '{newValue}', " +
+                        $"Please Ensure SyncVar is Implemented Correctly";
+
+                    Debug.LogWarning(text);
+                    return;
+                }
+
+                try
+                {
+                    bind.InvokeHooks(oldValue, newValue, info);
+                }
+                catch (Exception)
+                {
+                    var text = $"Error Trying to Invoke SyncVar Hooks for '{bind}' With Values '{oldValue}'/'{newValue}', " +
+                        $"Please Ensure SyncVar is Implemented Correctly";
+
+                    Debug.LogWarning(text);
+                    return;
+                }
+            }
+            #endregion
+
+            internal virtual bool Send<T>(ref T payload, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0)
+            {
+                if (Entity.IsReady == false)
+                {
+                    Debug.LogError($"Trying to Send Payload '{payload}' Before Entity '{this}' is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}");
+                    return false;
+                }
+
+                return NetworkAPI.Client.Send(ref payload, mode: delivery, channel: channel);
+            }
+
+            void DepsawnCallback()
+            {
+                DespawnASyncCancellation.Cancel();
+                DespawnASyncCancellation.Dispose();
+            }
+
+            public override string ToString() => Component.ToString();
+
+            public Behaviour(NetworkEntity entity, INetworkBehaviour contract, NetworkBehaviourID id)
+            {
+                this.Entity = entity;
+                this.Contract = contract;
+                Component = contract as MonoBehaviour;
+                this.ID = id;
+
+                DespawnASyncCancellation = new CancellationTokenSource();
+                OnDespawn += DepsawnCallback;
+
+                RPCs = new DualDictionary<RpcMethodID, string, RpcBind>();
+                ParseRPCs();
+
+                SyncVars = new DualDictionary<SyncVarFieldID, string, SyncVarBind>();
+                ParseSyncVars();
+            }
+        }
+
+        public virtual Behaviour GetBehaviour<T>(T reference)
+            where T : MonoBehaviour
+        {
+            if (Behaviours.TryGetValue(reference, out var behaviour) == false)
+                throw new Exception($"Cannot Retrieve Network Behaviour for Unregisterd Type of {typeof(T).Name}");
+
+            return behaviour;
+        }
 
         public Scene UnityScene => gameObject.scene;
         public NetworkScene NetworkScene { get; protected set; }
@@ -233,9 +715,9 @@ namespace MNet
                 return;
             }
 
-            Behaviours = new Dictionary<NetworkBehaviourID, NetworkBehaviour>();
+            Behaviours = new DualDictionary<NetworkBehaviourID, MonoBehaviour, Behaviour>();
 
-            var targets = GetComponentsInChildren<NetworkBehaviour>(true);
+            var targets = GetComponentsInChildren<INetworkBehaviour>(true);
 
             if (targets.Length > byte.MaxValue)
                 throw new Exception($"Entity {name} May Only Have Up To {byte.MaxValue} Behaviours, Current Count: {targets.Length}");
@@ -244,12 +726,17 @@ namespace MNet
             {
                 var id = new NetworkBehaviourID(i);
 
-                Behaviours[id] = targets[i];
+                var behaviour = new Behaviour(this, targets[i], id);
 
-                targets[i].Set(this, id);
+                Behaviours[id, behaviour.Component] = behaviour;
+
+                targets[i].Network = behaviour;
+                targets[i].OnNetwork();
             }
         }
 
+        public delegate void SetupDelegate();
+        public event SetupDelegate OnSetup;
         internal void Setup(NetworkClient owner, EntityType type, PersistanceFlags persistance, AttributesCollection attributes)
         {
             this.Type = type;
@@ -259,24 +746,21 @@ namespace MNet
 
             sync.Set(this);
 
-            foreach (var behaviour in Behaviours.Values)
-                behaviour.Setup();
+            OnSetup?.Invoke();
 
             SetOwner(owner);
         }
 
-        public event Action OnSpawn;
+        public delegate void SpawnDelegate();
+        public event SpawnDelegate OnSpawn;
         internal void Spawn(NetworkEntityID id, NetworkScene scene)
         {
             this.ID = id;
-
             this.NetworkScene = scene;
 
             if (IsDynamic || IsOrphan) name += $" {id}";
 
             IsReady = true;
-
-            foreach (var behaviour in Behaviours.Values) behaviour.Spawn();
 
             OnSpawn?.Invoke();
 
@@ -299,11 +783,10 @@ namespace MNet
         }
         #endregion
 
-        public event Action OnReady;
+        public delegate void ReadyDelegate();
+        public event ReadyDelegate OnReady;
         void Ready()
         {
-            foreach (var behaviour in Behaviours.Values) behaviour.Ready();
-
             OnReady?.Invoke();
         }
 
@@ -332,12 +815,11 @@ namespace MNet
         }
         #endregion
 
-        public event Action OnDespawn;
+        public delegate void DespawnDelegate();
+        public event DespawnDelegate OnDespawn;
         internal virtual void Despawn()
         {
             IsReady = false;
-
-            foreach (var behaviour in Behaviours.Values) behaviour.Despawn();
 
             OnDespawn?.Invoke();
         }
@@ -374,19 +856,18 @@ namespace MNet
 
         public static bool CheckIfMasterObject(EntityType type) => type == EntityType.SceneObject || type == EntityType.Orphan;
 
-#if UNITY_EDITOR
         public static NetworkEntity ResolveComponent(GameObject gameObject)
         {
             var component = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
 
+#if UNITY_EDITOR
             if (component == null)
             {
                 component = gameObject.AddComponent<NetworkEntity>();
                 ComponentUtility.MoveComponentUp(component);
             }
-
+#endif
             return component;
         }
-#endif
     }
 }

@@ -32,11 +32,16 @@ namespace MNet.Example
 		{
 
 		}
-		 
-		protected override void OnSpawn()
-        {
-            base.OnSpawn();
 
+        public override void OnNetwork()
+        {
+            base.OnNetwork();
+
+			Network.OnSpawn += SpawnCallback;
+        }
+
+        void SpawnCallback()
+        {
 			if (Entity.IsMine) Debug.LogWarning($"Stress Behaviour Attached to {Entity}, Don't Forget to Remove it when not Stressing");
 
 			StartCoroutine(Procedure());
@@ -48,8 +53,8 @@ namespace MNet.Example
 			{
 				if (Entity.IsMine)
 				{
-					BroadcastSyncVar(nameof(var), var, "Hello World");
-					BroadcastRPC(Call, "Hello World");
+					Network.BroadcastSyncVar(nameof(var), var, "Hello World");
+					Network.BroadcastRPC(Call, "Hello World");
 				}
 
 				yield return new WaitForSeconds(interval);

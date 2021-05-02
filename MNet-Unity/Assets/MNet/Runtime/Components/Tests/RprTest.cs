@@ -30,12 +30,17 @@ namespace MNet
 
         public bool success = false;
 
-        protected async override void OnSpawn()
+        public override void OnNetwork()
         {
-            base.OnSpawn();
+            base.OnNetwork();
 
+            Network.OnSpawn += SpawnCallback;
+        }
+
+        async void SpawnCallback()
+        {
             {
-                var answer = await QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client);
+                var answer = await Network.QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client);
 
                 if (answer.Success)
                     value = answer.Value;
@@ -44,7 +49,7 @@ namespace MNet
             }
 
             {
-                var answer = await QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client);
+                var answer = await Network.QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client);
 
                 if (answer.Success)
                     valueAsync = answer.Value;
@@ -64,7 +69,7 @@ namespace MNet
         [NetworkRPC]
         async UniTask<string> AsyncQueryRPC(RpcInfo info)
         {
-            await UniTask.Delay(4000, cancellationToken: ASyncDespawnCancellation.Token);
+            await UniTask.Delay(4000, cancellationToken: Network.DespawnASyncCancellation.Token);
 
             return NetworkAPI.Client.Profile.Name;
         }

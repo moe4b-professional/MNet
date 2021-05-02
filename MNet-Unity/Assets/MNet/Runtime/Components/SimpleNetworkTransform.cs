@@ -580,6 +580,13 @@ namespace MNet
 
         public Transform Component => transform;
 
+        public override void OnNetwork()
+        {
+            base.OnNetwork();
+
+            Network.OnSpawn += SpawnCallback;
+        }
+
         void Awake()
         {
             Properties = new List<Property>() { position, rotation, scale };
@@ -594,10 +601,8 @@ namespace MNet
             }
         }
 
-        protected override void OnSpawn()
+        void SpawnCallback()
         {
-            base.OnSpawn();
-
             if (Entity.IsMine && forceSync)
                 Debug.LogWarning($"Force Sync is Enabled for {this}, This is Useful for Stress Testing but don't forget to turn it off");
 
@@ -632,7 +637,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.ReliableUnordered, exception: Entity.Owner);
+            Network.BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.ReliableUnordered, exception: Entity.Owner);
         }
 
         bool SendDelta()
@@ -651,7 +656,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, channel: delivery.Channel, exception: Entity.Owner);
+            Network.BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, channel: delivery.Channel, exception: Entity.Owner);
             return true;
         }
 
@@ -664,7 +669,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            BufferRPC(Buffer, coordinates, delivery: delivery.Buffer.Mode, channel: delivery.Channel);
+            Network.BufferRPC(Buffer, coordinates, delivery: delivery.Buffer.Mode, channel: delivery.Channel);
         }
 
         void Update()

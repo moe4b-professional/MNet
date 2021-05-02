@@ -24,17 +24,22 @@ namespace MNet
 	{
 		public bool success = false;
 
-		protected override void OnSpawn()
-		{
-			base.OnSpawn();
+        public override void OnNetwork()
+        {
+            base.OnNetwork();
 
-			TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this);
+			Network.OnSpawn += SpawnCallback;
+        }
+
+        void SpawnCallback()
+		{
+			Network.TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this);
 		}
 
 		[NetworkRPC]
 		void Rpc(NetworkEntity entity, SerializationTest behaviour, RpcInfo info)
 		{
-			success = this.Entity == entity && this == behaviour;
+			success = Network.Entity == entity && this == behaviour;
 		}
 	}
 }

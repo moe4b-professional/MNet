@@ -22,7 +22,7 @@ using static MNet.RichTextMarker;
 namespace MNet.Example
 {
 	public class RoomLog : NetworkBehaviour
-	{
+    {
         void Start()
         {
             if (NetworkAPI.Client.IsConnected) Add("Connected to Room");
@@ -57,7 +57,7 @@ namespace MNet.Example
         #endregion
 
         #region Chat
-        public void Broadcast(string text) => BroadcastRPC(Recieve, text);
+        public void Broadcast(string text) => Network.BroadcastRPC(Recieve, text);
 
         [NetworkRPC]
         void Recieve(string text, RpcInfo info)

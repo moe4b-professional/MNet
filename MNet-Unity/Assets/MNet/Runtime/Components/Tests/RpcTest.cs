@@ -34,10 +34,15 @@ namespace MNet
 
         public const int Count = 7;
 
-        protected override void OnSpawn()
+        public override void OnNetwork()
         {
-            base.OnSpawn();
+            base.OnNetwork();
 
+            Network.OnSpawn += SpawnCallback;
+        }
+
+        void SpawnCallback()
+        {
             for (int i = 0; i < Count; i++) results.Add(false);
 
             coroutine = false;
@@ -45,17 +50,17 @@ namespace MNet
             binary = false;
             success = false;
 
-            TargetRPC(Call0, NetworkAPI.Client.Self);
-            TargetRPC(Call1, NetworkAPI.Client.Self, 0);
-            TargetRPC(Call2, NetworkAPI.Client.Self, 0, 1);
-            TargetRPC(Call3, NetworkAPI.Client.Self, 0, 1, 2);
-            TargetRPC(Call4, NetworkAPI.Client.Self, 0, 1, 2, 3);
-            TargetRPC(Call5, NetworkAPI.Client.Self, 0, 1, 2, 3, 4);
-            TargetRPC(Call6, NetworkAPI.Client.Self, 0, 1, 2, 3, 4, 5);
+            Network.TargetRPC(Call0, NetworkAPI.Client.Self);
+            Network.TargetRPC(Call1, NetworkAPI.Client.Self, 0);
+            Network.TargetRPC(Call2, NetworkAPI.Client.Self, 0, 1);
+            Network.TargetRPC(Call3, NetworkAPI.Client.Self, 0, 1, 2);
+            Network.TargetRPC(Call4, NetworkAPI.Client.Self, 0, 1, 2, 3);
+            Network.TargetRPC(Call5, NetworkAPI.Client.Self, 0, 1, 2, 3, 4);
+            Network.TargetRPC(Call6, NetworkAPI.Client.Self, 0, 1, 2, 3, 4, 5);
 
-            TargetRPC(CoroutineRPC, NetworkAPI.Client.Self);
-            TargetRPC(UniTaskRPC, NetworkAPI.Client.Self);
-            TargetRPC(BinaryRPC, NetworkAPI.Client.Self, new byte[] { 0, 1, 2, 3, 4, 5 });
+            Network.TargetRPC(CoroutineRPC, NetworkAPI.Client.Self);
+            Network.TargetRPC(UniTaskRPC, NetworkAPI.Client.Self);
+            Network.TargetRPC(BinaryRPC, NetworkAPI.Client.Self, new byte[] { 0, 1, 2, 3, 4, 5 });
         }
 
         [NetworkRPC] void Call0(RpcInfo info) => Call();
@@ -90,7 +95,7 @@ namespace MNet
         [NetworkRPC]
         async UniTask UniTaskRPC(RpcInfo info)
         {
-            await UniTask.Delay(2000, cancellationToken: ASyncDespawnCancellation.Token);
+            await UniTask.Delay(2000, cancellationToken: Network.DespawnASyncCancellation.Token);
 
             uniTask = true;
 

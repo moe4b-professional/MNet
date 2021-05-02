@@ -38,6 +38,29 @@ namespace MNet.Example
 		public SimpleNetworkTransform NetworkTransform { get; protected set; }
 		public SimpleNetworkAnimator NetworkAnimator { get; protected set; }
 
+        public override void OnNetwork()
+        {
+            base.OnNetwork();
+
+            Network.OnSetup += SetupCallback;
+            Network.OnOwnerSet += OwnerSetCallback;
+        }
+
+		void SetupCallback()
+		{
+			ReadAttributes(Entity, out var position, out var rotation);
+
+			transform.position = position;
+			transform.rotation = rotation;
+
+			transform.position += Vector3.up * 0.9f;
+		}
+
+		void OwnerSetCallback(NetworkClient client)
+        {
+			rigidbody.isKinematic = Entity.IsMine == false;
+		}
+
 		void Awake()
 		{
 			rigidbody = GetComponent<Rigidbody>();
@@ -53,25 +76,6 @@ namespace MNet.Example
 
 			Animator = GetComponentInChildren<PlayerAnimator>();
 			Animator.Set(this);
-		}
-
-		protected override void OnSetup()
-		{
-			base.OnSetup();
-
-			ReadAttributes(Entity, out var position, out var rotation);
-
-			transform.position = position;
-			transform.rotation = rotation;
-
-			transform.position += Vector3.up * 0.9f;
-		}
-
-		protected override void OnOwnerSet(NetworkClient client)
-		{
-			base.OnOwnerSet(client);
-
-			rigidbody.isKinematic = Entity.IsMine == false;
 		}
 
 		//Static Utility
