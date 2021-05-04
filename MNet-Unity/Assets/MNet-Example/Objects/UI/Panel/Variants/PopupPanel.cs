@@ -46,7 +46,6 @@ namespace MNet.Example
 			label.text = text;
 
 			this.callback = callback;
-
 			this.instruction.text = instruction;
 
 			button.gameObject.SetActive(instruction != null);

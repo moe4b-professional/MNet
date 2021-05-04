@@ -27,8 +27,8 @@ namespace MNet.Example
         public string Name => name;
 
         [SerializeField]
-        GameScene scene = default;
-        public GameScene Scene => scene;
+        NetworkSceneAsset scene = default;
+        public NetworkSceneAsset Scene => scene;
 
         public override string ToString() => name;
 

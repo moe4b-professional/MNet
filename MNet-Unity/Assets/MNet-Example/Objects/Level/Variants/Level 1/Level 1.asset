@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e86945eb885b0604c8b76dfad3e91990, type: 3}
+  m_Script: {fileID: 11500000, guid: b662cd23791bf50419b0a62f4a300849, type: 3}
   m_Name: Level 1
   m_EditorClassIdentifier: 
-  asset: {fileID: 102900000, guid: 7c9c581b1c1becb4180296dfcfbf9975, type: 3}
-  registered: 1
-  active: 1
-  id: Level 1
-  buildIndex: 1
-  path: Assets/MNet-Example/Objects/Level/Variants/Level 1/Level 1.unity
+  _asset: {fileID: 102900000, guid: 7c9c581b1c1becb4180296dfcfbf9975, type: 3}
+  _registered: 1
+  _active: 1
+  _id: Level 1
+  _index: 1
+  _path: Assets/MNet-Example/Objects/Level/Variants/Level 1/Level 1.unity

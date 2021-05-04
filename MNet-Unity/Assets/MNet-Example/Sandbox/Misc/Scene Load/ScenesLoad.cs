@@ -23,7 +23,7 @@ namespace MNet
 {
 	public class ScenesLoad : NetworkBehaviour
 	{
-		public GameScene scene = default;
+		public NetworkSceneAsset scene = default;
 
 		public LoadSceneMode mode = LoadSceneMode.Single;
 

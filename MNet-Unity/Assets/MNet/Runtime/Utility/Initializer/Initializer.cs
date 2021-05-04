@@ -17,7 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-namespace MNet.Example
+namespace MNet
 {
 	public class Initializer : MonoBehaviour
 	{
@@ -25,8 +25,6 @@ namespace MNet.Example
         static void OnLoad()
         {
             SceneManager.sceneLoaded += SceneLoadCallback;
-
-            ScriptableObjectInitializer.Load();
         }
 
         static void SceneLoadCallback(Scene scene, LoadSceneMode mode)
@@ -36,31 +34,38 @@ namespace MNet.Example
             var targets = new List<IInitialize>();
 
             for (int i = 0; i < roots.Length; i++)
-                targets.AddRange(Dependancy.GetAll<IInitialize>(roots[i]));
+            {
+                var range = roots[i].GetComponentsInChildren<IInitialize>(true);
+
+                targets.AddRange(range);
+            }
 
             Perform(targets);
         }
 
-        public static void Perform(Component component) => Perform(component.gameObject);
-        public static void Perform(GameObject gameObject)
+        public static IList<IInitialize> Perform(Component component) => Perform(component.gameObject);
+        public static IList<IInitialize> Perform(GameObject gameObject)
         {
-            var targets = Dependancy.GetAll<IInitialize>(gameObject);
+            var targets = gameObject.GetComponentsInChildren<IInitialize>(true);
 
             Perform(targets);
+
+            return targets;
         }
         public static void Perform(IList<IInitialize> list)
         {
             Configure(list);
-
             Init(list);
         }
 
-        public static void Configure(Component component) => Configure(component.gameObject);
-        public static void Configure(GameObject gameObject)
+        public static IList<IInitialize> Configure(Component component) => Configure(component.gameObject);
+        public static IList<IInitialize> Configure(GameObject gameObject)
         {
-            var targets = Dependancy.GetAll<IInitialize>(gameObject);
+            var targets = gameObject.GetComponentsInChildren<IInitialize>(true);
 
             Configure(targets);
+
+            return targets;
         }
         public static void Configure(IList<IInitialize> list)
         {
@@ -69,17 +74,17 @@ namespace MNet.Example
         }
         public static void Configure(IInitialize instance)
         {
-            if (instance == null) return;
-
             instance.Configure();
         }
 
-        public static void Init(Component component) => Init(component.gameObject);
-        public static void Init(GameObject gameObject)
+        public static IList<IInitialize> Init(Component component) => Init(component.gameObject);
+        public static IList<IInitialize> Init(GameObject gameObject)
         {
-            var targets = Dependancy.GetAll<IInitialize>(gameObject);
+            var targets = gameObject.GetComponentsInChildren<IInitialize>(true);
 
             Init(targets);
+
+            return targets;
         }
         public static void Init(IList<IInitialize> list)
         {
@@ -88,8 +93,6 @@ namespace MNet.Example
         }
         public static void Init(IInitialize instance)
         {
-            if (instance == null) return;
-
             instance.Init();
         }
     }

@@ -21,7 +21,7 @@ namespace MNet
 {
 	public class ScenesUnload : MonoBehaviour
 	{
-		public GameScene scene = default;
+		public NetworkSceneAsset scene = default;
 
 		void Request()
 		{

@@ -31,8 +31,8 @@ namespace MNet.Example
 		Button button;
 
 		void Reset()
-        {
-			from = Dependancy.Get<UIElement>(gameObject, Dependancy.Scope.CurrentToParents);
+		{
+			from = UnityUtility.GetComponentInParents<UIElement>(gameObject);
 		}
 
 		void Awake()

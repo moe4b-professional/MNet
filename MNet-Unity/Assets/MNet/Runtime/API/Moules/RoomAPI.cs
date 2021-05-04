@@ -428,10 +428,19 @@ namespace MNet
                     #endregion
 
                     #region Request
-                    public static void Request(GameScene scene) => Request(scene, LoadSceneMode.Single);
-                    public static void Request(GameScene scene, LoadSceneMode mode)
+                    public static void Request(string scene) => Request(scene, LoadSceneMode.Single);
+                    public static void Request(string scene, LoadSceneMode mode)
                     {
-                        var index = (byte)scene.BuildIndex;
+                        if (NetworkSceneAsset.TryFind(scene, out var asset) == false)
+                            throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Load");
+
+                        Request(asset, mode);
+                    }
+
+                    public static void Request(NetworkSceneAsset scene) => Request(scene, LoadSceneMode.Single);
+                    public static void Request(NetworkSceneAsset scene, LoadSceneMode mode)
+                    {
+                        var index = (byte)scene.Index;
 
                         Request(index, mode);
                     }
@@ -528,9 +537,17 @@ namespace MNet
                     #endregion
 
                     #region Request
-                    public static void Request(GameScene scene)
+                    public static void Request(string scene)
                     {
-                        var index = (byte)scene.BuildIndex;
+                        if (NetworkSceneAsset.TryFind(scene, out var asset) == false)
+                            throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Unload");
+
+                        Request(asset);
+                    }
+
+                    public static void Request(NetworkSceneAsset scene)
+                    {
+                        var index = (byte)scene.Index;
 
                         Request(index);
                     }

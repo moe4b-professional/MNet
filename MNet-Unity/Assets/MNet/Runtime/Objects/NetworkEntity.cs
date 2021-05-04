@@ -267,7 +267,7 @@ namespace MNet
             #endregion
 
             #region RPC
-            internal DualDictionary<RpcMethodID, string, RpcBind> RPCs { get; private set; }
+            DualDictionary<RpcMethodID, string, RpcBind> RPCs;
 
             void ParseRPCs()
             {
@@ -294,7 +294,7 @@ namespace MNet
             }
 
             #region Methods
-            protected bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, NetworkGroupID group, NetworkClient exception, params object[] arguments)
+            public bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, NetworkGroupID group, NetworkClient exception, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -315,7 +315,7 @@ namespace MNet
                 return Send(ref request, delivery, channel);
             }
 
-            protected bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
+            public bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -336,7 +336,7 @@ namespace MNet
                 return Send(ref request, delivery, channel);
             }
 
-            protected async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
+            public async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -369,7 +369,7 @@ namespace MNet
                 return answer;
             }
 
-            protected bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, params object[] arguments)
+            public bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -479,7 +479,7 @@ namespace MNet
             #endregion
 
             #region SyncVar
-            internal DualDictionary<SyncVarFieldID, string, SyncVarBind> SyncVars { get; private set; }
+            DualDictionary<SyncVarFieldID, string, SyncVarBind> SyncVars;
 
             void ParseSyncVars()
             {
@@ -658,7 +658,7 @@ namespace MNet
             }
             #endregion
 
-            internal virtual bool Send<T>(ref T payload, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0)
+            public virtual bool Send<T>(ref T payload, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0)
             {
                 if (Entity.IsReady == false)
                 {
@@ -858,7 +858,7 @@ namespace MNet
 
         public static NetworkEntity ResolveComponent(GameObject gameObject)
         {
-            var component = Dependancy.Get<NetworkEntity>(gameObject, Dependancy.Scope.CurrentToParents);
+            var component = UnityUtility.GetComponentInParents<NetworkEntity>(gameObject);
 
 #if UNITY_EDITOR
             if (component == null)

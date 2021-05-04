@@ -48,12 +48,8 @@ namespace MNet.Example
 		public class ScenesProperty : Property
 		{
 			[SerializeField]
-			GameScene mainMenu = default;
-			public GameScene MainMenu => mainMenu;
-
-			[SerializeField]
-			GameScene additiveScene = default;
-			public int AdditiveScene => additiveScene;
+			NetworkSceneAsset mainMenu = default;
+			public NetworkSceneAsset MainMenu => mainMenu;
 
 			UIProperty UI => Core.UI;
 
@@ -66,9 +62,9 @@ namespace MNet.Example
 
 			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
 
-			async UniTask Load(GameScene scene, LoadSceneMode mode)
+			async UniTask Load(NetworkSceneAsset scene, LoadSceneMode mode)
 			{
-				var index = (byte)scene.BuildIndex;
+				var index = (byte)scene.Index;
 
 				await Load(index, mode);
 			}

@@ -20,7 +20,8 @@ using Random = UnityEngine.Random;
 namespace MNet
 {
 	/// <summary>
-	/// Allows Syncing Script Assets (ScriptableObjects) on the Network
+	/// Allows Syncing Script Assets (ScriptableObjects) over the Network,
+	/// just implement it on any ScriptableObject
 	/// </summary>
 	public interface ISyncedAsset
 	{

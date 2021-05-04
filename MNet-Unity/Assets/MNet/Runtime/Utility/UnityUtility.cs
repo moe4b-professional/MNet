@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections;
@@ -22,7 +22,7 @@ using UnityEngine.PlayerLoop;
 
 namespace MNet
 {
-	public static class MUtility
+	public static class UnityUtility
 	{
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnLoad()
@@ -91,6 +91,24 @@ namespace MNet
                     loop.subSystemList[i].updateDelegate += callback;
 
             PlayerLoop.SetPlayerLoop(loop);
+        }
+
+        public static T GetComponentInParents<T>(Component component) => GetComponentInParents<T>(component.transform);
+        public static T GetComponentInParents<T>(GameObject gameObject) => GetComponentInParents<T>(gameObject.transform);
+        public static T GetComponentInParents<T>(Transform transform)
+            where T : class
+        {
+            var context = transform.parent;
+
+            while(true)
+            {
+                if (context == null) return null;
+
+                if (context.TryGetComponent<T>(out var component))
+                    return component;
+
+                context = context.parent;
+            }
         }
 
         public static class LateStart

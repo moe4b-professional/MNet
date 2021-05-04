@@ -45,7 +45,7 @@ namespace MNet.Example
         {
             Component = GetComponent<TComponent>();
 
-            MUtility.LateStart.Register(LateStart);
+            UnityUtility.LateStart.Register(LateStart);
         }
 
         void LateStart()
