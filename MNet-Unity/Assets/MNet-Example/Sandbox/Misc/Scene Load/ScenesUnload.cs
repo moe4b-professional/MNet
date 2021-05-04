@@ -17,11 +17,13 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using MB;
+
 namespace MNet
 {
 	public class ScenesUnload : MonoBehaviour
 	{
-		public NetworkSceneAsset scene = default;
+		public MSceneAsset scene = default;
 
 		void Request()
 		{

@@ -15,6 +15,8 @@ using Object = UnityEngine.Object;
 using UnityEngine.LowLevel;
 using UnityEngine.PlayerLoop;
 
+using MB;
+
 namespace MNet
 {
     public static partial class NetworkAPI
@@ -46,8 +48,6 @@ namespace MNet
 
             Log.Output = LogOutput;
 
-            GlobalCoroutine.Configure();
-
 #if ENABLE_IL2CPP
             DynamicNetworkSerialization.Enabled = false;
 #else
@@ -71,12 +71,12 @@ namespace MNet
 
         static void RegisterUpdateMethods()
         {
-            if (Application.isEditor || Config.UpdateMethod.Early) UnityUtility.RegisterPlayerLoop<EarlyUpdate>(EarlyUpdate);
-            if (Application.isEditor || Config.UpdateMethod.Normal) UnityUtility.RegisterPlayerLoop<Update>(Update);
-            if (Application.isEditor || Config.UpdateMethod.Fixed) UnityUtility.RegisterPlayerLoop<FixedUpdate>(FixedUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Early) MUtility.RegisterPlayerLoop<EarlyUpdate>(EarlyUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Normal) MUtility.RegisterPlayerLoop<Update>(Update);
+            if (Application.isEditor || Config.UpdateMethod.Fixed) MUtility.RegisterPlayerLoop<FixedUpdate>(FixedUpdate);
 
-            if (Application.isEditor || Config.UpdateMethod.Late.Pre) UnityUtility.RegisterPlayerLoop<PreLateUpdate>(PreLateUpdate);
-            if (Application.isEditor || Config.UpdateMethod.Late.Post) UnityUtility.RegisterPlayerLoop<PostLateUpdate>(PostLateUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Late.Pre) MUtility.RegisterPlayerLoop<PreLateUpdate>(PreLateUpdate);
+            if (Application.isEditor || Config.UpdateMethod.Late.Post) MUtility.RegisterPlayerLoop<PostLateUpdate>(PostLateUpdate);
 
             if (Config.UpdateMethod.Any == false)
                 Debug.LogWarning("No Update Methods Selected in Network API Config, Network Message's Won't be Processed");

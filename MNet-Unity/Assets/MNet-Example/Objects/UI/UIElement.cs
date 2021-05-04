@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using UnityEngine.EventSystems;
 
+using MB;
+
 namespace MNet.Example
 {
 	public class UIElement : MonoBehaviour, IInitialize

@@ -30,6 +30,6 @@ namespace MNet.Example
 			var script = gameObject.AddComponent<SceneAccessor>();
 
 			return script;
-        }
+		}
 	}
 }

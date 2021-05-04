@@ -20,6 +20,8 @@ using UnityEngine.Networking;
 
 using Cysharp.Threading.Tasks;
 
+using MB;
+
 namespace MNet
 {
     public static partial class NetworkAPI
@@ -431,14 +433,14 @@ namespace MNet
                     public static void Request(string scene) => Request(scene, LoadSceneMode.Single);
                     public static void Request(string scene, LoadSceneMode mode)
                     {
-                        if (NetworkSceneAsset.TryFind(scene, out var asset) == false)
+                        if (MSceneAsset.TryFind(scene, out var asset) == false)
                             throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Load");
 
                         Request(asset, mode);
                     }
 
-                    public static void Request(NetworkSceneAsset scene) => Request(scene, LoadSceneMode.Single);
-                    public static void Request(NetworkSceneAsset scene, LoadSceneMode mode)
+                    public static void Request(MSceneAsset scene) => Request(scene, LoadSceneMode.Single);
+                    public static void Request(MSceneAsset scene, LoadSceneMode mode)
                     {
                         var index = (byte)scene.Index;
 
@@ -539,13 +541,13 @@ namespace MNet
                     #region Request
                     public static void Request(string scene)
                     {
-                        if (NetworkSceneAsset.TryFind(scene, out var asset) == false)
+                        if (MSceneAsset.TryFind(scene, out var asset) == false)
                             throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Unload");
 
                         Request(asset);
                     }
 
-                    public static void Request(NetworkSceneAsset scene)
+                    public static void Request(MSceneAsset scene)
                     {
                         var index = (byte)scene.Index;
 

@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using UnityEngine.PlayerLoop;
 
+using MB;
+
 namespace MNet.Example
 {
     public abstract class UIPreference : MonoBehaviour
@@ -45,7 +47,7 @@ namespace MNet.Example
         {
             Component = GetComponent<TComponent>();
 
-            UnityUtility.LateStart.Register(LateStart);
+            ManualLateStart.Register(LateStart);
         }
 
         void LateStart()

@@ -19,11 +19,13 @@ using Random = UnityEngine.Random;
 
 using Cysharp.Threading.Tasks;
 
+using MB;
+
 namespace MNet
 {
 	public class ScenesLoad : NetworkBehaviour
 	{
-		public NetworkSceneAsset scene = default;
+		public MSceneAsset scene = default;
 
 		public LoadSceneMode mode = LoadSceneMode.Single;
 

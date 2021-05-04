@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using MB;
+
 namespace MNet.Example
 {
     [Serializable]
@@ -27,8 +29,8 @@ namespace MNet.Example
         public string Name => name;
 
         [SerializeField]
-        NetworkSceneAsset scene = default;
-        public NetworkSceneAsset Scene => scene;
+        MSceneAsset scene = default;
+        public MSceneAsset Scene => scene;
 
         public override string ToString() => name;
 

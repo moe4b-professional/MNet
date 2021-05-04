@@ -1,11 +1,11 @@
 {
   "dependencies": {
-    "com.t4.script-creation-preprocessor": {
-      "version": "https://github.com/moe4b-packages/Script-Creation-Preprocessor.git",
+    "com.moe-baker.packages": {
+      "version": "https://github.com/Moe-Baker/Packages.git",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "f9ef34385cea17beded26d45e8b855a17047389a"
+      "hash": "e4f4dcf38fbe6dce3d1d1e10b9865ec93a47bd0c"
     },
     "com.unity.ugui": {
       "version": "1.0.0",

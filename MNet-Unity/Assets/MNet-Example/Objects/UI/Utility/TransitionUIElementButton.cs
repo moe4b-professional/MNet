@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using MB;
+
 namespace MNet.Example
 {
 	[RequireComponent(typeof(Button))]
@@ -32,7 +34,7 @@ namespace MNet.Example
 
 		void Reset()
 		{
-			from = UnityUtility.GetComponentInParents<UIElement>(gameObject);
+			from = MUtility.GetComponentInParents<UIElement>(gameObject);
 		}
 
 		void Awake()

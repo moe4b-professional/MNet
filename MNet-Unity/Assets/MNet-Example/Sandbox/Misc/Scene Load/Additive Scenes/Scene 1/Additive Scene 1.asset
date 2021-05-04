@@ -9,13 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b662cd23791bf50419b0a62f4a300849, type: 3}
+  m_Script: {fileID: 11500000, guid: 8f98152a6273b254cb27497c31cbec0b, type: 3}
   m_Name: Additive Scene 1
   m_EditorClassIdentifier: 
-  _asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
-  _registered: 1
-  _active: 1
-  _id: Additive Scene 1
-  _index: 2
-  _path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 1/Additive
+  asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
+  registered: 1
+  active: 1
+  id: Additive Scene 1
+  index: 2
+  path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 1/Additive
     Scene 1.unity

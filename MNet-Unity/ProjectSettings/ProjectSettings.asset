@@ -663,7 +663,16 @@ PlayerSettings:
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
   webGLWasmStreaming: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    1: Assembly_Define_Example;MOE_PACKAGES
+    7: Assembly_Define_Example;MOE_PACKAGES
+    13: Assembly_Define_Example;MOE_PACKAGES
+    19: Assembly_Define_Example;MOE_PACKAGES
+    21: Assembly_Define_Example;MOE_PACKAGES
+    25: Assembly_Define_Example;MOE_PACKAGES
+    27: Assembly_Define_Example;MOE_PACKAGES
+    28: Assembly_Define_Example;MOE_PACKAGES
+    29: Assembly_Define_Example;MOE_PACKAGES
   platformArchitecture: {}
   scriptingBackend:
     Android: 0

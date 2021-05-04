@@ -29,6 +29,12 @@ namespace MNet
 
             Selection.activeObject = asset;
         }
+
+        [MenuItem(Constants.Path + "Install Packages", false, 1)]
+        static void InstallPackages()
+        {
+            UnityEditor.PackageManager.Client.Add("https://github.com/Moe-Baker/Packages.git");
+        }
     }
 }
 #endif

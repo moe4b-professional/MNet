@@ -23,6 +23,8 @@ using System.Collections.Concurrent;
 
 using Cysharp.Threading.Tasks;
 
+using MB;
+
 namespace MNet
 {
     public static partial class NetworkAPI
@@ -296,7 +298,7 @@ namespace MNet
 
             static NetworkTransport CreateTransport(NetworkTransportType type)
             {
-                var platform = UnityUtility.CheckPlatform();
+                var platform = MUtility.CheckPlatform();
 
                 if (NetworkTransport.IsSupported(type, platform) == false)
                     throw new Exception($"{type} Transport not Supported on {platform}");

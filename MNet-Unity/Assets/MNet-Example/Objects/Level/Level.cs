@@ -20,6 +20,8 @@ using System.Net.Cache;
 
 using Cysharp.Threading.Tasks;
 
+using MB;
+
 namespace MNet.Example
 {
 	[DefaultExecutionOrder(ExecutionOrder)]

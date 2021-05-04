@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using Cysharp.Threading.Tasks;
 
+using MB;
+
 namespace MNet.Example
 {
 	[CreateAssetMenu]
@@ -48,8 +50,8 @@ namespace MNet.Example
 		public class ScenesProperty : Property
 		{
 			[SerializeField]
-			NetworkSceneAsset mainMenu = default;
-			public NetworkSceneAsset MainMenu => mainMenu;
+			MSceneAsset mainMenu = default;
+			public MSceneAsset MainMenu => mainMenu;
 
 			UIProperty UI => Core.UI;
 
@@ -62,7 +64,7 @@ namespace MNet.Example
 
 			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
 
-			async UniTask Load(NetworkSceneAsset scene, LoadSceneMode mode)
+			async UniTask Load(MSceneAsset scene, LoadSceneMode mode)
 			{
 				var index = (byte)scene.Index;
 
@@ -298,6 +300,8 @@ namespace MNet.Example
 		void Configure()
 		{
 			SceneAccessor = SceneAccessor.Create();
+
+			GlobalCoroutine.Configure();
 
 			ForAllProperties(Property.Configure);
 		}

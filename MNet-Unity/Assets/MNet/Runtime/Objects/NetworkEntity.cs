@@ -20,6 +20,8 @@ using System.Threading;
 using System.Reflection;
 using Cysharp.Threading.Tasks;
 
+using MB;
+
 namespace MNet
 {
     [ExecuteInEditMode]
@@ -858,7 +860,7 @@ namespace MNet
 
         public static NetworkEntity ResolveComponent(GameObject gameObject)
         {
-            var component = UnityUtility.GetComponentInParents<NetworkEntity>(gameObject);
+            var component = MUtility.GetComponentInParents<NetworkEntity>(gameObject);
 
 #if UNITY_EDITOR
             if (component == null)

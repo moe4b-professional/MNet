@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using MB;
+
 namespace MNet
 {
     [CreateAssetMenu(menuName = Constants.Path + "Network API Config")]
@@ -500,7 +502,7 @@ namespace MNet
 
         void SelectAppID()
         {
-            var platform = UnityUtility.CheckPlatform();
+            var platform = MUtility.CheckPlatform();
 
             AppID = appID.Retrieve(platform);
         }
