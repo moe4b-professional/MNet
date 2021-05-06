@@ -1,2 +1,2 @@
-Unity Packages:
+Packages:
 com.moe-baker.packages @ https://github.com/Moe-Baker/Packages.git

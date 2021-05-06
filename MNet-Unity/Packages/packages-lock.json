@@ -5,7 +5,7 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "e4f4dcf38fbe6dce3d1d1e10b9865ec93a47bd0c"
+      "hash": "4d7f4c2724300a18b072917657b7de8ffb5ff405"
     },
     "com.unity.ugui": {
       "version": "1.0.0",

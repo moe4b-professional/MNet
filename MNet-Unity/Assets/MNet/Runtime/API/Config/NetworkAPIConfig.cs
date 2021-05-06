@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using MB;
+using UnityEngine.UIElements;
 
 namespace MNet
 {
@@ -249,7 +250,7 @@ namespace MNet
 
                     DrawLabel(ref rect);
 
-                    if(infer.boolValue)
+                    if (infer.boolValue)
                     {
                         if (Version.TryParse(Application.version, out var version) == false)
                         {
@@ -549,6 +550,57 @@ namespace MNet
                 EditorGUILayout.LabelField($"API Version: {Constants.ApiVersion}", VersionLabelStyle);
                 EditorGUILayout.Space();
                 base.OnInspectorGUI();
+            }
+        }
+
+        public class Settings : SettingsProvider
+        {
+            NetworkAPIConfig config;
+            SerializedObject serializedObject;
+
+            public override void OnActivate(string searchContext, VisualElement rootElement)
+            {
+                base.OnActivate(searchContext, rootElement);
+
+                var config = NetworkAPIConfig.Load();
+
+                serializedObject = new SerializedObject(config);
+            }
+
+            public override void OnGUI(string searchContext)
+            {
+                DrawProperies(serializedObject);
+
+                serializedObject.ApplyModifiedProperties();
+            }
+
+            void DrawProperies(SerializedObject root)
+            {
+                var iterator = root.GetIterator();
+
+                iterator.NextVisible(true);
+
+                while (true)
+                {
+                    if (iterator.name.StartsWith("m_") == false) DrawProperty(iterator);
+
+                    if (iterator.NextVisible(false) == false) break;
+                }
+            }
+
+            void DrawProperty(SerializedProperty property) => EditorGUILayout.PropertyField(property, true);
+
+            public Settings(string path, SettingsScope scope) : base(path, scope)
+            {
+
+            }
+
+            [SettingsProvider]
+            public static SettingsProvider Register()
+            {
+                var instance = new Settings("Project/MNet Configuration", SettingsScope.Project);
+
+                return instance;
             }
         }
 #endif
