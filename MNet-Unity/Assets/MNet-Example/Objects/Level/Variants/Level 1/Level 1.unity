@@ -1682,7 +1682,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   number:
-    value: 0
+    value: 420
+  watch: {fileID: 11400000, guid: 369dce27c46aab14882c92b9db79153b, type: 2}
 --- !u!114 &773831933
 MonoBehaviour:
   m_ObjectHideFlags: 0

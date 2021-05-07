@@ -27,7 +27,6 @@ namespace MNet.Example
 {
     public class Sandbox : NetworkBehaviour
     {
-        [SyncVar]
         [SerializeField]
         VarInt number = default;
 
@@ -40,7 +39,13 @@ namespace MNet.Example
 
         void SpawnCallback()
         {
-            if (NetworkAPI.Client.IsMaster) Network.BroadcastSyncVar(nameof(number), number, new VarInt(4200));
+            Network.BroadcastRPC(Call, number);
+        }
+
+        [NetworkRPC]
+        void Call(VarInt number, RpcInfo info)
+        {
+            Debug.Log($"({number})");
         }
 
         [RuntimeInitializeOnLoadMethod]

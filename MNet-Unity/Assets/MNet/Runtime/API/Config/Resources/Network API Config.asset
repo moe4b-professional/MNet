@@ -12,20 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb3371d12fbd87148b5e95d7e39d7206, type: 3}
   m_Name: Network API Config
   m_EditorClassIdentifier: 
+  restScheme: 0
   appID:
     global: Game 1 (Global)
     overrides:
     - _ID: Game 1 (Web)
       platforms: 11000000
   masterAddress:
-    local: 0
+    local: 1
     value: moe4b.ddns.net
-  restScheme: 0
   gameVersion:
     infer: 1
-    major: 0
-    minor: 1
-    patch: 0
+    value:
+      major: 0
+      minor: 1
+      patch: 0
   updateMethod:
     early: 0
     normal: 1

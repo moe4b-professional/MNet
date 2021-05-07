@@ -23,12 +23,20 @@ using UnityEngine.UIElements;
 namespace MNet
 {
     [CreateAssetMenu(menuName = Constants.Path + "Network API Config")]
-    public class NetworkAPIConfig : ScriptableObject
+    public class NetworkAPIConfig : ScriptableObject, IInitialize, IScriptableObjectBuildPreProcess
     {
+        [SerializeField]
+        RestScheme restScheme = RestScheme.HTTP;
+        public RestScheme RestScheme => restScheme;
+
+        public AppID AppID => appID.Selection;
+        public Version GameVersion => gameVersion.Selection;
+        public string MasterAddress => masterAddress.Selection;
+
         [SerializeField]
         AppIDsProperty appID = new AppIDsProperty();
         [Serializable]
-        public class AppIDsProperty
+        public class AppIDsProperty : Property
         {
             [SerializeField]
             string global = "Game 1 (Global)";
@@ -55,6 +63,15 @@ namespace MNet
                 }
             }
 
+            public AppID Selection { get; protected set; }
+
+            public override void Configure()
+            {
+                var platform = MUtility.CheckPlatform();
+
+                Selection = Retrieve(platform);
+            }
+
             public AppID Retrieve(RuntimePlatform platform)
             {
                 for (int i = 0; i < overrides.Length; i++)
@@ -65,24 +82,21 @@ namespace MNet
             }
         }
 
-        public AppID AppID { get; internal set; }
-
         [SerializeField]
         MasterAddressProperty masterAddress = new MasterAddressProperty();
-        public string MasterAddress => masterAddress.Value;
         [Serializable]
-        public class MasterAddressProperty
+        public class MasterAddressProperty : Property
         {
             [SerializeField]
             bool local = false;
             public bool Local => local;
 
+            public const string Default = "127.0.0.1";
+
             [SerializeField]
             protected string value = Default;
 
-            public const string Default = "127.0.0.1";
-
-            public string Value => local ? Default : value;
+            public string Selection => local ? Default : value;
 
 #if UNITY_EDITOR
             [CustomPropertyDrawer(typeof(MasterAddressProperty))]
@@ -103,7 +117,7 @@ namespace MNet
                     value = property.FindPropertyRelative(nameof(MasterAddressProperty.value));
                     local = property.FindPropertyRelative(nameof(MasterAddressProperty.local));
 
-                    LocalGUIContent = new GUIContent("Connect to Local", "Toggle On to Always Connect to Localhost, Usefult for Testing");
+                    LocalGUIContent = new GUIContent("Connect to Local", "Toggle On to Always Connect to Localhost, usefull for Testing");
                 }
 
                 public static float LineHeight => EditorGUIUtility.singleLineHeight;
@@ -149,37 +163,37 @@ namespace MNet
         }
 
         [SerializeField]
-        RestScheme restScheme = RestScheme.HTTP;
-        public RestScheme RestScheme => restScheme;
-
-        [SerializeField]
         protected GameVersionProperty gameVersion = new GameVersionProperty();
-        public Version GameVersion { get; protected set; }
         [Serializable]
-        public class GameVersionProperty
+        public class GameVersionProperty : Property
         {
             [SerializeField]
-            bool infer;
+            bool infer = true;
             public bool Infer => infer;
 
             [SerializeField]
-            byte major;
+            Version value = new Version(0, 1, 0);
 
-            [SerializeField]
-            byte minor;
+            public Version Selection { get; protected set; }
 
-            [SerializeField]
-            byte patch;
-
-            public Version Value => infer ? Version.Parse(Application.version) : new Version(major, minor, patch);
-
-            public GameVersionProperty()
+            public override void Configure()
             {
-                major = 0;
-                minor = 1;
-                patch = 0;
+                base.Configure();
 
-                infer = true;
+                if (infer)
+                {
+                    if (Version.TryParse(Application.version, out var version) == false)
+                    {
+                        throw new Exception($"Game Version Cannot be Infered from '{Application.version}', " +
+                        $"Please Modify your Project Settings to have a valid Version in the Format of x.x.x");
+                    }
+
+                    Selection = version;
+                }
+                else
+                {
+                    Selection = value;
+                }
             }
 
 #if UNITY_EDITOR
@@ -189,48 +203,57 @@ namespace MNet
                 SerializedProperty property;
                 SerializedProperty infer;
 
-                SerializedProperty major;
-                SerializedProperty minor;
-                SerializedProperty patch;
+                SerializedProperty value;
 
                 public static GUIContent InferGUIContent;
 
-                public const int FieldWidth = 30;
+                public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-                public const int SeperatorWidth = 8;
-                public static GUIStyle SeperatorStyle;
-
-                void Init(SerializedProperty property)
+                void Init(SerializedProperty reference)
                 {
-                    if (this.property == property) return;
+                    if (property?.propertyPath == reference?.propertyPath) return;
 
-                    this.property = property;
+                    property = reference;
 
-                    infer = property.FindPropertyRelative(nameof(GameVersionProperty.infer));
-
-                    major = property.FindPropertyRelative(nameof(GameVersionProperty.major));
-                    minor = property.FindPropertyRelative(nameof(GameVersionProperty.minor));
-                    patch = property.FindPropertyRelative(nameof(GameVersionProperty.patch));
+                    infer = reference.FindPropertyRelative(nameof(infer));
+                    value = reference.FindPropertyRelative(nameof(value));
 
                     InferGUIContent = new GUIContent("Infer Game Version", "Toggle On to Infer Game Version from the Project's Version");
-
-                    SeperatorStyle = new GUIStyle(GUI.skin.label)
-                    {
-                        fontSize = 20,
-                        fontStyle = FontStyle.Bold,
-                    };
                 }
-
-                public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
                 public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight * 2;
 
-                public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+                public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
                 {
                     Init(property);
 
-                    DrawValue(ref position);
-                    DrawInfer(ref position);
+                    DrawValue(ref rect, label);
+                    DrawInfer(ref rect);
+                }
+
+                void DrawValue(ref Rect rect, GUIContent label)
+                {
+                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+
+                    rect.y += LineHeight;
+
+                    if (infer.boolValue)
+                    {
+                        if (Version.TryParse(Application.version, out var version) == false)
+                        {
+                            EditorGUI.HelpBox(area, $"Game Version Cannot be Infered from '{Application.version}'", MessageType.Error);
+                        }
+                        else
+                        {
+                            GUI.enabled = false;
+                            Version.Drawer.DrawReadOnly(area, label, version);
+                            GUI.enabled = true;
+                        }
+                    }
+                    else
+                    {
+                        EditorGUI.PropertyField(area, value, label);
+                    }
                 }
 
                 void DrawInfer(ref Rect rect)
@@ -238,94 +261,6 @@ namespace MNet
                     var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
 
                     infer.boolValue = EditorGUI.Toggle(area, InferGUIContent, infer.boolValue);
-
-                    rect.y += LineHeight;
-                    rect.height -= LineHeight;
-                }
-
-                void DrawValue(ref Rect rect)
-                {
-                    var x = rect.x;
-                    var width = rect.width;
-
-                    DrawLabel(ref rect);
-
-                    if (infer.boolValue)
-                    {
-                        if (Version.TryParse(Application.version, out var version) == false)
-                        {
-                            var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
-
-                            EditorGUI.HelpBox(area, $"Game Version Cannot be Infered from '{Application.version}'", MessageType.Error);
-                        }
-                        else
-                        {
-                            GUI.enabled = false;
-
-                            DrawField(ref rect, version.Major);
-                            DrawSeperator(ref rect);
-                            DrawField(ref rect, version.Minor);
-                            DrawSeperator(ref rect);
-                            DrawField(ref rect, version.Patch);
-
-                            GUI.enabled = true;
-                        }
-                    }
-                    else
-                    {
-                        DrawField(ref rect, major);
-                        DrawSeperator(ref rect);
-                        DrawField(ref rect, minor);
-                        DrawSeperator(ref rect);
-                        DrawField(ref rect, patch);
-                    }
-
-                    rect.x = x;
-                    rect.width = width;
-                    rect.y += LineHeight;
-                    rect.height -= LineHeight;
-                }
-
-                void DrawLabel(ref Rect rect)
-                {
-                    var width = EditorGUIUtility.labelWidth;
-
-                    var area = new Rect(rect.x, rect.y, width, LineHeight);
-
-                    EditorGUI.LabelField(area, "Game Version");
-
-                    rect.width -= width;
-                    rect.x += width;
-                }
-
-                void DrawField(ref Rect rect, SerializedProperty property)
-                {
-                    var area = new Rect(rect.x, rect.y, FieldWidth, LineHeight);
-
-                    property.intValue = EditorGUI.IntField(area, property.intValue);
-
-                    rect.x += FieldWidth;
-                    rect.width -= FieldWidth;
-                }
-
-                void DrawField(ref Rect rect, byte value)
-                {
-                    var area = new Rect(rect.x, rect.y, FieldWidth, LineHeight);
-
-                    EditorGUI.IntField(area, value);
-
-                    rect.x += FieldWidth;
-                    rect.width -= FieldWidth;
-                }
-
-                void DrawSeperator(ref Rect rect)
-                {
-                    var area = new Rect(rect.x, rect.y, SeperatorWidth, LineHeight);
-
-                    EditorGUI.LabelField(area, ".", SeperatorStyle);
-
-                    rect.x += SeperatorWidth;
-                    rect.width -= SeperatorWidth;
                 }
             }
 #endif
@@ -335,7 +270,7 @@ namespace MNet
         UpdateMethodProperty updateMethod = new UpdateMethodProperty();
         public UpdateMethodProperty UpdateMethod => updateMethod;
         [Serializable]
-        public class UpdateMethodProperty
+        public class UpdateMethodProperty : Property
         {
             [SerializeField]
             bool early = false;
@@ -371,7 +306,7 @@ namespace MNet
         SyncedAssetsProperty syncedAssets = new SyncedAssetsProperty();
         public SyncedAssetsProperty SyncedAssets => syncedAssets;
         [Serializable]
-        public class SyncedAssetsProperty
+        public class SyncedAssetsProperty : Property
         {
             [SerializeField]
             bool autoUpdate = true;
@@ -396,39 +331,18 @@ namespace MNet
             public Dictionary<Object, ushort> Indexes { get; protected set; }
             public bool TryGetIndex(Object prefab, out ushort index) => Indexes.TryGetValue(prefab, out index);
 
-            NetworkAPIConfig config;
-
-            internal void Configure(NetworkAPIConfig reference)
+            public override void Configure()
             {
-                config = reference;
+                base.Configure();
 
 #if UNITY_EDITOR
                 if (autoUpdate) Refresh();
 #endif
 
-                CheckForDuplicates();
-
                 Indexes = new Dictionary<Object, ushort>();
 
                 for (ushort i = 0; i < list.Count; i++)
-                {
-                    if (list[i] == null) continue;
-
                     Indexes.Add(list[i], i);
-                }
-            }
-
-            void CheckForDuplicates()
-            {
-                var hash = new HashSet<object>();
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    if (hash.Contains(list[i]))
-                        throw new Exception($"Duplicate Network Synced Asset '{list[i]}' Found at Index {i}");
-
-                    hash.Add(list[i]);
-                }
             }
 
             public SyncedAssetsProperty()
@@ -437,16 +351,18 @@ namespace MNet
             }
 
 #if UNITY_EDITOR
-            void Refresh()
+            internal void Refresh()
             {
-                var hash = new HashSet<Object>(list);
+                var set = new HashSet<Object>(list);
 
-                foreach (var element in Iterate(hash))
-                    list.Add(element);
+                set.RemoveWhere(x => x == null || CheckAsset(x) == false);
 
-                list.RemoveAll(x => x == null || CheckAsset(x) == false);
+                foreach (var element in Iterate(set))
+                    set.Add(element);
 
-                EditorUtility.SetDirty(config);
+                list = set.ToList();
+
+                EditorUtility.SetDirty(Config);
             }
 
             static IEnumerable<Object> Iterate(HashSet<Object> exceptions)
@@ -481,51 +397,57 @@ namespace MNet
 #endif
         }
 
+        public class Property : IInitialize, IReference<NetworkAPIConfig>
+        {
+            public NetworkAPIConfig Config { get; protected set; }
+            public virtual void Set(NetworkAPIConfig context) => Config = context;
+
+            public virtual void Configure() { }
+
+            public virtual void Init() { }
+        }
+        public IEnumerable<Property> AllProperties()
+        {
+            yield return appID;
+            yield return masterAddress;
+            yield return gameVersion;
+            yield return updateMethod;
+            yield return syncedAssets;
+        }
+
         public static NetworkAPIConfig Load()
         {
             var assets = Resources.LoadAll<NetworkAPIConfig>("");
 
-            if (assets.Length == 0) return null;
+            if (assets.Length == 0)
+            {
+                Debug.LogWarning("No Network API Config Asset Found");
+                return null;
+            }
 
             var instance = assets[0];
 
             return instance;
         }
 
-        void OnEnable()
+        public void Configure()
         {
-            SelectAppID();
+            References.Set(this, AllProperties);
 
-            ParseGameVersion();
-
-            syncedAssets.Configure(this);
+            Initializer.Configure(AllProperties);
         }
 
-        void SelectAppID()
+        public void Init()
         {
-            var platform = MUtility.CheckPlatform();
-
-            AppID = appID.Retrieve(platform);
-        }
-
-        void ParseGameVersion()
-        {
-            try
-            {
-                GameVersion = gameVersion.Value;
-            }
-            catch (Exception)
-            {
-                if (gameVersion.Infer)
-                    throw new Exception($"Game Version Cannot be Infered from '{Application.version}', " +
-                        $"Please Modify your Project Settings to have a valid Version in the Format of x.x.x");
-                else
-                    throw new Exception($"Game Version Cannot be Parsed from Current Network API Config, " +
-                        $"Please Modify your Config to have a valid Version in the Format of x.x.x");
-            }
+            Initializer.Init(AllProperties);
         }
 
 #if UNITY_EDITOR
+        public void PreProcessBuild()
+        {
+            syncedAssets.Refresh();
+        }
+
         [CustomEditor(typeof(NetworkAPIConfig))]
         public class Inspector : Editor
         {

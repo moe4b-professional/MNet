@@ -1,4 +1,17 @@
-﻿using System;
+﻿#if UNITY_EDITOR || UNITY_STANDALONE
+#define UNITY
+#endif
+
+#if UNITY
+using UnityEngine;
+#endif
+
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditorInternal;
+#endif
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,12 +21,21 @@ namespace MNet
     [Serializable]
     public struct Version : INetworkSerializable
     {
+#if UNITY
+        [SerializeField]
+#endif
         byte major;
         public byte Major => major;
 
+#if UNITY
+        [SerializeField]
+#endif
         byte minor;
         public byte Minor => minor;
 
+#if UNITY
+        [SerializeField]
+#endif
         byte patch;
         public byte Patch => patch;
 
@@ -132,5 +154,113 @@ namespace MNet
                     throw new ArgumentException($"Cannot Create Version from an Array of {numbers.Length} Numbers");
             }
         }
+
+#if UNITY_EDITOR
+        [CustomPropertyDrawer(typeof(Version))]
+        public class Drawer : PropertyDrawer
+        {
+            SerializedProperty property;
+
+            SerializedProperty major;
+            SerializedProperty minor;
+            SerializedProperty patch;
+
+            public GUIContent InferGUIContent;
+
+            public const int FieldWidth = 30;
+            public const int SeperatorWidth = 8;
+
+            public static GUIStyle SeperatorStyle;
+
+            static Drawer()
+            {
+                SeperatorStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 20,
+                    fontStyle = FontStyle.Bold,
+                };
+            }
+
+            void Init(SerializedProperty reference)
+            {
+                if (property?.propertyPath == reference?.propertyPath) return;
+
+                property = reference;
+
+                major = reference.FindPropertyRelative(nameof(major));
+                minor = reference.FindPropertyRelative(nameof(minor));
+                patch = reference.FindPropertyRelative(nameof(patch));
+            }
+
+            public static float LineHeight => EditorGUIUtility.singleLineHeight;
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight;
+
+            public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
+            {
+                Init(property);
+
+                DrawLabel(ref rect, label);
+
+                DrawField(ref rect, major);
+                DrawSeperator(ref rect); // .
+                DrawField(ref rect, minor);
+                DrawSeperator(ref rect); // .
+                DrawField(ref rect, patch);
+            }
+
+            static void DrawLabel(ref Rect rect, GUIContent content)
+            {
+                var width = EditorGUIUtility.labelWidth;
+
+                var area = new Rect(rect.x, rect.y, width, LineHeight);
+
+                EditorGUI.LabelField(area, content);
+
+                rect.width -= width;
+                rect.x += width;
+            }
+
+            static void DrawField(ref Rect rect, SerializedProperty property)
+            {
+                var area = new Rect(rect.x, rect.y, FieldWidth, LineHeight);
+
+                property.intValue = EditorGUI.IntField(area, property.intValue);
+
+                rect.x += FieldWidth;
+                rect.width -= FieldWidth;
+            }
+            static void DrawField(ref Rect rect, int value)
+            {
+                var area = new Rect(rect.x, rect.y, FieldWidth, LineHeight);
+
+                EditorGUI.IntField(area, value);
+
+                rect.x += FieldWidth;
+                rect.width -= FieldWidth;
+            }
+
+            static void DrawSeperator(ref Rect rect)
+            {
+                var area = new Rect(rect.x, rect.y, SeperatorWidth, LineHeight);
+
+                EditorGUI.LabelField(area, ".", SeperatorStyle);
+
+                rect.x += SeperatorWidth;
+                rect.width -= SeperatorWidth;
+            }
+
+            public static void DrawReadOnly(Rect rect, GUIContent label, Version version)
+            {
+                DrawLabel(ref rect, label);
+
+                DrawField(ref rect, version.major);
+                DrawSeperator(ref rect); // .
+                DrawField(ref rect, version.minor);
+                DrawSeperator(ref rect); // .
+                DrawField(ref rect, version.patch);
+            }
+        }
+#endif
     }
 }
