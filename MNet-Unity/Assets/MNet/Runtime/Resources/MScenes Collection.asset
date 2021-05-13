@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bee45bf67c69db4983c71ca35b3022c, type: 3}
+  m_Name: MScenes Collection
+  m_EditorClassIdentifier: 
+  list:
+  - asset: {fileID: 102900000, guid: ab4a4b99dc7493f47bd9b6128f69370c, type: 3}
+    registered: 1
+    active: 1
+    id: Main Menu
+    index: 0
+    path: Assets/MNet-Example/Objects/Main Menu/Main Menu.unity
+  - asset: {fileID: 102900000, guid: 7c9c581b1c1becb4180296dfcfbf9975, type: 3}
+    registered: 1
+    active: 1
+    id: Level 1
+    index: 1
+    path: Assets/MNet-Example/Objects/Level/Variants/Level 1/Level 1.unity
+  - asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
+    registered: 1
+    active: 1
+    id: Additive Scene 1
+    index: 2
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 1/Additive
+      Scene 1.unity
+  - asset: {fileID: 102900000, guid: 8e962b4c4fec19047a95a3ba7e5f03a7, type: 3}
+    registered: 1
+    active: 1
+    id: Additive Scene 2
+    index: 3
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 2/Additive
+      Scene 2.unity
+  - asset: {fileID: 102900000, guid: b0ae2e226a3c36a44b27fedefab04aa7, type: 3}
+    registered: 1
+    active: 1
+    id: Single Scene
+    index: 4
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Single Scene/Single Scene.unity

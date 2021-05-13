@@ -1413,7 +1413,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf82b0f99bff23f4ea318e63b29cba36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene: {fileID: 11400000, guid: 90bde26ed83a39f47a5f38eb014bafeb, type: 2}
+  scene:
+    asset: {fileID: 0}
+    registered: 0
+    active: 0
+    id: 
+    index: 0
+    path: 
 --- !u!114 &632690205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1426,7 +1432,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf82b0f99bff23f4ea318e63b29cba36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene: {fileID: 11400000, guid: dbabf3e5e30fabb42a79d0f5361c3a82, type: 2}
+  scene:
+    asset: {fileID: 0}
+    registered: 0
+    active: 0
+    id: 
+    index: 0
+    path: 
 --- !u!114 &632690206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1439,7 +1451,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf82b0f99bff23f4ea318e63b29cba36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene: {fileID: 11400000, guid: 73a74f7a88bdd9d4583d763b50e1dd41, type: 2}
+  scene:
+    asset: {fileID: 0}
+    registered: 0
+    active: 0
+    id: 
+    index: 0
+    path: 
 --- !u!1 &654277278
 GameObject:
   m_ObjectHideFlags: 0
@@ -1683,7 +1701,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   number:
     value: 420
-  watch: {fileID: 11400000, guid: 369dce27c46aab14882c92b9db79153b, type: 2}
 --- !u!114 &773831933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3394,7 +3411,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4214365ec6c713f4fa1834cf3438cad4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene: {fileID: 11400000, guid: 614e0547b3ca9d74798af5e8bf8acf35, type: 2}
+  scene:
+    asset: {fileID: 102900000, guid: b0ae2e226a3c36a44b27fedefab04aa7, type: 3}
+    registered: 1
+    active: 1
+    id: Single Scene
+    index: 4
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Single Scene/Single Scene.unity
   mode: 0
 --- !u!114 &1778937842
 MonoBehaviour:
@@ -3408,7 +3431,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4214365ec6c713f4fa1834cf3438cad4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene: {fileID: 11400000, guid: 73a74f7a88bdd9d4583d763b50e1dd41, type: 2}
+  scene:
+    asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
+    registered: 1
+    active: 1
+    id: Additive Scene 1
+    index: 2
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 1/Additive
+      Scene 1.unity
   mode: 1
 --- !u!114 &1778937843
 MonoBehaviour:
@@ -3422,7 +3452,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4214365ec6c713f4fa1834cf3438cad4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scene: {fileID: 11400000, guid: dbabf3e5e30fabb42a79d0f5361c3a82, type: 2}
+  scene:
+    asset: {fileID: 102900000, guid: 8e962b4c4fec19047a95a3ba7e5f03a7, type: 3}
+    registered: 1
+    active: 1
+    id: Additive Scene 2
+    index: 3
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 2/Additive
+      Scene 2.unity
   mode: 1
 --- !u!1 &1780643716
 GameObject:

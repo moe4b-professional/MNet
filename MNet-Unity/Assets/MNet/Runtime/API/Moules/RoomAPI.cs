@@ -433,7 +433,7 @@ namespace MNet
                     public static void Request(string scene) => Request(scene, LoadSceneMode.Single);
                     public static void Request(string scene, LoadSceneMode mode)
                     {
-                        if (MSceneAsset.TryFind(scene, out var asset) == false)
+                        if (MScenesCollection.TryFind(scene, out var asset) == false)
                             throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Load");
 
                         Request(asset, mode);
@@ -541,7 +541,7 @@ namespace MNet
                     #region Request
                     public static void Request(string scene)
                     {
-                        if (MSceneAsset.TryFind(scene, out var asset) == false)
+                        if (MScenesCollection.TryFind(scene, out var asset) == false)
                             throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Unload");
 
                         Request(asset);
