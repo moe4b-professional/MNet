@@ -34,7 +34,7 @@ namespace MNet.Example
 
 		void Reset()
 		{
-			from = MUtility.GetComponentInParents<UIElement>(gameObject);
+			from = QueryComponent.InParents<UIElement>(gameObject);
 		}
 
 		void Awake()

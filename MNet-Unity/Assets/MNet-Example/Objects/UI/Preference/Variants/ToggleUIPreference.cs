@@ -24,12 +24,5 @@ namespace MNet.Example
         protected override void RegisterCallback() => Component.onValueChanged.AddListener(ChangeCallback);
 
         protected override void Apply(bool data) => Component.isOn = data;
-
-        protected override bool Load() => Convert(PlayerPrefs.GetInt(ID, Convert(Default)));
-
-        protected override void Save(bool data) => PlayerPrefs.SetInt(ID, Convert(data));
-
-        static int Convert(bool value) => value ? 1 : 0;
-        static bool Convert(int value) => value == 1 ? true : false;
     }
 }

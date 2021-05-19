@@ -860,7 +860,7 @@ namespace MNet
 
         public static NetworkEntity ResolveComponent(GameObject gameObject)
         {
-            var component = MUtility.GetComponentInParents<NetworkEntity>(gameObject);
+            var component = QueryComponent.InParents<NetworkEntity>(gameObject);
 
 #if UNITY_EDITOR
             if (component == null)

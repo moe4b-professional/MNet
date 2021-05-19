@@ -82,7 +82,7 @@ namespace MNet
 
         public static void ReadResult<TResult>(UnityWebRequest request, out TResult payload, out RestError error)
         {
-            if (request.isNetworkError || request.isHttpError)
+            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError || request.result == UnityWebRequest.Result.DataProcessingError)
             {
                 var code = (RestStatusCode)request.responseCode;
 

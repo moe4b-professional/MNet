@@ -140,8 +140,8 @@ namespace MNet.Example
 
 			public string PlayerName
 			{
-				get => PlayerPrefs.GetString(PlayerNameKey, "Player");
-				set => PlayerPrefs.SetString(PlayerNameKey, value);
+				get => AutoPrefs.Read<string>(PlayerNameKey);
+				set => AutoPrefs.Set(PlayerNameKey, value);
 			}
 
 			public const string PlayerNameKey = "Player Name";
@@ -164,7 +164,7 @@ namespace MNet.Example
 
 				NetworkAPI.Configure();
 
-				if (PlayerPrefs.HasKey(PlayerNameKey) == false) PlayerName = GetDefaultPlayerName();
+				if (AutoPrefs.Contains(PlayerNameKey) == false) PlayerName = GetDefaultPlayerName();
 
 				NetworkAPI.Client.Register.GetProfileMethod = GenerateProfile;
 
@@ -299,6 +299,21 @@ namespace MNet.Example
 
 		void Configure()
 		{
+			AutoPrefs.Configure();
+
+			try
+			{
+				AutoPrefs.Load();
+			}
+			catch (Exception ex)
+			{
+				Debug.LogError($"Exception when Loading AutoPrefs, Will Reset Prefs" +
+					$"{Environment.NewLine}" +
+					$"Exception: {ex}");
+
+				AutoPrefs.Reset();
+			}
+
 			SceneAccessor = SceneAccessor.Create();
 
 			GlobalCoroutine.Configure();

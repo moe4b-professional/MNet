@@ -63,9 +63,9 @@ namespace MNet.Example
             gameObject.SetActive(true);
         }
 
-        protected abstract void Save(TData data);
+        protected virtual void Save(TData data) => AutoPrefs.Set(ID, data);
 
-        protected abstract TData Load();
+        protected virtual TData Load() => AutoPrefs.Read<TData>(ID);
 
         protected abstract void Apply(TData data);
 

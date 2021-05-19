@@ -434,7 +434,7 @@ namespace MNet
                     public static void Request(string scene, LoadSceneMode mode)
                     {
                         if (MScenesCollection.TryFind(scene, out var asset) == false)
-                            throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Load");
+                            throw new Exception($"Cannot Find Scene named '{scene}' to Load");
 
                         Request(asset, mode);
                     }
@@ -542,7 +542,7 @@ namespace MNet
                     public static void Request(string scene)
                     {
                         if (MScenesCollection.TryFind(scene, out var asset) == false)
-                            throw new Exception($"Cannot Find Network Scene Asset named '{scene}' to Unload");
+                            throw new Exception($"Cannot Find Scene named '{scene}' to Unload");
 
                         Request(asset);
                     }
