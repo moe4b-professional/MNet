@@ -55,8 +55,10 @@ namespace MNet.Example
 
         void ClickAction()
 		{
-			callback?.Invoke();
+			var surrogate = callback;
 			callback = null;
+
+			surrogate?.Invoke();
 		}
 	}
 }

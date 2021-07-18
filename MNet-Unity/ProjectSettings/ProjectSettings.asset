@@ -671,19 +671,19 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
-    1: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    7: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    13: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    14: Assembly_Define_Example;MB_TOOLBOX
-    19: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    21: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    25: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    27: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    28: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    29: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX
-    30: Assembly_Define_Example;MB_TOOLBOX
-    32: Assembly_Define_Example;MB_TOOLBOX
-    33: Assembly_Define_Example;MB_TOOLBOX
+    1: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    7: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    13: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    14: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
+    19: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    21: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    25: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    27: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    28: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    29: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    30: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
+    32: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
+    33: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

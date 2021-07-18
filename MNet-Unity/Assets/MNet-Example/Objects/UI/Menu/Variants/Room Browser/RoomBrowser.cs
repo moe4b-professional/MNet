@@ -50,7 +50,6 @@ namespace MNet.Example
             Popup.Show("Retrieving Rooms");
 
             NetworkAPI.Lobby.GetInfo(Callback);
-
             void Callback(LobbyInfo lobby, RestError error)
             {
                 if (error == null)

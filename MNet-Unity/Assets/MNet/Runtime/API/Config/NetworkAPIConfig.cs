@@ -355,14 +355,16 @@ namespace MNet
             {
                 var set = new HashSet<Object>(list);
 
-                set.RemoveWhere(x => x == null || CheckAsset(x) == false);
+                set.RemoveWhere(x => CheckAsset(x) == false);
 
                 foreach (var element in Iterate(set))
                     set.Add(element);
 
-                list = set.ToList();
-
-                EditorUtility.SetDirty(Config);
+                if (MUtility.CheckElementsInclusion(set, list) == false)
+                {
+                    list = set.ToList();
+                    EditorUtility.SetDirty(Config);
+                }
             }
 
             static IEnumerable<Object> Iterate(HashSet<Object> exceptions)
@@ -383,6 +385,8 @@ namespace MNet
 
             static bool CheckAsset(Object asset)
             {
+                if (asset == null) return false;
+
                 switch (asset)
                 {
                     case GameObject gameObject:
