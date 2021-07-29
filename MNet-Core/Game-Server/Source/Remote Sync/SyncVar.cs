@@ -7,7 +7,7 @@ namespace MNet
 {
     class SyncVarBuffer
     {
-        public Dictionary<(NetworkBehaviourID behaviour, SyncVarFieldID field), NetworkMessage> Dictionary { get; protected set; }
+        public Dictionary<(NetworkBehaviourID behaviour, SyncVarID field), NetworkMessage> Dictionary { get; protected set; }
 
         public HashSet<NetworkMessage> Hash { get; protected set; }
 
@@ -43,7 +43,7 @@ namespace MNet
 
         public SyncVarBuffer()
         {
-            Dictionary = new Dictionary<(NetworkBehaviourID, SyncVarFieldID), NetworkMessage>();
+            Dictionary = new Dictionary<(NetworkBehaviourID, SyncVarID), NetworkMessage>();
 
             Hash = new HashSet<NetworkMessage>();
         }

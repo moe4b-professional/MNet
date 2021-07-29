@@ -269,7 +269,7 @@ namespace MNet
             #endregion
 
             #region RPC
-            DualDictionary<RpcMethodID, string, RpcBind> RPCs;
+            DualDictionary<RpcID, string, RpcBind> RPCs;
 
             void ParseRPCs()
             {
@@ -481,7 +481,7 @@ namespace MNet
             #endregion
 
             #region SyncVar
-            DualDictionary<SyncVarFieldID, string, SyncVarBind> SyncVars;
+            Dictionary<SyncVarID, SyncVar> SyncVars;
 
             void ParseSyncVars()
             {
@@ -489,174 +489,29 @@ namespace MNet
 
                 var type = Component.GetType();
 
-                var fields = type.GetFields(flags).Cast<MemberInfo>();
-                var properties = type.GetProperties(flags).Cast<MemberInfo>();
+                var variables = type.GetVariables(flags).Where(SyncVar.Is).OrderBy(SyncVar.GetName).ToArray();
 
-                var members = fields.Union(properties).Where(SyncVarAttribute.Defined).OrderBy(SyncVarBind.GetName).ToArray();
-
-                if (members.Length > byte.MaxValue)
+                if (variables.Length > byte.MaxValue)
                     throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} SyncVars Defined");
 
-                for (byte i = 0; i < members.Length; i++)
+                for (byte i = 0; i < variables.Length; i++)
                 {
-                    var attribute = SyncVarAttribute.Retrieve(members[i]);
+                    var value = SyncVar.Assimilate(variables[i], this, i);
 
-                    var bind = new SyncVarBind(this, attribute, members[i], i);
-
-                    if (SyncVars.Contains(bind.Name))
-                        throw new Exception($"SyncVar Named {bind.Name} Already Registered On Behaviour {type}, Please Assign Every SyncVar a Unique Name");
-
-                    SyncVars.Add(bind.FieldID, bind.Name, bind);
+                    SyncVars.Add(value.ID, value);
                 }
             }
 
-            #region Methods
-            /// <summary>
-            /// Overload for ensuring type safety
-            /// </summary>
-            public bool BroadcastSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+            internal void InvokeSyncVar<T>(T command)
+                where T : ISyncVarCommand
             {
-                return BroadcastSyncVar(name, value, delivery, channel, group);
-            }
-            public bool BroadcastSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
-            {
-                if (SyncVars.TryGetValue(name, out var bind) == false)
-                {
-                    Debug.LogError($"No SyncVar Found With Name {name} on {Component}", Component);
-                    return false;
-                }
-
-                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
-                {
-                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'", Component);
-                    return false;
-                }
-
-                var request = BroadcastSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
-
-                return Send(ref request, delivery: delivery, channel: channel);
-            }
-
-            public bool BufferSyncVar<T>(string name, T field, T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
-            {
-                return BufferSyncVar(name, value, delivery, channel, group);
-            }
-            public bool BufferSyncVar(string name, object value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
-            {
-                if (SyncVars.TryGetValue(name, out var bind) == false)
-                {
-                    Debug.LogError($"No SyncVar Found With Name {name} on {Component}");
-                    return false;
-                }
-
-                if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
-                {
-                    Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{bind}'", Component);
-                    return false;
-                }
-
-                var request = BufferSyncVarRequest.Write(Entity.ID, ID, bind.FieldID, group, value);
-
-                return Send(ref request, delivery: delivery, channel: channel);
-            }
-            #endregion
-
-            #region Hooks
-            public void RegisterSyncVarHook<T>(string name, T field, SyncVarHook<T> hook)
-            {
-                RegisterSyncVarHook<T>(name, hook);
-            }
-            public void RegisterSyncVarHook<T>(string name, SyncVarHook<T> hook)
-            {
-                if (SyncVars.TryGetValue(name, out var bind) == false)
-                {
-                    Debug.LogWarning($"No SyncVar '{name}' Found on {Component} to Register Hook on", Component);
-                    return;
-                }
-
-                if (bind.Hooks.Contains(hook))
-                {
-                    Debug.LogWarning($"SyncVar Hook {hook.Method.Name} Already Registered for SyncVar '{Component}->{name}' Cannot Register Hook More than Once", Component);
-                    return;
-                }
-
-                bind.Hooks.Add(hook);
-            }
-
-            public void UnregisterSyncVarHook<T>(string name, T field, SyncVarHook<T> hook)
-            {
-                UnregisterSyncVarHook(name, hook);
-            }
-            public void UnregisterSyncVarHook<T>(string name, SyncVarHook<T> hook)
-            {
-                if (SyncVars.TryGetValue(name, out var bind) == false)
-                {
-                    Debug.LogWarning($"No SyncVar '{GetType().Name}->{name}' Found on Register Hook on");
-                    return;
-                }
-
-                if (bind.Hooks.Remove(hook) == false)
-                    Debug.LogWarning($"No SyncVar Hook {hook.Method.Name} for SyncVar '{Component}->{name}' was Removed because it wasn't Registered to begin With", Component);
-            }
-            #endregion
-
-            internal void InvokeSyncVar(SyncVarCommand command)
-            {
-                if (SyncVars.TryGetValue(command.Field, out var bind) == false)
+                if (SyncVars.TryGetValue(command.Field, out var variable) == false)
                 {
                     Debug.LogWarning($"No SyncVar '{Component}->{command.Field}' Found on to Invoke", Component);
                     return;
                 }
 
-                var oldValue = bind.GetValue();
-
-                object newValue;
-                SyncVarInfo info;
-                try
-                {
-                    bind.ParseCommand(command, out newValue, out info);
-                }
-                catch (Exception ex)
-                {
-                    var text = $"Error trying to Parse Value for SyncVar '{bind}', Invalid Data Sent Most Likely \n" +
-                        $"Exception: \n" +
-                        $"{ex}";
-
-                    Debug.LogWarning(text, Component);
-                    return;
-                }
-
-                if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
-                {
-                    Debug.LogWarning($"SyncVar '{bind}' with Invalid Authority Recieved From Client '{command.Sender}'", Component);
-                    return;
-                }
-
-                try
-                {
-                    bind.SetValue(newValue);
-                }
-                catch (Exception)
-                {
-                    var text = $"Error Trying to Set SyncVar '{bind}' With Value '{newValue}', " +
-                        $"Please Ensure SyncVar is Implemented Correctly";
-
-                    Debug.LogWarning(text, Component);
-                    return;
-                }
-
-                try
-                {
-                    bind.InvokeHooks(oldValue, newValue, info);
-                }
-                catch (Exception)
-                {
-                    var text = $"Error Trying to Invoke SyncVar Hooks for '{bind}' With Values '{oldValue}'/'{newValue}', " +
-                        $"Please Ensure SyncVar is Implemented Correctly";
-
-                    Debug.LogWarning(text, Component);
-                    return;
-                }
+                variable.Invoke(command);
             }
             #endregion
 
@@ -689,10 +544,10 @@ namespace MNet
                 DespawnASyncCancellation = new CancellationTokenSource();
                 OnDespawn += DepsawnCallback;
 
-                RPCs = new DualDictionary<RpcMethodID, string, RpcBind>();
+                RPCs = new DualDictionary<RpcID, string, RpcBind>();
                 ParseRPCs();
 
-                SyncVars = new DualDictionary<SyncVarFieldID, string, SyncVarBind>();
+                SyncVars = new Dictionary<SyncVarID, SyncVar>();
                 ParseSyncVars();
             }
         }

@@ -30,6 +30,9 @@ namespace MNet.Example
         [SerializeField]
         VarInt number = default;
 
+        [SerializeField]
+        SyncVar<int> X = SyncVar.From(14);
+
         public override void OnNetwork()
         {
             base.OnNetwork();

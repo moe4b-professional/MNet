@@ -6,7 +6,7 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct SyncVarFieldID : IManualNetworkSerializable
+    public struct SyncVarID : IManualNetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }
@@ -21,25 +21,25 @@ namespace MNet
             reader.Read(out value);
         }
 
-        public SyncVarFieldID(byte value)
+        public SyncVarID(byte value)
         {
             this.value = value;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is SyncVarFieldID target) return Equals(target);
+            if (obj is SyncVarID target) return Equals(target);
 
             return false;
         }
-        public bool Equals(SyncVarFieldID target) => Equals(value, target.value);
+        public bool Equals(SyncVarID target) => Equals(value, target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
 
-        public static bool operator ==(SyncVarFieldID a, SyncVarFieldID b) => a.Equals(b);
-        public static bool operator !=(SyncVarFieldID a, SyncVarFieldID b) => !a.Equals(b);
+        public static bool operator ==(SyncVarID a, SyncVarID b) => a.Equals(b);
+        public static bool operator !=(SyncVarID a, SyncVarID b) => !a.Equals(b);
     }
 
     public interface ISyncVarRequest
@@ -48,7 +48,7 @@ namespace MNet
 
         NetworkBehaviourID Behaviour { get; }
 
-        SyncVarFieldID Field { get; }
+        SyncVarID Field { get; }
 
         NetworkGroupID Group { get; }
 
@@ -63,10 +63,11 @@ namespace MNet
 
         NetworkBehaviourID Behaviour { get; }
 
-        SyncVarFieldID Field { get; }
+        SyncVarID Field { get; }
 
         byte[] Raw { get; }
 
+        T Read<T>();
         object Read(Type type);
     }
 
@@ -81,8 +82,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour => behaviour;
 
-        SyncVarFieldID field;
-        public SyncVarFieldID Field => field;
+        SyncVarID field;
+        public SyncVarID Field => field;
 
         NetworkGroupID group;
         public NetworkGroupID Group => group;
@@ -110,7 +111,7 @@ namespace MNet
             reader.Read(out raw);
         }
 
-        public static BroadcastSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, NetworkGroupID group, object value)
+        public static BroadcastSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, object value)
         {
             var raw = NetworkSerializer.Serialize(value);
 
@@ -137,8 +138,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour => behaviour;
 
-        SyncVarFieldID field;
-        public SyncVarFieldID Field => field;
+        SyncVarID field;
+        public SyncVarID Field => field;
 
         NetworkGroupID group;
         public NetworkGroupID Group => group;
@@ -166,7 +167,7 @@ namespace MNet
             reader.Read(out raw);
         }
 
-        public static BufferSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, NetworkGroupID group, object value)
+        public static BufferSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, object value)
         {
             var raw = NetworkSerializer.Serialize(value);
 
@@ -196,12 +197,18 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour => behaviour;
 
-        SyncVarFieldID field;
-        public SyncVarFieldID Field => field;
+        SyncVarID field;
+        public SyncVarID Field => field;
 
         byte[] raw;
         public byte[] Raw => raw;
 
+        public T Read<T>()
+        {
+            var value = NetworkSerializer.Deserialize<T>(raw);
+
+            return value;
+        }
         public object Read(Type type)
         {
             var value = NetworkSerializer.Deserialize(raw, type);
@@ -218,7 +225,6 @@ namespace MNet
 
             writer.Write(raw);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
@@ -234,7 +240,7 @@ namespace MNet
         {
             return Write(sender, request.Entity, request.Behaviour, request.Field, request.Raw);
         }
-        public static SyncVarCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarFieldID field, byte[] raw)
+        public static SyncVarCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, byte[] raw)
         {
             var request = new SyncVarCommand()
             {

@@ -27,7 +27,7 @@ namespace MNet
             {
                 var entity = new NetworkEntityID(i);
                 var behaviour = new NetworkBehaviourID(i);
-                var method = new RpcMethodID(i);
+                var method = new RpcID(i);
                 var target = new NetworkClientID(i);
 
                 var payload = TargetRpcRequest.Write(entity, behaviour, method, target, new byte[] { i, i });

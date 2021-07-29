@@ -19,125 +19,153 @@ using Random = UnityEngine.Random;
 
 using System.Reflection;
 
+using MB;
+
 namespace MNet
 {
-    public class SyncVarBind
+    [Serializable]
+    public abstract class SyncVar
     {
+        [SerializeField]
+        protected RemoteAuthority authority = RemoteAuthority.Any;
+        public RemoteAuthority Authority => authority;
+
         public NetworkEntity.Behaviour Behaviour { get; protected set; }
+
+        public string Name { get; protected set; }
+        public SyncVarID ID { get; protected set; }
+
+        public abstract Type Argument { get; }
+
         public Component Component => Behaviour.Component;
         public NetworkEntity Entity => Behaviour.Entity;
 
-        #region Attribute
-        public SyncVarAttribute Attribute { get; protected set; }
-
-        public RemoteAuthority Authority => Attribute.Authority;
-        #endregion
-
-        #region Field
-        public FieldInfo FieldInfo { get; protected set; }
-        public bool IsField => FieldInfo != null;
-
-        public PropertyInfo PropertyInfo { get; protected set; }
-        public bool IsProperty => PropertyInfo != null;
-
-        public SyncVarFieldID FieldID { get; protected set; }
-
-        public string Name { get; protected set; }
-
-        public Type Type
-        {
-            get
-            {
-                if (IsField) return FieldInfo.FieldType;
-
-                if (IsProperty) return PropertyInfo.PropertyType;
-
-                throw new NotImplementedException();
-            }
-        }
-        #endregion
-
-        #region Hooks
-        public List<Delegate> Hooks { get; protected set; }
-
-        public void InvokeHooks(object oldValue, object newValue, SyncVarInfo info)
-        {
-            for (int i = 0; i < Hooks.Count; i++)
-                Hooks[i].DynamicInvoke(oldValue, newValue, info);
-        }
-        #endregion
-
-        #region Value Accessors
-        public object GetValue()
-        {
-            if (IsField)
-                return FieldInfo.GetValue(Component);
-
-            if (IsProperty)
-                return PropertyInfo.GetValue(Component);
-
-            throw new NotImplementedException();
-        }
-
-        public void SetValue(object value)
-        {
-            if (IsField)
-            {
-                FieldInfo.SetValue(Component, value);
-                return;
-            }
-
-            if (IsProperty)
-            {
-                PropertyInfo.SetValue(Component, value);
-                return;
-            }
-
-            throw new NotImplementedException();
-        }
-        #endregion
-
-        public void ParseCommand(ISyncVarCommand command, out object value, out SyncVarInfo info)
-        {
-            value = command.Read(Type);
-
-            NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
-            info = new SyncVarInfo(sender);
-        }
-
-        public override string ToString() => $"{Behaviour}->{Name}";
-
-        public SyncVarBind(NetworkEntity.Behaviour behaviour, SyncVarAttribute attribute, MemberInfo member, byte index)
+        internal void Set(NetworkEntity.Behaviour behaviour, VariableInfo variable, byte index)
         {
             this.Behaviour = behaviour;
 
-            this.Attribute = attribute;
-
-            FieldInfo = member as FieldInfo;
-            PropertyInfo = member as PropertyInfo;
-
-            Name = GetName(member);
-            FieldID = new SyncVarFieldID(index);
-
-            Hooks = new List<Delegate>();
-
-            if (IsProperty)
-            {
-                if (PropertyInfo.SetMethod == null) throw FormatInvalidPropertyAcessorException(behaviour, PropertyInfo, "Setter");
-                if (PropertyInfo.GetMethod == null) throw FormatInvalidPropertyAcessorException(behaviour, PropertyInfo, "Getter");
-            }
+            Name = GetName(variable);
+            ID = new SyncVarID(index);
         }
+
+        internal abstract void Invoke<TCommand>(TCommand command) where TCommand : ISyncVarCommand;
+
+        public override string ToString() => $"{Behaviour}->{Name}";
 
         //Static Utility
 
-        public static string GetName(MemberInfo info) => info.Name;
-
-        public static Exception FormatInvalidPropertyAcessorException<T>(T type, PropertyInfo property, string missing)
+        public static SyncVar<T> From<T>(T value, RemoteAuthority authority = RemoteAuthority.Any)
         {
-            var text = $"{type.GetType().Name}->{property.Name}' Property Cannot be Used as a SyncVar " +
-                    $"as it does not have a {missing}";
+            var syncvar = new SyncVar<T>(value)
+            {
+                authority = authority,
+            };
 
-            throw new Exception(text);
+            return syncvar;
+        }
+
+        public static string GetName(VariableInfo variable) => GetName(variable.Member);
+        public static string GetName(MemberInfo memeber) => memeber.Name;
+
+        public static bool Is(VariableInfo variable) => Is(variable.ValueType);
+        public static bool Is(Type type) => typeof(SyncVar).IsAssignableFrom(type);
+
+        public static SyncVar Assimilate(VariableInfo variable, NetworkEntity.Behaviour behaviour, byte index)
+        {
+            var value = variable.Read(behaviour.Component) as SyncVar;
+
+            if (value == null)
+            {
+                value = Activator.CreateInstance(variable.ValueType) as SyncVar;
+                variable.Set(behaviour.Component, value);
+            }
+
+            value.Set(behaviour, variable, index);
+
+            return value;
+        }
+    }
+
+    [Serializable]
+    public class SyncVar<T> : SyncVar
+    {
+        [SerializeField]
+        T value = default;
+        public T Value => value;
+
+        public override Type Argument => typeof(T);
+
+        public delegate void ChangeDelegate(T oldValue, T newValue, SyncVarInfo info);
+        public event ChangeDelegate OnChange;
+        void Set(T newValue, SyncVarInfo info)
+        {
+            var oldValue = value;
+            value = newValue;
+
+            OnChange?.Invoke(oldValue, newValue, info);
+        }
+
+        internal override void Invoke<TCommand>(TCommand command)
+        {
+            T value;
+            try
+            {
+                value = command.Read<T>();
+            }
+            catch (Exception ex)
+            {
+                var text = $"Error trying to Parse Value for SyncVar '{this}', Invalid Data Sent Most Likely \n" +
+                    $"Exception: \n" +
+                    $"{ex}";
+
+                Debug.LogWarning(text, Component);
+                return;
+            }
+
+            NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
+            var info = new SyncVarInfo(sender);
+
+            if (Entity.CheckAuthority(info.Sender, authority) == false)
+            {
+                Debug.LogWarning($"SyncVar '{this}' Command with Invalid Authority Recieved From Client '{command.Sender}'", Component);
+                return;
+            }
+
+            Set(value, info);
+        }
+
+        #region Methods
+        public bool Broadcast(T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+        {
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{this}'", Component);
+                return false;
+            }
+
+            var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, ID, group, value);
+
+            return Behaviour.Send(ref request, delivery: delivery, channel: channel);
+        }
+
+        public bool Buffer(T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+        {
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{this}'", Component);
+                return false;
+            }
+
+            var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, ID, group, value);
+
+            return Behaviour.Send(ref request, delivery: delivery, channel: channel);
+        }
+        #endregion
+
+        public SyncVar() : this(default) { }
+        public SyncVar(T value)
+        {
+            this.value = value;
         }
     }
 
@@ -159,19 +187,4 @@ namespace MNet
     }
 
     public delegate void SyncVarHook<T>(T oldValue, T newValue, SyncVarInfo info);
-
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
-    public sealed class SyncVarAttribute : Attribute
-    {
-        public RemoteAuthority Authority { get; set; } = RemoteAuthority.Any;
-
-        public SyncVarAttribute()
-        {
-
-        }
-
-        public static SyncVarAttribute Retrieve(MemberInfo info) => info.GetCustomAttribute<SyncVarAttribute>(true);
-
-        public static bool Defined(MemberInfo info) => Retrieve(info) != null;
-    }
 }

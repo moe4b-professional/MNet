@@ -24,8 +24,7 @@ namespace MNet.Example
 		public float interval = 0.1f;
 
 		[SerializeField]
-		[SyncVar(Authority = RemoteAuthority.Owner)]
-		string var = default;
+		SyncVar<string> syncvar = SyncVar.From(string.Empty, RemoteAuthority.Owner);
 
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void Call(string arg, RpcInfo infp)
@@ -53,7 +52,7 @@ namespace MNet.Example
 			{
 				if (Entity.IsMine)
 				{
-					Network.BroadcastSyncVar(nameof(var), var, "Hello World");
+					syncvar.Broadcast("Hello World");
 					Network.BroadcastRPC(Call, "Hello World");
 				}
 

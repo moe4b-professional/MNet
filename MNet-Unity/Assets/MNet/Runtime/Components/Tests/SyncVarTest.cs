@@ -22,9 +22,8 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Tests/" + "Sync Var Test")]
     public class SyncVarTest : NetworkBehaviour
     {
-        [SyncVar(Authority = RemoteAuthority.Owner)]
         [SerializeField]
-        string field = default;
+        SyncVar<string> field = SyncVar.From(string.Empty, authority: RemoteAuthority.Owner);
 
         void FieldSyncHook(string oldValue, string newValue, SyncVarInfo info)
         {
@@ -43,11 +42,11 @@ namespace MNet
 
         void OnSpawn()
         {
-            Network.RegisterSyncVarHook(nameof(field), field, FieldSyncHook);
+            field.OnChange += FieldSyncHook;
 
             if (Entity.IsMine == false) return;
 
-            Network.BroadcastSyncVar(nameof(field), field, NetworkAPI.Client.Profile.Name);
+            field.Broadcast(NetworkAPI.Client.Profile.Name);
         }
     }
 }

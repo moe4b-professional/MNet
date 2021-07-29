@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace MNet
 {
     [Preserve]
-    public struct RpcMethodID : IManualNetworkSerializable
+    public struct RpcID : IManualNetworkSerializable
     {
         byte value;
         public byte Value { get { return value; } }
@@ -24,25 +24,25 @@ namespace MNet
             value = reader.Next();
         }
 
-        public RpcMethodID(byte value)
+        public RpcID(byte value)
         {
             this.value = value;
         }
 
         public override bool Equals(object obj)
         {
-            if (obj is RpcMethodID target) return Equals(target);
+            if (obj is RpcID target) return Equals(target);
 
             return false;
         }
-        public bool Equals(RpcMethodID target) => Equals(value, target.value);
+        public bool Equals(RpcID target) => Equals(value, target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
 
-        public static bool operator ==(RpcMethodID a, RpcMethodID b) => a.Equals(b);
-        public static bool operator !=(RpcMethodID a, RpcMethodID b) => !a.Equals(b);
+        public static bool operator ==(RpcID a, RpcID b) => a.Equals(b);
+        public static bool operator !=(RpcID a, RpcID b) => !a.Equals(b);
     }
 
     [Preserve]
@@ -71,7 +71,7 @@ namespace MNet
 
         NetworkBehaviourID Behaviour { get; }
 
-        RpcMethodID Method { get; }
+        RpcID Method { get; }
 
         byte[] Raw { get; }
     }
@@ -85,7 +85,7 @@ namespace MNet
 
         NetworkBehaviourID Behaviour { get; }
 
-        RpcMethodID Method { get; }
+        RpcID Method { get; }
 
         byte[] Raw { get; }
     }
@@ -100,8 +100,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -148,7 +148,7 @@ namespace MNet
         public static BroadcastRpcRequest Write(
             NetworkEntityID entity,
             NetworkBehaviourID behaviour,
-            RpcMethodID method,
+            RpcID method,
             RemoteBufferMode bufferMode,
             NetworkGroupID group,
             NetworkClientID? exception,
@@ -181,8 +181,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -235,8 +235,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -273,7 +273,7 @@ namespace MNet
         public static TargetRpcRequest Write(
             NetworkEntityID entity,
             NetworkBehaviourID behaviour,
-            RpcMethodID method, NetworkClientID target,
+            RpcID method, NetworkClientID target,
             byte[] raw)
         {
             var request = new TargetRpcRequest()
@@ -301,8 +301,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -353,8 +353,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -396,7 +396,7 @@ namespace MNet
         public static QueryRpcRequest Write(
             NetworkEntityID entity,
             NetworkBehaviourID behaviour,
-            RpcMethodID method,
+            RpcID method,
             NetworkClientID target,
             RprChannelID channel,
             byte[] raw)
@@ -427,8 +427,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -489,8 +489,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
@@ -527,7 +527,7 @@ namespace MNet
         public static BufferRpcRequest Write(
             NetworkEntityID entity,
             NetworkBehaviourID behaviour,
-            RpcMethodID method,
+            RpcID method,
             RemoteBufferMode bufferMode,
             byte[] raw)
         {
@@ -556,8 +556,8 @@ namespace MNet
         NetworkBehaviourID behaviour;
         public NetworkBehaviourID Behaviour { get { return behaviour; } }
 
-        RpcMethodID method;
-        public RpcMethodID Method { get { return method; } }
+        RpcID method;
+        public RpcID Method { get { return method; } }
 
         byte[] raw;
         public byte[] Raw { get { return raw; } }
