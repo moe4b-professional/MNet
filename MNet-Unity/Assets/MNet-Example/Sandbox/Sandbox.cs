@@ -30,8 +30,7 @@ namespace MNet.Example
         [SerializeField]
         VarInt number = default;
 
-        [SerializeField]
-        SyncVar<int> X = SyncVar.From(14);
+        public SyncVar<int> Number { get; protected set; }
 
         public override void OnNetwork()
         {
@@ -43,6 +42,8 @@ namespace MNet.Example
         void SpawnCallback()
         {
             Network.BroadcastRPC(Call, number);
+
+            Number.Broadcast(42);
         }
 
         [NetworkRPC]
@@ -54,7 +55,7 @@ namespace MNet.Example
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
-
+            
         }
 
 #if UNITY_EDITOR
@@ -64,18 +65,5 @@ namespace MNet.Example
             
         }
 #endif
-
-        static void Measure(Action action, string name = null)
-        {
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-
-            action.Invoke();
-
-            watch.Stop();
-
-            if (name == null) name = action.Method.Name;
-
-            Debug.Log($"{name} Took {watch.ElapsedMilliseconds}ms");
-        }
     }
 }
