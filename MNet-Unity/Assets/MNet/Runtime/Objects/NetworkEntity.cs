@@ -291,105 +291,293 @@ namespace MNet
                     if (RPCs.Contains(bind.Name))
                         throw new Exception($"Rpc '{bind.Name}' Already Registered On '{GetType()}', Please Assign Every RPC a Unique Name And Don't Overload RPC Methods");
 
-                    RPCs.Add(bind.MethodID, bind.Name, bind);
+                    RPCs.Add(bind.ID, bind.Name, bind);
                 }
             }
 
             #region Methods
-            public bool BroadcastRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, NetworkGroupID group, NetworkClient exception, params object[] arguments)
+            public BroadcastRpcPacket BroadcastRPC(string method, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
                     Debug.LogWarning($"No RPC Found With Name {method} on {Component}", Component);
-                    return false;
+                    return default;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
                     Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
-                    return false;
+                    return default;
                 }
 
-                var raw = bind.WriteArguments(arguments);
+                return new BroadcastRpcPacket(bind, arguments, this);
+            }
+            public struct BroadcastRpcPacket
+            {
+                RpcBind Bind { get; }
 
-                var request = BroadcastRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, group, exception?.ID, raw);
+                object[] Arguments { get; }
 
-                return Send(ref request, delivery, channel);
+                NetworkEntity.Behaviour Behaviour { get; }
+                NetworkEntity Entity => Behaviour.Entity;
+
+                DeliveryMode delivery;
+                public BroadcastRpcPacket SetDelivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public BroadcastRpcPacket SetChannel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
+
+                NetworkGroupID group;
+                public BroadcastRpcPacket SetGroup(NetworkGroupID value)
+                {
+                    group = value;
+                    return this;
+                }
+
+                RemoteBufferMode buffer;
+                public BroadcastRpcPacket SetBuffer(RemoteBufferMode value)
+                {
+                    buffer = value;
+                    return this;
+                }
+
+                NetworkClient exception;
+                public BroadcastRpcPacket SetException(NetworkClient value)
+                {
+                    exception = value;
+                    return this;
+                }
+
+                public void Send()
+                {
+                    var raw = Bind.WriteArguments(Arguments);
+
+                    var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, raw);
+
+                    Behaviour.Send(ref request, delivery: delivery, channel: channel);
+                }
+
+                public BroadcastRpcPacket(RpcBind bind, object[] arguments, NetworkEntity.Behaviour behaviour)
+                {
+                    this.Bind = bind;
+                    this.Arguments = arguments;
+                    this.Behaviour = behaviour;
+
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
+                    group = NetworkGroupID.Default;
+                    buffer = RemoteBufferMode.None;
+                    exception = null;
+                }
             }
 
-            public bool TargetRPC(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
+            public TargetRpcPacket TargetRPC(string method, NetworkClient target, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
                     Debug.LogWarning($"No RPC Found With Name {method} on {Component}", Component);
-                    return false;
+                    return default;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
                     Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
-                    return false;
+                    return default;
                 }
 
-                var raw = bind.WriteArguments(arguments);
+                return new TargetRpcPacket(bind, target, arguments, this);
+            }
+            public struct TargetRpcPacket
+            {
+                RpcBind Bind { get; }
 
-                var request = TargetRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, raw);
+                object[] Arguments { get; }
+                NetworkClient Target { get; }
 
-                return Send(ref request, delivery, channel);
+                NetworkEntity.Behaviour Behaviour { get; }
+                NetworkEntity Entity => Behaviour.Entity;
+
+                DeliveryMode delivery;
+                public TargetRpcPacket SetDelivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public TargetRpcPacket SetChannel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
+
+                public void Send()
+                {
+                    var raw = Bind.WriteArguments(Arguments);
+
+                    var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, raw);
+
+                    Behaviour.Send(ref request, delivery: delivery, channel: channel);
+                }
+
+                public TargetRpcPacket(RpcBind bind, NetworkClient target, object[] arguments, NetworkEntity.Behaviour behaviour)
+                {
+                    this.Bind = bind;
+                    this.Target = target;
+                    this.Arguments = arguments;
+                    this.Behaviour = behaviour;
+
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
+                }
             }
 
-            public async UniTask<RprAnswer<TResult>> QueryRPC<TResult>(string method, NetworkClient target, DeliveryMode delivery, byte channel, params object[] arguments)
+            public QueryRpcPacket<TResult> QueryRPC<TResult>(string method, NetworkClient target, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
                     Debug.LogError($"No RPC With Name '{method}' Found on '{Component}', Component");
-                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                    return default;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
                     Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
-                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                    return default;
                 }
 
-                var promise = NetworkAPI.Client.RPR.Promise(target);
+                return new QueryRpcPacket<TResult>(bind, target, arguments, this);
+            }
+            public struct QueryRpcPacket<TResult>
+            {
+                RpcBind Bind { get; }
 
-                var raw = bind.WriteArguments(arguments);
+                object[] Arguments { get; }
+                NetworkClient Target { get; }
 
-                var request = QueryRpcRequest.Write(Entity.ID, ID, bind.MethodID, target.ID, promise.Channel, raw);
+                NetworkEntity.Behaviour Behaviour { get; }
+                NetworkEntity Entity => Behaviour.Entity;
 
-                if (Send(ref request, delivery, channel) == false)
+                DeliveryMode delivery;
+                public QueryRpcPacket<TResult> SetDelivery(DeliveryMode value)
                 {
-                    Debug.LogError($"Couldn't Send Query RPC {method} to {target}", Component);
-                    return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                    delivery = value;
+                    return this;
                 }
 
-                await UniTask.WaitUntil(promise.IsComplete);
+                byte channel;
+                public QueryRpcPacket<TResult> SetChannel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
 
-                var answer = new RprAnswer<TResult>(promise);
+                public async UniTask<RprAnswer<TResult>> Send()
+                {
+                    var promise = NetworkAPI.Client.RPR.Promise(Target);
 
-                return answer;
+                    var raw = Bind.WriteArguments(Arguments);
+
+                    var request = QueryRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, promise.Channel, raw);
+
+                    if (Behaviour.Send(ref request, delivery, channel) == false)
+                    {
+                        Debug.LogError($"Couldn't Send Query RPC {Bind} to {Target}", Behaviour.Component);
+                        return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
+                    }
+
+                    await UniTask.WaitUntil(promise.IsComplete);
+
+                    var answer = new RprAnswer<TResult>(promise);
+
+                    return answer;
+                }
+
+                public QueryRpcPacket(RpcBind bind, NetworkClient target, object[] arguments, NetworkEntity.Behaviour behaviour)
+                {
+                    this.Bind = bind;
+                    this.Target = target;
+                    this.Arguments = arguments;
+                    this.Behaviour = behaviour;
+
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
+                }
             }
 
-            public bool BufferRPC(string method, RemoteBufferMode buffer, DeliveryMode delivery, byte channel, params object[] arguments)
+            public BufferRpcPacket BufferRPC(string method, params object[] arguments)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
                     Debug.LogWarning($"No RPC Found With Name {method} on {Component}", Component);
-                    return false;
+                    return default;
                 }
 
                 if (Entity.CheckAuthority(NetworkAPI.Client.Self, bind.Authority) == false)
                 {
                     Debug.LogError($"Local Client has Insufficent Authority to Call RPC '{bind}'", Component);
-                    return false;
+                    return default;
                 }
 
-                var raw = bind.WriteArguments(arguments);
+                return new BufferRpcPacket(bind, arguments, this);
+            }
+            public struct BufferRpcPacket
+            {
+                RpcBind Bind { get; }
 
-                var request = BufferRpcRequest.Write(Entity.ID, ID, bind.MethodID, buffer, raw);
+                object[] Arguments { get; }
 
-                return Send(ref request, delivery, channel);
+                NetworkEntity.Behaviour Behaviour { get; }
+                NetworkEntity Entity => Behaviour.Entity;
+
+                DeliveryMode delivery;
+                public BufferRpcPacket SetDelivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public BufferRpcPacket SetChannel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
+
+                RemoteBufferMode buffer;
+                public BufferRpcPacket SetBuffer(RemoteBufferMode value)
+                {
+                    buffer = value;
+                    return this;
+                }
+
+                public void Send()
+                {
+                    var raw = Bind.WriteArguments(Arguments);
+
+                    var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, raw);
+
+                    Behaviour.Send(ref request, delivery: delivery, channel: channel);
+                }
+
+                public BufferRpcPacket(RpcBind bind, object[] arguments, NetworkEntity.Behaviour behaviour)
+                {
+                    this.Bind = bind;
+                    this.Arguments = arguments;
+                    this.Behaviour = behaviour;
+
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
+                    buffer = RemoteBufferMode.Last;
+                }
             }
             #endregion
 

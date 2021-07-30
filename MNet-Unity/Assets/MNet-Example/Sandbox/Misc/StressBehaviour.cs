@@ -52,8 +52,8 @@ namespace MNet.Example
 			{
 				if (Entity.IsMine)
 				{
-					syncvar.Broadcast("Hello World");
-					Network.BroadcastRPC(Call, "Hello World");
+					syncvar.Sync("Hello World").Broadcast();
+					Network.BroadcastRPC(Call, "Hello World").Send();
 				}
 
 				yield return new WaitForSeconds(interval);

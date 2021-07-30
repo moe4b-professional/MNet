@@ -40,7 +40,7 @@ namespace MNet
         #region Method
         public MethodInfo MethodInfo { get; protected set; }
 
-        public RpcID MethodID { get; protected set; }
+        public RpcID ID { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
 
@@ -118,7 +118,7 @@ namespace MNet
             this.Attribute = attribute;
 
             MethodInfo = method;
-            MethodID = new RpcID(index);
+            ID = new RpcID(index);
 
             ParametersInfo = method.GetParameters();
 

@@ -33,7 +33,7 @@ namespace MNet
 
         void SpawnCallback()
 		{
-			Network.TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this);
+			Network.TargetRPC(Rpc, NetworkAPI.Client.Self, Entity, this).Send();
 		}
 
 		[NetworkRPC]

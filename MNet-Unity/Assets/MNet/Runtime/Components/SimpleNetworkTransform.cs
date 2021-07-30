@@ -637,7 +637,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            Network.BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.ReliableUnordered, exception: Entity.Owner);
+            Network.BroadcastRPC(Delta, coordinates).SetDelivery(DeliveryMode.ReliableUnordered).SetException(Entity.Owner).Send();
         }
 
         bool SendDelta()
@@ -656,7 +656,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            Network.BroadcastRPC(Delta, coordinates, delivery: DeliveryMode.Unreliable, channel: delivery.Channel, exception: Entity.Owner);
+            Network.BroadcastRPC(Delta, coordinates).SetDelivery(DeliveryMode.Unreliable).SetChannel(delivery.Channel).SetException(Entity.Owner).Send();
             return true;
         }
 
@@ -669,7 +669,7 @@ namespace MNet
             for (int i = 0; i < Properties.Count; i++)
                 Properties[i].WriteTo(ref coordinates);
 
-            Network.BufferRPC(Buffer, coordinates, delivery: delivery.Buffer.Mode, channel: delivery.Channel);
+            Network.BufferRPC(Buffer, coordinates).SetDelivery(delivery.Buffer.Mode).SetChannel(delivery.Channel).Send();
         }
 
         void Update()

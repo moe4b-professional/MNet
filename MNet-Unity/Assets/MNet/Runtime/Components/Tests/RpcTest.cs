@@ -50,17 +50,17 @@ namespace MNet
             binary = false;
             success = false;
 
-            Network.TargetRPC(Call0, NetworkAPI.Client.Self);
-            Network.TargetRPC(Call1, NetworkAPI.Client.Self, 0);
-            Network.TargetRPC(Call2, NetworkAPI.Client.Self, 0, 1);
-            Network.TargetRPC(Call3, NetworkAPI.Client.Self, 0, 1, 2);
-            Network.TargetRPC(Call4, NetworkAPI.Client.Self, 0, 1, 2, 3);
-            Network.TargetRPC(Call5, NetworkAPI.Client.Self, 0, 1, 2, 3, 4);
-            Network.TargetRPC(Call6, NetworkAPI.Client.Self, 0, 1, 2, 3, 4, 5);
+            Network.TargetRPC(Call0, NetworkAPI.Client.Self).Send();
+            Network.TargetRPC(Call1, NetworkAPI.Client.Self, 0).Send();
+            Network.TargetRPC(Call2, NetworkAPI.Client.Self, 0, 1).Send();
+            Network.TargetRPC(Call3, NetworkAPI.Client.Self, 0, 1, 2).Send();
+            Network.TargetRPC(Call4, NetworkAPI.Client.Self, 0, 1, 2, 3).Send();
+            Network.TargetRPC(Call5, NetworkAPI.Client.Self, 0, 1, 2, 3, 4).Send();
+            Network.TargetRPC(Call6, NetworkAPI.Client.Self, 0, 1, 2, 3, 4, 5).Send();
 
-            Network.TargetRPC(CoroutineRPC, NetworkAPI.Client.Self);
-            Network.TargetRPC(UniTaskRPC, NetworkAPI.Client.Self);
-            Network.TargetRPC(BinaryRPC, NetworkAPI.Client.Self, new byte[] { 0, 1, 2, 3, 4, 5 });
+            Network.TargetRPC(CoroutineRPC, NetworkAPI.Client.Self).Send();
+            Network.TargetRPC(UniTaskRPC, NetworkAPI.Client.Self).Send();
+            Network.TargetRPC(BinaryRPC, NetworkAPI.Client.Self, new byte[] { 0, 1, 2, 3, 4, 5 }).Send();
         }
 
         [NetworkRPC] void Call0(RpcInfo info) => Call();

@@ -482,7 +482,7 @@ namespace MNet
 
 		void SendTrigger(ParametersProperty.TriggerProperty parameter)
 		{
-			Network.BroadcastRPC(TriggerRPC, parameter.ID, exception: NetworkAPI.Client.Self);
+			Network.BroadcastRPC(TriggerRPC, parameter.ID).SetException(NetworkAPI.Client.Self).Send();
 			parameter.ClearDirty();
 		}
 
@@ -536,7 +536,7 @@ namespace MNet
 
 		void SendBool(ParametersProperty.BoolProperty parameter)
 		{
-			Network.BroadcastRPC(BoolRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+			Network.BroadcastRPC(BoolRPC, parameter.ID, parameter.Value).SetException(NetworkAPI.Client.Self).Send();
 			parameter.ClearDirty();
 		}
 
@@ -555,7 +555,7 @@ namespace MNet
 		void BufferBools()
 		{
 			var binary = WriteAll(parameters.Floats);
-			Network.BufferRPC(BufferBools, binary);
+			Network.BufferRPC(BufferBools, binary).Send();
 		}
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void BufferBools(byte[] binary, RpcInfo info)
@@ -607,9 +607,9 @@ namespace MNet
 		void SendInteger(ParametersProperty.IntegerProperty parameter)
 		{
 			if (parameter.UseShort)
-				Network.BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value, exception: NetworkAPI.Client.Self);
+				Network.BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value).SetException(NetworkAPI.Client.Self).Send();
 			else
-				Network.BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+				Network.BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value).SetException(NetworkAPI.Client.Self).Send();
 
 			parameter.ClearDirty();
 		}
@@ -632,7 +632,7 @@ namespace MNet
 		void BufferIntergers()
 		{
 			var binary = WriteAll(parameters.Floats);
-			Network.BufferRPC(BufferIntergers, binary);
+			Network.BufferRPC(BufferIntergers, binary).Send();
 		}
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void BufferIntergers(byte[] binary, RpcInfo info)
@@ -684,9 +684,9 @@ namespace MNet
 		void SendFloat(ParametersProperty.FloatProperty parameter)
 		{
 			if (parameter.UseHalf)
-				Network.BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value, exception: NetworkAPI.Client.Self);
+				Network.BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value).SetException(NetworkAPI.Client.Self).Send();
 			else
-				Network.BroadcastRPC(FloatRPC, parameter.ID, parameter.Value, exception: NetworkAPI.Client.Self);
+				Network.BroadcastRPC(FloatRPC, parameter.ID, parameter.Value).SetException(NetworkAPI.Client.Self).Send();
 
 			parameter.ClearDirty();
 		}
@@ -713,7 +713,7 @@ namespace MNet
 		{
 			var binary = WriteAll(parameters.Floats);
 
-			Network.BufferRPC(BufferFloats, binary);
+			Network.BufferRPC(BufferFloats, binary).Send();
 		}
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
 		void BufferFloats(byte[] binary, RpcInfo info)
@@ -991,9 +991,9 @@ namespace MNet
 		void SendLayerWeight(LayersProperty.Property layer)
 		{
 			if (layer.UseHalf)
-				Network.BroadcastRPC(LayerWeightHalfRPC, layer.ID, (Half)layer.Value, exception: NetworkAPI.Client.Self);
+				Network.BroadcastRPC(LayerWeightHalfRPC, layer.ID, (Half)layer.Value).SetException(NetworkAPI.Client.Self).Send();
 			else
-				Network.BroadcastRPC(LayerWeightFloatRPC, layer.ID, layer.Value, exception: NetworkAPI.Client.Self);
+				Network.BroadcastRPC(LayerWeightFloatRPC, layer.ID, layer.Value).SetException(NetworkAPI.Client.Self).Send();
 
 			layer.ClearDirty();
 		}
@@ -1027,7 +1027,7 @@ namespace MNet
 
 			var binary = writer.Flush();
 
-			Network.BufferRPC(BufferLayerWeights, binary);
+			Network.BufferRPC(BufferLayerWeights, binary).Send();
 		}
 		[NetworkRPC]
 		void BufferLayerWeights(byte[] binary, RpcInfo info)

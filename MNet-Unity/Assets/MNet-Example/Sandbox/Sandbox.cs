@@ -41,9 +41,9 @@ namespace MNet.Example
 
         void SpawnCallback()
         {
-            Network.BroadcastRPC(Call, number);
+            Network.BroadcastRPC(Call, number).Send();
 
-            Number.Broadcast(42);
+            Number.Sync(42).Broadcast();
         }
 
         [NetworkRPC]

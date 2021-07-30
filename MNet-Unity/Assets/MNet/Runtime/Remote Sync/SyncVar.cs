@@ -32,8 +32,8 @@ namespace MNet
 
         public NetworkEntity.Behaviour Behaviour { get; protected set; }
 
-        public string Name { get; protected set; }
         public SyncVarID ID { get; protected set; }
+        public string Name { get; protected set; }
 
         public abstract Type Argument { get; }
 
@@ -134,31 +134,70 @@ namespace MNet
             Set(value, info);
         }
 
-        #region Methods
-        public bool Broadcast(T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+        #region Method
+        public SyncVarPacket Sync(T value)
         {
             if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
             {
                 Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{this}'", Component);
-                return false;
+                return default;
             }
 
-            var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, ID, group, value);
-
-            return Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            return new SyncVarPacket(this, value, Behaviour);
         }
-
-        public bool Buffer(T value, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default)
+        public struct SyncVarPacket
         {
-            if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
+            SyncVar<T> Variable { get; }
+
+            T value { get; }
+
+            NetworkEntity.Behaviour Behaviour { get; }
+            NetworkEntity Entity => Behaviour.Entity;
+
+            DeliveryMode delivery;
+            public SyncVarPacket SetDelivery(DeliveryMode value)
             {
-                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{this}'", Component);
-                return false;
+                delivery = value;
+                return this;
             }
 
-            var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, ID, group, value);
+            byte channel;
+            public SyncVarPacket SetChannel(byte value)
+            {
+                channel = value;
+                return this;
+            }
 
-            return Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            NetworkGroupID group;
+            public SyncVarPacket SetGroup(NetworkGroupID value)
+            {
+                group = value;
+                return this;
+            }
+
+            public void Broadcast()
+            {
+                var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+
+                Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            }
+            public void Buffer()
+            {
+                var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+
+                Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            }
+
+            public SyncVarPacket(SyncVar<T> SyncVar, T value, NetworkEntity.Behaviour behaviour)
+            {
+                this.Variable = SyncVar;
+                this.value = value;
+                this.Behaviour = behaviour;
+
+                delivery = DeliveryMode.ReliableOrdered;
+                channel = 0;
+                group = NetworkGroupID.Default;
+            }
         }
         #endregion
 
@@ -185,6 +224,4 @@ namespace MNet
             this.IsBuffered = NetworkAPI.Realtime.IsOnBuffer;
         }
     }
-
-    public delegate void SyncVarHook<T>(T oldValue, T newValue, SyncVarInfo info);
 }

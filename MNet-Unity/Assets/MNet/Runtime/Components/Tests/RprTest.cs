@@ -40,7 +40,7 @@ namespace MNet
         async void SpawnCallback()
         {
             {
-                var answer = await Network.QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client);
+                var answer = await Network.QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client).Send();
 
                 if (answer.Success)
                     value = answer.Value;
@@ -49,7 +49,7 @@ namespace MNet
             }
 
             {
-                var answer = await Network.QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client);
+                var answer = await Network.QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client).Send();
 
                 if (answer.Success)
                     valueAsync = answer.Value;
