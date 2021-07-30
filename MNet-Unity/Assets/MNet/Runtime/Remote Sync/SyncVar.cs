@@ -155,21 +155,21 @@ namespace MNet
             NetworkEntity Entity => Behaviour.Entity;
 
             DeliveryMode delivery;
-            public SyncVarPacket SetDelivery(DeliveryMode value)
+            public SyncVarPacket Delivery(DeliveryMode value)
             {
                 delivery = value;
                 return this;
             }
 
             byte channel;
-            public SyncVarPacket SetChannel(byte value)
+            public SyncVarPacket Channel(byte value)
             {
                 channel = value;
                 return this;
             }
 
             NetworkGroupID group;
-            public SyncVarPacket SetGroup(NetworkGroupID value)
+            public SyncVarPacket Group(NetworkGroupID value)
             {
                 group = value;
                 return this;

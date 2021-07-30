@@ -32,6 +32,7 @@ namespace MNet
     {
         public const int ExecutionOrder = -500;
 
+        #region Sync
         [SerializeField]
         SyncProperty sync = default;
         public SyncProperty Sync => sync;
@@ -99,6 +100,7 @@ namespace MNet
         {
             void Sync();
         }
+        #endregion
 
         public NetworkEntityID ID { get; protected set; }
 
@@ -225,6 +227,7 @@ namespace MNet
 
         public DualDictionary<NetworkBehaviourID, MonoBehaviour, Behaviour> Behaviours { get; protected set; }
 
+        #region Behaviour
         public partial class Behaviour
         {
             public NetworkEntity Entity { get; protected set; }
@@ -322,35 +325,35 @@ namespace MNet
                 NetworkEntity Entity => Behaviour.Entity;
 
                 DeliveryMode delivery;
-                public BroadcastRpcPacket SetDelivery(DeliveryMode value)
+                public BroadcastRpcPacket Delivery(DeliveryMode value)
                 {
                     delivery = value;
                     return this;
                 }
 
                 byte channel;
-                public BroadcastRpcPacket SetChannel(byte value)
+                public BroadcastRpcPacket Channel(byte value)
                 {
                     channel = value;
                     return this;
                 }
 
                 NetworkGroupID group;
-                public BroadcastRpcPacket SetGroup(NetworkGroupID value)
+                public BroadcastRpcPacket Group(NetworkGroupID value)
                 {
                     group = value;
                     return this;
                 }
 
                 RemoteBufferMode buffer;
-                public BroadcastRpcPacket SetBuffer(RemoteBufferMode value)
+                public BroadcastRpcPacket Buffer(RemoteBufferMode value)
                 {
                     buffer = value;
                     return this;
                 }
 
                 NetworkClient exception;
-                public BroadcastRpcPacket SetException(NetworkClient value)
+                public BroadcastRpcPacket Exception(NetworkClient value)
                 {
                     exception = value;
                     return this;
@@ -406,14 +409,14 @@ namespace MNet
                 NetworkEntity Entity => Behaviour.Entity;
 
                 DeliveryMode delivery;
-                public TargetRpcPacket SetDelivery(DeliveryMode value)
+                public TargetRpcPacket Delivery(DeliveryMode value)
                 {
                     delivery = value;
                     return this;
                 }
 
                 byte channel;
-                public TargetRpcPacket SetChannel(byte value)
+                public TargetRpcPacket Channel(byte value)
                 {
                     channel = value;
                     return this;
@@ -467,14 +470,14 @@ namespace MNet
                 NetworkEntity Entity => Behaviour.Entity;
 
                 DeliveryMode delivery;
-                public QueryRpcPacket<TResult> SetDelivery(DeliveryMode value)
+                public QueryRpcPacket<TResult> Delivery(DeliveryMode value)
                 {
                     delivery = value;
                     return this;
                 }
 
                 byte channel;
-                public QueryRpcPacket<TResult> SetChannel(byte value)
+                public QueryRpcPacket<TResult> Channel(byte value)
                 {
                     channel = value;
                     return this;
@@ -539,21 +542,21 @@ namespace MNet
                 NetworkEntity Entity => Behaviour.Entity;
 
                 DeliveryMode delivery;
-                public BufferRpcPacket SetDelivery(DeliveryMode value)
+                public BufferRpcPacket Delivery(DeliveryMode value)
                 {
                     delivery = value;
                     return this;
                 }
 
                 byte channel;
-                public BufferRpcPacket SetChannel(byte value)
+                public BufferRpcPacket Channel(byte value)
                 {
                     channel = value;
                     return this;
                 }
 
                 RemoteBufferMode buffer;
-                public BufferRpcPacket SetBuffer(RemoteBufferMode value)
+                public BufferRpcPacket Buffer(RemoteBufferMode value)
                 {
                     buffer = value;
                     return this;
@@ -748,6 +751,7 @@ namespace MNet
 
             return behaviour;
         }
+        #endregion
 
         public Scene UnityScene => gameObject.scene;
         public NetworkScene NetworkScene { get; protected set; }

@@ -68,7 +68,7 @@ namespace MNet.Example
 
             var angle = transform.eulerAngles.y + Random.Range(0, 40);
 
-            Network.BroadcastRPC(Call, position, angle).SetDelivery(DeliveryMode.Unreliable).Send();
+            Network.BroadcastRPC(Call, position, angle).Delivery(DeliveryMode.Unreliable).Send();
         }
 
         [NetworkRPC]

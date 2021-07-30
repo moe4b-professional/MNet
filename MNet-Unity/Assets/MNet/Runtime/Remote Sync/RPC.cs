@@ -25,6 +25,7 @@ namespace MNet
 {
     public class RpcBind
     {
+        public RpcID ID { get; protected set; }
         public string Name { get; protected set; }
 
         public NetworkEntity.Behaviour Behaviour { get; protected set; }
@@ -39,8 +40,6 @@ namespace MNet
 
         #region Method
         public MethodInfo MethodInfo { get; protected set; }
-
-        public RpcID ID { get; protected set; }
 
         public ParameterInfo[] ParametersInfo { get; protected set; }
 

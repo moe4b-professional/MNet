@@ -482,7 +482,7 @@ namespace MNet
 
 		void SendTrigger(ParametersProperty.TriggerProperty parameter)
 		{
-			Network.BroadcastRPC(TriggerRPC, parameter.ID).SetException(NetworkAPI.Client.Self).Send();
+			Network.BroadcastRPC(TriggerRPC, parameter.ID).Exception(NetworkAPI.Client.Self).Send();
 			parameter.ClearDirty();
 		}
 
@@ -536,7 +536,7 @@ namespace MNet
 
 		void SendBool(ParametersProperty.BoolProperty parameter)
 		{
-			Network.BroadcastRPC(BoolRPC, parameter.ID, parameter.Value).SetException(NetworkAPI.Client.Self).Send();
+			Network.BroadcastRPC(BoolRPC, parameter.ID, parameter.Value).Exception(NetworkAPI.Client.Self).Send();
 			parameter.ClearDirty();
 		}
 
@@ -607,9 +607,9 @@ namespace MNet
 		void SendInteger(ParametersProperty.IntegerProperty parameter)
 		{
 			if (parameter.UseShort)
-				Network.BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value).SetException(NetworkAPI.Client.Self).Send();
+				Network.BroadcastRPC(ShortRPC, parameter.ID, (short)parameter.Value).Exception(NetworkAPI.Client.Self).Send();
 			else
-				Network.BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value).SetException(NetworkAPI.Client.Self).Send();
+				Network.BroadcastRPC(IntergerRPC, parameter.ID, parameter.Value).Exception(NetworkAPI.Client.Self).Send();
 
 			parameter.ClearDirty();
 		}
@@ -684,9 +684,9 @@ namespace MNet
 		void SendFloat(ParametersProperty.FloatProperty parameter)
 		{
 			if (parameter.UseHalf)
-				Network.BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value).SetException(NetworkAPI.Client.Self).Send();
+				Network.BroadcastRPC(HalfRPC, parameter.ID, (Half)parameter.Value).Exception(NetworkAPI.Client.Self).Send();
 			else
-				Network.BroadcastRPC(FloatRPC, parameter.ID, parameter.Value).SetException(NetworkAPI.Client.Self).Send();
+				Network.BroadcastRPC(FloatRPC, parameter.ID, parameter.Value).Exception(NetworkAPI.Client.Self).Send();
 
 			parameter.ClearDirty();
 		}
@@ -991,9 +991,9 @@ namespace MNet
 		void SendLayerWeight(LayersProperty.Property layer)
 		{
 			if (layer.UseHalf)
-				Network.BroadcastRPC(LayerWeightHalfRPC, layer.ID, (Half)layer.Value).SetException(NetworkAPI.Client.Self).Send();
+				Network.BroadcastRPC(LayerWeightHalfRPC, layer.ID, (Half)layer.Value).Exception(NetworkAPI.Client.Self).Send();
 			else
-				Network.BroadcastRPC(LayerWeightFloatRPC, layer.ID, layer.Value).SetException(NetworkAPI.Client.Self).Send();
+				Network.BroadcastRPC(LayerWeightFloatRPC, layer.ID, layer.Value).Exception(NetworkAPI.Client.Self).Send();
 
 			layer.ClearDirty();
 		}

@@ -71,7 +71,6 @@ namespace MNet
         object Read(Type type);
     }
 
-    #region Broadcast
     [Preserve]
     [Serializable]
     public struct BroadcastSyncVarRequest : ISyncVarRequest, IManualNetworkSerializable
@@ -175,7 +174,7 @@ namespace MNet
             reader.Read(out raw);
         }
 
-        public static BufferSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, object value)
+        public static BufferSyncVarRequest Write<T>(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, T value)
         {
             var raw = NetworkSerializer.Serialize(value);
 
@@ -262,5 +261,4 @@ namespace MNet
             return request;
         }
     }
-    #endregion
 }
