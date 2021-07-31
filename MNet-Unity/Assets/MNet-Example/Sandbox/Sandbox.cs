@@ -45,32 +45,11 @@ namespace MNet.Example
             
         }
 
-        struct SampleStruct : ISampleInterface
-        {
-            public string Text { get; set; }
-        }
-
-        interface ISampleInterface
-        {
-            string Text { get; set; }
-        }
-
 #if UNITY_EDITOR
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
-            var collection = new HashSet<ISampleInterface>();
-
-            var sample = new SampleStruct();
-
-            collection.Add(sample);
-
-            sample.Text = "Hello World";
-
-            collection.Add(sample);
-
-            Debug.Log(collection.First().Text);
-            Debug.Log(collection.Last().Text);
+            
         }
 #endif
     }

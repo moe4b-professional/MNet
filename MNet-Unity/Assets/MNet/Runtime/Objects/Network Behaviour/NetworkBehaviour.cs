@@ -270,7 +270,6 @@ namespace MNet
                     var promise = NetworkAPI.Client.RPR.Promise(Target);
 
                     var raw = Bind.WriteArguments(Arguments);
-
                     var request = QueryRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, promise.Channel, raw);
 
                     if (Send(ref request) == false)

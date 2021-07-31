@@ -731,11 +731,14 @@ namespace MNet
 
             internal static class RPR
             {
-                static AutoKeyDictionary<RprChannelID, RprPromise> promises;
+                static AutoKeyCollection<RprChannelID> channels;
+
+                static Dictionary<RprChannelID, RprPromise> promises;
 
                 internal static void Configure()
                 {
-                    promises = new AutoKeyDictionary<RprChannelID, RprPromise>(RprChannelID.Increment);
+                    channels = new AutoKeyCollection<RprChannelID>(RprChannelID.Increment);
+                    promises = new Dictionary<RprChannelID, RprPromise>();
 
                     Client.MessageDispatcher.RegisterHandler<RprCommand>(Fullfil);
                     Client.MessageDispatcher.RegisterHandler<RprResponse>(Fullfil);
@@ -743,13 +746,18 @@ namespace MNet
                     Room.Clients.OnRemove += ClientRemovedCallback;
                 }
 
+                internal static void Clear()
+                {
+                    channels.Clear();
+                    promises.Clear();
+                }
+
                 static void ClientRemovedCallback(NetworkClient client)
                 {
                     var selection = promises.Values.Where(IsClient).ToArray();
+                    bool IsClient(RprPromise promise) => promise.Target == client;
 
                     foreach (var promise in selection) Fullfil(promise, RemoteResponseType.Disconnect, null);
-
-                    bool IsClient(RprPromise promise) => promise.Target == client;
                 }
 
                 #region Fullfil
@@ -757,7 +765,7 @@ namespace MNet
                 {
                     if (promises.TryGetValue(command.Channel, out var promise) == false)
                     {
-                        Debug.LogWarning($"Recieved RPR Command for Channel {command.Channel} But that Command Doesn't Exist");
+                        Debug.LogWarning($"Recieved RPR Command for Channel {command.Channel} But that Channel Doesn't Exist");
                         return;
                     }
 
@@ -768,17 +776,16 @@ namespace MNet
                 {
                     if (promises.TryGetValue(response.Channel, out var promise) == false)
                     {
-                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} But that Command Doesn't Exist");
+                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} But that Channel Doesn't Exist");
                         return;
                     }
 
                     if (Room.Clients.TryGet(response.Sender, out var sender) == false)
                     {
-                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} from Unregistered Client {response.Sender}");
-                        return;
+                        Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} from Unregistered Client {response.Sender}" +
+                            $", Will Deliver Response Still");
                     }
-
-                    if (sender != promise.Target)
+                    else if (sender != promise.Target)
                     {
                         Debug.LogWarning($"Recieved RPR Response for Channel {response.Channel} from Client {sender} but That RPR was Targeted towards {promise.Target}");
                         return;
@@ -790,17 +797,19 @@ namespace MNet
                 static void Fullfil(RprPromise promise, RemoteResponseType response, byte[] raw)
                 {
                     promise.Fullfil(response, raw);
+
+                    channels.Free(promise.Channel);
                     promises.Remove(promise.Channel);
                 }
                 #endregion
 
                 internal static RprPromise Promise(NetworkClient target)
                 {
-                    var channel = promises.Reserve();
+                    var channel = channels.Reserve();
 
                     var promise = new RprPromise(target, channel);
 
-                    promises.Assign(channel, promise);
+                    promises.Add(channel, promise);
 
                     return promise;
                 }
@@ -863,6 +872,7 @@ namespace MNet
                 Register.Clear();
                 Groups.Clear();
                 Entities.Clear();
+                RPR.Clear();
 
                 NetworkAPI.Room.Clear();
             }

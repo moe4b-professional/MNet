@@ -21,13 +21,15 @@ namespace MNet
 {
     public static partial class NetworkAPI
     {
-        public static AppID AppID => Config.AppID;
-
+        #region Config
         public static NetworkAPIConfig Config { get; private set; }
+
+        public static AppID AppID => Config.AppID;
 
         public static string Address => Config.MasterAddress;
 
         public static Version GameVersion => Config.GameVersion;
+        #endregion
 
         public static bool IsRunning { get; private set; }
 
