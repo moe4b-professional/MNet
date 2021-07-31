@@ -55,14 +55,14 @@ namespace MNet.Example
 
 			UIProperty UI => Core.UI;
 
-			protected override void Configure()
-			{
-				base.Configure();
+            protected internal override void Configure()
+            {
+                base.Configure();
 
 				NetworkAPI.Room.Scenes.Load.ProcdureMethod = Load;
 			}
 
-			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
+            public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
 
 			async UniTask Load(MSceneAsset scene, LoadSceneMode mode)
 			{
@@ -103,15 +103,15 @@ namespace MNet.Example
 
 			public Dictionary<string, LevelData> Dictionary { get; protected set; }
 
-			protected override void Configure()
-			{
-				base.Configure();
+            protected internal override void Configure()
+            {
+                base.Configure();
 
 				Dictionary = list.ToDictionary(LevelData.GetName);
 			}
 
-			#region Attribute
-			public void WriteAttribute(AttributesCollection attributes, byte index)
+            #region Attribute
+            public void WriteAttribute(AttributesCollection attributes, byte index)
 			{
 				attributes.Set(0, index);
 			}
@@ -158,9 +158,9 @@ namespace MNet.Example
 
 			PopupPanel Popup => Core.UI.Popup;
 
-			protected override void Configure()
-			{
-				base.Configure();
+            protected internal override void Configure()
+            {
+                base.Configure();
 
 				NetworkAPI.Configure();
 
@@ -169,16 +169,16 @@ namespace MNet.Example
 				NetworkAPI.Client.Register.GetProfileMethod = GenerateProfile;
 
 				NetworkAPI.Client.Register.OnCallback += RegisterCallback;
-
-				Core.OnInit += Init;
 			}
 
-			void Init()
-			{
+            protected internal override void Init()
+            {
+                base.Init();
+
 				GetMasterScheme();
 			}
 
-			void GetMasterScheme()
+            void GetMasterScheme()
 			{
 				Popup.Show("Getting Master Scheme");
 
@@ -244,9 +244,9 @@ namespace MNet.Example
 
 			public FaderUI Fader => Container.Fader;
 
-			protected override void Configure()
-			{
-				base.Configure();
+            protected internal override void Configure()
+            {
+                base.Configure();
 
 				var gameObject = Instantiate(prefab);
 				gameObject.name = prefab.name;
@@ -254,15 +254,15 @@ namespace MNet.Example
 
 				Container = gameObject.GetComponent<CoreUIContainer>();
 				Initializer.Configure(Container);
-
-				Core.OnInit += Init;
 			}
 
-			void Init()
-			{
+            protected internal override void Init()
+            {
+                base.Init();
+
 				Initializer.Init(Container);
 			}
-		}
+        }
 
 		[Serializable]
 		public class Property
@@ -276,12 +276,15 @@ namespace MNet.Example
 
 			public static Coroutine StartCoroutine(IEnumerator routine) => SceneAccessor.StartCoroutine(routine);
 
-			protected virtual void Configure()
+			protected internal virtual void Configure()
 			{
 
 			}
 
-			internal static void Configure(Property property) => property.Configure();
+			protected internal virtual void Init()
+            {
+
+            }
 		}
 
 		public void ForAllProperties(Action<Property> action)
@@ -318,18 +321,12 @@ namespace MNet.Example
 
 			GlobalCoroutine.Configure();
 
-			ForAllProperties(Property.Configure);
+			ForAllProperties(x => x.Configure());
 		}
 
-		public event Action OnInit;
 		void Init()
 		{
-			OnInit?.Invoke();
-		}
-
-		void Update()
-		{
-
+			ForAllProperties(x => x.Init());
 		}
 	}
 }
