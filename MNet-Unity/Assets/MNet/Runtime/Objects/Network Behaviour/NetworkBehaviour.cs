@@ -196,7 +196,6 @@ namespace MNet
                 public void Send()
                 {
                     var raw = Bind.WriteArguments(Arguments);
-
                     var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, raw);
 
                     Send(ref request);
@@ -232,7 +231,6 @@ namespace MNet
                 public void Send()
                 {
                     var raw = Bind.WriteArguments(Arguments);
-
                     var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, raw);
 
                     Send(ref request);
@@ -321,7 +319,6 @@ namespace MNet
                 public void Send()
                 {
                     var raw = Bind.WriteArguments(Arguments);
-
                     var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, raw);
 
                     Send(ref request);
