@@ -23,7 +23,7 @@ using UnityEngine.UIElements;
 namespace MNet
 {
     [CreateAssetMenu(menuName = Constants.Path + "Network API Config")]
-    public class NetworkAPIConfig : ScriptableObject, IInitialize, IScriptableObjectBuildPreProcess
+    public class NetworkAPIConfig : ScriptableObject, IScriptableObjectBuildPreProcess
     {
         [SerializeField]
         RestScheme restScheme = RestScheme.HTTP;
@@ -82,6 +82,7 @@ namespace MNet
             }
         }
 
+        [Header("Master Address")]
         [SerializeField]
         MasterAddressProperty masterAddress = new MasterAddressProperty();
         [Serializable]
@@ -149,9 +150,9 @@ namespace MNet
                     var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
 
                     if (local.boolValue)
-                        EditorGUI.TextField(area, "Master Address", Default);
+                        EditorGUI.TextField(area, "Address", Default);
                     else
-                        value.stringValue = EditorGUI.TextField(area, "Master Address", value.stringValue);
+                        value.stringValue = EditorGUI.TextField(area, "Address", value.stringValue);
 
                     rect.y += LineHeight;
                     rect.height -= LineHeight;
@@ -162,6 +163,7 @@ namespace MNet
 #endif
         }
 
+        [Header("Game Version")]
         [SerializeField]
         protected GameVersionProperty gameVersion = new GameVersionProperty();
         [Serializable]
@@ -218,7 +220,7 @@ namespace MNet
                     infer = reference.FindPropertyRelative(nameof(infer));
                     value = reference.FindPropertyRelative(nameof(value));
 
-                    InferGUIContent = new GUIContent("Infer Game Version", "Toggle On to Infer Game Version from the Project's Version");
+                    InferGUIContent = new GUIContent("Infer", "Toggle On to Infer Game Version from the Project's Version");
                 }
 
                 public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight * 2;
@@ -226,6 +228,8 @@ namespace MNet
                 public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
                 {
                     Init(property);
+
+                    label = new GUIContent("Version");
 
                     DrawValue(ref rect, label);
                     DrawInfer(ref rect);
@@ -266,6 +270,7 @@ namespace MNet
 #endif
         }
 
+        [Space]
         [SerializeField]
         UpdateMethodProperty updateMethod = new UpdateMethodProperty();
         public UpdateMethodProperty UpdateMethod => updateMethod;
@@ -302,6 +307,7 @@ namespace MNet
             public bool Any => early || normal || @fixed || late.Pre || late.Post;
         }
 
+        [Space]
         [SerializeField]
         SyncedAssetsProperty syncedAssets = new SyncedAssetsProperty();
         public SyncedAssetsProperty SyncedAssets => syncedAssets;
@@ -434,15 +440,11 @@ namespace MNet
             return instance;
         }
 
-        public void Configure()
+        public void Prepare()
         {
             References.Set(this, AllProperties);
 
             Initializer.Configure(AllProperties);
-        }
-
-        public void Init()
-        {
             Initializer.Init(AllProperties);
         }
 

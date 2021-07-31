@@ -134,8 +134,7 @@ namespace MNet
             Set(value, info);
         }
 
-        #region Method
-        public Packet Sync(T value)
+        public SyncVarPacket<T> Sync(T value)
         {
             if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
             {
@@ -143,71 +142,94 @@ namespace MNet
                 return default;
             }
 
-            return new Packet(this, value, Behaviour);
+            var packet = new SyncVarPacket<T>(this, value, Behaviour);
+
+            return packet;
         }
-        public struct Packet :
-            IDeliveryModeConstructor<Packet>,
-            IChannelConstructor<Packet>,
-            INetworkGroupConstructor<Packet>
-        {
-            SyncVar<T> Variable { get; }
 
-            T value { get; }
-
-            NetworkEntity.Behaviour Behaviour { get; }
-            NetworkEntity Entity => Behaviour.Entity;
-
-            DeliveryMode delivery;
-            public Packet Delivery(DeliveryMode value)
-            {
-                delivery = value;
-                return this;
-            }
-
-            byte channel;
-            public Packet Channel(byte value)
-            {
-                channel = value;
-                return this;
-            }
-
-            NetworkGroupID group;
-            public Packet Group(NetworkGroupID value)
-            {
-                group = value;
-                return this;
-            }
-
-            public void Broadcast()
-            {
-                var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
-
-                Behaviour.Send(ref request, delivery: delivery, channel: channel);
-            }
-            public void Buffer()
-            {
-                var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
-
-                Behaviour.Send(ref request, delivery: delivery, channel: channel);
-            }
-
-            public Packet(SyncVar<T> SyncVar, T value, NetworkEntity.Behaviour behaviour)
-            {
-                this.Variable = SyncVar;
-                this.value = value;
-                this.Behaviour = behaviour;
-
-                delivery = DeliveryMode.ReliableOrdered;
-                channel = 0;
-                group = NetworkGroupID.Default;
-            }
-        }
-        #endregion
+        public override string ToString() => $"{Component}->{Name}";
 
         public SyncVar() : this(default) { }
         public SyncVar(T value)
         {
             this.value = value;
+        }
+    }
+
+    public class SyncVarPacket<T> :
+            FluentObjectRecord.IInterface,
+            IDeliveryModeConstructor<SyncVarPacket<T>>,
+            IChannelConstructor<SyncVarPacket<T>>,
+            INetworkGroupConstructor<SyncVarPacket<T>>
+    {
+        SyncVar<T> Variable { get; }
+
+        T value { get; }
+
+        NetworkEntity.Behaviour Behaviour { get; }
+        NetworkEntity Entity => Behaviour.Entity;
+
+        DeliveryMode delivery;
+        public SyncVarPacket<T> Delivery(DeliveryMode value)
+        {
+            delivery = value;
+            return this;
+        }
+
+        byte channel;
+        public SyncVarPacket<T> Channel(byte value)
+        {
+            channel = value;
+            return this;
+        }
+
+        NetworkGroupID group;
+        public SyncVarPacket<T> Group(NetworkGroupID value)
+        {
+            group = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Broadcasts SyncVar to All Clients
+        /// </summary>
+        public void Broadcast()
+        {
+            FluentObjectRecord.Remove(this);
+
+            var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+
+            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+        }
+
+        /// <summary>
+        /// Buffers the SyncVar for all late clients to Recieve
+        /// </summary>
+        public void Buffer()
+        {
+            FluentObjectRecord.Remove(this);
+
+            var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+
+            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+        }
+
+        public override string ToString()
+        {
+            return $"{Variable} = {value}";
+        }
+
+        public SyncVarPacket(SyncVar<T> SyncVar, T value, NetworkEntity.Behaviour behaviour)
+        {
+            this.Variable = SyncVar;
+            this.value = value;
+            this.Behaviour = behaviour;
+
+            delivery = DeliveryMode.ReliableOrdered;
+            channel = 0;
+            group = NetworkGroupID.Default;
+
+            FluentObjectRecord.Add(this);
         }
     }
 

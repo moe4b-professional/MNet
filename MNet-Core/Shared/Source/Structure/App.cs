@@ -29,15 +29,15 @@ namespace MNet
             {
                 var target = (AppID)obj;
 
-                return target.value == this.value;
+                return Equals(target.value, this.value);
             }
 
             return false;
         }
 
-        public override int GetHashCode() => value.GetHashCode();
+        public override int GetHashCode() => value == null ? 0 : value.GetHashCode();
 
-        public override string ToString() => value.ToString();
+        public override string ToString() => value?.ToString();
 
         public static bool operator ==(AppID a, AppID b) => a.Equals(b);
         public static bool operator !=(AppID a, AppID b) => !a.Equals(b);

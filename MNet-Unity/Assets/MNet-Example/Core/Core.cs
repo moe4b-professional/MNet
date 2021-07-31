@@ -175,10 +175,10 @@ namespace MNet.Example
 
 			void Init()
 			{
-				GetMasterConfig();
+				GetMasterScheme();
 			}
 
-			void GetMasterConfig()
+			void GetMasterScheme()
 			{
 				Popup.Show("Getting Master Scheme");
 
@@ -192,7 +192,7 @@ namespace MNet.Example
 						return;
 					}
 
-					Popup.Show("Failed To Retrieve Master Scheme", "Retry", GetMasterConfig);
+					Popup.Show("Failed To Retrieve Master Scheme", "Retry", GetMasterScheme);
 				}
 			}
 

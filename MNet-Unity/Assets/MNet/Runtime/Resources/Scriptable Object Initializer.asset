@@ -13,5 +13,4 @@ MonoBehaviour:
   m_Name: Scriptable Object Initializer
   m_EditorClassIdentifier: 
   list:
-  - {fileID: 11400000, guid: 02e3042fdc8dab0468e1797c7fe3e4c5, type: 2}
   - {fileID: 11400000, guid: a500b5246c5fb4946b62b340408c09a3, type: 2}
