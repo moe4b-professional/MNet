@@ -35,7 +35,6 @@ namespace MNet
     public class NetworkBehaviour : MonoBehaviour, INetworkBehaviour
     {
         public NetworkEntity.Behaviour Network { get; set; }
-
         public NetworkEntity Entity => Network.Entity;
 
         public virtual void OnNetwork() { }

@@ -135,7 +135,7 @@ namespace MNet
         }
 
         #region Method
-        public SyncVarPacket Sync(T value)
+        public Packet Sync(T value)
         {
             if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
             {
@@ -143,9 +143,12 @@ namespace MNet
                 return default;
             }
 
-            return new SyncVarPacket(this, value, Behaviour);
+            return new Packet(this, value, Behaviour);
         }
-        public struct SyncVarPacket
+        public struct Packet :
+            IDeliveryModeConstructor<Packet>,
+            IChannelConstructor<Packet>,
+            INetworkGroupConstructor<Packet>
         {
             SyncVar<T> Variable { get; }
 
@@ -155,21 +158,21 @@ namespace MNet
             NetworkEntity Entity => Behaviour.Entity;
 
             DeliveryMode delivery;
-            public SyncVarPacket Delivery(DeliveryMode value)
+            public Packet Delivery(DeliveryMode value)
             {
                 delivery = value;
                 return this;
             }
 
             byte channel;
-            public SyncVarPacket Channel(byte value)
+            public Packet Channel(byte value)
             {
                 channel = value;
                 return this;
             }
 
             NetworkGroupID group;
-            public SyncVarPacket Group(NetworkGroupID value)
+            public Packet Group(NetworkGroupID value)
             {
                 group = value;
                 return this;
@@ -188,7 +191,7 @@ namespace MNet
                 Behaviour.Send(ref request, delivery: delivery, channel: channel);
             }
 
-            public SyncVarPacket(SyncVar<T> SyncVar, T value, NetworkEntity.Behaviour behaviour)
+            public Packet(SyncVar<T> SyncVar, T value, NetworkEntity.Behaviour behaviour)
             {
                 this.Variable = SyncVar;
                 this.value = value;

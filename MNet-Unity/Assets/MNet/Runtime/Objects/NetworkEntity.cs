@@ -130,7 +130,7 @@ namespace MNet
         public NetworkClient Owner { get; protected set; }
 
         /// <summary>
-        /// Am I the owner of this entity?
+        /// Am I (local client) the owner of this entity?
         /// </summary>
         public bool IsMine => Owner == NetworkAPI.Client.Self;
 
@@ -315,7 +315,12 @@ namespace MNet
 
                 return new BroadcastRpcPacket(bind, arguments, this);
             }
-            public struct BroadcastRpcPacket
+            public struct BroadcastRpcPacket :
+                IDeliveryModeConstructor<BroadcastRpcPacket>,
+                IChannelConstructor<BroadcastRpcPacket>,
+                INetworkGroupConstructor<BroadcastRpcPacket>,
+                IRemoteBufferModeConstructor<BroadcastRpcPacket>,
+                INetworkClientExceptionConstructor<BroadcastRpcPacket>
             {
                 RpcBind Bind { get; }
 
@@ -398,7 +403,9 @@ namespace MNet
 
                 return new TargetRpcPacket(bind, target, arguments, this);
             }
-            public struct TargetRpcPacket
+            public struct TargetRpcPacket :
+                IDeliveryModeConstructor<TargetRpcPacket>,
+                IChannelConstructor<TargetRpcPacket>
             {
                 RpcBind Bind { get; }
 
@@ -459,7 +466,9 @@ namespace MNet
 
                 return new QueryRpcPacket<TResult>(bind, target, arguments, this);
             }
-            public struct QueryRpcPacket<TResult>
+            public struct QueryRpcPacket<TResult> :
+                IDeliveryModeConstructor<QueryRpcPacket<TResult>>,
+                IChannelConstructor<QueryRpcPacket<TResult>>
             {
                 RpcBind Bind { get; }
 
@@ -532,7 +541,10 @@ namespace MNet
 
                 return new BufferRpcPacket(bind, arguments, this);
             }
-            public struct BufferRpcPacket
+            public struct BufferRpcPacket :
+                IDeliveryModeConstructor<BufferRpcPacket>,
+                IChannelConstructor<BufferRpcPacket>,
+                IRemoteBufferModeConstructor<BufferRpcPacket>
             {
                 RpcBind Bind { get; }
 
