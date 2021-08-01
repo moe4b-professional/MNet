@@ -38,22 +38,7 @@ namespace MNet.Example
 
         void SpawnCallback()
         {
-            
-        }
 
-        void Update()
-        {
-            if (Input.GetKeyDown(KeyCode.G))
-                NetworkAPI.Client.Groups.Join(20);
-
-            if (Input.GetKeyDown(KeyCode.Space))
-                Network.BroadcastRPC(Call).Group(20).Buffer(RemoteBufferMode.Last).Send();
-        }
-
-        [NetworkRPC]
-        void Call(RpcInfo info)
-        {
-            Debug.LogError("Recieved");
         }
 
         [RuntimeInitializeOnLoadMethod]
@@ -66,7 +51,16 @@ namespace MNet.Example
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
+            var queue = new Queue<int>();
 
+            queue.Enqueue(1);
+            queue.Enqueue(2);
+            queue.Enqueue(3);
+
+            var clone = NetworkSerializer.Clone(queue);
+
+            Debug.Log(queue.ToCollectionString());
+            Debug.Log(clone.ToCollectionString());
         }
 #endif
     }

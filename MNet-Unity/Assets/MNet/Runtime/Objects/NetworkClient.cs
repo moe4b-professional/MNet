@@ -34,6 +34,8 @@ namespace MNet
 
         public HashSet<NetworkEntity> Entities { get; protected set; }
 
+        public override string ToString() => $"{Name} (ID: {ID})";
+
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
             this.ID = id;
@@ -42,7 +44,5 @@ namespace MNet
 
             Entities = new HashSet<NetworkEntity>();
         }
-
-        public override string ToString() => ID.ToString();
     }
 }

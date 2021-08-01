@@ -94,21 +94,6 @@ namespace MNet
         }
 
         [Test]
-        public void HashSet()
-        {
-            var original = new HashSet<int>();
-
-            original.Add(42);
-            original.Add(24);
-            original.Add(120);
-            original.Add(420);
-
-            var copy = NetworkSerializer.Clone(original);
-
-            TestUtility.Compare(original, copy);
-        }
-
-        [Test]
         public void NullableTuple()
         {
             var original = new Tuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);
@@ -197,6 +182,51 @@ namespace MNet
             var array = new int[] { 42, 43, 44, 45 };
 
             var original = new ArraySegment<int>(array, 1, 3);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            TestUtility.Compare(original, copy);
+        }
+
+        [Test]
+        public void HashSet()
+        {
+            var original = new HashSet<int>();
+
+            original.Add(42);
+            original.Add(24);
+            original.Add(120);
+            original.Add(420);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            TestUtility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Stack()
+        {
+            var original = new Stack<int>();
+
+            original.Push(42);
+            original.Push(24);
+            original.Push(120);
+            original.Push(420);
+
+            var copy = NetworkSerializer.Clone(original);
+
+            TestUtility.Compare(original, copy);
+        }
+
+        [Test]
+        public void Queue()
+        {
+            var original = new Queue<int>();
+
+            original.Enqueue(42);
+            original.Enqueue(24);
+            original.Enqueue(120);
+            original.Enqueue(420);
 
             var copy = NetworkSerializer.Clone(original);
 

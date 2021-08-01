@@ -310,8 +310,10 @@ namespace MNet
         public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
+
             entity.Serialize(writer);
             behaviour.Serialize(writer);
+
             method.Serialize(writer);
 
             writer.Write(raw);
@@ -320,9 +322,13 @@ namespace MNet
         public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
+
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
+
             method.Deserialize(reader);
+
+            reader.Read(out raw);
         }
 
         //Static Utility
