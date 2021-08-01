@@ -730,8 +730,13 @@ namespace MNet
 
                 var message = Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
-                if (request.Group == NetworkGroupID.Default && request.BufferMode != RemoteBufferMode.None)
-                    entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                if (request.BufferMode != RemoteBufferMode.None)
+                {
+                    if (request.Group == NetworkGroupID.Default)
+                        entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                    else
+                        Log.Warning($"Client {sender} Requesting to Buffer RPC Sent to None Default Channel, This is not Supported");
+                }
             }
 
             void InvokeTargetRPC(NetworkClient sender, ref TargetRpcRequest request, DeliveryMode mode, byte channel)

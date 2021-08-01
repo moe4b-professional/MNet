@@ -16,16 +16,18 @@ namespace MNet
 {
 	public static class RichTextMarker
 	{
-		public static string Bold(string text) => $"<b>{text}</b>";
+		public static string Bold(object target) => $"<b>{target}</b>";
 
-		public static string Italic(string text) => $"<i>{text}</i>";
+		public static string Italic(object target) => $"<i>{target}</i>";
 
-		public static string Size(string text, int value) => $"<size={value}>{text}</size>";
+		public static string Size(object target, int value) => $"<size={value}>{target}</size>";
 
-		public static string Colorize(string text, ColorSurrogate color) => $"<color=#{color}>{text}</color>";
+		public static string Colorize(object target, ColorSurrogate color) => $"<color=#{color}>{target}</color>";
 
-		public static string Style(string text, bool bold = false, bool italic = false, int? size = null, ColorSurrogate? color = null)
+		public static string Style(object target, bool bold = false, bool italic = false, int? size = null, ColorSurrogate? color = null)
 		{
+			var text = target.ToString();
+
 			if (bold)
 				text = Bold(text);
 

@@ -56,7 +56,7 @@ namespace MNet
             return MethodInfo.Invoke(Component, arguments);
         }
 
-        public byte[] WriteArguments(object[] arguments)
+        public byte[] SerializeArguments(object[] arguments)
         {
             if (IsBinaryExchange)
             {
@@ -78,12 +78,12 @@ namespace MNet
             return raw;
         }
 
-        public object[] ReadArguments<T>(T command)
+        public void ParseCommand<T>(T command, out object[] arguments, out RpcInfo info)
             where T : IRpcCommand
         {
             var reader = new NetworkReader(command.Raw);
 
-            var arguments = new object[ParametersInfo.Length];
+            arguments = new object[ParametersInfo.Length];
 
             if (IsBinaryExchange)
             {
@@ -94,14 +94,6 @@ namespace MNet
                 for (int i = 0; i < ParametersInfo.Length - 1; i++)
                     arguments[i] = reader.Read(ParametersInfo[i].ParameterType);
             }
-
-            return arguments;
-        }
-
-        public void ParseCommand<T>(T command, out object[] arguments, out RpcInfo info)
-            where T : IRpcCommand
-        {
-            arguments = ReadArguments(command);
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
             info = new RpcInfo(sender);

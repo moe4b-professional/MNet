@@ -345,7 +345,7 @@ namespace MNet
                 #region RPC
                 static Response InvokeBroadcastRPC(ref BroadcastRpcRequest request, DeliveryMode mode)
                 {
-                    if (request.Exception != Client.ID)
+                    if (request.Exception != Client.ID && Groups.Contains(request.Group))
                     {
                         var command = BroadcastRpcCommand.Write(Client.ID, request);
 
@@ -587,10 +587,30 @@ namespace MNet
                 {
                     var ids = Array.ConvertAll(selection, NetworkGroupID.Create);
 
+                    Join(ids);
+                }
+                public static void Join(params NetworkGroupID[] ids)
+                {
                     Add(ids);
 
                     var payload = new JoinNetworkGroupsPayload(ids);
+                    Send(ref payload);
+                }
 
+                public static void Leave(params byte[] selection)
+                {
+                    var ids = Array.ConvertAll(selection, NetworkGroupID.Create);
+
+                    Leave(ids);
+                }
+                public static void Leave(params NetworkGroupID[] ids)
+                {
+                    if (ids.Contains(NetworkGroupID.Default))
+                        throw new Exception($"Cannot Leave Default Network Group {NetworkGroupID.Default}");
+
+                    Remove(ids);
+
+                    var payload = new LeaveNetworkGroupsPayload(ids);
                     Send(ref payload);
                 }
 
@@ -600,19 +620,7 @@ namespace MNet
                         Collection.Add(ids[i]);
                 }
 
-                public static void Leave(params byte[] selection)
-                {
-                    var ids = Array.ConvertAll(selection, NetworkGroupID.Create);
-
-                    if (ids.Contains(NetworkGroupID.Default))
-                        throw new Exception($"Cannot Leave Default Network Group {NetworkGroupID.Default}");
-
-                    Remove(ids);
-
-                    var payload = new LeaveNetworkGroupsPayload(ids);
-
-                    Send(ref payload);
-                }
+                public static bool Contains(NetworkGroupID group) => Collection.Contains(group);
 
                 static void Remove(NetworkGroupID[] ids)
                 {

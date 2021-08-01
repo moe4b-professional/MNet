@@ -195,7 +195,11 @@ namespace MNet
 
                 public void Send()
                 {
-                    var raw = Bind.WriteArguments(Arguments);
+                    if (buffer != RemoteBufferMode.None && group != NetworkGroupID.Default)
+                        Debug.LogError($"Conflicting Data for RPC Call '{this}', Cannot send to 'None Default' Network Group and Buffer the RPC" +
+                            $", This is not Supported, Message will not be Buffered !!!");
+
+                    var raw = Bind.SerializeArguments(Arguments);
                     var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, raw);
 
                     Send(ref request);
@@ -230,7 +234,7 @@ namespace MNet
 
                 public void Send()
                 {
-                    var raw = Bind.WriteArguments(Arguments);
+                    var raw = Bind.SerializeArguments(Arguments);
                     var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, raw);
 
                     Send(ref request);
@@ -267,7 +271,7 @@ namespace MNet
                 {
                     var promise = NetworkAPI.Client.RPR.Promise(Target);
 
-                    var raw = Bind.WriteArguments(Arguments);
+                    var raw = Bind.SerializeArguments(Arguments);
                     var request = QueryRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, promise.Channel, raw);
 
                     if (Send(ref request) == false)
@@ -318,7 +322,7 @@ namespace MNet
 
                 public void Send()
                 {
-                    var raw = Bind.WriteArguments(Arguments);
+                    var raw = Bind.SerializeArguments(Arguments);
                     var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, raw);
 
                     Send(ref request);

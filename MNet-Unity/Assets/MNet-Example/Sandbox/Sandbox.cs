@@ -23,6 +23,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
 
+using MB;
+
 namespace MNet.Example
 {
     public class Sandbox : NetworkBehaviour
@@ -39,6 +41,21 @@ namespace MNet.Example
             
         }
 
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.G))
+                NetworkAPI.Client.Groups.Join(20);
+
+            if (Input.GetKeyDown(KeyCode.Space))
+                Network.BroadcastRPC(Call).Group(20).Buffer(RemoteBufferMode.Last).Send();
+        }
+
+        [NetworkRPC]
+        void Call(RpcInfo info)
+        {
+            Debug.LogError("Recieved");
+        }
+
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
@@ -49,7 +66,7 @@ namespace MNet.Example
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
-            
+
         }
 #endif
     }
