@@ -38,7 +38,7 @@ namespace MNet.Example
 
         void SpawnCallback()
         {
-
+            
         }
 
         [RuntimeInitializeOnLoadMethod]

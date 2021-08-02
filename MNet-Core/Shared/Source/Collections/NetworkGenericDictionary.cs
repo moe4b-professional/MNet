@@ -33,6 +33,13 @@ namespace MNet
             payload[key] = raw;
             objects[key] = value;
         }
+        public T Get<T>(TKey key, T fallback = default)
+        {
+            if (TryGetValue<T>(key, out var value) == false)
+                value = fallback;
+
+            return value;
+        }
 
         public bool ContainsKey(TKey key) => payload.ContainsKey(key);
 
