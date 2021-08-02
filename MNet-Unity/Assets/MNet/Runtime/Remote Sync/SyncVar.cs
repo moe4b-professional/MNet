@@ -134,7 +134,10 @@ namespace MNet
             Set(value, info);
         }
 
-        public SyncVarPacket<T> Sync(T value)
+        /// <summary>
+        /// Broadcasts SyncVar to All Clients
+        /// </summary>
+        public BroadcastSyncVarPacket<T> Broadcast(T value)
         {
             if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
             {
@@ -142,7 +145,23 @@ namespace MNet
                 return default;
             }
 
-            var packet = new SyncVarPacket<T>(this, value, Behaviour);
+            var packet = new BroadcastSyncVarPacket<T>(this, value, Behaviour);
+
+            return packet;
+        }
+
+        /// <summary>
+        /// Buffers the SyncVar for all late clients to Recieve
+        /// </summary>
+        public BufferSyncVarPacket<T> Buffer(T value)
+        {
+            if (Entity.CheckAuthority(NetworkAPI.Client.Self, authority) == false)
+            {
+                Debug.LogError($"Local Client has Insufficent Authority to Set SyncVar '{this}'", Component);
+                return default;
+            }
+
+            var packet = new BufferSyncVarPacket<T>(this, value, Behaviour);
 
             return packet;
         }
@@ -156,62 +175,41 @@ namespace MNet
         }
     }
 
-    public class SyncVarPacket<T> :
+    public class SyncVarPacket<TSelf, TValue> :
             FluentObjectRecord.IInterface,
-            IDeliveryModeConstructor<SyncVarPacket<T>>,
-            IChannelConstructor<SyncVarPacket<T>>,
-            INetworkGroupConstructor<SyncVarPacket<T>>
+            IDeliveryModeConstructor<TSelf>,
+            IChannelConstructor<TSelf>,
+            INetworkGroupConstructor<TSelf>
+        where TSelf : SyncVarPacket<TSelf, TValue>
     {
-        SyncVar<T> Variable { get; }
+        public TSelf self { get; protected set; }
 
-        T value { get; }
+        protected SyncVar<TValue> Variable { get; }
 
-        NetworkEntity.Behaviour Behaviour { get; }
-        NetworkEntity Entity => Behaviour.Entity;
+        protected TValue value { get; }
 
-        DeliveryMode delivery;
-        public SyncVarPacket<T> Delivery(DeliveryMode value)
+        protected NetworkEntity.Behaviour Behaviour { get; }
+        protected NetworkEntity Entity => Behaviour.Entity;
+
+        protected DeliveryMode delivery;
+        public TSelf Delivery(DeliveryMode value)
         {
             delivery = value;
-            return this;
+            return self;
         }
 
-        byte channel;
-        public SyncVarPacket<T> Channel(byte value)
+        protected byte channel;
+        public TSelf Channel(byte value)
         {
             channel = value;
-            return this;
+            return self;
         }
 
-        NetworkGroupID group;
-        public SyncVarPacket<T> Group(NetworkGroupID value)
+        protected NetworkGroupID group;
+        public TSelf Group(NetworkGroupID value)
         {
             group = value;
-            return this;
-        }
-
-        /// <summary>
-        /// Broadcasts SyncVar to All Clients
-        /// </summary>
-        public void Broadcast()
-        {
-            FluentObjectRecord.Remove(this);
-
-            var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
-
-            Behaviour.Send(ref request, delivery: delivery, channel: channel);
-        }
-
-        /// <summary>
-        /// Buffers the SyncVar for all late clients to Recieve
-        /// </summary>
-        public void Buffer()
-        {
-            FluentObjectRecord.Remove(this);
-
-            var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
-
-            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            return self;
         }
 
         public override string ToString()
@@ -219,7 +217,12 @@ namespace MNet
             return $"{Variable} = {value}";
         }
 
-        public SyncVarPacket(SyncVar<T> SyncVar, T value, NetworkEntity.Behaviour behaviour)
+        SyncVarPacket()
+        {
+            self = this as TSelf;
+        }
+
+        public SyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour)
         {
             this.Variable = SyncVar;
             this.value = value;
@@ -230,6 +233,40 @@ namespace MNet
             group = NetworkGroupID.Default;
 
             FluentObjectRecord.Add(this);
+        }
+    }
+
+    public class BroadcastSyncVarPacket<TValue> : SyncVarPacket<BroadcastSyncVarPacket<TValue>, TValue>
+    {
+        public void Send()
+        {
+            FluentObjectRecord.Remove(this);
+
+            var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+
+            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+        }
+
+        public BroadcastSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour) : base(SyncVar, value, behaviour)
+        {
+
+        }
+    }
+
+    public class BufferSyncVarPacket<TValue> : SyncVarPacket<BufferSyncVarPacket<TValue>, TValue>
+    {
+        public void Buffer()
+        {
+            FluentObjectRecord.Remove(this);
+
+            var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+
+            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+        }
+
+        public BufferSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour) : base(SyncVar, value, behaviour)
+        {
+
         }
     }
 

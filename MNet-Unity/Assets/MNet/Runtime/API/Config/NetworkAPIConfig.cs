@@ -398,8 +398,8 @@ namespace MNet
                     case GameObject gameObject:
                         return NetworkEntity.IsAttachedTo(gameObject);
 
-                    case ScriptableObject scriptableObject:
-                        return scriptableObject is ISyncedAsset;
+                    case ISyncedAsset syncedAsset:
+                        return true;
                 }
 
                 return false;

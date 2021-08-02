@@ -52,7 +52,7 @@ namespace MNet.Example
 			{
 				if (Entity.IsMine)
 				{
-					syncvar.Sync("Hello World").Broadcast();
+					syncvar.Broadcast("Hello World").Send();
 					Network.BroadcastRPC(Call, "Hello World").Send();
 				}
 
