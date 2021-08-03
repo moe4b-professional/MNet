@@ -11,7 +11,7 @@ namespace MNet
     {
         public void Select(ref NetworkSerializationContext context)
         {
-            
+
         }
 
         public RemoteConfig() { }

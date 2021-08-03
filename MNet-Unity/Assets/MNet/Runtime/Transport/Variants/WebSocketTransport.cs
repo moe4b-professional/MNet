@@ -40,7 +40,7 @@ namespace MNet
 
         public const int Port = Utility.Port;
 
-        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
+        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU();
 
         public override void Connect(GameServerID server, RoomID room)
         {
@@ -66,7 +66,7 @@ namespace MNet
 
         void OpenCallback() => InvokeConnect();
 
-        void RecievedMessageCallback(byte[] data) => InvokeMessages(data, DeliveryMode.Reliable);
+        void RecievedMessageCallback(byte[] data) => InvokeMessages(data, DeliveryMode.ReliableOrdered);
 
         void CloseCallback(WebSocketCloseCode closeCode)
         {
@@ -77,7 +77,7 @@ namespace MNet
             InvokeDisconnect(code);
         }
 
-        public override void Send(byte[] raw, DeliveryMode mode) => Socket.Send(raw);
+        public override void Send(byte[] raw, DeliveryMode mode, byte channel) => Socket.Send(raw);
 
         public override void Close() => Socket.Close();
 

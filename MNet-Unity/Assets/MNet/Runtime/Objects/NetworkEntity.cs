@@ -337,7 +337,8 @@ namespace MNet
             return target.InvokeRPC(ref command);
         }
 
-        public void InvokeSyncVar(SyncVarCommand command)
+        public void InvokeSyncVar<TCommand>(TCommand command)
+            where TCommand : ISyncVarCommand
         {
             if (Behaviours.TryGetValue(command.Behaviour, out var target) == false)
             {

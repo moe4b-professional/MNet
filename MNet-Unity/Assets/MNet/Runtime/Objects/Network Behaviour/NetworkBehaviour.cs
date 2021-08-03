@@ -373,9 +373,9 @@ namespace MNet
                 {
                     result = bind.Invoke(arguments);
                 }
-                catch (TargetInvocationException ex)
+                catch (TargetInvocationException)
                 {
-                    throw ex;
+                    throw;
                 }
                 catch (Exception ex)
                 {

@@ -74,6 +74,8 @@ namespace MNet
         {
 #if UNITY_EDITOR || DEBUG
             return Dictionary.Remove(item);
+#else
+            return false;
 #endif
         }
 

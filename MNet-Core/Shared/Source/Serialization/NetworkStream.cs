@@ -249,7 +249,6 @@ namespace MNet
         bool ResolveExplicit<T>(ref T value)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
-
             if (resolver == null) return false;
 
             value = resolver.Deserialize(this);
@@ -277,7 +276,6 @@ namespace MNet
         bool ResolveAny(Type type, out object value)
         {
             var resolver = NetworkSerializationResolver.Retrive(type);
-
             if (resolver == null)
             {
                 value = null;

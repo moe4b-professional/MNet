@@ -48,7 +48,7 @@ namespace MNet
             ID = new SyncVarID(index);
         }
 
-        internal abstract void Invoke<TCommand>(TCommand command) where TCommand : ISyncVarCommand;
+        internal abstract void Invoke(ISyncVarCommand command);
 
         public override string ToString() => $"{Behaviour}->{Name}";
 
@@ -105,7 +105,7 @@ namespace MNet
             OnChange?.Invoke(oldValue, newValue, info);
         }
 
-        internal override void Invoke<TCommand>(TCommand command)
+        internal override void Invoke(ISyncVarCommand command)
         {
             T value;
             try
