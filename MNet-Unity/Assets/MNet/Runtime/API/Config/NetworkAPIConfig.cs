@@ -30,6 +30,7 @@ namespace MNet
         [Serializable]
         public class MetaProperty
         {
+#if UNITY_EDITOR
             [CustomPropertyDrawer(typeof(MetaProperty))]
             public class Drawer : PersistantPropertyDrawer
             {
@@ -65,6 +66,7 @@ namespace MNet
                     EditorGUI.LabelField(line, $"API v{Constants.ApiVersion}", VersionStyle);
                 }
             }
+#endif
         }
 
         [SerializeField]

@@ -22,13 +22,13 @@ namespace MNet
 
         public void Set<T>(TKey key, T value)
         {
-            var writer = NetworkWriter.Pool.Any;
+            var writer = NetworkStream.Pool.Any;
 
             writer.Write(value);
 
             var raw = writer.ToArray();
 
-            NetworkWriter.Pool.Return(writer);
+            NetworkStream.Pool.Return(writer);
 
             payload[key] = raw;
             objects[key] = value;
@@ -61,7 +61,7 @@ namespace MNet
 
             if (payload.TryGetValue(key, out byte[] raw))
             {
-                var reader = new NetworkReader(raw);
+                var reader = new NetworkStream(raw);
 
                 try
                 {
@@ -109,7 +109,7 @@ namespace MNet
             }
         }
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             NetworkSerializationHelper.Length.Write(writer, payload.Count);
 
@@ -121,7 +121,7 @@ namespace MNet
                 writer.Insert(pair.Value);
             }
         }
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
             NetworkSerializationHelper.Length.Read(reader, out var count);
 
@@ -132,7 +132,7 @@ namespace MNet
                 var key = reader.Read<TKey>();
 
                 var length = NetworkSerializationHelper.Length.Read(reader);
-                var raw = reader.BlockCopy(length);
+                var raw = reader.Pull(length);
 
                 payload.Add(key, raw);
             }

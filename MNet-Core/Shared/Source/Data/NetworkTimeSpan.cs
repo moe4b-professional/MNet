@@ -16,12 +16,12 @@ namespace MNet
         public float Millisecond => ticks / 1f / TimeSpan.TicksPerMillisecond;
         public float Seconds => ticks / 1f / TimeSpan.TicksPerSecond;
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             writer.Write(ticks);
         }
 
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
             reader.Read(out ticks);
         }

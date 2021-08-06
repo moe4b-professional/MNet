@@ -1049,7 +1049,6 @@ namespace MNet
             var message = NetworkMessage.Write(ref payload);
 
             var raw = NetworkSerializer.Serialize(message);
-
             if (App.QueueMessages)
             {
                 for (int i = 0; i < Clients.Count; i++)

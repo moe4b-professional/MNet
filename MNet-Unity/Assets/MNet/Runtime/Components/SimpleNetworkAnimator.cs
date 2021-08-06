@@ -24,15 +24,15 @@ namespace MNet
 	{
 		public Animator Component { get; protected set; }
 
-		NetworkWriter writer;
-		NetworkReader reader;
+		NetworkStream writer;
+		NetworkStream reader;
 
 		void Awake()
 		{
 			Component = GetComponent<Animator>();
 
-			writer = new NetworkWriter(100);
-			reader = new NetworkReader();
+			writer = new NetworkStream(100);
+			reader = new NetworkStream();
 
 			parameters.Configure(this);
 			layers.Configure(this);
@@ -122,7 +122,7 @@ namespace MNet
 
 				public override AnimatorControllerParameterType Type => AnimatorControllerParameterType.Int;
 
-				public override void WriteBinary(NetworkWriter writer)
+				public override void WriteBinary(NetworkStream writer)
 				{
 					if (useShort)
 						writer.Write((short)Value);
@@ -130,7 +130,7 @@ namespace MNet
 						writer.Write(Value);
 				}
 
-				public override void ReadBinary(NetworkReader reader)
+				public override void ReadBinary(NetworkStream reader)
 				{
 					if (useShort)
 						Value = reader.Read<short>();
@@ -193,7 +193,7 @@ namespace MNet
 
 				public override bool Compare(float a, float b) => Mathf.Approximately(a, b);
 
-				public override void WriteBinary(NetworkWriter writer)
+				public override void WriteBinary(NetworkStream writer)
 				{
 					if (useHalf)
 						writer.Write((Half)Value);
@@ -201,7 +201,7 @@ namespace MNet
 						writer.Write(Value);
 				}
 
-				public override void ReadBinary(NetworkReader reader)
+				public override void ReadBinary(NetworkStream reader)
 				{
 					if (useHalf)
 						Value = reader.Read<Half>();
@@ -246,8 +246,8 @@ namespace MNet
 					Hash = Animator.StringToHash(name);
 				}
 
-				public abstract void WriteBinary(NetworkWriter writer);
-				public abstract void ReadBinary(NetworkReader reader);
+				public abstract void WriteBinary(NetworkStream writer);
+				public abstract void ReadBinary(NetworkStream reader);
 
 				public virtual void Parse(AnimatorControllerParameter parameter)
 				{
@@ -299,8 +299,8 @@ namespace MNet
 
 				public virtual bool Compare(TValue a, TValue b) => Equals(a, b);
 
-				public override void WriteBinary(NetworkWriter writer) => writer.Write(Value);
-				public override void ReadBinary(NetworkReader reader) => Value = reader.Read<TValue>();
+				public override void WriteBinary(NetworkStream writer) => writer.Write(Value);
+				public override void ReadBinary(NetworkStream reader) => Value = reader.Read<TValue>();
 
 				public Property(AnimatorControllerParameter parameter) : base(parameter)
 				{
@@ -854,7 +854,7 @@ namespace MNet
 					return true;
 				}
 
-				public void WriteBinary(NetworkWriter writer)
+				public void WriteBinary(NetworkStream writer)
 				{
 					if (useHalf)
 						writer.Write((Half)Value);
@@ -862,7 +862,7 @@ namespace MNet
 						writer.Write(Value);
 				}
 
-				public void ReadBinary(NetworkReader reader)
+				public void ReadBinary(NetworkStream reader)
 				{
 					if (useHalf)
 						Value = reader.Read<Half>();

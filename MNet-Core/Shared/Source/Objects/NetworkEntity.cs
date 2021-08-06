@@ -47,12 +47,12 @@ namespace MNet
         ushort value;
         public ushort Value { get { return value; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             writer.Write(value);
         }
 
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
             reader.Read(out value);
         }
@@ -91,14 +91,14 @@ namespace MNet
         byte value;
         public byte Value => value;
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             writer.Insert(value);
         }
 
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
-            value = reader.Next();
+            value = reader.Pull();
         }
 
         public EntitySpawnToken(byte value)

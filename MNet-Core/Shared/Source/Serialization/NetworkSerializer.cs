@@ -17,13 +17,13 @@ namespace MNet
         #region Serialize
         public static byte[] Serialize<T>(T instance)
         {
-            var writer = NetworkWriter.Pool.Any;
+            var writer = NetworkStream.Pool.Any;
 
             writer.Write(instance);
 
             var result = writer.ToArray();
 
-            NetworkWriter.Pool.Return(writer);
+            NetworkStream.Pool.Return(writer);
 
             return result;
         }
@@ -36,13 +36,13 @@ namespace MNet
         }
         public static byte[] Serialize(object instance, Type type)
         {
-            var writer = NetworkWriter.Pool.Any;
+            var writer = NetworkStream.Pool.Any;
 
             writer.Write(instance, type);
 
             var result = writer.ToArray();
 
-            NetworkWriter.Pool.Return(writer);
+            NetworkStream.Pool.Return(writer);
 
             return result;
         }
@@ -51,7 +51,7 @@ namespace MNet
         #region Deserialize
         public static T Deserialize<T>(byte[] data)
         {
-            var reader = new NetworkReader(data);
+            var reader = new NetworkStream(data);
 
             reader.Read(out T result);
 
@@ -60,7 +60,7 @@ namespace MNet
 
         public static object Deserialize(byte[] data, Type type)
         {
-            var reader = new NetworkReader(data);
+            var reader = new NetworkStream(data);
 
             var result = reader.Read(type);
 
@@ -94,8 +94,8 @@ namespace MNet
 
     public interface IManualNetworkSerializable
     {
-        void Serialize(NetworkWriter writer);
+        void Serialize(NetworkStream writer);
 
-        void Deserialize(NetworkReader reader);
+        void Deserialize(NetworkStream reader);
     }
 }

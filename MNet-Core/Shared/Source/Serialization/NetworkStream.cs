@@ -2,47 +2,48 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MNet
 {
-    public abstract class NetworkStream
+    public class NetworkStream : IDisposable
     {
         protected byte[] data;
         public byte[] Data { get { return data; } }
 
-        public int Capacity => data.Length;
+        public void Set(byte[] data)
+        {
+            this.data = data;
+
+            Reset();
+        }
+
+        public int Capacity => data == null ? 0 : data.Length;
 
         public int Size => Position;
 
-        int _position;
+        int internal_position;
         public int Position
         {
-            get => _position;
+            get => internal_position;
             set
             {
                 if (value < 0 || value > Capacity)
                     throw new IndexOutOfRangeException();
 
-                _position = value;
+                internal_position = value;
 
-                Remaining = Capacity - _position;
+                Remaining = Capacity - internal_position;
             }
         }
 
         public int Remaining { get; protected set; }
 
+        #region Sizing
         public const uint DefaultResizeLength = 512;
 
-        protected void Resize(uint extra)
-        {
-            var value = new byte[Capacity + extra];
-
-            Buffer.BlockCopy(data, 0, value, 0, Position);
-
-            this.data = value;
-        }
-        protected void ResizeToFit(int capacity)
+        protected void Fit(int capacity)
         {
             if (capacity <= 0) throw new Exception($"Cannot Resize Network Buffer to Fit {capacity}");
 
@@ -53,76 +54,31 @@ namespace MNet
 
             Resize(extra);
         }
-
-        public void Shift(int start) => Shift(start, Position);
-        public void Shift(int start, int end)
+        protected void Resize(uint extra)
         {
-            for (int i = start; i < end; i++) data[i - start] = data[i];
+            var value = new byte[Capacity + extra];
 
-            Position = end - start;
+            Buffer.BlockCopy(data, 0, value, 0, Position);
+
+            this.data = value;
         }
+        #endregion
 
-        public void Clear()
+        public byte[] ToArray()
         {
-            Position = 0;
+            var destination = new byte[Position];
+
+            Buffer.BlockCopy(data, 0, destination, 0, destination.Length);
+
+            return destination;
         }
-
-        public NetworkStream(byte[] data)
-        {
-            this.data = data;
-            Position = 0;
-        }
-
-        //Static Utility
-
-        public static void Clear(NetworkStream stream) => stream.Clear();
-
-        public static NotImplementedException FormatResolverException<T>()
-        {
-            var type = typeof(T);
-
-            return FormatResolverException(type);
-        }
-        public static NotImplementedException FormatResolverException(Type type)
-        {
-            return new NotImplementedException($"Type {type} isn't supported for Network Serialization");
-        }
-    }
-
-    public class NetworkWriter : NetworkStream
-    {
-        public byte[] ToArray() => ToArray(Position);
-        public byte[] ToArray(int end) => ToArray(0, end);
-        public byte[] ToArray(int start, int end)
-        {
-            var result = new byte[end - start];
-
-            Buffer.BlockCopy(data, start, result, 0, result.Length);
-
-            return result;
-        }
-
         public byte[] Flush()
         {
             var raw = ToArray();
 
-            Clear();
+            Reset();
 
             return raw;
-        }
-
-        public void Insert(byte[] source)
-        {
-            if (source.Length > Remaining) ResizeToFit(source.Length);
-
-            Buffer.BlockCopy(source, 0, data, Position, source.Length);
-
-            Position += source.Length;
-        }
-
-        public void Replace(byte[] source, int position)
-        {
-            Buffer.BlockCopy(source, 0, data, position, source.Length);
         }
 
         public void Insert(byte value)
@@ -132,6 +88,32 @@ namespace MNet
             data[Position] = value;
 
             Position += 1;
+        }
+        public void Insert(byte[] source) => Insert(source, source.Length);
+        public void Insert(byte[] source, int count)
+        {
+            if (count > Remaining) Fit(count);
+
+            Buffer.BlockCopy(source, 0, data, Position, count);
+
+            Position += count;
+        }
+
+        public byte Pull()
+        {
+            Position += 1;
+
+            return data[Position - 1];
+        }
+        public byte[] Pull(int length)
+        {
+            var destination = new byte[length];
+
+            Buffer.BlockCopy(data, Position, destination, 0, length);
+
+            Position += length;
+
+            return destination;
         }
 
         #region Write
@@ -160,7 +142,6 @@ namespace MNet
 
             throw FormatResolverException(type);
         }
-        #endregion
 
         #region Resolve
         bool ResolveExplicit<T>(T value)
@@ -183,46 +164,7 @@ namespace MNet
             return true;
         }
         #endregion
-
-        public NetworkWriter(int size) : base(new byte[size]) { }
-
-        //Static Utility
-        public static ObjectPooler<NetworkWriter> Pool { get; protected set; }
-
-        public static NetworkWriter Create() => new NetworkWriter(NetworkSerializer.DefaultBufferSize);
-
-        static NetworkWriter()
-        {
-            Pool = new ObjectPooler<NetworkWriter>(Create, Clear);
-        }
-    }
-
-    public class NetworkReader : NetworkStream
-    {
-        public byte[] BlockCopy(int length)
-        {
-            var destination = new byte[length];
-
-            Buffer.BlockCopy(data, Position, destination, 0, length);
-
-            Position += length;
-
-            return destination;
-        }
-
-        public byte Next()
-        {
-            Position += 1;
-
-            return data[Position - 1];
-        }
-
-        public void Set(byte[] data)
-        {
-            this.data = data;
-
-            Clear();
-        }
+        #endregion
 
         #region Read
         public void Read<T>(out T value) => value = Read<T>();
@@ -243,7 +185,6 @@ namespace MNet
 
             throw FormatResolverException(type);
         }
-        #endregion
 
         #region Resolve
         bool ResolveExplicit<T>(ref T value)
@@ -268,7 +209,7 @@ namespace MNet
             }
             catch (InvalidCastException)
             {
-                throw new InvalidCastException($"NetworkReader Trying to read {instance.GetType()} as {typeof(T)}");
+                throw new InvalidCastException($"NetworkStream Trying to read {instance.GetType()} as {typeof(T)}");
             }
 
             return true;
@@ -286,8 +227,96 @@ namespace MNet
             return true;
         }
         #endregion
+        #endregion
 
-        public NetworkReader() : this(new byte[0]) { }
-        public NetworkReader(byte[] data) : base(data) { }
+        public void Reset()
+        {
+            Position = 0;
+        }
+
+        public bool IsLeased { get; private set; }
+        public void Recycle()
+        {
+            if(IsLeased == false)
+            {
+                Log.Warning($"Current Network Stream is Not Leased from Pool, no Use Recycling It, Ignoring");
+                return;
+            }
+
+            Pool.Return(this);
+        }
+        public void Dispose() => Recycle();
+
+        public NetworkStream() : this(null) { }
+        public NetworkStream(int capacity) : this(new byte[capacity]) { }
+        public NetworkStream(byte[] data)
+        {
+            this.data = data;
+            Position = 0;
+        }
+
+        //Static Utility
+
+        public static class Pool
+        {
+            static Queue<NetworkStream> Queue;
+
+            static object SyncLock;
+
+            public static bool ThreadSafe { get; set; } = true;
+
+            public static NetworkStream Any => Lease();
+
+            public static NetworkStream Lease()
+            {
+                if (ThreadSafe) Monitor.Enter(SyncLock);
+
+                var stream = Queue.Count == 0 ? Create() : Queue.Dequeue();
+
+                if (ThreadSafe) Monitor.Exit(SyncLock);
+
+                return stream;
+            }
+
+            static NetworkStream Create()
+            {
+                var stream = new NetworkStream(1024);
+
+                stream.IsLeased = true;
+
+                return stream;
+            }
+
+            public static void Return(NetworkStream stream)
+            {
+                stream.Reset();
+
+                if (ThreadSafe) Monitor.Enter(SyncLock);
+
+                Queue.Enqueue(stream);
+
+                if (ThreadSafe) Monitor.Exit(SyncLock);
+            }
+
+            static Pool()
+            {
+                Queue = new Queue<NetworkStream>();
+
+                SyncLock = new object();
+            }
+        }
+
+        public static void Clear(NetworkStream stream) => stream.Reset();
+
+        public static NotImplementedException FormatResolverException<T>()
+        {
+            var type = typeof(T);
+
+            return FormatResolverException(type);
+        }
+        public static NotImplementedException FormatResolverException(Type type)
+        {
+            return new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+        }
     }
 }

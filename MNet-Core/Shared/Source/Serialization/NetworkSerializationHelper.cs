@@ -99,7 +99,7 @@ namespace MNet
 
         public static class Length
         {
-            public static void Write(NetworkWriter writer, int value)
+            public static void Write(NetworkStream writer, int value)
             {
                 if (value > ushort.MaxValue)
                     throw new Exception($"Cannot Serialize {value} as a ushort Code, It's Value is Above the Maximum Value of {ushort.MaxValue}");
@@ -109,12 +109,12 @@ namespace MNet
                 writer.Write(length);
             }
 
-            public static void Read(NetworkReader reader, out ushort length) => length = Read(reader);
-            public static ushort Read(NetworkReader reader) => reader.Read<ushort>();
+            public static void Read(NetworkStream reader, out ushort length) => length = Read(reader);
+            public static ushort Read(NetworkStream reader) => reader.Read<ushort>();
 
             public static class Collection
             {
-                public static bool WriteExplicit(NetworkWriter writer, ICollection collection)
+                public static bool WriteExplicit(NetworkStream writer, ICollection collection)
                 {
                     if (collection == null)
                     {
@@ -128,7 +128,7 @@ namespace MNet
                     }
                 }
 
-                public static bool WriteGeneric<T>(NetworkWriter writer, ICollection<T> collection)
+                public static bool WriteGeneric<T>(NetworkStream writer, ICollection<T> collection)
                 {
                     if (collection == null)
                     {
@@ -142,16 +142,16 @@ namespace MNet
                     }
                 }
 
-                public static void WriteNull(NetworkWriter writer)
+                public static void WriteNull(NetworkStream writer)
                 {
                     writer.Write<ushort>(0);
                 }
-                public static void WriteValue(NetworkWriter writer, int value)
+                public static void WriteValue(NetworkStream writer, int value)
                 {
                     writer.Write((ushort)(value + 1));
                 }
 
-                public static bool Read(NetworkReader reader, out ushort value)
+                public static bool Read(NetworkStream reader, out ushort value)
                 {
                     value = reader.Read<ushort>();
 
@@ -265,7 +265,7 @@ namespace MNet
                 return instance;
             }
 
-            public static IList ReadFrom(NetworkReader reader, Type argument)
+            public static IList ReadFrom(NetworkStream reader, Type argument)
             {
                 var type = Construct(argument);
 

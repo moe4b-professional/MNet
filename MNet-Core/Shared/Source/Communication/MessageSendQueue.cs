@@ -57,7 +57,7 @@ namespace MNet
 
             public bool Empty => buffers.Count == 0 && writer.Size == 0;
 
-            readonly NetworkWriter writer;
+            readonly NetworkStream writer;
 
             public void Add(byte[] message)
             {
@@ -69,7 +69,7 @@ namespace MNet
 
                     buffers.Add(buffer);
 
-                    writer.Clear();
+                    writer.Reset();
                 }
 
                 writer.Insert(message);
@@ -90,7 +90,7 @@ namespace MNet
 
                 buffers.Add(buffer);
 
-                writer.Clear();
+                writer.Reset();
             }
 
             public void Clear()
@@ -105,7 +105,7 @@ namespace MNet
 
                 buffers = new List<byte[]>();
 
-                writer = new NetworkWriter(1024);
+                writer = new NetworkStream(1024);
             }
         }
 

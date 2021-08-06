@@ -12,14 +12,14 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             writer.Insert(value);
         }
 
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
-            value = reader.Next();
+            value = reader.Pull();
         }
 
         public NetworkClientID(byte value)
@@ -108,14 +108,14 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             writer.Insert(value);
         }
 
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
-            value = reader.Next();
+            value = reader.Pull();
         }
 
         public NetworkGroupID(byte value)

@@ -26,12 +26,12 @@ namespace MNet
 
         public T Read<T>() => (T)payload;
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             writer.Write(Type);
             writer.Write(payload);
         }
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
             reader.Read(out Type type);
             payload = reader.Read(type);
@@ -58,7 +58,7 @@ namespace MNet
 
         public static IEnumerable<NetworkMessage> ReadAll(byte[] data)
         {
-            var reader = new NetworkReader(data);
+            var reader = new NetworkStream(data);
 
             while (reader.Remaining > 0)
             {

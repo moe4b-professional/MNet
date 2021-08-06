@@ -23,13 +23,13 @@ namespace MNet
     [Preserve]
     public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
     {
-        public override void Serialize(NetworkWriter writer, Vector2 instance)
+        public override void Serialize(NetworkStream writer, Vector2 instance)
         {
             writer.Write(instance.x);
             writer.Write(instance.y);
         }
 
-        public override Vector2 Deserialize(NetworkReader reader)
+        public override Vector2 Deserialize(NetworkStream reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
@@ -41,13 +41,13 @@ namespace MNet
     [Preserve]
     public class Vector2IntSerializationResolver : NetworkSerializationExplicitResolver<Vector2Int>
     {
-        public override void Serialize(NetworkWriter writer, Vector2Int instance)
+        public override void Serialize(NetworkStream writer, Vector2Int instance)
         {
             writer.Write(instance.x);
             writer.Write(instance.y);
         }
 
-        public override Vector2Int Deserialize(NetworkReader reader)
+        public override Vector2Int Deserialize(NetworkStream reader)
         {
             reader.Read(out int x);
             reader.Read(out int y);
@@ -61,14 +61,14 @@ namespace MNet
     [Preserve]
     public class Vector3SerializationResolver : NetworkSerializationExplicitResolver<Vector3>
     {
-        public override void Serialize(NetworkWriter writer, Vector3 instance)
+        public override void Serialize(NetworkStream writer, Vector3 instance)
         {
             writer.Write(instance.x);
             writer.Write(instance.y);
             writer.Write(instance.z);
         }
 
-        public override Vector3 Deserialize(NetworkReader reader)
+        public override Vector3 Deserialize(NetworkStream reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
@@ -81,14 +81,14 @@ namespace MNet
     [Preserve]
     public class Vector3IntSerializationResolver : NetworkSerializationExplicitResolver<Vector3Int>
     {
-        public override void Serialize(NetworkWriter writer, Vector3Int instance)
+        public override void Serialize(NetworkStream writer, Vector3Int instance)
         {
             writer.Write(instance.x);
             writer.Write(instance.y);
             writer.Write(instance.z);
         }
 
-        public override Vector3Int Deserialize(NetworkReader reader)
+        public override Vector3Int Deserialize(NetworkStream reader)
         {
             reader.Read(out int x);
             reader.Read(out int y);
@@ -103,7 +103,7 @@ namespace MNet
     [Preserve]
     public class Vector4SerializationResolver : NetworkSerializationExplicitResolver<Vector4>
     {
-        public override void Serialize(NetworkWriter writer, Vector4 instance)
+        public override void Serialize(NetworkStream writer, Vector4 instance)
         {
             writer.Write(instance.x);
             writer.Write(instance.y);
@@ -111,7 +111,7 @@ namespace MNet
             writer.Write(instance.w);
         }
 
-        public override Vector4 Deserialize(NetworkReader reader)
+        public override Vector4 Deserialize(NetworkStream reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
@@ -126,7 +126,7 @@ namespace MNet
     [Preserve]
     public class ColorSerializationResolver : NetworkSerializationExplicitResolver<Color>
     {
-        public override void Serialize(NetworkWriter writer, Color instance)
+        public override void Serialize(NetworkStream writer, Color instance)
         {
             writer.Write(instance.r);
             writer.Write(instance.g);
@@ -134,7 +134,7 @@ namespace MNet
             writer.Write(instance.a);
         }
 
-        public override Color Deserialize(NetworkReader reader)
+        public override Color Deserialize(NetworkStream reader)
         {
             reader.Read(out float r);
             reader.Read(out float g);
@@ -148,7 +148,7 @@ namespace MNet
     [Preserve]
     public class QuaternionNetworkSerializationResolver : NetworkSerializationExplicitResolver<Quaternion>
     {
-        public override void Serialize(NetworkWriter writer, Quaternion instance)
+        public override void Serialize(NetworkStream writer, Quaternion instance)
         {
             writer.Write(instance.x);
             writer.Write(instance.y);
@@ -156,7 +156,7 @@ namespace MNet
             writer.Write(instance.w);
         }
 
-        public override Quaternion Deserialize(NetworkReader reader)
+        public override Quaternion Deserialize(NetworkStream reader)
         {
             reader.Read(out float x);
             reader.Read(out float y);
@@ -177,7 +177,7 @@ namespace MNet
             Null, Unready, Ready
         }
 
-        public override void Serialize(NetworkWriter writer, NetworkEntity instance)
+        public override void Serialize(NetworkStream writer, NetworkEntity instance)
         {
             if (instance == null)
             {
@@ -196,7 +196,7 @@ namespace MNet
             writer.Write(instance.ID);
         }
 
-        public override NetworkEntity Deserialize(NetworkReader reader)
+        public override NetworkEntity Deserialize(NetworkStream reader)
         {
             reader.Read(out State state);
 
@@ -220,13 +220,13 @@ namespace MNet
     {
         public override bool CanResolveDerivatives => true;
 
-        public override void Serialize(NetworkWriter writer, INetworkBehaviour instance)
+        public override void Serialize(NetworkStream writer, INetworkBehaviour instance)
         {
             writer.Write(instance.Network.Entity);
             writer.Write(instance.Network.ID);
         }
 
-        public override INetworkBehaviour Deserialize(NetworkReader reader)
+        public override INetworkBehaviour Deserialize(NetworkStream reader)
         {
             reader.Read(out NetworkEntity entity);
             reader.Read(out NetworkBehaviourID id);
@@ -248,7 +248,7 @@ namespace MNet
     {
         public override bool CanResolveDerivatives => true;
 
-        public override void Serialize(NetworkWriter writer, ISyncedAsset instance)
+        public override void Serialize(NetworkStream writer, ISyncedAsset instance)
         {
             var asset = instance as Object;
 
@@ -258,7 +258,7 @@ namespace MNet
             writer.Write(index);
         }
 
-        public override ISyncedAsset Deserialize(NetworkReader reader)
+        public override ISyncedAsset Deserialize(NetworkStream reader)
         {
             reader.Read(out ushort index);
 

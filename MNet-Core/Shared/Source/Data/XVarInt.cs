@@ -66,17 +66,17 @@ namespace MNet
         /// <param name="reader"></param>
         /// <param name="binary"></param>
         /// <param name="bits"></param>
-        public static void ReadAllBytes(NetworkReader reader, out byte[] binary, out int bits)
+        public static void ReadAllBytes(NetworkStream reader, out byte[] binary, out int bits)
         {
             binary = new byte[8];
-            binary[0] = reader.Next();
+            binary[0] = reader.Pull();
 
             bits = 8;
 
             for (int i = 1; i < binary.Length; i++)
             {
                 if (IsReadBitSet(binary[i - 1]))
-                    binary[i] = reader.Next();
+                    binary[i] = reader.Pull();
                 else
                     break;
 
@@ -145,7 +145,7 @@ namespace MNet
         public const long MinValue = -36028797018963967;
         public const long MaxValue = 36028797018963967;
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             var value = this.value;
 
@@ -185,7 +185,7 @@ namespace MNet
             for (int i = 0; i < bytes; i++)
                 writer.Insert(raw[i]);
         }
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
             ReadAllBytes(reader, out var binary, out var bits);
 
@@ -285,7 +285,7 @@ namespace MNet
         public const ulong MinValue = 0UL;
         public const ulong MaxValue = 72057594037927935UL;
 
-        public void Serialize(NetworkWriter writer)
+        public void Serialize(NetworkStream writer)
         {
             //The value that actually gets converted to binary
             ulong exchange = 0UL;
@@ -320,7 +320,7 @@ namespace MNet
             for (int i = 0; i < bytes; i++)
                 writer.Insert(raw[i]);
         }
-        public void Deserialize(NetworkReader reader)
+        public void Deserialize(NetworkStream reader)
         {
             ReadAllBytes(reader, out var binary, out var bits);
 
