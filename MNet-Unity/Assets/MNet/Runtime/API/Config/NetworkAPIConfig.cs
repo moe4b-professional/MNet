@@ -26,15 +26,58 @@ namespace MNet
     public class NetworkAPIConfig : ScriptableObject, IScriptableObjectBuildPreProcess
     {
         [SerializeField]
+        MetaProperty meta;
+        [Serializable]
+        public class MetaProperty
+        {
+            [CustomPropertyDrawer(typeof(MetaProperty))]
+            public class Drawer : PersistantPropertyDrawer
+            {
+                protected override void Init()
+                {
+                    base.Init();
+
+                    VersionStyle = new GUIStyle()
+                    {
+                        fontSize = 15,
+                        fontStyle = FontStyle.Bold,
+                        normal = new GUIStyleState()
+                        {
+                            textColor = new Color(0.27f, 1, 0.27f),
+                        }
+                    };
+                }
+
+                public override float CalculateHeight()
+                {
+                    return 25f;
+                }
+
+                public override void Draw(Rect rect)
+                {
+                    DrawVersion(ref rect);
+                }
+
+                public static GUIStyle VersionStyle;
+                void DrawVersion(ref Rect rect)
+                {
+                    var line = MUtility.GUICoordinates.SliceLine(ref rect, 20f);
+                    EditorGUI.LabelField(line, $"API v{Constants.ApiVersion}", VersionStyle);
+                }
+            }
+        }
+
+        [SerializeField]
         RestScheme restScheme = RestScheme.HTTP;
         public RestScheme RestScheme => restScheme;
 
-        public AppID AppID => appID.Selection;
-        public Version GameVersion => gameVersion.Selection;
-        public string MasterAddress => masterAddress.Selection;
+        [SerializeField]
+        string masterAddress = "127.0.0.1";
+        public string MasterAddress => masterAddress;
 
         [SerializeField]
         AppIDsProperty appID = new AppIDsProperty();
+        public AppID AppID => appID.Selection;
         [Serializable]
         public class AppIDsProperty : Property
         {
@@ -82,90 +125,9 @@ namespace MNet
             }
         }
 
-        [Header("Master Address")]
-        [SerializeField]
-        MasterAddressProperty masterAddress = new MasterAddressProperty();
-        [Serializable]
-        public class MasterAddressProperty : Property
-        {
-            [SerializeField]
-            bool local = false;
-            public bool Local => local;
-
-            public const string Default = "127.0.0.1";
-
-            [SerializeField]
-            protected string value = Default;
-
-            public string Selection => local ? Default : value;
-
-#if UNITY_EDITOR
-            [CustomPropertyDrawer(typeof(MasterAddressProperty))]
-            public class Drawer : PropertyDrawer
-            {
-                SerializedProperty property;
-                SerializedProperty local;
-                SerializedProperty value;
-
-                public static GUIContent LocalGUIContent;
-
-                void Init(SerializedProperty property)
-                {
-                    if (this.property == property) return;
-
-                    this.property = property;
-
-                    value = property.FindPropertyRelative(nameof(MasterAddressProperty.value));
-                    local = property.FindPropertyRelative(nameof(MasterAddressProperty.local));
-
-                    LocalGUIContent = new GUIContent("Connect to Local", "Toggle On to Always Connect to Localhost, usefull for Testing");
-                }
-
-                public static float LineHeight => EditorGUIUtility.singleLineHeight;
-
-                public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight * 2;
-
-                public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-                {
-                    Init(property);
-
-                    DrawValue(ref position);
-                    DrawLocal(ref position);
-                }
-
-                void DrawLocal(ref Rect rect)
-                {
-                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
-
-                    local.boolValue = EditorGUI.Toggle(area, LocalGUIContent, local.boolValue);
-
-                    rect.y += LineHeight;
-                    rect.height -= LineHeight;
-                }
-
-                void DrawValue(ref Rect rect)
-                {
-                    if (local.boolValue) GUI.enabled = false;
-
-                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
-
-                    if (local.boolValue)
-                        EditorGUI.TextField(area, "Address", Default);
-                    else
-                        value.stringValue = EditorGUI.TextField(area, "Address", value.stringValue);
-
-                    rect.y += LineHeight;
-                    rect.height -= LineHeight;
-
-                    GUI.enabled = true;
-                }
-            }
-#endif
-        }
-
-        [Header("Game Version")]
         [SerializeField]
         protected GameVersionProperty gameVersion = new GameVersionProperty();
+        public Version GameVersion => gameVersion.Selection;
         [Serializable]
         public class GameVersionProperty : Property
         {
@@ -200,63 +162,75 @@ namespace MNet
 
 #if UNITY_EDITOR
             [CustomPropertyDrawer(typeof(GameVersionProperty))]
-            public class Drawer : PropertyDrawer
+            public class Drawer : PersistantPropertyDrawer
             {
-                SerializedProperty property;
                 SerializedProperty infer;
-
                 SerializedProperty value;
-
-                public static GUIContent InferGUIContent;
 
                 public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-                void Init(SerializedProperty reference)
+                protected override void Init()
                 {
-                    if (property?.propertyPath == reference?.propertyPath) return;
+                    base.Init();
 
-                    property = reference;
-
-                    infer = reference.FindPropertyRelative(nameof(infer));
-                    value = reference.FindPropertyRelative(nameof(value));
-
-                    InferGUIContent = new GUIContent("Infer", "Toggle On to Infer Game Version from the Project's Version");
+                    infer = Property.FindPropertyRelative(nameof(infer));
+                    value = Property.FindPropertyRelative(nameof(value));
                 }
 
-                public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight * 2;
-
-                public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
+                public override float CalculateHeight()
                 {
-                    Init(property);
+                    if(Property.isExpanded)
+                        return LineHeight * 3;
 
-                    label = new GUIContent("Version");
-
-                    DrawValue(ref rect, label);
-                    DrawInfer(ref rect);
+                    return LineHeight;
                 }
 
-                void DrawValue(ref Rect rect, GUIContent label)
+                public override void Draw(Rect rect)
                 {
-                    var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
+                    base.Draw(rect);
 
-                    rect.y += LineHeight;
+                    DrawExpand(ref rect, Label);
+
+                    if(Property.isExpanded)
+                    {
+                        EditorGUI.indentLevel++;
+                        rect = EditorGUI.IndentedRect(rect);
+                        EditorGUI.indentLevel--;
+
+                        DrawValue(ref rect);
+                        DrawInfer(ref rect);
+                    }
+                }
+
+                void DrawExpand(ref Rect rect, GUIContent label)
+                {
+                    var line = MUtility.GUICoordinates.SliceLine(ref rect);
+
+                    Property.isExpanded = EditorGUI.Foldout(line, Property.isExpanded, label, true);
+                }
+
+                void DrawValue(ref Rect rect)
+                {
+                    var line = MUtility.GUICoordinates.SliceLine(ref rect);
+
+                    var content = new GUIContent(value.displayName);
 
                     if (infer.boolValue)
                     {
                         if (Version.TryParse(Application.version, out var version) == false)
                         {
-                            EditorGUI.HelpBox(area, $"Game Version Cannot be Infered from '{Application.version}'", MessageType.Error);
+                            EditorGUI.HelpBox(line, $"Game Version Cannot be Infered from '{Application.version}'", MessageType.Error);
                         }
                         else
                         {
                             GUI.enabled = false;
-                            Version.Drawer.DrawReadOnly(area, label, version);
+                            Version.Drawer.DrawReadOnly(line, content, version);
                             GUI.enabled = true;
                         }
                     }
                     else
                     {
-                        EditorGUI.PropertyField(area, value, label);
+                        EditorGUI.PropertyField(line, value, content);
                     }
                 }
 
@@ -264,13 +238,14 @@ namespace MNet
                 {
                     var area = new Rect(rect.x, rect.y, rect.width, LineHeight);
 
-                    infer.boolValue = EditorGUI.Toggle(area, InferGUIContent, infer.boolValue);
+                    var content = new GUIContent(infer.displayName, "Toggle On to Automatically Infer Game Version from the Project's Version");
+
+                    infer.boolValue = EditorGUI.Toggle(area, content, infer.boolValue);
                 }
             }
 #endif
         }
 
-        [Space]
         [SerializeField]
         UpdateMethodProperty updateMethod = new UpdateMethodProperty();
         public UpdateMethodProperty UpdateMethod => updateMethod;
@@ -307,7 +282,6 @@ namespace MNet
             public bool Any => early || normal || @fixed || late.Pre || late.Post;
         }
 
-        [Space]
         [SerializeField]
         SyncedAssetsProperty syncedAssets = new SyncedAssetsProperty();
         public SyncedAssetsProperty SyncedAssets => syncedAssets;
@@ -419,7 +393,6 @@ namespace MNet
         public IEnumerable<Property> AllProperties()
         {
             yield return appID;
-            yield return masterAddress;
             yield return gameVersion;
             yield return updateMethod;
             yield return syncedAssets;
@@ -454,36 +427,10 @@ namespace MNet
             syncedAssets.Refresh();
         }
 
-        [CustomEditor(typeof(NetworkAPIConfig))]
-        public class Inspector : Editor
-        {
-            public static GUIStyle VersionLabelStyle;
-
-            void OnEnable()
-            {
-                VersionLabelStyle = new GUIStyle()
-                {
-                    fontSize = 15,
-                    fontStyle = FontStyle.Bold,
-                    //alignment = TextAnchor.MiddleCenter,
-                    normal = new GUIStyleState()
-                    {
-                        textColor = new Color(0.27f, 1, 0.27f),
-                    }
-                };
-            }
-
-            public override void OnInspectorGUI()
-            {
-                EditorGUILayout.LabelField($"API Version: {Constants.ApiVersion}", VersionLabelStyle);
-                EditorGUILayout.Space();
-                base.OnInspectorGUI();
-            }
-        }
-
         public class Settings : SettingsProvider
         {
-            NetworkAPIConfig config;
+            public const string Path = "Project/MNet Configuration";
+
             SerializedObject serializedObject;
 
             public override void OnActivate(string searchContext, VisualElement rootElement)
@@ -526,7 +473,7 @@ namespace MNet
             [SettingsProvider]
             public static SettingsProvider Register()
             {
-                var instance = new Settings("Project/MNet Configuration", SettingsScope.Project);
+                var instance = new Settings(Path, SettingsScope.Project);
 
                 return instance;
             }

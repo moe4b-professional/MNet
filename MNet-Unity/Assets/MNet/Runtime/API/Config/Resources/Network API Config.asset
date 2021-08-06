@@ -13,14 +13,12 @@ MonoBehaviour:
   m_Name: Network API Config
   m_EditorClassIdentifier: 
   restScheme: 0
+  masterAddress: 127.0.0.1
   appID:
     global: Game 1 (Global)
     overrides:
     - _ID: Game 1 (Web)
       platforms: 11000000
-  masterAddress:
-    local: 1
-    value: moe4b.ddns.net
   gameVersion:
     infer: 1
     value:

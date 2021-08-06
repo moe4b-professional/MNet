@@ -4,6 +4,8 @@
 
 #if UNITY
 using UnityEngine;
+
+using MB;
 #endif
 
 #if UNITY_EDITOR
@@ -157,15 +159,11 @@ namespace MNet
 
 #if UNITY_EDITOR
         [CustomPropertyDrawer(typeof(Version))]
-        public class Drawer : PropertyDrawer
+        public class Drawer : PersistantPropertyDrawer
         {
-            SerializedProperty property;
-
             SerializedProperty major;
             SerializedProperty minor;
             SerializedProperty patch;
-
-            public GUIContent InferGUIContent;
 
             public const int FieldWidth = 30;
             public const int SeperatorWidth = 8;
@@ -181,32 +179,35 @@ namespace MNet
                 };
             }
 
-            void Init(SerializedProperty reference)
+            protected override void Init()
             {
-                if (property?.propertyPath == reference?.propertyPath) return;
+                base.Init();
 
-                property = reference;
-
-                major = reference.FindPropertyRelative(nameof(major));
-                minor = reference.FindPropertyRelative(nameof(minor));
-                patch = reference.FindPropertyRelative(nameof(patch));
+                major = Property.FindPropertyRelative(nameof(major));
+                minor = Property.FindPropertyRelative(nameof(minor));
+                patch = Property.FindPropertyRelative(nameof(patch));
             }
 
             public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-            public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => LineHeight;
-
-            public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
+            public override float CalculateHeight()
             {
-                Init(property);
+                return LineHeight;
+            }
 
-                DrawLabel(ref rect, label);
+            public override void Draw(Rect rect)
+            {
+                MUtility.GUICoordinates.ClearIndent();
+
+                DrawLabel(ref rect, Label);
 
                 DrawField(ref rect, major);
                 DrawSeperator(ref rect); // .
                 DrawField(ref rect, minor);
                 DrawSeperator(ref rect); // .
                 DrawField(ref rect, patch);
+
+                MUtility.GUICoordinates.RestoreIndent();
             }
 
             static void DrawLabel(ref Rect rect, GUIContent content)
@@ -252,6 +253,8 @@ namespace MNet
 
             public static void DrawReadOnly(Rect rect, GUIContent label, Version version)
             {
+                MUtility.GUICoordinates.ClearIndent();
+
                 DrawLabel(ref rect, label);
 
                 DrawField(ref rect, version.major);
@@ -259,6 +262,8 @@ namespace MNet
                 DrawField(ref rect, version.minor);
                 DrawSeperator(ref rect); // .
                 DrawField(ref rect, version.patch);
+
+                MUtility.GUICoordinates.RestoreIndent();
             }
         }
 #endif

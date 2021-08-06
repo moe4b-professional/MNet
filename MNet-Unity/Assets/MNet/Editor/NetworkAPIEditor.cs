@@ -28,12 +28,8 @@ namespace MNet
             var asset = NetworkAPIConfig.Load();
 
             Selection.activeObject = asset;
-        }
 
-        [MenuItem(Constants.Path + "Install Packages", false, 1)]
-        static void InstallPackages()
-        {
-            UnityEditor.PackageManager.Client.Add("https://github.com/Moe-Baker/Packages.git");
+            SettingsService.OpenProjectSettings(NetworkAPIConfig.Settings.Path);
         }
     }
 }

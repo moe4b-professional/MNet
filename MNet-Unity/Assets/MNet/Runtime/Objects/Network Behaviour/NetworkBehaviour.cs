@@ -503,6 +503,9 @@ namespace MNet
     {
         NetworkEntity.Behaviour Network { get; set; }
 
+        /// <summary>
+        /// Callback that allows users to configure Networking callbacks
+        /// </summary>
         void OnNetwork();
     }
 

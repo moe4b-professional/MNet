@@ -29,6 +29,15 @@ namespace MNet.Example
 {
     public class Sandbox : NetworkBehaviour
     {
+        public Version version;
+
+        public Property property;
+        [Serializable]
+        public class Property
+        {
+            public Version version;
+        }
+
         public override void OnNetwork()
         {
             base.OnNetwork();
