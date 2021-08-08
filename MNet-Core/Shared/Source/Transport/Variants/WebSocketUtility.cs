@@ -18,10 +18,16 @@ namespace MNet
 
             public static class Disconnect
             {
-                public const ushort CodeOffset = 2000;
+                public const ushort CodeOffset = 4000;
 
                 public static ushort CodeToValue(DisconnectCode code)
                 {
+                    switch (code)
+                    {
+                        case DisconnectCode.Normal:
+                            return 1000;
+                    }
+
                     var value = Convert.ToUInt16(code);
 
                     value += CodeOffset;
@@ -39,9 +45,6 @@ namespace MNet
                         {
                             case CloseStatusCode.Normal:
                                 return DisconnectCode.Normal;
-
-                            case CloseStatusCode.InvalidData:
-                                return DisconnectCode.InvalidData;
                         }
 
                         return DisconnectCode.Unknown;

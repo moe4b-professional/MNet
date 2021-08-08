@@ -1301,7 +1301,7 @@ namespace MNet
 
             var value = Activator.CreateInstance(type, true) as INetworkSerializable;
 
-            var context = NetworkSerializationContext.Serialize(reader);
+            var context = NetworkSerializationContext.Deserialize(reader);
 
             value.Select(ref context);
 

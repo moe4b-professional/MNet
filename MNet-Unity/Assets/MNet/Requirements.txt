@@ -1,2 +1,2 @@
 Packages:
-com.moe-baker.packages @ https://github.com/Moe-Baker/Packages.git
+com.moe-baker.toolbox @ https://github.com/moe4b-packages/Toolbox.git

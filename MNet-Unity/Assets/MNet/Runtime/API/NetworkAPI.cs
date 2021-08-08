@@ -43,13 +43,6 @@ namespace MNet
 
         public static void Configure()
         {
-            Config = NetworkAPIConfig.Load();
-
-            if (Config == null)
-                throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
-
-            Config.Prepare();
-
             Log.Output = LogOutput;
 
 #if ENABLE_IL2CPP
@@ -57,6 +50,13 @@ namespace MNet
 #else
             DynamicNetworkSerialization.Enabled = true;
 #endif
+
+            Config = NetworkAPIConfig.Load();
+
+            if (Config == null)
+                throw new Exception("No Network API Config ScriptableObject Found, Please Make Sure One is Created and Located in a Resources Folder");
+
+            Config.Prepare();
 
             IsRunning = true;
             Application.quitting += ApplicationQuitCallback;

@@ -21,12 +21,9 @@ using Utility = MNet.NetworkTransportUtility.WebSocket;
 
 namespace MNet
 {
-#if UNITY_WEBGL && !UNITY_EDITOR
-    using NativeWebSocket;
-
     public class WebSocketTransport : NetworkTransport
     {
-        public WebSocket Socket { get; protected set; }
+        public GlobalWebSocket Socket { get; protected set; }
 
         public override bool IsConnected
         {
@@ -34,7 +31,7 @@ namespace MNet
             {
                 if (Socket == null) return false;
 
-                return Socket.State == WebSocketState.Open;
+                return Socket.IsConnected;
             }
         }
 
@@ -46,113 +43,38 @@ namespace MNet
         {
             var url = $"ws://{server}:{Port}/{room}";
 
-            Socket = new WebSocket(url);
+            Socket = new GlobalWebSocket(url);
 
-            Socket.OnOpen += OpenCallback;
+            Socket.OnConnect += ConnectCallback;
             Socket.OnMessage += RecievedMessageCallback;
-            Socket.OnClose += CloseCallback;
+            Socket.OnDisconnect += DisconnectCallback;
 
             Socket.Connect();
         }
 
-#if !UNITY_WEBGL || UNITY_EDITOR
-        void Process()
+        void ConnectCallback() => InvokeConnect();
+
+        void RecievedMessageCallback(byte[] raw)
         {
-            if (Socket == null) return;
-
-            Socket.DispatchMessageQueue();
-        }
-#endif
-
-        void OpenCallback() => InvokeConnect();
-
-        void RecievedMessageCallback(byte[] data) => InvokeMessages(data, DeliveryMode.ReliableOrdered);
-
-        void CloseCallback(WebSocketCloseCode closeCode)
-        {
-            var value = (ushort)closeCode;
-
-            var code = Utility.Disconnect.ValueToCode(value);
-
-            InvokeDisconnect(code);
-        }
-
-        public override void Send(byte[] raw, DeliveryMode mode, byte channel) => Socket.Send(raw);
-
-        public override void Close() => Socket.Close();
-
-        public WebSocketTransport() : base()
-        {
-#if !UNITY_WEBGL || UNITY_EDITOR
-            NetworkAPI.OnProcess += Process;
-#endif
-        }
-    }
-
-#else
-    using WebSocketSharp;
-
-    public class WebSocketTransport : NetworkTransport
-    {
-        public WebSocket Socket { get; protected set; }
-
-        public override bool IsConnected
-        {
-            get
-            {
-                if (Socket == null) return false;
-
-                return Socket.ReadyState == WebSocketState.Open;
-            }
-        }
-
-        public const int Port = Utility.Port;
-
-        public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU();
-
-        public override void Connect(GameServerID server, RoomID room)
-        {
-            var url = $"ws://{server}:{Port}/{room}";
-
-            Socket = new WebSocket(url);
-
-            Socket.OnOpen += OpenCallback;
-            Socket.OnMessage += RecievedMessageCallback;
-            Socket.OnClose += CloseCallback;
-
-            Socket.ConnectAsync();
-        }
-
-        void OpenCallback(object sender, EventArgs args) => InvokeConnect();
-
-        void RecievedMessageCallback(object sender, MessageEventArgs args)
-        {
-            var segment = new ArraySegment<byte>(args.RawData);
+            var segment = new ArraySegment<byte>(raw);
 
             InvokeMessages(segment, DeliveryMode.ReliableOrdered);
         }
 
-        void CloseCallback(object sender, CloseEventArgs args)
-        {
-            var code = Utility.Disconnect.ValueToCode(args.Code);
-
-            InvokeDisconnect(code);
-        }
+        void DisconnectCallback(DisconnectCode code, string reason) => InvokeDisconnect(code);
 
         public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
-            using (var stream = new MemoryStream(segment.Array, segment.Offset, segment.Count))
-            {
-                Socket.Send(stream, segment.Count);
-            }
+            var raw = segment.ToArray();
+
+            Socket.Send(raw);
         }
 
-        public override void Close() => Socket.Close(CloseStatusCode.Normal);
+        public override void Close() => Socket.Disconnect();
 
         public WebSocketTransport() : base()
         {
 
         }
     }
-#endif
 }
