@@ -70,10 +70,7 @@ namespace MNet
 
                 var raw = NetworkSerializer.Serialize(message);
 
-                if (AppAPI.Config.QueueMessages)
-                    SendQueue.Add(raw, mode, channel);
-                else
-                    Realtime.Send(raw, mode, channel);
+                SendQueue.Add(raw, mode, channel);
 
                 return true;
             }
@@ -157,7 +154,7 @@ namespace MNet
 
                 static void Process()
                 {
-                    if (IsConnected && AppAPI.Config.QueueMessages) Resolve();
+                    if (IsConnected) Resolve();
                 }
 
                 static void Resolve()

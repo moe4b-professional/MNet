@@ -1036,10 +1036,7 @@ namespace MNet
 
             var raw = NetworkSerializer.Serialize(message);
 
-            if (App.QueueMessages)
-                SendQueue.Add(raw, target, mode, channel);
-            else
-                TransportContext.Send(target.ID, raw, mode, channel);
+            SendQueue.Add(raw, target, mode, channel);
 
             return message;
         }
@@ -1049,27 +1046,14 @@ namespace MNet
             var message = NetworkMessage.Write(ref payload);
 
             var raw = NetworkSerializer.Serialize(message);
-            if (App.QueueMessages)
-            {
-                for (int i = 0; i < Clients.Count; i++)
-                {
-                    if (Clients[i].Groups.Contains(group) == false) continue;
-                    if (exception1 == Clients[i].ID) continue;
-                    if (exception2 == Clients[i].ID) continue;
 
-                    SendQueue.Add(raw, Clients[i], mode, channel);
-                }
-            }
-            else
+            for (int i = 0; i < Clients.Count; i++)
             {
-                for (int i = 0; i < Clients.Count; i++)
-                {
-                    if (Clients[i].Groups.Contains(group) == false) continue;
-                    if (exception1 == Clients[i].ID) continue;
-                    if (exception2 == Clients[i].ID) continue;
+                if (Clients[i].Groups.Contains(group) == false) continue;
+                if (exception1 == Clients[i].ID) continue;
+                if (exception2 == Clients[i].ID) continue;
 
-                    TransportContext.Send(Clients[i].ID, raw, mode, channel);
-                }
+                SendQueue.Add(raw, Clients[i], mode, channel);
             }
 
             return message;
@@ -1109,7 +1093,7 @@ namespace MNet
 
             TransportContext.Poll();
 
-            if (Scheduler.IsRunning && App.QueueMessages) SendQueue.Resolve();
+            if (Scheduler.IsRunning) SendQueue.Resolve();
 
             OnTick?.Invoke();
         }

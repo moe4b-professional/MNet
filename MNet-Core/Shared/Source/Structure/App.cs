@@ -82,32 +82,22 @@ namespace MNet
             private set => tickDelay = value;
         }
 
-        bool queueMessages;
-        [JsonProperty]
-        public bool QueueMessages
-        {
-            get => queueMessages;
-            private set => queueMessages = value;
-        }
-
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref id);
             context.Select(ref transport);
             context.Select(ref minimumVersion);
             context.Select(ref tickDelay);
-            context.Select(ref queueMessages);
         }
 
-        public override string ToString() => $"[ {id} | {transport} | v{minimumVersion} | {tickDelay}ms | Queue Messages: {queueMessages} ]";
+        public override string ToString() => $"[ {id} | {transport} | v{minimumVersion} | {tickDelay}ms ]";
 
-        public AppConfig(AppID id, NetworkTransportType transport, Version minimumVersion, byte tickDelay, bool queueMessages)
+        public AppConfig(AppID id, NetworkTransportType transport, Version minimumVersion, byte tickDelay)
         {
             this.id = id;
             this.transport = transport;
             this.minimumVersion = minimumVersion;
             this.tickDelay = tickDelay;
-            this.queueMessages = queueMessages;
         }
 
         //Static Utility

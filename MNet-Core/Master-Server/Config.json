@@ -6,15 +6,13 @@
          "ID": "Game 1 (Global)",
          "Transport": "LiteNetLib",
          "MinimumVersion": "0.0.0",
-         "TickDelay": 5,
-         "QueueMessages": true
+         "TickDelay": 5
       },
       {
          "ID": "Game 1 (Web)",
          "Transport": "WebSockets",
          "MinimumVersion": "0.0.0",
-         "TickDelay": 5,
-         "QueueMessages": true
+         "TickDelay": 5
       }
    ]
 }
