@@ -68,9 +68,14 @@ namespace MNet
 
                 var message = NetworkMessage.Write(ref payload);
 
-                var raw = NetworkSerializer.Serialize(message);
+                var stream = NetworkStream.Pool.Any;
+                stream.Write(message);
 
-                SendQueue.Add(raw, mode, channel);
+                var segment = stream.Segment();
+
+                SendQueue.Add(segment, mode, channel);
+
+                stream.Recycle();
 
                 return true;
             }
@@ -160,10 +165,10 @@ namespace MNet
                 static void Resolve()
                 {
                     foreach (var packet in Queue.Iterate())
-                        Realtime.Send(packet.raw, packet.delivery, packet.channel);
+                        Realtime.Send(packet.segment, packet.delivery, packet.channel);
                 }
 
-                public static void Add(byte[] raw, DeliveryMode mode, byte channel) => Queue.Add(raw, mode, channel);
+                public static void Add(ArraySegment<byte> segment, DeliveryMode mode, byte channel) => Queue.Add(segment, mode, channel);
 
                 internal static void Clear()
                 {

@@ -84,7 +84,7 @@ namespace MNet
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
 
-        void Send(NetworkClientID target, byte[] raw, DeliveryMode mode, byte channel);
+        void Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
         void Disconnect(NetworkClientID clientID, DisconnectCode code);
 
@@ -230,7 +230,7 @@ namespace MNet
         #endregion
 
         #region Register Messages
-        public virtual void RegisterMessages(TConnection connection, byte[] raw, DeliveryMode mode, byte channel)
+        public virtual void RegisterMessages(TConnection connection, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             if (Connections.TryGetValue(connection, out var client) == false)
             {
@@ -238,14 +238,14 @@ namespace MNet
                 return;
             }
 
-            RegisterMessages(client, raw, mode, channel);
+            RegisterMessages(client, segment, mode, channel);
         }
 
-        public virtual void RegisterMessages(TClient sender, byte[] raw, DeliveryMode mode, byte channel)
+        public virtual void RegisterMessages(TClient sender, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             try
             {
-                foreach (var message in NetworkMessage.ReadAll(raw))
+                foreach (var message in NetworkMessage.ReadAll(segment))
                     QueueMessage(sender, message, mode, channel);
             }
             catch (Exception ex)
@@ -261,7 +261,7 @@ namespace MNet
         protected virtual void DestroyClient(TClient client) { }
 
         #region Send
-        public void Send(NetworkClientID target, byte[] raw, DeliveryMode mode, byte channel)
+        public void Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             if (Clients.TryGetValue(target, out var client) == false)
             {
@@ -269,10 +269,10 @@ namespace MNet
                 return;
             }
 
-            Send(client, raw, mode, channel);
+            Send(client, segment, mode, channel);
         }
 
-        public abstract void Send(TClient target, byte[] raw, DeliveryMode mode, byte channel);
+        public abstract void Send(TClient target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
         #endregion
 
         #region Disconnect

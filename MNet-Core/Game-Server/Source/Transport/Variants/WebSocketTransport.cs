@@ -8,6 +8,7 @@ using WebSocketSharp;
 using WebSocketSharp.Server;
 
 using Utility = MNet.NetworkTransportUtility.WebSocket;
+using System.IO;
 
 namespace MNet
 {
@@ -77,7 +78,9 @@ namespace MNet
             {
                 base.OnMessage(args);
 
-                TransportContext.RegisterMessages(Client, args.RawData, DeliveryMode.ReliableOrdered, 0);
+                var segment = new ArraySegment<byte>(args.RawData);
+
+                TransportContext.RegisterMessages(Client, segment, DeliveryMode.ReliableOrdered, 0);
             }
 
             protected override void OnClose(CloseEventArgs args)
@@ -96,11 +99,14 @@ namespace MNet
             return client;
         }
 
-        public override void Send(WebSocketTransportClient client, byte[] raw, DeliveryMode mode, byte channel)
+        public override void Send(WebSocketTransportClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             if (client.IsOpen == false) return;
 
-            Sessions.SendTo(raw, client.InternalID);
+            using (var stream = new MemoryStream(segment.Array, segment.Offset, segment.Count))
+            {
+                Sessions.SendTo(stream, segment.Count, client.InternalID);
+            }
         }
 
         public override void Disconnect(WebSocketTransportClient client, DisconnectCode code)

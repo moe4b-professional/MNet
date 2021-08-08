@@ -53,11 +53,11 @@ namespace MNet
             OnDisconnect?.Invoke(code);
         }
 
-        public abstract void Send(byte[] raw, DeliveryMode mode, byte channel);
+        public abstract void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
-        protected void InvokeMessages(byte[] raw, DeliveryMode mode)
+        protected void InvokeMessages(ArraySegment<byte> segment, DeliveryMode mode)
         {
-            foreach (var message in NetworkMessage.ReadAll(raw))
+            foreach (var message in NetworkMessage.ReadAll(segment))
                 InvokeMessage(message, mode);
         }
 

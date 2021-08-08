@@ -19,11 +19,15 @@ namespace MNet
             Reset();
         }
 
+        /// <summary>
+        /// The Available Binary Capacity
+        /// </summary>
         public int Capacity => data == null ? 0 : data.Length;
 
-        public int Size => Position;
-
         int internal_position;
+        /// <summary>
+        /// The Current Position of the Stream
+        /// </summary>
         public int Position
         {
             get => internal_position;
@@ -38,11 +42,18 @@ namespace MNet
             }
         }
 
+        /// <summary>
+        /// The Remaining Amount of Capacity
+        /// </summary>
         public int Remaining { get; protected set; }
 
         #region Sizing
         public const uint DefaultResizeLength = 512;
 
+        /// <summary>
+        /// Resize stream to fit a certian capacity
+        /// </summary>
+        /// <param name="capacity"></param>
         protected void Fit(int capacity)
         {
             if (capacity <= 0) throw new Exception($"Cannot Resize Network Buffer to Fit {capacity}");
@@ -54,6 +65,11 @@ namespace MNet
 
             Resize(extra);
         }
+
+        /// <summary>
+        /// Adds Extra Capacity to Stream
+        /// </summary>
+        /// <param name="extra"></param>
         protected void Resize(uint extra)
         {
             var value = new byte[Capacity + extra];
@@ -64,6 +80,20 @@ namespace MNet
         }
         #endregion
 
+        #region Slicing
+        /// <summary>
+        /// Returns an Array Segment Representing the Current State of the Stream
+        /// </summary>
+        /// <returns></returns>
+        public ArraySegment<byte> Segment()
+        {
+            return new ArraySegment<byte>(data, 0, Position);
+        }
+
+        /// <summary>
+        /// Clones the Stream to a Byte Array
+        /// </summary>
+        /// <returns></returns>
         public byte[] ToArray()
         {
             var destination = new byte[Position];
@@ -72,6 +102,11 @@ namespace MNet
 
             return destination;
         }
+
+        /// <summary>
+        /// Clones the Stream to a Byte Array and Resets it
+        /// </summary>
+        /// <returns></returns>
         public byte[] Flush()
         {
             var raw = ToArray();
@@ -80,7 +115,9 @@ namespace MNet
 
             return raw;
         }
+        #endregion
 
+        #region Insert
         public void Insert(byte value)
         {
             if (Remaining == 0) Resize(DefaultResizeLength);
@@ -89,22 +126,37 @@ namespace MNet
 
             Position += 1;
         }
-        public void Insert(byte[] source) => Insert(source, source.Length);
-        public void Insert(byte[] source, int count)
+
+        public void Insert(ArraySegment<byte> segment) => Insert(segment.Array, segment.Offset, segment.Count);
+
+        public void Insert(byte[] source) => Insert(source, 0, source.Length);
+        public void Insert(byte[] source, int offset, int count)
         {
             if (count > Remaining) Fit(count);
 
-            Buffer.BlockCopy(source, 0, data, Position, count);
+            Buffer.BlockCopy(source, offset, data, Position, count);
 
             Position += count;
         }
+        #endregion
 
+        #region Pull
+        /// <summary>
+        /// Retrieves the Next Byte in Stream and Iterates the Position by 1
+        /// </summary>
+        /// <returns></returns>
         public byte Pull()
         {
             Position += 1;
 
             return data[Position - 1];
         }
+
+        /// <summary>
+        /// Retrieves the Next Bytes in Memory and Iterates the Position by the Length
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
         public byte[] Pull(int length)
         {
             var destination = new byte[length];
@@ -115,6 +167,7 @@ namespace MNet
 
             return destination;
         }
+        #endregion
 
         #region Write
         public void Write<T>(T value)
@@ -229,12 +282,22 @@ namespace MNet
         #endregion
         #endregion
 
+        /// <summary>
+        /// Resets the Stream State (Position)
+        /// </summary>
         public void Reset()
         {
             Position = 0;
         }
 
+        /// <summary>
+        /// Was this Stream Leased from The Network Stream Pool?
+        /// </summary>
         public bool IsLeased { get; private set; }
+
+        /// <summary>
+        /// Returns the Stream to The Pool if it was Leased from It
+        /// </summary>
         public void Recycle()
         {
             if(IsLeased == false)
@@ -245,14 +308,18 @@ namespace MNet
 
             Pool.Return(this);
         }
+        /// <summary>
+        /// Recycles the Stream
+        /// </summary>
         public void Dispose() => Recycle();
 
         public NetworkStream() : this(null) { }
         public NetworkStream(int capacity) : this(new byte[capacity]) { }
-        public NetworkStream(byte[] data)
+        public NetworkStream(byte[] data) : this(data, 0) { }
+        public NetworkStream(byte[] data, int position)
         {
             this.data = data;
-            Position = 0;
+            this.Position = position;
         }
 
         //Static Utility
@@ -262,11 +329,9 @@ namespace MNet
             static Queue<NetworkStream> Queue;
 
             static object SyncLock;
-
             public static bool ThreadSafe { get; set; } = true;
 
             public static NetworkStream Any => Lease();
-
             public static NetworkStream Lease()
             {
                 if (ThreadSafe) Monitor.Enter(SyncLock);
@@ -305,8 +370,6 @@ namespace MNet
                 SyncLock = new object();
             }
         }
-
-        public static void Clear(NetworkStream stream) => stream.Reset();
 
         public static NotImplementedException FormatResolverException<T>()
         {

@@ -24,7 +24,7 @@ namespace MNet
 
             public Dictionary<byte, Channel> Channels;
 
-            public Channel Add(byte[] message, byte channel)
+            public Channel Add(ArraySegment<byte> message, byte channel)
             {
                 if (Channels.TryGetValue(channel, out var element) == false)
                 {
@@ -53,44 +53,34 @@ namespace MNet
 
             public readonly int MTU;
 
-            List<byte[]> buffers;
+            List<NetworkStream> buffers;
 
-            public bool Empty => buffers.Count == 0 && writer.Size == 0;
+            public bool Empty => buffers.Count == 0 && stream.Position == 0;
 
-            readonly NetworkStream writer;
+            NetworkStream stream;
 
-            public void Add(byte[] message)
+            public void Add(ArraySegment<byte> message)
             {
-                if (message.Length > MTU) throw new Exception($"Message Too Big for {MTU} MTU");
+                if (message.Count > MTU) throw new Exception($"Message Too Big for {MTU} MTU");
 
-                if (writer.Position + message.Length > MTU)
+                if (stream.Position + message.Count > MTU)
                 {
-                    var buffer = writer.ToArray();
-
-                    buffers.Add(buffer);
-
-                    writer.Reset();
+                    buffers.Add(stream);
+                    stream = NetworkStream.Pool.Any;
                 }
 
-                writer.Insert(message);
+                stream.Insert(message);
             }
 
-            public List<byte[]> Read()
+            public List<NetworkStream> Read()
             {
-                Finialize();
+                if (stream.Position > 0)
+                {
+                    buffers.Add(stream);
+                    stream = NetworkStream.Pool.Any;
+                }
 
                 return buffers;
-            }
-
-            void Finialize()
-            {
-                if (writer.Size == 0) return;
-
-                var buffer = writer.ToArray();
-
-                buffers.Add(buffer);
-
-                writer.Reset();
             }
 
             public void Clear()
@@ -103,15 +93,15 @@ namespace MNet
                 this.Index = index;
                 this.MTU = mtu;
 
-                buffers = new List<byte[]>();
+                buffers = new List<NetworkStream>();
 
-                writer = new NetworkStream(1024);
+                stream = NetworkStream.Pool.Any;
             }
         }
 
         public HashSet<(Delivery delivery, Channel channel)> Dirty;
 
-        public void Add(byte[] message, DeliveryMode mode, byte channel)
+        public void Add(ArraySegment<byte> message, DeliveryMode mode, byte channel)
         {
             if (Deliveries.TryGetValue(mode, out var element) == false)
             {
@@ -129,18 +119,22 @@ namespace MNet
 
         public IEnumerable<MessageQueuePacket> Iterate()
         {
-            foreach (var selection in Dirty)
+            foreach (var entry in Dirty)
             {
-                var buffers = selection.channel.Read();
+                var streams = entry.channel.Read();
 
-                for (int i = 0; i < buffers.Count; i++)
+                for (int i = 0; i < streams.Count; i++)
                 {
-                    var packet = new MessageQueuePacket(buffers[i], selection.delivery.Mode, selection.channel.Index);
+                    var segment = streams[i].Segment();
+
+                    var packet = new MessageQueuePacket(segment, entry.delivery.Mode, entry.channel.Index);
 
                     yield return packet;
+
+                    streams[i].Recycle();
                 }
 
-                selection.channel.Clear();
+                entry.channel.Clear();
             }
 
             Dirty.Clear();
@@ -164,13 +158,13 @@ namespace MNet
     [Preserve]
     public struct MessageQueuePacket
     {
-        public readonly byte[] raw;
+        public readonly ArraySegment<byte> segment;
         public readonly DeliveryMode delivery;
         public readonly byte channel;
 
-        public MessageQueuePacket(byte[] raw, DeliveryMode delivery, byte channel)
+        public MessageQueuePacket(ArraySegment<byte> segment, DeliveryMode delivery, byte channel)
         {
-            this.raw = raw;
+            this.segment = segment;
             this.delivery = delivery;
             this.channel = channel;
         }

@@ -949,7 +949,7 @@ namespace MNet
         {
             HashSet<NetworkClient> hash;
 
-            public void Add(byte[] message, NetworkClient target, DeliveryMode mode, byte channel)
+            public void Add(ArraySegment<byte> message, NetworkClient target, DeliveryMode mode, byte channel)
             {
                 target.SendQueue.Add(message, mode, channel);
 
@@ -962,7 +962,7 @@ namespace MNet
             {
                 foreach (var client in hash)
                     foreach (var packet in client.SendQueue.Iterate())
-                        TransportContext.Send(client.ID, packet.raw, packet.delivery, packet.channel);
+                        TransportContext.Send(client.ID, packet.segment, packet.delivery, packet.channel);
 
                 hash.Clear();
             }
@@ -1034,9 +1034,14 @@ namespace MNet
         {
             var message = NetworkMessage.Write(ref payload);
 
-            var raw = NetworkSerializer.Serialize(message);
+            var stream = NetworkStream.Pool.Any;
+            stream.Write(message);
 
-            SendQueue.Add(raw, target, mode, channel);
+            var segment = stream.Segment();
+
+            SendQueue.Add(segment, target, mode, channel);
+
+            stream.Recycle();
 
             return message;
         }

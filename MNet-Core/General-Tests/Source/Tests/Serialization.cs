@@ -41,9 +41,11 @@ namespace MNet
 
             var copy = new List<TargetRpcRequest>();
 
-            foreach (var buffer in delivery.Channels[0].Read())
+            foreach (var stream in delivery.Channels[0].Read())
             {
-                foreach (var message in NetworkMessage.ReadAll(buffer))
+                var segment = stream.Segment();
+
+                foreach (var message in NetworkMessage.ReadAll(segment))
                 {
                     copy.Add(message.Read<TargetRpcRequest>());
                 }

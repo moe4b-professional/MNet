@@ -54,17 +54,25 @@ namespace MNet
             return message;
         }
 
-        public static NetworkMessage Read(byte[] data) => NetworkSerializer.Deserialize<NetworkMessage>(data);
-
-        public static IEnumerable<NetworkMessage> ReadAll(byte[] data)
+        public static IEnumerable<NetworkMessage> ReadAll(ArraySegment<byte> segment)
         {
-            var reader = new NetworkStream(data);
+            var stream = new NetworkStream(segment.Array, segment.Offset);
 
-            while (reader.Remaining > 0)
+            var end = segment.Offset + segment.Count;
+
+            while (true)
             {
-                var message = reader.Read<NetworkMessage>();
+                var message = stream.Read<NetworkMessage>();
 
                 yield return message;
+
+                if (stream.Position == end) break;
+
+                if(stream.Position > end)
+                {
+                    Log.Error($"Network Message Stream Read Went Past the Expected Length! Are you Sure You are Passing a valid ArraySegment?");
+                    break;
+                }
             }
         }
     }

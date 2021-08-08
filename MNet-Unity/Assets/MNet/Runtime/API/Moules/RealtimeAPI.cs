@@ -173,7 +173,7 @@ namespace MNet
                 Transport.Connect(server, room);
             }
 
-            internal static bool Send(byte[] raw, DeliveryMode mode, byte channel)
+            internal static bool Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
             {
                 if (IsConnected == false)
                 {
@@ -189,7 +189,7 @@ namespace MNet
                     return false;
                 }
 
-                Transport.Send(raw, mode, channel);
+                Transport.Send(segment, mode, channel);
                 return true;
             }
 

@@ -89,9 +89,6 @@ namespace MNet
                 return;
             }
 
-            var raw = reader.GetRemainingBytes();
-            reader.Recycle();
-
             if (Utility.Delivery.Glossary.TryGetKey(delivery, out var mode) == false)
             {
                 Log.Error($"LiteNetLib: Recieved Packet with Undefined Delivery Method of {delivery}");
@@ -99,7 +96,11 @@ namespace MNet
                 return;
             }
 
-            context.RegisterMessages(peer, raw, mode, channel);
+            var segment = reader.GetRemainingBytesSegment();
+
+            context.RegisterMessages(peer, segment, mode, channel);
+
+            reader.Recycle();
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -165,11 +166,11 @@ namespace MNet
             return new LiteNetLibTransportClient(this, clientID, connection);
         }
 
-        public override void Send(LiteNetLibTransportClient client, byte[] raw, DeliveryMode mode, byte channel)
+        public override void Send(LiteNetLibTransportClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             var method = Utility.Delivery.Glossary[mode];
 
-            client.Peer.Send(raw, channel, method);
+            client.Peer.Send(segment.Array, segment.Offset, segment.Count, channel, method);
         }
 
         public override void Disconnect(LiteNetLibTransportClient client, DisconnectCode code)

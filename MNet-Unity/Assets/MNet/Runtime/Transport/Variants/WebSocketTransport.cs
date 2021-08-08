@@ -125,7 +125,12 @@ namespace MNet
 
         void OpenCallback(object sender, EventArgs args) => InvokeConnect();
 
-        void RecievedMessageCallback(object sender, MessageEventArgs args) => InvokeMessages(args.RawData, DeliveryMode.ReliableOrdered);
+        void RecievedMessageCallback(object sender, MessageEventArgs args)
+        {
+            var segment = new ArraySegment<byte>(args.RawData);
+
+            InvokeMessages(segment, DeliveryMode.ReliableOrdered);
+        }
 
         void CloseCallback(object sender, CloseEventArgs args)
         {
@@ -134,7 +139,13 @@ namespace MNet
             InvokeDisconnect(code);
         }
 
-        public override void Send(byte[] raw, DeliveryMode mode, byte channel) => Socket.Send(raw);
+        public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
+        {
+            using (var stream = new MemoryStream(segment.Array, segment.Offset, segment.Count))
+            {
+                Socket.Send(stream, segment.Count);
+            }
+        }
 
         public override void Close() => Socket.Close(CloseStatusCode.Normal);
 

@@ -73,12 +73,13 @@ namespace MNet
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            var raw = reader.GetRemainingBytes();
-            reader.Recycle();
-
             var mode = Utility.Delivery.Glossary[deliveryMethod];
 
-            InvokeMessages(raw, mode);
+            var segment = reader.GetRemainingBytesSegment();
+
+            InvokeMessages(segment, mode);
+
+            reader.Recycle();
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
@@ -94,11 +95,11 @@ namespace MNet
         public void OnConnectionRequest(ConnectionRequest request) { }
         #endregion
 
-        public override void Send(byte[] raw, DeliveryMode mode, byte channel)
+        public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             var method = Utility.Delivery.Glossary[mode];
 
-            Peer.Send(raw, channel, method);
+            Peer.Send(segment.Array, segment.Offset, segment.Count, channel, method);
         }
 
         public override void Close()
