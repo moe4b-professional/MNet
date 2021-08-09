@@ -26,8 +26,6 @@ namespace MNet.Example
 	[CreateAssetMenu]
 	public class Core : ScriptableObject
 	{
-		public const int ExecutionOrder = -400;
-
 		public static Core Instance { get; protected set; }
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

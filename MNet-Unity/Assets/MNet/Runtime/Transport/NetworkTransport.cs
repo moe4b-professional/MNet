@@ -57,7 +57,7 @@ namespace MNet
 
         protected void InvokeMessages(ArraySegment<byte> segment, DeliveryMode mode)
         {
-            foreach (var message in NetworkMessage.ReadAll(segment))
+            foreach (var message in NetworkMessage.Read(segment))
                 InvokeMessage(message, mode);
         }
 

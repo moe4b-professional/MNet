@@ -245,7 +245,7 @@ namespace MNet
         {
             try
             {
-                foreach (var message in NetworkMessage.ReadAll(segment))
+                foreach (var message in NetworkMessage.Read(segment))
                     QueueMessage(sender, message, mode, channel);
             }
             catch (Exception ex)

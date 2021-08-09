@@ -117,7 +117,8 @@ namespace MNet
             Dirty.Add((element, target));
         }
 
-        public IEnumerable<MessageQueuePacket> Iterate()
+        //TODO: Stop using iterator for performance reasons
+        public IEnumerable<Packet> Iterate()
         {
             foreach (var entry in Dirty)
             {
@@ -127,7 +128,7 @@ namespace MNet
                 {
                     var segment = streams[i].Segment();
 
-                    var packet = new MessageQueuePacket(segment, entry.delivery.Mode, entry.channel.Index);
+                    var packet = new Packet(segment, entry.delivery.Mode, entry.channel.Index);
 
                     yield return packet;
 
@@ -138,6 +139,20 @@ namespace MNet
             }
 
             Dirty.Clear();
+        }
+        [Preserve]
+        public struct Packet
+        {
+            public readonly ArraySegment<byte> segment;
+            public readonly DeliveryMode delivery;
+            public readonly byte channel;
+
+            public Packet(ArraySegment<byte> segment, DeliveryMode delivery, byte channel)
+            {
+                this.segment = segment;
+                this.delivery = delivery;
+                this.channel = channel;
+            }
         }
 
         public void Clear()
@@ -152,21 +167,6 @@ namespace MNet
 
             Deliveries = new Dictionary<DeliveryMode, Delivery>();
             Dirty = new HashSet<(Delivery, Channel)>();
-        }
-    }
-
-    [Preserve]
-    public struct MessageQueuePacket
-    {
-        public readonly ArraySegment<byte> segment;
-        public readonly DeliveryMode delivery;
-        public readonly byte channel;
-
-        public MessageQueuePacket(ArraySegment<byte> segment, DeliveryMode delivery, byte channel)
-        {
-            this.segment = segment;
-            this.delivery = delivery;
-            this.channel = channel;
         }
     }
 }

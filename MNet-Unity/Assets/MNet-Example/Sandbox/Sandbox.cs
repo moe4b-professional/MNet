@@ -60,7 +60,7 @@ namespace MNet.Example
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
-            
+
         }
 #endif
     }

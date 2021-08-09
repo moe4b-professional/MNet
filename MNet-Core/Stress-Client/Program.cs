@@ -163,9 +163,9 @@ namespace MNet
 
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod, byte deliveryChannel)
         {
-            var raw = reader.GetRemainingBytes();
+            var segment = reader.GetRemainingBytesSegment();
 
-            foreach (var message in NetworkMessage.ReadAll(raw))
+            foreach (var message in NetworkMessage.Read(segment))
             {
                 switch (message.Payload)
                 {
@@ -178,6 +178,8 @@ namespace MNet
                         break;
                 }
             }
+
+            reader.Recycle();
         }
 
         void Run()

@@ -45,7 +45,7 @@ namespace MNet
             {
                 var segment = stream.Segment();
 
-                foreach (var message in NetworkMessage.ReadAll(segment))
+                foreach (var message in NetworkMessage.Read(segment))
                 {
                     copy.Add(message.Read<TargetRpcRequest>());
                 }

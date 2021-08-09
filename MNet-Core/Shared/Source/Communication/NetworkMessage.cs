@@ -54,7 +54,8 @@ namespace MNet
             return message;
         }
 
-        public static IEnumerable<NetworkMessage> ReadAll(ArraySegment<byte> segment)
+        //TODO: Stop using iterator for performance reasons
+        public static IEnumerable<NetworkMessage> Read(ArraySegment<byte> segment)
         {
             var stream = new NetworkStream(segment.Array, segment.Offset);
 
