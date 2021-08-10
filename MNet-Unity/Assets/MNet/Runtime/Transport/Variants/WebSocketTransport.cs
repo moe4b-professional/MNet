@@ -52,6 +52,19 @@ namespace MNet
             Socket.Connect();
         }
 
+        public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
+        {
+            var raw = segment.ToArray();
+
+            Socket.Send(raw);
+        }
+
+        public override void Disconnect(DisconnectCode code)
+        {
+            Socket.Disconnect(code);
+        }
+
+        #region Callbacks
         void ConnectCallback() => InvokeConnect();
 
         void RecievedMessageCallback(byte[] raw)
@@ -62,15 +75,7 @@ namespace MNet
         }
 
         void DisconnectCallback(DisconnectCode code, string reason) => InvokeDisconnect(code);
-
-        public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
-        {
-            var raw = segment.ToArray();
-
-            Socket.Send(raw);
-        }
-
-        public override void Close() => Socket.Disconnect();
+        #endregion
 
         public WebSocketTransport() : base()
         {

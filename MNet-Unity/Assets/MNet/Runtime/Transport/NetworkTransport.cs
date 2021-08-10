@@ -32,6 +32,12 @@ namespace MNet
 
         public abstract int CheckMTU(DeliveryMode mode);
 
+        public abstract void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel);
+
+        public virtual void Disconnect() => Disconnect(DisconnectCode.Normal);
+        public abstract void Disconnect(DisconnectCode code = DisconnectCode.Normal);
+
+        #region Callbacks
         public delegate void ConnectDelegate();
         public event ConnectDelegate OnConnect;
         protected virtual void InvokeConnect()
@@ -46,22 +52,19 @@ namespace MNet
             OnMessage?.Invoke(message, mode);
         }
 
-        public delegate void DisconnectDelegate(DisconnectCode code);
-        public event DisconnectDelegate OnDisconnect;
-        protected virtual void InvokeDisconnect(DisconnectCode code)
-        {
-            OnDisconnect?.Invoke(code);
-        }
-
-        public abstract void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel);
-
         protected void InvokeMessages(ArraySegment<byte> segment, DeliveryMode mode)
         {
             foreach (var message in NetworkMessage.Read(segment))
                 InvokeMessage(message, mode);
         }
 
-        public abstract void Close();
+        public delegate void DisconnectDelegate(DisconnectCode code);
+        public event DisconnectDelegate OnDisconnect;
+        protected virtual void InvokeDisconnect(DisconnectCode code)
+        {
+            OnDisconnect?.Invoke(code);
+        }
+        #endregion
 
         public NetworkTransport()
         {

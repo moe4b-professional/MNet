@@ -283,7 +283,7 @@ namespace MNet
                     return;
                 }
 
-                if (OfflineMode == false) Transport.Close();
+                if (OfflineMode == false) Transport.Disconnect();
 
                 InvokeDisconnect(DisconnectCode.Normal);
                 Clear();

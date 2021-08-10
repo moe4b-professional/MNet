@@ -30,7 +30,6 @@ namespace MNet
     public class LiteNetLibTransport : NetworkTransport, INetEventListener
     {
         public NetManager Client { get; protected set; }
-
         public NetPeer Peer { get; protected set; }
 
         public override bool IsConnected
@@ -58,14 +57,29 @@ namespace MNet
 
         void Run()
         {
-            while (NetworkAPI.IsRunning) Tick();
+            while (NetworkAPI.IsRunning)
+                Tick();
         }
-
         void Tick()
         {
             Client.PollEvents();
 
             Thread.Sleep(1);
+        }
+
+        public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
+        {
+            var method = Utility.Delivery.Glossary[mode];
+
+            Peer.Send(segment.Array, segment.Offset, segment.Count, channel, method);
+        }
+
+        public override void Disconnect(DisconnectCode code)
+        {
+            var data = Utility.Disconnect.CodeToBinary(code);
+
+            Peer.Disconnect(data);
+            Client.Stop(true);
         }
 
         #region Callbacks
@@ -89,24 +103,11 @@ namespace MNet
             InvokeDisconnect(code);
         }
 
-        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
-        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
-        public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
         public void OnConnectionRequest(ConnectionRequest request) { }
+        public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
+        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
+        public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
         #endregion
-
-        public override void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
-        {
-            var method = Utility.Delivery.Glossary[mode];
-
-            Peer.Send(segment.Array, segment.Offset, segment.Count, channel, method);
-        }
-
-        public override void Close()
-        {
-            Peer.Disconnect();
-            Client.Stop(true);
-        }
 
         public LiteNetLibTransport()
         {
