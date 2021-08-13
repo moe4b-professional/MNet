@@ -611,44 +611,6 @@ namespace MNet
     }
     #endregion
 
-    [Preserve]
-    public class TypeNetworkSerializationResolver : NetworkSerializationExplicitResolver<Type>
-    {
-        public override void Serialize(NetworkStream writer, Type instance)
-        {
-            var code = NetworkPayload.GetCode(instance);
-
-            writer.Write(code);
-        }
-
-        public override Type Deserialize(NetworkStream reader)
-        {
-            reader.Read(out byte code);
-
-            var value = NetworkPayload.GetType(code);
-
-            return value;
-        }
-    }
-
-    [Preserve]
-    public class NetworkMessageSerializationResolver : NetworkSerializationExplicitResolver<NetworkMessage>
-    {
-        public override void Serialize(NetworkStream writer, NetworkMessage instance)
-        {
-            instance.Serialize(writer);
-        }
-
-        public override NetworkMessage Deserialize(NetworkStream reader)
-        {
-            var message = new NetworkMessage();
-
-            message.Deserialize(reader);
-
-            return message;
-        }
-    }
-
     #region POCO
     [Preserve]
     public class GuidNetworkSerializationResolver : NetworkSerializationExplicitResolver<Guid>
@@ -760,6 +722,44 @@ namespace MNet
             var value = reader.Pull(length);
 
             return value;
+        }
+    }
+
+    [Preserve]
+    public class TypeNetworkSerializationResolver : NetworkSerializationExplicitResolver<Type>
+    {
+        public override void Serialize(NetworkStream writer, Type instance)
+        {
+            var code = NetworkPayload.GetCode(instance);
+
+            writer.Write(code);
+        }
+
+        public override Type Deserialize(NetworkStream reader)
+        {
+            var code = reader.Pull();
+
+            var value = NetworkPayload.GetType(code);
+
+            return value;
+        }
+    }
+
+    [Preserve]
+    public class NetworkMessageSerializationResolver : NetworkSerializationExplicitResolver<NetworkMessage>
+    {
+        public override void Serialize(NetworkStream writer, NetworkMessage instance)
+        {
+            instance.Serialize(writer);
+        }
+
+        public override NetworkMessage Deserialize(NetworkStream reader)
+        {
+            var message = new NetworkMessage();
+
+            message.Deserialize(reader);
+
+            return message;
         }
     }
     #endregion

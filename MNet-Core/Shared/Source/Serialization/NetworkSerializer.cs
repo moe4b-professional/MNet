@@ -21,11 +21,11 @@ namespace MNet
 
             writer.Write(instance);
 
-            var result = writer.ToArray();
+            var raw = writer.ToArray();
 
             NetworkStream.Pool.Return(writer);
 
-            return result;
+            return raw;
         }
 
         public static byte[] Serialize(object instance)
@@ -40,11 +40,11 @@ namespace MNet
 
             writer.Write(instance, type);
 
-            var result = writer.ToArray();
+            var raw = writer.ToArray();
 
             NetworkStream.Pool.Return(writer);
 
-            return result;
+            return raw;
         }
         #endregion
 

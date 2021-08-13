@@ -28,9 +28,9 @@ namespace MNet
     {
         public abstract bool IsConnected { get; }
 
-        public abstract void Connect(GameServerID server, RoomID room);
-
         public abstract int CheckMTU(DeliveryMode mode);
+
+        public abstract void Connect(GameServerID server, RoomID room);
 
         public abstract void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
