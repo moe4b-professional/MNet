@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using Cysharp.Threading.Tasks;
 
 namespace MNet.Example
 {
@@ -31,7 +32,7 @@ namespace MNet.Example
 
         void ClientDisconnectCallback(DisconnectCode code)
         {
-            Popup.Show($"Client Disconnected{"\n"}Reason: {code.ToPrettyString()}", "Okay");
+            Popup.Show($"Client Disconnected{"\n"}Reason: {code.ToPrettyString()}", "Okay").Forget();
         }
 
         void OnDestroy()

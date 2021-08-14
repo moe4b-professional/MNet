@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using Cysharp.Threading.Tasks;
 
 namespace MNet.Example
 {
@@ -39,10 +40,10 @@ namespace MNet.Example
 		{
 			button.interactable = false;
 
-			browser.Refresh();
+			browser.Refresh().Forget();
 		}
 
-		void Callback(LobbyInfo lobby, RestError error)
+		void Callback(LobbyInfo lobby)
 		{
 			button.interactable = true;
 		}

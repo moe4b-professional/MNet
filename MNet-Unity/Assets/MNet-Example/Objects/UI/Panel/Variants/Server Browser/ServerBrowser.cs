@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using MB;
+using Cysharp.Threading.Tasks;
 
 namespace MNet.Example
 {
@@ -92,10 +93,8 @@ namespace MNet.Example
             Visible = NetworkAPI.Server.Game.Selection == null;
         }
 
-        void MasterInfoCallback(MasterServerInfoResponse info, RestError error)
+        void MasterInfoCallback(MasterServerInfoResponse info)
         {
-            if (error != null) return;
-
             Populate(info.Servers);
 
             if (NetworkAPI.Server.Game.Selection == null) Show();
@@ -127,25 +126,27 @@ namespace MNet.Example
             Hide();
         }
 
-        public void Refresh()
+        public async UniTask Refresh()
         {
             Popup.Show("Retrieving Servers");
 
-            NetworkAPI.Server.Master.GetInfo(Callback);
+            MasterServerInfoResponse info;
 
-            void Callback(MasterServerInfoResponse info, RestError error)
+            try
             {
-                if (error != null)
-                {
-                    Popup.Show("Failed To Retrieve Servers", "Okay");
-                    return;
-                }
-
-                if (info.Servers.Length == 0)
-                    Popup.Show("No Game Servers Found on Master", "Okay");
-                else
-                    Popup.Hide();
+                info = await NetworkAPI.Server.Master.GetInfo();
             }
+            catch (UnityWebRequestException ex)
+            {
+                Debug.LogError(ex);
+                Popup.Show("Failed To Retrieve Servers", "Okay").Forget();
+                return;
+            }
+
+            if (info.Servers.Length == 0)
+                Popup.Show("No Game Servers Found on Master", "Okay").Forget();
+            else
+                Popup.Hide();
         }
 
         void ScrollToLast()

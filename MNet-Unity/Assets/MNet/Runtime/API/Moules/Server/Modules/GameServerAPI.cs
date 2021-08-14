@@ -56,10 +56,8 @@ namespace MNet
                     Master.OnInfo += MasterInfoCallback;
                 }
 
-                static void MasterInfoCallback(MasterServerInfoResponse info, RestError error)
+                static void MasterInfoCallback(MasterServerInfoResponse info)
                 {
-                    if (error != null) return;
-
                     Register(info.Servers);
                 }
 

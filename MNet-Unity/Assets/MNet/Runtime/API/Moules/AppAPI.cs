@@ -30,10 +30,8 @@ namespace MNet
                 Server.Master.OnScheme += MasterServerSchemeCallback;
             }
 
-            static void MasterServerSchemeCallback(MasterServerSchemeResponse response, RestError error)
+            static void MasterServerSchemeCallback(MasterServerSchemeResponse response)
             {
-                if (error != null) return;
-
                 Set(response.App);
             }
 

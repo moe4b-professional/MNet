@@ -20,6 +20,8 @@ using Random = UnityEngine.Random;
 using UnityEngine.Networking;
 using System.Net;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     public static partial class NetworkAPI
@@ -32,21 +34,17 @@ namespace MNet
 
             public static int Size => Info.Size;
 
-            public delegate void InfoDelegate(LobbyInfo lobby, RestError error);
+            public delegate void InfoDelegate(LobbyInfo lobby);
             public static event InfoDelegate OnInfo;
-            public static void GetInfo(InfoDelegate handler = null)
+            public static async UniTask<LobbyInfo> GetInfo()
             {
-                var payload = new GetLobbyInfoRequest(NetworkAPI.AppID, NetworkAPI.GameVersion);
+                var payload = new GetLobbyInfoRequest(AppID, GameVersion);
 
-                Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload, Callback);
+                Info = await Server.Game.Rest.POST<LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload);
 
-                void Callback(LobbyInfo info, RestError error)
-                {
-                    Lobby.Info = info;
+                OnInfo?.Invoke(Info);
 
-                    handler?.Invoke(info, error);
-                    OnInfo?.Invoke(info, error);
-                }
+                return Info;
             }
 
             public static event Action OnClear;

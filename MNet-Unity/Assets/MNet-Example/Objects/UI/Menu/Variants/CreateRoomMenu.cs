@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using Cysharp.Threading.Tasks;
 
 namespace MNet.Example
 {
@@ -62,25 +63,39 @@ namespace MNet.Example
 			var offline = this.offline.isOn;
 			var password = this.password.text;
 
-			Create(name, capacity, password,(byte)level, offline);
+			Create(name, capacity, password,(byte)level, offline).Forget();
 		}
 
-		void Create(string name, byte capacity, string password, byte level, bool offline)
+		async UniTask Create(string name, byte capacity, string password, byte level, bool offline)
 		{
 			Popup.Show("Creating Room");
 
 			var attributes = new AttributesCollection();
 			Core.Levels.WriteAttribute(attributes, level);
 
-			NetworkAPI.Room.Create(name, capacity, password: password, attributes: attributes, offline: offline, handler: Callback);
+			RoomInfo info;
 
-			void Callback(RoomInfo room, RestError error)
+			try
 			{
-				if (error == null)
-					Join(room, password);
-				else
-					Popup.Show("Failed to Create Room", "Okay");
+				var options = new CreateRoomOptions()
+				{
+					Password = password,
+					Attributes = attributes,
+					Offline = offline,
+					Capacity = capacity,
+					Visibile = true,
+					MigrationPolicy = MigrationPolicy.Continue,
+				};
+
+				info = await NetworkAPI.Room.Create(name, options);
 			}
+			catch (Exception ex) when (ex is UnityWebRequestException)
+			{
+				Popup.Show("Failed to Create Room", "Okay").Forget();
+				return;
+			}
+
+			Join(info, password);
 		}
 
 		void Join(RoomInfo info, string password)

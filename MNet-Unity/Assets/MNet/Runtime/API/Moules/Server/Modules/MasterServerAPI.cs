@@ -19,6 +19,8 @@ using Random = UnityEngine.Random;
 
 using UnityEngine.Networking;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     public static partial class NetworkAPI
@@ -37,34 +39,30 @@ namespace MNet
                     Rest.SetIP(Address);
                 }
 
-                public delegate void SchemeDelegate(MasterServerSchemeResponse response, RestError error);
+                public delegate void SchemeDelegate(MasterServerSchemeResponse response);
                 public static event SchemeDelegate OnScheme;
-                public static void GetScheme(SchemeDelegate handler = null)
+                public static async UniTask<MasterServerSchemeResponse> GetScheme()
                 {
-                    var payload = new MasterServerSchemeRequest(NetworkAPI.AppID, NetworkAPI.GameVersion);
+                    var payload = new MasterServerSchemeRequest(AppID, GameVersion);
 
-                    Rest.POST<MasterServerSchemeRequest, MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload, Callback);
+                    var response = await Rest.POST<MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload);
 
-                    void Callback(MasterServerSchemeResponse response, RestError error)
-                    {
-                        handler?.Invoke(response, error);
-                        OnScheme?.Invoke(response, error);
-                    }
+                    OnScheme?.Invoke(response);
+
+                    return response;
                 }
 
-                public delegate void InfoDelegate(MasterServerInfoResponse info, RestError error);
+                public delegate void InfoDelegate(MasterServerInfoResponse info);
                 public static event InfoDelegate OnInfo;
-                public static void GetInfo(InfoDelegate handler = null)
+                public static async UniTask<MasterServerInfoResponse> GetInfo()
                 {
                     var payload = new MasterServerInfoRequest();
 
-                    Rest.POST<MasterServerInfoRequest, MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload, Callback);
+                    var response = await Rest.POST<MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload);
 
-                    void Callback(MasterServerInfoResponse info, RestError error)
-                    {
-                        handler?.Invoke(info, error);
-                        OnInfo?.Invoke(info, error);
-                    }
+                    OnInfo?.Invoke(response);
+
+                    return response;
                 }
             }
         }

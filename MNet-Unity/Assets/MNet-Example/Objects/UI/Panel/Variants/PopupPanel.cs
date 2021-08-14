@@ -17,6 +17,8 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet.Example
 {
 	public class PopupPanel : UIPanel
@@ -30,35 +32,27 @@ namespace MNet.Example
 		[SerializeField]
 		Text instruction = default;
 
-		Action callback;
+		public void Show(string text)
+        {
+			this.label.text = text;
 
-		public override void Configure()
-		{
-			base.Configure();
-
-			button.onClick.AddListener(ClickAction);
-		}
-
-		public void Show(string text) => Show(text, null, null);
-		public void Show(string text, string instruction) => Show(text, instruction, Hide);
-		public void Show(string text, string instruction, Action callback)
-		{
-			label.text = text;
-
-			this.callback = callback;
-			this.instruction.text = instruction;
-
-			button.gameObject.SetActive(instruction != null);
+			button.gameObject.SetActive(false);
 
 			Show();
 		}
 
-        void ClickAction()
+		public async UniTask Show(string text, string instruction)
 		{
-			var surrogate = callback;
-			callback = null;
+			this.label.text = text;
+			this.instruction.text = instruction;
 
-			surrogate?.Invoke();
+			button.gameObject.SetActive(true);
+
+			Show();
+
+			await button.onClick.OnInvokeAsync(default);
+
+			Hide();
 		}
 	}
 }

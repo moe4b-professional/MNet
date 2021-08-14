@@ -52,41 +52,35 @@ namespace MNet
             #endregion
 
             #region Create
-            public delegate void CreateDelegate(RoomInfo room, RestError error);
+            public delegate void CreateDelegate(RoomInfo room);
             public static event CreateDelegate OnCreate;
-            public static void Create(
-                string name,
-                byte capacity,
-                bool visibile = true,
-                string password = null,
-                MigrationPolicy migrationPolicy = MigrationPolicy.Continue,
-                AttributesCollection attributes = null,
-                bool offline = false,
-                CreateDelegate handler = null)
+            public static async UniTask<RoomInfo> Create(string name, CreateRoomOptions options)
             {
+                var offline = options.Offline;
+                var capacity = options.Capacity;
+                var visibile = options.Visibile;
+                var attributes = options.Attributes;
+                var password = options.Password;
+                var migration = options.MigrationPolicy;
+
                 if (offline)
                 {
                     var info = OfflineMode.Start(name, capacity, visibile, attributes);
 
-                    Callback(info, null);
+                    OnCreate?.Invoke(info);
+
+                    return info;
                 }
                 else
                 {
-                    var payload = new CreateRoomRequest(NetworkAPI.AppID, NetworkAPI.GameVersion, name, capacity, visibile, password, migrationPolicy, attributes);
+                    var payload = new CreateRoomRequest(AppID, GameVersion, name, capacity, visibile, password, migration, attributes);
 
-                    Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload, Callback);
+                    var info = await Server.Game.Rest.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload);
+
+                    OnCreate?.Invoke(info);
+
+                    return info;
                 }
-
-                void Callback(RoomInfo info, RestError error)
-                {
-                    handler?.Invoke(info, error);
-                    InvokeCreate(info, error);
-                }
-            }
-
-            internal static void InvokeCreate(RoomInfo info, RestError error)
-            {
-                OnCreate?.Invoke(info, error);
             }
             #endregion
 
@@ -983,5 +977,29 @@ namespace MNet
                 if (OfflineMode.On) OfflineMode.Stop();
             }
         }
+    }
+
+    public struct CreateRoomOptions
+    {
+        public byte Capacity;
+
+        public bool Visibile;
+        public string Password;
+
+        public MigrationPolicy MigrationPolicy;
+
+        public AttributesCollection Attributes;
+
+        public bool Offline;
+
+        public static CreateRoomOptions Default { get; } = new CreateRoomOptions()
+        {
+            Capacity = 10,
+            Visibile = true,
+            Password = null,
+            MigrationPolicy = MigrationPolicy.Continue,
+            Attributes = new AttributesCollection(),
+            Offline = false,
+        };
     }
 }

@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 using MB;
+using Cysharp.Threading.Tasks;
 
 namespace MNet.Example
 {
@@ -45,29 +46,29 @@ namespace MNet.Example
             NetworkAPI.Lobby.OnClear += Clear;
         }
 
-        public void Refresh()
+        public async UniTask Refresh()
         {
             Popup.Show("Retrieving Rooms");
 
-            NetworkAPI.Lobby.GetInfo(Callback);
-            void Callback(LobbyInfo lobby, RestError error)
+            LobbyInfo info;
+
+            try
             {
-                if (error == null)
-                {
-                    if (lobby.Size == 0)
-                        Popup.Show($"No Rooms Found", "Okay");
-                    else
-                        Popup.Hide();
-
-                    Populate(lobby.Rooms);
-                }
-                else
-                {
-                    Popup.Show("Failed To Retrieve Rooms", "Okay");
-
-                    Clear();
-                }
+                info = await NetworkAPI.Lobby.GetInfo();
             }
+            catch (Exception ex) when (ex is UnityWebRequestException)
+            {
+                Popup.Show("Failed To Retrieve Rooms", "Okay").Forget();
+                Clear();
+                return;
+            }
+
+            if (info.Size == 0)
+                Popup.Show($"No Rooms Found", "Okay").Forget();
+            else
+                Popup.Hide();
+
+            Populate(info.Rooms);
         }
 
         void Populate(IList<RoomInfo> list)
@@ -76,17 +77,17 @@ namespace MNet.Example
 
             if (list == null) return;
 
-            var entries = RoomBasicUITemplate.CreateAll(template, list, InitTemplate);
+            var entries = RoomBasicUITemplate.CreateAll(template, list, Init);
             templates.AddRange(entries);
-        }
 
-        void InitTemplate(RoomBasicUITemplate template, int index)
-        {
-            Initializer.Perform(template);
+            void Init(RoomBasicUITemplate template, int index)
+            {
+                Initializer.Perform(template);
 
-            template.SetParent(scroll.content);
+                template.SetParent(scroll.content);
 
-            template.OnClick += TemplateClickCallback;
+                template.OnClick += TemplateClickCallback;
+            }
         }
 
         void TemplateClickCallback(RoomBasicUITemplate template)
@@ -109,18 +110,18 @@ namespace MNet.Example
             }
         }
 
-        void Join(RoomInfo room, string password = null)
-        {
-            Popup.Show("Joining Room");
-
-            NetworkAPI.Room.Join(room, password);
-        }
-
         void Clear()
         {
             templates.ForEach(RoomBasicUITemplate.Destroy);
 
             templates.Clear();
+        }
+
+        void Join(RoomInfo room, string password = null)
+        {
+            Popup.Show("Joining Room");
+
+            NetworkAPI.Room.Join(room, password);
         }
 
         void OnDestroy()

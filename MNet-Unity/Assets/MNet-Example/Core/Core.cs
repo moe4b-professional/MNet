@@ -173,42 +173,50 @@ namespace MNet.Example
             {
                 base.Init();
 
-				GetMasterScheme();
+				Process().Forget();
 			}
 
-            void GetMasterScheme()
-			{
+			async UniTask Process()
+            {
+				await GetMasterScheme();
+				await GetMasterInfo();
+
+				Popup.Hide();
+			}
+
+			async UniTask GetMasterScheme()
+            {
+				Start: //Yes, your eyes aren't deceiving you, I declared a goto stamement
 				Popup.Show("Getting Master Scheme");
 
-				NetworkAPI.Server.Master.GetScheme(Callback);
-
-				void Callback(MasterServerSchemeResponse response, RestError error)
+				try
 				{
-					if (error == null)
-					{
-						GetMasterInfo();
-						return;
-					}
+					await NetworkAPI.Server.Master.GetScheme();
+				}
+				catch (Exception ex) when (ex is UnityWebRequestException)
+				{
+					Debug.LogError(ex);
+					await Popup.Show("Failed To Retrieve Master Scheme", "Retry");
 
-					Popup.Show("Failed To Retrieve Master Scheme", "Retry", GetMasterScheme);
+					goto Start; //Yes! I used it too
 				}
 			}
 
-			void GetMasterInfo()
-			{
+			async UniTask GetMasterInfo()
+            {
+				Start: //Yep, one more time
 				Popup.Show("Getting Master Info");
 
-				NetworkAPI.Server.Master.GetInfo(Callback);
-
-				void Callback(MasterServerInfoResponse info, RestError error)
+				try
 				{
-					if (error == null)
-					{
-						Popup.Hide();
-						return;
-					}
+					await NetworkAPI.Server.Master.GetInfo();
+				}
+				catch (Exception ex) when (ex is UnityWebRequestException)
+				{
+					Debug.LogError(ex);
+					await Popup.Show("Failed to Retrieve Master Info", "Retry");
 
-					Popup.Show("Failed to Retrieve Master Info", "Retry", GetMasterInfo);
+					goto Start; //Oh, the humanity!
 				}
 			}
 

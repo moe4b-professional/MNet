@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using Cysharp.Threading.Tasks;
 
 namespace MNet.Example
 {
@@ -47,22 +48,18 @@ namespace MNet.Example
             }
         }
 
-        void MasterServerInfoCallback(MasterServerInfoResponse info, RestError error)
+        void MasterServerInfoCallback(MasterServerInfoResponse info)
         {
-            if (error != null) return;
-
             NetworkAPI.Server.Game.Select(info.Servers[0]);
         }
 
         void GameServerSelectCallback(GameServerID id)
         {
-            NetworkAPI.Lobby.GetInfo();
+            NetworkAPI.Lobby.GetInfo().Forget();
         }
 
-        void LobbyInfoCallback(LobbyInfo lobby, RestError error)
+        void LobbyInfoCallback(LobbyInfo lobby)
         {
-            if (error != null) return;
-
             if (lobby.Size == 0) return;
 
             NetworkAPI.Room.Join(lobby.Rooms.Last());

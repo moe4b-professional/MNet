@@ -33,10 +33,8 @@ namespace MNet
                 Master.OnScheme += MasterSchemeCallback;
             }
 
-            static void MasterSchemeCallback(MasterServerSchemeResponse response, RestError error)
+            static void MasterSchemeCallback(MasterServerSchemeResponse response)
             {
-                if (error != null) return;
-
                 SetRemoteConfig(response.RemoteConfig);
             }
 

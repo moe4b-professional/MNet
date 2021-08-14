@@ -23,6 +23,8 @@ using UnityEngine.Networking;
 
 using MB;
 
+using Cysharp.Threading.Tasks;
+
 namespace MNet
 {
     [Preserve]
@@ -43,7 +45,7 @@ namespace MNet
 
         public delegate void ResponseDelegate<TResult>(TResult result, RestError error);
 
-        public void POST<TPayload, TResult>(string path, TPayload payload, ResponseDelegate<TResult> callback)
+        public async UniTask<TResult> POST<TResult>(string path, object payload)
         {
             var url = FormatURL(path);
 
@@ -54,22 +56,13 @@ namespace MNet
 
             var request = new UnityWebRequest(url, "POST", download, upload);
 
-            var coroutine = Process(request, callback);
+            await request.SendWebRequest();
 
-            GlobalCoroutine.Start(coroutine);
-        }
-
-        IEnumerator Process<TResult>(UnityWebRequest request, ResponseDelegate<TResult> callback)
-        {
-            yield return request.SendWebRequest();
-
-            ReadResult(request, out TResult result, out var error);
-
-            if (error != null) Debug.LogError(error);
+            var result = Read<TResult>(request);
 
             request.Dispose();
 
-            callback(result, error);
+            return result;
         }
 
         public RestClientAPI(ushort port, RestScheme scheme)
@@ -80,20 +73,6 @@ namespace MNet
 
         //Static Utility
 
-        public static void ReadResult<TResult>(UnityWebRequest request, out TResult payload, out RestError error)
-        {
-            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError || request.result == UnityWebRequest.Result.DataProcessingError)
-            {
-                var code = (RestStatusCode)request.responseCode;
-
-                error = new RestError(code, request.error);
-                payload = default;
-            }
-            else
-            {
-                error = null;
-                payload = NetworkSerializer.Deserialize<TResult>(request.downloadHandler.data);
-            }
-        }
+        public static TResult Read<TResult>(UnityWebRequest request) => NetworkSerializer.Deserialize<TResult>(request.downloadHandler.data);
     }
 }
