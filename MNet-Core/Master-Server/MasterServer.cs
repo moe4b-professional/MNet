@@ -223,21 +223,61 @@ namespace MNet
             #endregion
         }
 
-        static void Main()
+        public static class REST
         {
-            try
+            internal static void Configure()
             {
-                Procedure();
-            }
-            catch (Exception)
-            {
-                throw;
+                RestServerAPI.Configure(Constants.Server.Master.Rest.Port);
+
+                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Scheme, GetScheme);
+                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
+
+                RestServerAPI.Start();
             }
 
-            while (true) Console.ReadLine();
+            static void GetScheme(RestRequest request, RestResponse response)
+            {
+                if (RestServerAPI.TryRead(request, response, out MasterServerSchemeRequest payload) == false) return;
+
+                if (payload.ApiVersion != Constants.ApiVersion)
+                {
+                    var text = $"Mismatched API Versions [Client: {payload.ApiVersion}, Server: {Constants.ApiVersion}]" +
+                        $", Please use the Same Network API Release on the Client and Server";
+                    RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion, text);
+                    return;
+                }
+
+                if (Apps.Dictionary.TryGetValue(payload.AppID, out var app) == false)
+                {
+                    RestServerAPI.Write(response, RestStatusCode.InvalidAppID, $"App ID '{payload.AppID}' Not Registered with Server");
+                    return;
+                }
+
+                if (payload.GameVersion < app.MinimumVersion)
+                {
+                    var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {app.MinimumVersion}";
+                    RestServerAPI.Write(response, RestStatusCode.VersionNotSupported, text);
+                    return;
+                }
+
+                var info = new MasterServerSchemeResponse(app, Config.Remote);
+
+                RestServerAPI.Write(response, info);
+            }
+
+            static void GetInfo(RestRequest request, RestResponse response)
+            {
+                if (RestServerAPI.TryRead(request, response, out MasterServerInfoRequest payload) == false) return;
+
+                var servers = Servers.Query();
+
+                var info = new MasterServerInfoResponse(servers);
+
+                RestServerAPI.Write(response, info);
+            }
         }
 
-        static void Procedure()
+        static void Main()
         {
             Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
 
@@ -250,54 +290,9 @@ namespace MNet
             Config.Configure();
             Apps.Configure();
             Servers.Configure();
+            REST.Configure();
 
-            RestServerAPI.Configure(Constants.Server.Master.Rest.Port);
-
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Scheme, GetScheme);
-            RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
-
-            RestServerAPI.Start();
-        }
-
-        static void GetScheme(RestRequest request, RestResponse response)
-        {
-            if (RestServerAPI.TryRead(request, response, out MasterServerSchemeRequest payload) == false) return;
-
-            if (payload.ApiVersion != Constants.ApiVersion)
-            {
-                var text = $"Mismatched API Versions [Client: {payload.ApiVersion}, Server: {Constants.ApiVersion}]" +
-                    $", Please use the Same Network API Release on the Client and Server";
-                RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion, text);
-                return;
-            }
-
-            if (Apps.Dictionary.TryGetValue(payload.AppID, out var app) == false)
-            {
-                RestServerAPI.Write(response, RestStatusCode.InvalidAppID, $"App ID '{payload.AppID}' Not Registered with Server");
-                return;
-            }
-
-            if (payload.GameVersion < app.MinimumVersion)
-            {
-                var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {app.MinimumVersion}";
-                RestServerAPI.Write(response, RestStatusCode.VersionNotSupported, text);
-                return;
-            }
-
-            var info = new MasterServerSchemeResponse(app, Config.Remote);
-
-            RestServerAPI.Write(response, info);
-        }
-
-        static void GetInfo(RestRequest request, RestResponse response)
-        {
-            if (RestServerAPI.TryRead(request, response, out MasterServerInfoRequest payload) == false) return;
-
-            var servers = Servers.Query();
-
-            var info = new MasterServerInfoResponse(servers);
-
-            RestServerAPI.Write(response, info);
+            while (true) Console.ReadLine();
         }
     }
 }

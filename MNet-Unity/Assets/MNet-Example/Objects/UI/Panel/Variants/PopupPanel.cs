@@ -50,7 +50,7 @@ namespace MNet.Example
 
 			Show();
 
-			await button.onClick.OnInvokeAsync(default);
+			await button.OnClickAsync(default);
 
 			Hide();
 		}

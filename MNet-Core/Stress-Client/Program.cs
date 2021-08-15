@@ -84,7 +84,7 @@ namespace MNet
 
             var request = new CreateRoomRequest(AppID, GameVersion, name, capacity, true, null, MigrationPolicy.Continue, attributes);
 
-            var info = await RestAPI.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
+            var info = await RestAPI.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
 
             return info;
         }

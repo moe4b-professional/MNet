@@ -1,8 +1,9 @@
 {
    "MasterAddress": "localhost",
 
-   //Setting personal address to null will use your public ip, retrieved from: https://checkip.amazonaws.com
-   "PersonalAddress": null,
+   //Setting to 0.0.0.0 will use your either your public ip or localhost depending on the region specified
+   //Public ip retrieved from https://checkip.amazonaws.com
+   "PersonalAddress": "0.0.0.0",
 
    //Setting region to local will configure this server to communicate over loopback ip address
    //Only for development purposes

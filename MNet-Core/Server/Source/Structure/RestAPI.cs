@@ -61,12 +61,8 @@ namespace MNet
         #endregion
 
         #region POST
-        public Task<TResult> POST<TPayload, TResult>(string path, TPayload payload)
-        {
-            return POST<TPayload, TResult>(IP, path, payload);
-        }
-
-        public async Task<TResult> POST<TPayload, TResult>(string ip, string path, TPayload payload)
+        public Task<TResult> POST<TResult>(string path, object payload) => POST<TResult>(IP, path, payload);
+        public async Task<TResult> POST<TResult>(string ip, string path, object payload)
         {
             var url = FormatURL(ip, path);
 
@@ -102,7 +98,7 @@ namespace MNet
             throw new RestException(code, message.ReasonPhrase);
         }
 
-        public static ByteArrayContent WriteContent<TPayload>(TPayload payload)
+        public static ByteArrayContent WriteContent(object payload)
         {
             var binary = NetworkSerializer.Serialize(payload);
 

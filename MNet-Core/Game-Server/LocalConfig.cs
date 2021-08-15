@@ -24,6 +24,7 @@ namespace MNet
         public RestScheme RestScheme { get; protected set; }
 
         public RemoteConfig Remote { get; protected set; }
+        public virtual void Set(RemoteConfig instance) => Remote = instance;
 
         protected override void WriteDefaults()
         {
@@ -37,7 +38,18 @@ namespace MNet
             RestScheme = RestScheme.HTTP;
         }
 
-        public virtual void Set(RemoteConfig instance) => Remote = instance;
+        protected override void Validate()
+        {
+            base.Validate();
+
+            if (PersonalAddress.ToString() == "0.0.0.0")
+            {
+                if (Region == GameServerRegion.Local)
+                    PersonalAddress = IPAddress.Loopback;
+                else
+                    PersonalAddress = PublicIP.Retrieve().Result;
+            }
+        }
 
         public LocalConfig() { }
     }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace MNet
 {
@@ -13,8 +14,8 @@ namespace MNet
 
         public static string URL = $"http://{Host}";
 
-        public static IPAddress Retrieve() => Retrieve(4);
-        public static IPAddress Retrieve(byte retries)
+        public static Task<IPAddress> Retrieve() => Retrieve(4);
+        public static async Task<IPAddress> Retrieve(byte retries)
         {
             IPAddress value = null;
 
@@ -22,9 +23,9 @@ namespace MNet
             {
                 try
                 {
-                    value = Fetch();
+                    value = await Fetch();
                 }
-                catch
+                catch (HttpRequestException)
                 {
                     if (i < retries)
                         continue;
@@ -36,25 +37,14 @@ namespace MNet
             return value;
         }
 
-        static IPAddress Fetch()
+        static async Task<IPAddress> Fetch()
         {
             var client = new HttpClient();
 
-            HttpResponseMessage response;
+            var response = await client.GetAsync(URL);
+            response.EnsureSuccessStatusCode();
 
-            try
-            {
-                response = client.GetAsync(URL).Result;
-            }
-            catch
-            {
-                throw;
-            }
-
-            if (response.StatusCode != HttpStatusCode.OK) throw new Exception(response.ReasonPhrase);
-
-            var text = response.Content.ReadAsStringAsync().Result;
-
+            var text = await response.Content.ReadAsStringAsync();
             text = FormatText(text);
 
             if (IPAddress.TryParse(text, out var ip) == false) throw new Exception($"Cannot Parse '{text}' as an IP Address");

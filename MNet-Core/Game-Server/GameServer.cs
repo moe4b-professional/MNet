@@ -13,6 +13,7 @@ using System.Diagnostics;
 
 using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
 using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
+using System.Threading.Tasks;
 
 namespace MNet
 {
@@ -21,7 +22,6 @@ namespace MNet
         public static class Config
         {
             public static LocalConfig Local { get; private set; }
-
             public static RemoteConfig Remote { get; private set; }
 
             public static void Set(RemoteConfig config) => Remote = config;
@@ -29,28 +29,6 @@ namespace MNet
             public static void Configure()
             {
                 Local = LocalConfig.Read();
-            }
-
-            public static IPAddress ResolvePersonalAddress()
-            {
-                if (Local.PersonalAddress != null) return Local.PersonalAddress;
-
-                if (Local.Region == GameServerRegion.Local) return IPAddress.Loopback;
-
-                Log.Info("Retrieving Public IP");
-                try
-                {
-                    return PublicIP.Retrieve();
-                }
-                catch (Exception)
-                {
-                    var text = $"Could not Retrieve Public IP for Server, " +
-                        $"Please Explicitly Set {nameof(Local.PersonalAddress)} Property in {LocalConfig.FileName} Config File";
-
-                    Log.Error(text);
-
-                    throw;
-                }
             }
         }
 
@@ -69,7 +47,7 @@ namespace MNet
 
             internal static void Configure()
             {
-                Address = Config.ResolvePersonalAddress();
+                ID = new GameServerID(Config.Local.PersonalAddress);
 
                 Log.Info($"Server ID: {ID}");
                 Log.Info($"Server Region: {Region}");
@@ -85,35 +63,7 @@ namespace MNet
             }
         }
 
-        static void Main()
-        {
-            try
-            {
-                Procedure();
-            }
-            catch
-            {
-                throw;
-            }
-
-            Sandbox.Run();
-
-            while (true)
-            {
-                var key = Console.ReadKey();
-
-                Console.WriteLine();
-
-                switch (key.Key)
-                {
-                    case ConsoleKey.Escape:
-                        Exit();
-                        break;
-                }
-            }
-        }
-
-        static void Procedure()
+        static async Task Main()
         {
             Console.Title = $"Game Sever | Network API v{Constants.ApiVersion}";
 
@@ -127,7 +77,7 @@ namespace MNet
             Info.Configure();
 
             MasterServer.Configure();
-            MasterServer.Register();
+            await MasterServer.Register();
 
             Realtime.Configure();
             RestServerAPI.Configure(Constants.Server.Game.Rest.Port);
@@ -135,40 +85,33 @@ namespace MNet
 
             Realtime.Start();
             RestServerAPI.Start();
+
+            while (true)
+            {
+                var key = Console.ReadKey(true);
+
+                Console.WriteLine();
+
+                switch (key.Key)
+                {
+                    case ConsoleKey.Escape:
+                        await Exit();
+                        break;
+                }
+            }
         }
 
-        static void Exit()
+        static async Task Exit()
         {
             Log.Info("Closing Server");
 
-            MasterServer.Remove();
+            await Task.Delay(500);
+
+            await MasterServer.Remove();
 
             Realtime.Close();
 
-            Thread.Sleep(2000);
-
             Environment.Exit(0);
         }
-    }
-
-    public static class Sandbox
-    {
-#pragma warning disable IDE0051
-        public static void Run()
-        {
-
-        }
-
-        static void Measure(Action action)
-        {
-            var stopwatch = Stopwatch.StartNew();
-
-            action();
-
-            stopwatch.Stop();
-
-            Log.Info($"{action.Method.Name} Toook {stopwatch.ElapsedMilliseconds.ToString("N")}");
-        }
-#pragma warning restore IDE0051
     }
 }
