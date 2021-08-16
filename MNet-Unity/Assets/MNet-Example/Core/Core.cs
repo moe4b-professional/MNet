@@ -53,14 +53,14 @@ namespace MNet.Example
 
 			UIProperty UI => Core.UI;
 
-            protected internal override void Configure()
-            {
-                base.Configure();
+			protected internal override void Configure()
+			{
+				base.Configure();
 
 				NetworkAPI.Room.Scenes.Load.ProcdureMethod = Load;
 			}
 
-            public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
+			public virtual void LoadMainMenu() => Load(mainMenu, LoadSceneMode.Single).Forget();
 
 			async UniTask Load(MSceneAsset scene, LoadSceneMode mode)
 			{
@@ -101,15 +101,15 @@ namespace MNet.Example
 
 			public Dictionary<string, LevelData> Dictionary { get; protected set; }
 
-            protected internal override void Configure()
-            {
-                base.Configure();
+			protected internal override void Configure()
+			{
+				base.Configure();
 
 				Dictionary = list.ToDictionary(LevelData.GetName);
 			}
 
-            #region Attribute
-            public void WriteAttribute(AttributesCollection attributes, byte index)
+			#region Attribute
+			public void WriteAttribute(AttributesCollection attributes, byte index)
 			{
 				attributes.Set(0, index);
 			}
@@ -138,54 +138,46 @@ namespace MNet.Example
 
 			public string PlayerName
 			{
-				get => AutoPrefs.Read<string>(PlayerNameKey);
-				set => AutoPrefs.Set(PlayerNameKey, value);
+				get => AutoPrefs.Read("Player Name", "Player");
+				set
+				{
+					AutoPrefs.Set("Player Name", value);
+					NetworkAPI.Client.Name = value;
+				}
 			}
-
-			public const string PlayerNameKey = "Player Name";
-
-			public static string GetDefaultPlayerName()
-			{
-				if (string.IsNullOrEmpty(Environment.UserName) == false)
-					return Environment.UserName;
-
-				return $"Player {Random.Range(0, 1000)}";
-			}
-
-			NetworkClientProfile GenerateProfile() => new NetworkClientProfile(PlayerName);
 
 			PopupPanel Popup => Core.UI.Popup;
 
-            protected internal override void Configure()
-            {
-                base.Configure();
+			protected internal override void Configure()
+			{
+				base.Configure();
 
 				NetworkAPI.Configure();
 
-				if (AutoPrefs.Contains(PlayerNameKey) == false) PlayerName = GetDefaultPlayerName();
-
-				NetworkAPI.Client.Register.GetProfileMethod = GenerateProfile;
-
-				NetworkAPI.Client.Register.OnCallback += RegisterCallback;
+				NetworkAPI.Client.Register.OnCallback += ClientRegisterCallback;
 			}
 
-            protected internal override void Init()
-            {
-                base.Init();
+			protected internal override void Init()
+			{
+				base.Init();
+
+				if (AutoPrefs.Contains("Player Name") == false)
+					PlayerName = $"Player {Random.Range(0, 1000)}";
+
+				NetworkAPI.Client.Name = PlayerName;
 
 				Process().Forget();
 			}
 
 			async UniTask Process()
-            {
+			{
 				await GetMasterScheme();
 				await GetMasterInfo();
 
 				Popup.Hide();
 			}
-
 			async UniTask GetMasterScheme()
-            {
+			{
 				Start: //Yes, your eyes aren't deceiving you, I declared a goto stamement
 				Popup.Show("Getting Master Scheme");
 
@@ -201,9 +193,8 @@ namespace MNet.Example
 					goto Start; //Yes! I used it too
 				}
 			}
-
 			async UniTask GetMasterInfo()
-            {
+			{
 				Start: //Yep, one more time
 				Popup.Show("Getting Master Info");
 
@@ -220,7 +211,7 @@ namespace MNet.Example
 				}
 			}
 
-			void RegisterCallback(RegisterClientResponse response)
+			void ClientRegisterCallback(RegisterClientResponse response)
 			{
 				if (NetworkAPI.Client.IsMaster)
 				{
@@ -250,9 +241,9 @@ namespace MNet.Example
 
 			public FaderUI Fader => Container.Fader;
 
-            protected internal override void Configure()
-            {
-                base.Configure();
+			protected internal override void Configure()
+			{
+				base.Configure();
 
 				var gameObject = Instantiate(prefab);
 				gameObject.name = prefab.name;
@@ -262,13 +253,13 @@ namespace MNet.Example
 				Initializer.Configure(Container);
 			}
 
-            protected internal override void Init()
-            {
-                base.Init();
+			protected internal override void Init()
+			{
+				base.Init();
 
 				Initializer.Init(Container);
 			}
-        }
+		}
 
 		[Serializable]
 		public class Property
@@ -288,9 +279,9 @@ namespace MNet.Example
 			}
 
 			protected internal virtual void Init()
-            {
+			{
 
-            }
+			}
 		}
 
 		public void ForAllProperties(Action<Property> action)

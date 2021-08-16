@@ -56,10 +56,14 @@ namespace MNet
     public class NetworkClientProfile : INetworkSerializable
     {
         string name;
-        public string Name { get { return name; } }
+        public string Name
+        {
+            get => name;
+            set => name = value;
+        }
 
         AttributesCollection attributes;
-        public AttributesCollection Attributes { get { return attributes; } }
+        public AttributesCollection Attributes => attributes;
 
         public void Select(ref NetworkSerializationContext context)
         {

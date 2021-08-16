@@ -1,8 +1,10 @@
 {
-  "Player Name": "Moe Editor",
-  "Game Server Region": 0,
-  "Create Room - Name": "My Game Room",
-  "Create Room - Capacity": 0,
-  "Create Room - Password": "",
-  "Create Room - Offline": false
+   "Player Name": "MOB Editor",
+   "Create Room":
+   {
+      "Name": "Game Room",
+      "Capacity": 0,
+      "Password": "",
+      "Offline": false
+   }
 }

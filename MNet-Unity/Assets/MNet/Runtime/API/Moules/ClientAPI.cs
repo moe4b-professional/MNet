@@ -24,18 +24,25 @@ namespace MNet
         public static class Client
         {
             public static NetworkClient Self { get; private set; }
-
             public static NetworkClientID ID => Self.ID;
-            public static NetworkClientProfile Profile => Self.Profile;
+
+            public static NetworkClientProfile Profile { get; private set; }
+
+            public static string Name
+            {
+                get => Profile.Name;
+                set => Profile.Name = value;
+            }
 
             public static bool IsConnected => Realtime.IsConnected;
-
             public static bool IsRegistered => Register.IsComplete;
 
             public static bool IsMaster => Self == null ? false : Self.IsMaster;
 
             internal static void Configure()
             {
+                Profile = new NetworkClientProfile("Player");
+
                 MessageDispatcher.Configure();
                 SendQueue.Configure();
                 Prediction.Clear();
@@ -260,7 +267,7 @@ namespace MNet
                     if (OfflineMode.On)
                     {
                         var id = new NetworkClientID();
-                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Register.Profile) };
+                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Profile) };
                         var buffer = new NetworkMessage[] { };
                         var time = TimeResponse.Write(default, request.Time);
 
@@ -519,14 +526,10 @@ namespace MNet
 
                 public static bool IsComplete => Self != null;
 
-                public static NetworkClientProfile Profile { get; private set; }
-
                 public static string Password { get; internal set; }
 
                 internal static void Configure()
                 {
-                    GetProfileMethod = DefaultGetProfileMethod;
-
                     OnConnect += ConnectCallback;
 
                     MessageDispatcher.RegisterHandler<RegisterClientResponse>(Callback);
@@ -539,20 +542,9 @@ namespace MNet
 
                 public static void Request()
                 {
-                    Profile = GetProfileMethod();
-
                     var request = RegisterClientRequest.Write(Profile, Password);
 
                     Send(ref request);
-                }
-
-                public delegate NetworkClientProfile ProfileDelegate();
-                public static ProfileDelegate GetProfileMethod { get; set; }
-                static NetworkClientProfile DefaultGetProfileMethod()
-                {
-                    var name = $"Player {Random.Range(0, 1000)}";
-
-                    return new NetworkClientProfile(name);
                 }
 
                 public delegate void callbackDelegate(RegisterClientResponse response);
@@ -570,7 +562,6 @@ namespace MNet
 
                 internal static void Clear()
                 {
-                    Profile = default;
                     Password = default;
                 }
             }
