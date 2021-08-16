@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
+using System.Threading.Tasks;
+
 namespace MNet
 {
     public static class GeneralUtility
@@ -92,5 +94,7 @@ namespace MNet
         }
 
         public static string ToPrettyString<T>(this T value) => GeneralUtility.PrettifyName(value);
+
+        public static async void Forget(this Task task) => await task;
     }
 }

@@ -277,11 +277,47 @@ namespace MNet
             }
         }
 
-        static void Main()
+        public static class Input
+        {
+            public static async Task Process()
+            {
+                while (true)
+                    await Poll();
+            }
+
+            static async Task Poll()
+            {
+                var command = ExtraConsole.Read();
+
+                if (await Execute(command) == false)
+                    Log.Error($"Unknown Command of '{command}'");
+            }
+
+            static async Task<bool> Execute(string command)
+            {
+                command = command.ToLower();
+
+                switch (command)
+                {
+                    case "stop":
+                        await Stop();
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                return true;
+            }
+        }
+
+        static async Task Main()
         {
             Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
 
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
+            ExtraConsoleLog.Bind();
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");
 
@@ -292,7 +328,16 @@ namespace MNet
             Servers.Configure();
             REST.Configure();
 
-            while (true) Console.ReadLine();
+            await Input.Process();
+        }
+
+        static async Task Stop()
+        {
+            Log.Info("Closing Server");
+
+            await Task.Delay(400);
+
+            Environment.Exit(0);
         }
     }
 }

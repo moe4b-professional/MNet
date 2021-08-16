@@ -13,6 +13,7 @@ using System.Diagnostics;
 
 using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
 using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
+
 using System.Threading.Tasks;
 
 namespace MNet
@@ -63,11 +64,47 @@ namespace MNet
             }
         }
 
+        public static class Input
+        {
+            public static async Task Process()
+            {
+                while (true)
+                    await Poll();
+            }
+
+            static async Task Poll()
+            {
+                var command = ExtraConsole.Read();
+
+                if(await Execute(command) == false)
+                    Log.Error($"Unknown Command of '{command}'");
+            }
+
+            static async Task<bool> Execute(string command)
+            {
+                command = command.ToLower();
+
+                switch (command)
+                {
+                    case "stop":
+                        await Stop();
+                        break;
+
+                    default:
+                        return false;
+                }
+
+                return true;
+            }
+        }
+
         static async Task Main()
         {
             Console.Title = $"Game Sever | Network API v{Constants.ApiVersion}";
 
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
+            ExtraConsoleLog.Bind();
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");
 
@@ -86,22 +123,10 @@ namespace MNet
             Realtime.Start();
             RestServerAPI.Start();
 
-            while (true)
-            {
-                var key = Console.ReadKey(true);
-
-                Console.WriteLine();
-
-                switch (key.Key)
-                {
-                    case ConsoleKey.Escape:
-                        await Exit();
-                        break;
-                }
-            }
+            await Input.Process();
         }
 
-        static async Task Exit()
+        static async Task Stop()
         {
             Log.Info("Closing Server");
 
