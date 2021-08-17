@@ -22,21 +22,12 @@ namespace Cysharp.Threading.Tasks
         }
     }
 
-    public interface IUniTask
-    {
-        UniTaskStatus Status { get; }
-
-        Type Type { get; }
-
-        object Result { get; }
-    }
-
     /// <summary>
     /// Lightweight unity specified task-like object.
     /// </summary>
     [AsyncMethodBuilder(typeof(AsyncUniTaskMethodBuilder))]
     [StructLayout(LayoutKind.Auto)]
-    public readonly partial struct UniTask : IUniTask
+    public readonly partial struct UniTask
     {
         readonly IUniTaskSource source;
         readonly short token;
@@ -59,10 +50,6 @@ namespace Cysharp.Threading.Tasks
                 return source.GetStatus(token);
             }
         }
-
-        object IUniTask.Result => null;
-
-        Type IUniTask.Type => null;
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -128,7 +115,12 @@ namespace Cysharp.Threading.Tasks
             var status = this.source.GetStatus(this.token);
             if (status.IsCompletedSuccessfully())
             {
+                this.source.GetResult(this.token);
                 return CompletedTasks.AsyncUnit;
+            }
+            else if(this.source is IUniTaskSource<AsyncUnit> asyncUnitSource)
+            {
+                return new UniTask<AsyncUnit>(asyncUnitSource, this.token);
             }
 
             return new UniTask<AsyncUnit>(new AsyncUnitSource(this.source), this.token);
@@ -372,7 +364,7 @@ namespace Cysharp.Threading.Tasks
     /// </summary>
     [AsyncMethodBuilder(typeof(AsyncUniTaskMethodBuilder<>))]
     [StructLayout(LayoutKind.Auto)]
-    public readonly struct UniTask<T> : IUniTask
+    public readonly partial struct UniTask<T>
     {
         readonly IUniTaskSource<T> source;
         readonly T result;
@@ -406,10 +398,6 @@ namespace Cysharp.Threading.Tasks
             }
         }
 
-        object IUniTask.Result => source.GetResult(token);
-
-        Type IUniTask.Type => typeof(T);
-
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Awaiter GetAwaiter()
@@ -439,6 +427,7 @@ namespace Cysharp.Threading.Tasks
             var status = this.source.GetStatus(this.token);
             if (status.IsCompletedSuccessfully())
             {
+                this.source.GetResult(this.token);
                 return UniTask.CompletedTask;
             }
 
@@ -715,3 +704,4 @@ namespace Cysharp.Threading.Tasks
         }
     }
 }
+
