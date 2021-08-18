@@ -688,11 +688,11 @@ PlayerSettings:
   platformArchitecture: {}
   scriptingBackend:
     Android: 0
-    Standalone: 0
+    Standalone: 1
   il2cppCompilerConfiguration:
     WebGL: 1
   managedStrippingLevel:
-    Standalone: 0
+    Standalone: 3
     WebGL: 3
   incrementalIl2cppBuild: {}
   suppressCommonWarnings: 1
@@ -707,7 +707,7 @@ PlayerSettings:
   gcWBarrierValidation: 0
   apiCompatibilityLevelPerPlatform:
     Android: 6
-    Standalone: 3
+    Standalone: 6
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
   metroPackageName: Template_3D
