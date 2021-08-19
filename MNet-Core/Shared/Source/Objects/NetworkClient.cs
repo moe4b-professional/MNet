@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace MNet
 {
     [Preserve]
-    public struct NetworkClientID : IManualNetworkSerializable
+    public struct NetworkClientID : IManualNetworkSerializable, IEquatable<NetworkClientID>
     {
         byte value;
         public byte Value { get { return value; } }
@@ -38,6 +38,11 @@ namespace MNet
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
+
+        //Static Utility
+
+        public static NetworkClientID Min { get; private set; } = new NetworkClientID(byte.MinValue);
+        public static NetworkClientID Max { get; private set; } = new NetworkClientID(byte.MaxValue);
 
         public static bool operator ==(NetworkClientID a, NetworkClientID b) => a.Equals(b);
         public static bool operator !=(NetworkClientID a, NetworkClientID b) => !a.Equals(b);

@@ -69,7 +69,7 @@ namespace MNet
         }
     }
 
-    public struct RoomID : INetworkSerializable
+    public struct RoomID : INetworkSerializable, IEquatable<RoomID>
     {
         uint value;
         public uint Value { get { return value; } }
@@ -86,19 +86,21 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(RoomID))
-            {
-                var target = (RoomID)obj;
-
-                return target.value == this.value;
-            }
+            if (obj is RoomID target)
+                return Equals(target);
 
             return false;
         }
+        public bool Equals(RoomID id) => this.value == id.value;
 
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
+
+        //Static Utility
+
+        public static RoomID Min { get; private set; } = new RoomID(ushort.MinValue);
+        public static RoomID Max { get; private set; } = new RoomID(ushort.MaxValue);
 
         public static bool operator ==(RoomID a, RoomID b) => a.Equals(b);
         public static bool operator !=(RoomID a, RoomID b) => !a.Equals(b);

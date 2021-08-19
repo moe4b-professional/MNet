@@ -14,6 +14,8 @@ namespace MNet
 
         public static Version ApiVersion { get; private set; } = new Version(0, 0, 17);
 
+        public const int IdRecycleLifeTime = 60;
+
         public static class Server
         {
             public static class Master

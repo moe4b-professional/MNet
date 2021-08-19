@@ -77,7 +77,7 @@ namespace MNet
             public static void Configure()
             {
                 Apps = new Dictionary<AppID, AppCollection>();
-                IDs = new AutoKeyCollection<RoomID>(RoomID.Increment, new RoomID(1));
+                IDs = new AutoKeyCollection<RoomID>(RoomID.Min, RoomID.Max, RoomID.Increment, Constants.IdRecycleLifeTime);
 
                 RestServerAPI.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, Create);
             }

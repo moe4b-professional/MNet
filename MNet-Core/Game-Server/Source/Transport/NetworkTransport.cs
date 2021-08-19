@@ -303,7 +303,7 @@ namespace MNet
             this.Transport = transport;
             this.ID = id;
 
-            ClientIDs = new AutoKeyCollection<NetworkClientID>(NetworkClientID.Increment);
+            ClientIDs = new AutoKeyCollection<NetworkClientID>(NetworkClientID.Min, NetworkClientID.Max, NetworkClientID.Increment, Constants.IdRecycleLifeTime);
 
             Clients = new ConcurrentDictionary<NetworkClientID, TClient>();
             Connections = new ConcurrentDictionary<TConnection, TClient>();

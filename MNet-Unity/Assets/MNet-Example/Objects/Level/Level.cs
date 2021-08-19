@@ -79,7 +79,7 @@ namespace MNet.Example
 				Popup.Hide();
 			}
 
-			Core.Scenes.LoadMainMenu();
+			///Core.Scenes.LoadMainMenu();
 		}
 	}
 }

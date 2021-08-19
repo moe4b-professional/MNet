@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace MNet
 {
     [Preserve]
-    public struct RprChannelID : IManualNetworkSerializable
+    public struct RprChannelID : IManualNetworkSerializable, IEquatable<RprChannelID>
     {
         byte value;
         public byte Value { get { return value; } }
@@ -18,7 +18,6 @@ namespace MNet
         {
             writer.Insert(value);
         }
-
         public void Deserialize(NetworkStream reader)
         {
             value = reader.Pull();
@@ -40,6 +39,11 @@ namespace MNet
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
+
+        //Static Utility
+
+        public static RprChannelID Min { get; private set; } = new RprChannelID(byte.MinValue);
+        public static RprChannelID Max { get; private set; } = new RprChannelID(byte.MaxValue);
 
         public static bool operator ==(RprChannelID a, RprChannelID b) => a.Equals(b);
         public static bool operator !=(RprChannelID a, RprChannelID b) => !a.Equals(b);

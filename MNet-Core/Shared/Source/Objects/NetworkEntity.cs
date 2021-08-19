@@ -43,7 +43,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct NetworkEntityID : IManualNetworkSerializable
+    public struct NetworkEntityID : IManualNetworkSerializable, IEquatable<NetworkEntityID>
     {
         ushort value;
         public ushort Value { get { return value; } }
@@ -66,19 +66,21 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(NetworkEntityID))
-            {
-                var target = (NetworkEntityID)obj;
-
-                return target.value == this.value;
-            }
+            if (obj is NetworkEntityID target)
+                return Equals(target);
 
             return false;
         }
+        public bool Equals(NetworkEntityID target) => this.value == target.value;
 
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
+
+        //Static Utility
+
+        public static NetworkEntityID Min { get; private set; } = new NetworkEntityID(ushort.MinValue);
+        public static NetworkEntityID Max { get; private set; } = new NetworkEntityID(ushort.MaxValue);
 
         public static bool operator ==(NetworkEntityID a, NetworkEntityID b) => a.Equals(b);
         public static bool operator !=(NetworkEntityID a, NetworkEntityID b) => !a.Equals(b);
@@ -87,7 +89,7 @@ namespace MNet
     }
 
     [Preserve]
-    public struct EntitySpawnToken : IManualNetworkSerializable
+    public struct EntitySpawnToken : IManualNetworkSerializable, IEquatable<EntitySpawnToken>
     {
         byte value;
         public byte Value => value;
@@ -109,17 +111,21 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj is EntitySpawnToken token)
-                return Equals(this, token);
+            if (obj is EntitySpawnToken target)
+                return Equals(target);
 
             return false;
         }
-
-        public static bool Equals(EntitySpawnToken a, EntitySpawnToken b) => a.value == b.value;
+        public bool Equals(EntitySpawnToken target) => this.value == target.value;
 
         public override int GetHashCode() => value.GetHashCode();
 
         public override string ToString() => value.ToString();
+
+        //Static Utility
+
+        public static EntitySpawnToken Min { get; private set; } = new EntitySpawnToken(byte.MinValue);
+        public static EntitySpawnToken Max { get; private set; } = new EntitySpawnToken(byte.MaxValue);
 
         public static bool operator ==(EntitySpawnToken a, EntitySpawnToken b) => a.Equals(b);
         public static bool operator !=(EntitySpawnToken a, EntitySpawnToken b) => !a.Equals(b);

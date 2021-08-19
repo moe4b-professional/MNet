@@ -635,7 +635,7 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    Tokens = new AutoKeyDictionary<EntitySpawnToken, NetworkEntity>(EntitySpawnToken.Increment);
+                    Tokens = new AutoKeyDictionary<EntitySpawnToken, NetworkEntity>(EntitySpawnToken.Min, EntitySpawnToken.Max, EntitySpawnToken.Increment, Constants.IdRecycleLifeTime);
 
                     MessageDispatcher.RegisterHandler<SpawnEntityResponse>(SpawnResponse);
 
@@ -740,7 +740,7 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    channels = new AutoKeyCollection<RprChannelID>(RprChannelID.Increment);
+                    channels = new AutoKeyCollection<RprChannelID>(RprChannelID.Min, RprChannelID.Max, RprChannelID.Increment, Constants.IdRecycleLifeTime);
                     promises = new Dictionary<RprChannelID, RprPromise>();
 
                     Client.MessageDispatcher.RegisterHandler<RprCommand>(Fullfil);

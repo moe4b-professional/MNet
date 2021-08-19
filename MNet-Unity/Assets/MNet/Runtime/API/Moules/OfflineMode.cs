@@ -33,7 +33,7 @@ namespace MNet
             {
                 On = false;
 
-                EntityIDs = new AutoKeyCollection<NetworkEntityID>(NetworkEntityID.Increment);
+                EntityIDs = new AutoKeyCollection<NetworkEntityID>(NetworkEntityID.Min, NetworkEntityID.Max, NetworkEntityID.Increment, Constants.IdRecycleLifeTime);
             }
 
             internal static RoomInfo Start(string name, byte capacity, AttributesCollection attributes)

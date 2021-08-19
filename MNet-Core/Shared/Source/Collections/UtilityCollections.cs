@@ -65,91 +65,117 @@ namespace MNet
     }
 
     public class AutoKeyCollection<TKey>
+            where TKey : IEquatable<TKey>
     {
-        protected HashSet<TKey> hash;
+        TKey Index;
+        TKey Max;
 
-        protected Queue<TKey> vacant;
+        HashSet<TKey> Hash;
 
-        protected TKey index;
-
-        public TKey Increment()
-        {
-            var key = index;
-
-            index = Incrementor(index);
-
-            return key;
-        }
+        Queue<(DateTime stamp, TKey key)> Vacancies;
 
         public delegate TKey IncrementDelegate(TKey value);
-        public IncrementDelegate Incrementor { get; protected set; }
+        IncrementDelegate Incrementor;
+
+        DateTime Timestamp => DateTime.Now;
+        /// <summary>
+        /// Time in Seconds untill a recycled key is valid for reuse
+        /// </summary>
+        public int RecycleTime { get; private set; }
 
         public TKey Reserve()
         {
-            if (vacant.Count > 0)
-            {
-                var key = vacant.Dequeue();
+            if (TryGetVacancy(out var key) == false)
+                key = Increment();
 
-                Add(key);
+            Register(key);
 
-                return key;
-            }
-            else
-            {
-                var key = Increment();
-
-                Add(key);
-
-                return key;
-            }
+            return key;
         }
-
-        void Add(TKey key)
+        public TKey Increment()
         {
-            hash.Add(key);
+            var key = Index;
+
+            Index = Incrementor(Index);
+
+            if (Index.Equals(Max))
+                throw new OverflowException($"Auto Key Collection Index Overflow, Reached {typeof(TKey)} Max of {Max}");
+
+            return key;
+        }
+        bool TryGetVacancy(out TKey key)
+        {
+            if (Vacancies.Count == 0)
+            {
+                key = default;
+                return false;
+            }
+
+            var entry = Vacancies.Peek();
+
+            if (Timestamp < entry.stamp)
+            {
+                key = default;
+                return false;
+            }
+
+            Vacancies.Dequeue();
+
+            key = entry.key;
+            return true;
+        }
+        void Register(TKey key)
+        {
+            Hash.Add(key);
         }
 
         public bool Free(TKey key)
         {
             if (Contains(key) == false) return false;
 
-            Remove(key);
-            vacant.Enqueue(key);
+            Unregister(key);
+
+            var vacancy = (Timestamp.AddSeconds(RecycleTime), key);
+            Vacancies.Enqueue(vacancy);
+
             return true;
         }
-
-        public bool Contains(TKey key) => hash.Contains(key);
-
-        void Remove(TKey key)
+        void Unregister(TKey key)
         {
-            hash.Remove(key);
+            Hash.Remove(key);
         }
+
+        public bool Contains(TKey key) => Hash.Contains(key);
 
         public void Clear()
         {
-            index = default;
-            hash.Clear();
-            vacant.Clear();
+            Index = default;
+            Hash.Clear();
+            Vacancies.Clear();
         }
 
-        public AutoKeyCollection(IncrementDelegate incrementor, TKey initial)
+        public AutoKeyCollection(TKey initial, TKey max, IncrementDelegate incrementor, int recycleTime)
         {
-            hash = new HashSet<TKey>();
-            vacant = new Queue<TKey>();
+            Hash = new HashSet<TKey>();
+            Vacancies = new Queue<(DateTime stamp, TKey key)>();
 
-            index = initial;
+            this.Max = max;
+            Index = initial;
+
             this.Incrementor = incrementor;
+
+            this.RecycleTime = recycleTime;
         }
-        public AutoKeyCollection(IncrementDelegate incrementor) : this(incrementor, default) { }
     }
 
     public class AutoKeyDictionary<TKey, TValue>
+        where TKey : IEquatable<TKey>
     {
         public Dictionary<TKey, TValue> Dictionary { get; protected set; }
 
-        public IReadOnlyCollection<TValue> Values => Dictionary.Values;
-
         public AutoKeyCollection<TKey> Keys { get; protected set; }
+
+        public IReadOnlyCollection<TValue> Values => Dictionary.Values;
 
         public int Count => Dictionary.Count;
 
@@ -186,13 +212,12 @@ namespace MNet
             Keys.Clear();
         }
 
-        public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor, TKey initial)
+        public AutoKeyDictionary(TKey initial, TKey max, AutoKeyCollection<TKey>.IncrementDelegate incrementor, int recycleTime)
         {
             Dictionary = new Dictionary<TKey, TValue>();
 
-            Keys = new AutoKeyCollection<TKey>(incrementor, initial);
+            Keys = new AutoKeyCollection<TKey>(initial, max, incrementor, recycleTime);
         }
-        public AutoKeyDictionary(AutoKeyCollection<TKey>.IncrementDelegate incrementor) : this(incrementor, default) { }
     }
 
     public class DualDictionary<TKey1, TKey2, TValue>

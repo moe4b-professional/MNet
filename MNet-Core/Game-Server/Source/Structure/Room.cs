@@ -734,7 +734,7 @@ namespace MNet
 
             public EntitiesProperty()
             {
-                Dictionary = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Increment);
+                Dictionary = new AutoKeyDictionary<NetworkEntityID, NetworkEntity>(NetworkEntityID.Min, NetworkEntityID.Max, NetworkEntityID.Increment, Constants.IdRecycleLifeTime);
                 MasterObjects = new HashSet<NetworkEntity>();
             }
         }
@@ -887,7 +887,7 @@ namespace MNet
                 {
                     var text = $"Couldn't Find RPR Target {request.Target}, Most Likely Disconnected Before Getting Answer";
                     Log.Warning(text);
-                    Room.LogTo(sender, Log.Level.Error, text);
+                    Room.LogTo(sender, Log.Level.Warning, text);
                     return;
                 }
 
