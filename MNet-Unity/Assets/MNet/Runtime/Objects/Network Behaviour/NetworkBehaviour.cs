@@ -465,7 +465,8 @@ namespace MNet
             {
                 if (Entity.IsReady == false)
                 {
-                    Debug.LogError($"Trying to Send Payload '{payload}' from {Component} Before Entity '{Entity}' is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}", Component);
+                    Debug.LogError($"Trying to Send Payload '{payload}' from {Component} Before Entity '{Entity}'" +
+                        $" is Marked Ready, Please Wait for Ready Or Override {nameof(OnSpawn)}", Component);
                     return false;
                 }
 

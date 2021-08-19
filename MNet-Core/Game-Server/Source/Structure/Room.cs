@@ -323,48 +323,83 @@ namespace MNet
 
             void Load(NetworkClient sender, ref LoadScenePayload payload)
             {
+                var index = payload.Index;
+                var mode = payload.Mode;
+
                 if (sender != Master.Client)
                 {
-                    Log.Warning($"Non Master Client {sender} Trying to Load Scenes in Room, Ignoring");
+                    var text = $"Non Master Client {sender} Trying to Load Scenes in Room, Ignoring";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
-                if (Dictionary.ContainsKey(payload.Index) && payload.Mode == NetworkSceneLoadMode.Additive)
+                if (Dictionary.ContainsKey(index) && mode == NetworkSceneLoadMode.Additive)
                 {
-                    Log.Warning($"Scene {payload.Index} Already Loaded, Cannot Load the Same Scene Additively Multiple Times");
+                    var text = $"Scene {index} Already Loaded, Cannot Load the Same Scene Additively Multiple Times";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
-                if (payload.Mode == NetworkSceneLoadMode.Single) RemoveAll();
+                Load(index, mode, exception: sender);
+            }
+            public void Load(byte index, NetworkSceneLoadMode mode, NetworkClient exception = null)
+            {
+                if (Dictionary.ContainsKey(index) && mode == NetworkSceneLoadMode.Additive)
+                {
+                    Log.Warning($"Scene {index} Already Loaded, Cannot Load the Same Scene Additively Multiple Times");
+                    return;
+                }
 
-                var message = Room.Broadcast(ref payload, exception1: sender.ID);
+                if (mode == NetworkSceneLoadMode.Single) RemoveAll();
 
-                Add(payload.Index, payload.Mode, message);
+                var payload = new LoadScenePayload(index, mode);
+                var message = Room.Broadcast(ref payload, exception1: exception?.ID);
+
+                Add(index, mode, message);
             }
 
             void Unload(NetworkClient sender, ref UnloadScenePayload payload)
             {
+                var index = payload.Index;
+
                 if (sender != Master.Client)
                 {
-                    Log.Warning($"Non Master Client {sender} Trying to Unload Scenes in Room, Ignoring");
+                    var text = $"Non Master Client {sender} Trying to Unload Scenes in Room, Ignoring";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
-                if (Dictionary.TryGetValue(payload.Index, out var scene) == false)
+                if (Dictionary.ContainsKey(index) == false)
                 {
-                    Log.Warning($"Cannot Unload Scene {payload.Index} Because It's not Loaded");
+                    var text = $"Cannot Unload Scene {index} Because It's not Loaded";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
+                    return;
+                }
+
+                Unload(index, exception: sender);
+            }
+            public void Unload(byte index, NetworkClient exception = null)
+            {
+                if (Dictionary.TryGetValue(index, out var scene) == false)
+                {
+                    Log.Warning($"Cannot Unload Scene {index} Because It's not Loaded");
                     return;
                 }
 
                 if (Count == 1)
                 {
-                    Log.Warning($"Cannot Unload Scene {payload.Index} as It's the only Loaded Scene");
+                    Log.Warning($"Cannot Unload Scene {index} as It's the only Loaded Scene");
                     return;
                 }
 
                 Remove(scene);
 
-                Room.Broadcast(ref payload, exception1: sender.ID);
+                var payload = new UnloadScenePayload(index);
+                Room.Broadcast(ref payload, exception1: exception?.ID);
             }
 
             Scene Add(byte index, NetworkSceneLoadMode loadMode, NetworkMessage loadMessage)
@@ -463,11 +498,13 @@ namespace MNet
             {
                 if (request.Type == EntityType.SceneObject && sender != Master.Client)
                 {
-                    Log.Warning($"Non Master Client {sender.ID} Trying to Spawn Scene Object");
+                    var text = $"Non Master Client {sender.ID} Trying to Spawn Scene Object";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
-                if (FindSceneFrom(ref request, out var scene) == false) return;
+                if (FindSceneFrom(sender, ref request, out var scene) == false) return;
 
                 var id = Dictionary.Reserve();
 
@@ -493,7 +530,7 @@ namespace MNet
                 MessageBuffer.Add(entity.SpawnMessage);
             }
 
-            bool FindSceneFrom(ref SpawnEntityRequest request, out Scene scene)
+            bool FindSceneFrom(NetworkClient sender, ref SpawnEntityRequest request, out Scene scene)
             {
                 switch (request.Type)
                 {
@@ -501,7 +538,10 @@ namespace MNet
                         {
                             if (Scenes.TryGet(request.Scene, out scene) == false)
                             {
-                                Log.Warning($"Scene {request.Scene} Not Loaded, Cannot Spawn Scene Object");
+                                var text = $"Scene {request.Scene} Not Loaded, Cannot Spawn Scene Object";
+                                Log.Warning(text);
+                                Room.LogTo(sender, Log.Level.Error, text);
+
                                 return false;
                             }
 
@@ -518,8 +558,12 @@ namespace MNet
 
                             if (Scenes.Active == null)
                             {
-                                Log.Warning("Cannot Spawn Entity, No Active Scene Loaded");
                                 scene = null;
+
+                                var text = "Cannot Spawn Entity, No Active Scene Loaded";
+                                Log.Warning(text);
+                                Room.LogTo(sender, Log.Level.Error, text);
+                                
                                 return false;
                             }
 
@@ -537,25 +581,33 @@ namespace MNet
             {
                 if (Dictionary.TryGetValue(payload.Entity, out var entity) == false)
                 {
-                    Log.Warning($"No Entity {payload.Entity} Found to Transfer Ownership of, Ignoring request from Client: {sender}");
+                    var text = $"No Entity {payload.Entity} Found to Transfer Ownership of, Ignoring request from Client: {sender}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (Clients.TryGet(payload.Client, out var client) == false)
                 {
-                    Log.Warning($"No Network Client: {payload.Client} Found to Transfer Entity {entity} to");
+                    var text = $"No Network Client: {payload.Client} Found to Transfer Entity {entity} to";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (entity.IsMasterObject)
                 {
-                    Log.Warning($"Master Objects Cannot be Transfered, Ignoring request from Client: {sender}");
+                    var text = $"Master Objects Cannot be Transfered, Ignoring request from Client: {sender}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (CheckAuthority(entity, sender) == false)
                 {
-                    Log.Warning($"Client {sender} Trying to Transfer Ownership of Entity they have no Authority over");
+                    var text = $"Client {sender} Trying to Transfer Ownership of Entity they have no Authority over";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -572,13 +624,17 @@ namespace MNet
             {
                 if (Dictionary.TryGetValue(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"No Entity {request.Entity} Found to Takeover Ownership of, Ignoring request from Client: {sender}");
+                    var text = $"No Entity {request.Entity} Found to Takeover Ownership of, Ignoring request from Client: {sender}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (entity.IsMasterObject)
                 {
-                    Log.Warning($"Master Objects Cannot be Takenover, Ignoring request from Client: {sender}");
+                    var text = $"Master Objects Cannot be Takenover, Ignoring request from Client: {sender}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -616,13 +672,17 @@ namespace MNet
             {
                 if (Dictionary.TryGetValue(payload.ID, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender} Trying to Destroy Non Registered Entity {payload.ID}");
+                    var text = $"Client {sender} Trying to Destroy Non Registered Entity {payload.ID}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (CheckAuthority(entity, sender) == false)
                 {
-                    Log.Warning($"Client {sender} Trying to Destroy Entity {entity} Without Having Authority over that Entity");
+                    var text = $"Client {sender} Trying to Destroy Entity {entity} Without Having Authority over that Entity";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -722,7 +782,9 @@ namespace MNet
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+                    var text = $"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -733,9 +795,15 @@ namespace MNet
                 if (request.BufferMode != RemoteBufferMode.None)
                 {
                     if (request.Group == NetworkGroupID.Default)
+                    {
                         entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                    }
                     else
-                        Log.Warning($"Client {sender} Requesting to Buffer RPC Sent to None Default Channel, This is not Supported");
+                    {
+                        var text = $"Client {sender} Requesting to Buffer RPC Sent to None Default Channel, This is not Supported";
+                        Log.Warning(text);
+                        Room.LogTo(sender, Log.Level.Error, text);
+                    }
                 }
             }
 
@@ -743,13 +811,17 @@ namespace MNet
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+                    var text = $"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (Clients.TryGet(request.Target, out var target) == false)
                 {
-                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
+                    var text = $"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -762,13 +834,17 @@ namespace MNet
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+                    var text = $"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (Clients.TryGet(request.Target, out var target) == false)
                 {
-                    Log.Warning($"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To");
+                    var text = $"No NetworkClient With ID {request.Target} Found to Send RPC {request.Method} To";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     ResolveRPR(sender, ref request, RemoteResponseType.InvalidClient);
                     return;
                 }
@@ -782,13 +858,17 @@ namespace MNet
             {
                 if (request.BufferMode == RemoteBufferMode.None)
                 {
-                    Log.Warning($"Recived Buffer RPC with Mode {request.BufferMode} Isn't Valid for Buffering!");
+                    var text = $"Recived Buffer RPC with Mode {request.BufferMode} Isn't Valid for Buffering!";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}");
+                    var text = $"Client {sender.ID} Trying to Invoke RPC {request.Method} On Unregisterd Entity {request.Entity}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -805,7 +885,9 @@ namespace MNet
             {
                 if (Clients.TryGet(request.Target, out var target) == false)
                 {
-                    Log.Warning($"Couldn't Find RPR Target {request.Target}, Most Likely Disconnected Before Getting Answer");
+                    var text = $"Couldn't Find RPR Target {request.Target}, Most Likely Disconnected Before Getting Answer";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -825,7 +907,9 @@ namespace MNet
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}");
+                    var text = $"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -840,7 +924,9 @@ namespace MNet
             {
                 if (Entities.TryGet(request.Entity, out var entity) == false)
                 {
-                    Log.Warning($"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}");
+                    var text = $"Client {sender} Trying to Invoke SyncVar on Non Existing Entity {request.Entity}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
@@ -894,10 +980,15 @@ namespace MNet
 
             public void Invoke(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
             {
-                if (Dictionary.TryGetValue(message.Type, out var callback))
-                    callback(sender, message, mode, channel);
-                else
-                    Log.Warning($"No Message Handler Registered for Payload {message.Type}");
+                if (Dictionary.TryGetValue(message.Type, out var callback) == false)
+                {
+                    var text = $"No Message Handler Registered for Payload {message.Type}";
+                    Log.Warning(text);
+                    Room.LogTo(sender, Log.Level.Error, text);
+                    return;
+                }
+
+                callback(sender, message, mode, channel);
             }
 
             public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode, byte channel);
@@ -1029,6 +1120,44 @@ namespace MNet
 
         public INetworkTransportContext TransportContext;
 
+        public void Start()
+        {
+            Log.Info($"Starting Room {ID}");
+
+            MessageDispatcher.RegisterHandler<PingRequest>(Ping);
+
+            TransportContext = Realtime.RegisterContext(App.Transport, ID.Value);
+            TransportContext.OnMessage += MessageRecievedCallback;
+
+            ForAllProperties(x => x.Start());
+
+            Scheduler.Start();
+
+            OnTick += ClearEarlyVacantProcedure;
+        }
+
+        void ClearEarlyVacantProcedure()
+        {
+            if (Time.Span.Seconds > 20)
+            {
+                OnTick -= ClearEarlyVacantProcedure;
+
+                if (Occupancy == 0) Stop();
+            }
+        }
+
+        public event Action OnTick;
+        void Tick()
+        {
+            Time.Calculate();
+
+            TransportContext.Poll();
+
+            if (Scheduler.IsRunning) SendQueue.Resolve();
+
+            OnTick?.Invoke();
+        }
+
         #region Communication
         NetworkMessage Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
         {
@@ -1065,42 +1194,12 @@ namespace MNet
         }
         #endregion
 
-        public void Start()
+        void LogTo(NetworkClient target, Log.Level level, object value)
         {
-            Log.Info($"Starting Room {ID}");
+            var text = value.ToString();
 
-            MessageDispatcher.RegisterHandler<PingRequest>(Ping);
-
-            TransportContext = Realtime.RegisterContext(App.Transport, ID.Value);
-            TransportContext.OnMessage += MessageRecievedCallback;
-
-            ForAllProperties(x => x.Start());
-
-            Scheduler.Start();
-
-            OnTick += ClearEmptyRoomProcedure;
-        }
-
-        void ClearEmptyRoomProcedure()
-        {
-            if (Time.Span.Seconds > 20)
-            {
-                OnTick -= ClearEmptyRoomProcedure;
-
-                if (Occupancy == 0) Stop();
-            }
-        }
-
-        public event Action OnTick;
-        void Tick()
-        {
-            Time.Calculate();
-
-            TransportContext.Poll();
-
-            if (Scheduler.IsRunning) SendQueue.Resolve();
-
-            OnTick?.Invoke();
+            var payload = new ServerLogPayload(text, level);
+            Send(ref payload, target);
         }
 
         void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode, byte channel)
@@ -1140,15 +1239,7 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id,
-            AppConfig app,
-            Version version,
-            string name,
-            byte capacity,
-            bool visible,
-            string password,
-            MigrationPolicy migrationPolicy,
-            AttributesCollection attributes)
+        public Room(RoomID id, AppConfig app, Version version, string name, RoomOptions options)
         {
             this.ID = id;
 
@@ -1156,11 +1247,12 @@ namespace MNet
             this.App = app;
 
             this.Name = name;
-            this.Capacity = capacity;
-            this.Visible = visible;
-            this.Password = password;
-            this.MigrationPolicy = migrationPolicy;
-            this.Attributes = attributes;
+
+            Capacity = options.Capacity;
+            Visible = options.Visible;
+            Password = options.Password;
+            MigrationPolicy = options.MigrationPolicy;
+            Attributes = options.Attributes;
 
             Scheduler = new Scheduler(App.TickDelay, Tick);
 

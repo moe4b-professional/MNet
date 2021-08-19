@@ -62,7 +62,12 @@ namespace MNet.Example
         {
             if (lobby.Size == 0) return;
 
-            NetworkAPI.Room.Join(lobby.Rooms.Last());
+            foreach (var room in lobby.Rooms)
+            {
+                if (room.Locked) continue;
+
+                NetworkAPI.Room.Join(room);
+            }
         }
 
         void OnDestroy()

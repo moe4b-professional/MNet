@@ -36,11 +36,13 @@ namespace MNet
                 EntityIDs = new AutoKeyCollection<NetworkEntityID>(NetworkEntityID.Increment);
             }
 
-            internal static RoomInfo Start(string name, byte capacity, bool visibile, AttributesCollection attributes)
+            internal static RoomInfo Start(string name, byte capacity, AttributesCollection attributes)
             {
                 On = true;
 
-                RoomInfo = new RoomInfo(default, name, capacity, 1, visibile, false, attributes);
+                var id = new RoomID(0);
+
+                RoomInfo = new RoomInfo(id, name, capacity, 1, false, false, attributes);
 
                 return RoomInfo;
             }

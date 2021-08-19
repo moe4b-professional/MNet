@@ -42,6 +42,7 @@ namespace MNet
     }
 
     [Preserve]
+    [Serializable]
     public struct NetworkEntityID : IManualNetworkSerializable
     {
         ushort value;

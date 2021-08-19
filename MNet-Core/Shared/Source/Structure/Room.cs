@@ -129,4 +129,36 @@ namespace MNet
         /// </summary>
         Stop,
     }
+
+    public struct RoomOptions : INetworkSerializable
+    {
+        public byte Capacity;
+
+        public bool Visible;
+        public string Password;
+
+        public MigrationPolicy MigrationPolicy;
+
+        public AttributesCollection Attributes;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref Capacity);
+
+            context.Select(ref Visible);
+            context.Select(ref Password);
+
+            context.Select(ref MigrationPolicy);
+            context.Select(ref Attributes);
+        }
+
+        public static RoomOptions Default { get; } = new RoomOptions()
+        {
+            Capacity = 10,
+            Visible = true,
+            Password = null,
+            MigrationPolicy = MigrationPolicy.Continue,
+            Attributes = new AttributesCollection(),
+        };
+    }
 }

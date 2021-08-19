@@ -18,7 +18,7 @@ namespace MNet
 
         public delegate void OutputDelegate(object target, Level level);
         public static OutputDelegate Output { get; set; }
-        static void Add(object target, Level level)
+        public static void Add(object target, Level level)
         {
             if (Output == null)
                 Console.WriteLine($"[{TimeStamp}] {level}: {target}");

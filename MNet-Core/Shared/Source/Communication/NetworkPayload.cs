@@ -160,6 +160,8 @@ namespace MNet
             Add<LeaveNetworkGroupsPayload>();
             #endregion
 
+            Add<ServerLogPayload>();
+
             Add<SystemMessagePayload>();
         }
 
@@ -180,26 +182,14 @@ namespace MNet
         AppID appID;
         public AppID AppID => appID;
 
-        string name;
-        public string Name => name;
-
         Version version;
         public Version Version => version;
 
-        byte capacity;
-        public byte Capacity => capacity;
+        string name;
+        public string Name => name;
 
-        bool visibile;
-        public bool Visibile => visibile;
-
-        string password;
-        public string Password => password;
-
-        MigrationPolicy migrationPolicy;
-        public MigrationPolicy MigrationPolicy => migrationPolicy;
-
-        AttributesCollection attributes;
-        public AttributesCollection Attributes => attributes;
+        RoomOptions options;
+        public RoomOptions Options => options;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -207,31 +197,18 @@ namespace MNet
             context.Select(ref version);
 
             context.Select(ref name);
-            context.Select(ref capacity);
-            context.Select(ref visibile);
-            context.Select(ref password);
-            context.Select(ref migrationPolicy);
-            context.Select(ref attributes);
+
+            context.Select(ref options);
         }
 
-        public CreateRoomRequest(
-            AppID appID,
-            Version version,
-            string name,
-            byte capacity,
-            bool visibile,
-            string password,
-            MigrationPolicy migrationPolicy,
-            AttributesCollection attributes)
+        public CreateRoomRequest(AppID appID, Version version, string name, RoomOptions options)
         {
             this.appID = appID;
             this.version = version;
+
             this.name = name;
-            this.capacity = capacity;
-            this.visibile = visibile;
-            this.password = password;
-            this.migrationPolicy = migrationPolicy;
-            this.attributes = attributes;
+
+            this.options = options;
         }
     }
 
@@ -1005,6 +982,28 @@ namespace MNet
         }
     }
     #endregion
+
+    [Preserve]
+    public struct ServerLogPayload : INetworkSerializable
+    {
+        Log.Level level;
+        public Log.Level Level => level;
+
+        string text;
+        public string Text => text;
+
+        public void Select(ref NetworkSerializationContext context)
+        {
+            context.Select(ref level);
+            context.Select(ref text);
+        }
+
+        public ServerLogPayload(string text, Log.Level level)
+        {
+            this.text = text;
+            this.level = level;
+        }
+    }
 
     [Preserve]
     public struct SystemMessagePayload : INetworkSerializable

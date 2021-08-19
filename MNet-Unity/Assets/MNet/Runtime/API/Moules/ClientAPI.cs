@@ -55,6 +55,13 @@ namespace MNet
                 Realtime.OnConnect += ConnectCallback;
                 Realtime.OnMessage += MessageCallback;
                 Realtime.OnDisconnect += DisconnectedCallback;
+
+                MessageDispatcher.RegisterHandler<ServerLogPayload>(ServerLogHandler);
+            }
+
+            static void ServerLogHandler(ref ServerLogPayload payload)
+            {
+                Log.Add($"Server Log: {payload.Text}", payload.Level);
             }
 
             public static bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
@@ -522,8 +529,6 @@ namespace MNet
 
             public static class Register
             {
-                public static bool Auto { get; set; } = true;
-
                 public static bool IsComplete => Self != null;
 
                 public static string Password { get; internal set; }
@@ -535,10 +540,7 @@ namespace MNet
                     MessageDispatcher.RegisterHandler<RegisterClientResponse>(Callback);
                 }
 
-                static void ConnectCallback()
-                {
-                    if (Auto) Request();
-                }
+                static void ConnectCallback() => Request();
 
                 public static void Request()
                 {

@@ -49,23 +49,22 @@ namespace MNet
 
                 Realtime.Connect(server, id);
             }
+
+            public delegate void JoinDelegate();
+            public static event JoinDelegate OnJoin;
             #endregion
 
             #region Create
             public delegate void CreateDelegate(RoomInfo room);
             public static event CreateDelegate OnCreate;
-            public static async UniTask<RoomInfo> Create(string name, CreateRoomOptions options)
+            public static async UniTask<RoomInfo> Create(string name, RoomOptions options, bool offline)
             {
-                var offline = options.Offline;
-                var capacity = options.Capacity;
-                var visibile = options.Visibile;
-                var attributes = options.Attributes;
-                var password = options.Password;
-                var migration = options.MigrationPolicy;
-
                 if (offline)
                 {
-                    var info = OfflineMode.Start(name, capacity, visibile, attributes);
+                    var capacity = options.Capacity;
+                    var attributes = options.Attributes;
+
+                    var info = OfflineMode.Start(name, capacity, attributes);
 
                     OnCreate?.Invoke(info);
 
@@ -73,7 +72,7 @@ namespace MNet
                 }
                 else
                 {
-                    var payload = new CreateRoomRequest(AppID, GameVersion, name, capacity, visibile, password, migration, attributes);
+                    var payload = new CreateRoomRequest(AppID, GameVersion, name, options);
 
                     var info = await Server.Game.Rest.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload);
 
@@ -91,6 +90,8 @@ namespace MNet
                 Master.Assign(response.Master);
 
                 Realtime.ApplyBuffer(response.Buffer).Forget();
+
+                OnJoin?.Invoke();
             }
 
             public static class Info
@@ -977,29 +978,5 @@ namespace MNet
                 if (OfflineMode.On) OfflineMode.Stop();
             }
         }
-    }
-
-    public struct CreateRoomOptions
-    {
-        public byte Capacity;
-
-        public bool Visibile;
-        public string Password;
-
-        public MigrationPolicy MigrationPolicy;
-
-        public AttributesCollection Attributes;
-
-        public bool Offline;
-
-        public static CreateRoomOptions Default { get; } = new CreateRoomOptions()
-        {
-            Capacity = 10,
-            Visibile = true,
-            Password = null,
-            MigrationPolicy = MigrationPolicy.Continue,
-            Attributes = new AttributesCollection(),
-            Offline = false,
-        };
     }
 }
