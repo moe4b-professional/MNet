@@ -64,22 +64,25 @@ namespace MNet.Example
 			Player.Spawn(player, 4f);
 		}
 
-		public async UniTask Quit()
+        public async UniTask Quit()
 		{
 			if (NetworkAPI.Client.IsConnected)
 			{
 				Popup.Show("Disconnecting");
 
-				await UniTask.Delay(200);
+				await UniTask.Delay(100);
 
 				NetworkAPI.Client.Disconnect();
 
-				await UniTask.Delay(500);
+				await UniTask.WaitWhile(IsConnected);
+				static bool IsConnected() => NetworkAPI.Client.IsConnected;
+
+				await UniTask.Delay(200);
 
 				Popup.Hide();
 			}
 
-			///Core.Scenes.LoadMainMenu();
+			Core.Scenes.LoadMainMenu();
 		}
 	}
 }
