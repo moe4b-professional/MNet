@@ -56,7 +56,7 @@ namespace MNet
 
         protected static bool ReadNull(NetworkStream reader)
         {
-            return reader.Pull() == 1 ? true : false;
+            return reader.Take() == 1 ? true : false;
         }
         protected static bool ReadNull(NetworkStream reader, Type type)
         {
@@ -396,7 +396,7 @@ namespace MNet
 
         public override byte Deserialize(NetworkStream reader)
         {
-            return reader.Pull();
+            return reader.Take();
         }
     }
 
@@ -626,7 +626,7 @@ namespace MNet
 
         public override Guid Deserialize(NetworkStream reader)
         {
-            var binary = reader.Pull(Size);
+            var binary = reader.Take(Size);
 
             var value = new Guid(binary);
 
@@ -683,7 +683,7 @@ namespace MNet
 
             var bytes = instance.GetAddressBytes();
 
-            byte length = (byte)bytes.Length;
+            var length = (byte)bytes.Length;
 
             writer.Insert(length);
             writer.Insert(bytes);
@@ -691,11 +691,11 @@ namespace MNet
 
         public override IPAddress Deserialize(NetworkStream reader)
         {
-            var length = reader.Pull();
+            var length = reader.Take();
 
             if (length == 0) return null;
 
-            var binary = reader.Pull(length);
+            var binary = reader.Take(length);
 
             var value = new IPAddress(binary);
 
@@ -719,7 +719,7 @@ namespace MNet
             if (Helper.Length.Collection.Read(reader, out var length) == false)
                 return null;
 
-            var value = reader.Pull(length);
+            var value = reader.Take(length);
 
             return value;
         }
@@ -737,7 +737,7 @@ namespace MNet
 
         public override Type Deserialize(NetworkStream reader)
         {
-            var code = reader.Pull();
+            var code = reader.Take();
 
             var value = NetworkPayload.GetType(code);
 

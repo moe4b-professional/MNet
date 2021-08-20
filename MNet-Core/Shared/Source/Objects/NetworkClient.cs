@@ -19,7 +19,7 @@ namespace MNet
 
         public void Deserialize(NetworkStream reader)
         {
-            value = reader.Pull();
+            value = reader.Take();
         }
 
         public NetworkClientID(byte value)
@@ -124,7 +124,7 @@ namespace MNet
 
         public void Deserialize(NetworkStream reader)
         {
-            value = reader.Pull();
+            value = reader.Take();
         }
 
         public NetworkGroupID(byte value)

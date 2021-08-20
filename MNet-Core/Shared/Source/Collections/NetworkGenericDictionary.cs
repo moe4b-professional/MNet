@@ -131,7 +131,7 @@ namespace MNet
                 var key = reader.Read<TKey>();
 
                 var length = NetworkSerializationHelper.Length.Read(reader);
-                var raw = reader.Pull(length);
+                var raw = reader.Take(length);
 
                 payload.Add(key, raw);
             }

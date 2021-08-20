@@ -99,7 +99,7 @@ namespace MNet
         public byte[] ToArray() => ToArray(0, Position);
         public byte[] ToArray(int offset, int count)
         {
-            var destination = new byte[Position];
+            var destination = new byte[count];
 
             Buffer.BlockCopy(data, offset, destination, 0, count);
 
@@ -143,12 +143,12 @@ namespace MNet
         }
         #endregion
 
-        #region Pull
+        #region Take
         /// <summary>
         /// Retrieves the Next Byte in Stream and Iterates the Position by 1
         /// </summary>
         /// <returns></returns>
-        public byte Pull()
+        public byte Take()
         {
             Position += 1;
 
@@ -160,15 +160,12 @@ namespace MNet
         /// </summary>
         /// <param name="length"></param>
         /// <returns></returns>
-        public byte[] Pull(int length)
+        public byte[] Take(int length)
         {
-            var destination = new byte[length];
-
-            Buffer.BlockCopy(data, Position, destination, 0, length);
-
+            var raw = ToArray(Position, length);
             Position += length;
 
-            return destination;
+            return raw;
         }
         #endregion
 

@@ -69,14 +69,14 @@ namespace MNet
         public static void ReadAllBytes(NetworkStream reader, out byte[] binary, out int bits)
         {
             binary = new byte[8];
-            binary[0] = reader.Pull();
+            binary[0] = reader.Take();
 
             bits = 8;
 
             for (int i = 1; i < binary.Length; i++)
             {
                 if (IsReadBitSet(binary[i - 1]))
-                    binary[i] = reader.Pull();
+                    binary[i] = reader.Take();
                 else
                     break;
 

@@ -20,7 +20,7 @@ namespace MNet
 
         public void Deserialize(NetworkStream reader)
         {
-            value = reader.Pull();
+            value = reader.Take();
         }
 
         public NetworkBehaviourID(byte value)
