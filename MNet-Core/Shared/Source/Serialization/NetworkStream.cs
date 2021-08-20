@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -85,20 +86,22 @@ namespace MNet
         /// Returns an Array Segment Representing the Current State of the Stream
         /// </summary>
         /// <returns></returns>
-        public ArraySegment<byte> Segment()
+        public ArraySegment<byte> Segment() => Segment(0, Position);
+        public ArraySegment<byte> Segment(int offset, int count)
         {
-            return new ArraySegment<byte>(data, 0, Position);
+            return new ArraySegment<byte>(data, offset, count);
         }
 
         /// <summary>
         /// Clones the Stream to a Byte Array
         /// </summary>
         /// <returns></returns>
-        public byte[] ToArray()
+        public byte[] ToArray() => ToArray(0, Position);
+        public byte[] ToArray(int offset, int count)
         {
             var destination = new byte[Position];
 
-            Buffer.BlockCopy(data, 0, destination, 0, destination.Length);
+            Buffer.BlockCopy(data, offset, destination, 0, count);
 
             return destination;
         }
@@ -328,25 +331,43 @@ namespace MNet
         {
             static Queue<NetworkStream> Queue;
 
+            public static int Size
+            {
+                get
+                {
+                    lock (SyncLock)
+                    {
+                        return Queue.Count;
+                    }
+                }
+            }
+
             static object SyncLock;
-            public static bool ThreadSafe { get; set; } = true;
 
             public static NetworkStream Any => Lease();
             public static NetworkStream Lease()
             {
-                if (ThreadSafe) Monitor.Enter(SyncLock);
+                lock (SyncLock)
+                {
+                    var stream = Queue.Count == 0 ? Create() : Queue.Dequeue();
 
-                var stream = Queue.Count == 0 ? Create() : Queue.Dequeue();
-
-                if (ThreadSafe) Monitor.Exit(SyncLock);
-
-                return stream;
+                    return stream;
+                }
             }
+
+            public static int Allocations { get; private set; } = 0;
 
             static NetworkStream Create()
             {
-                var stream = new NetworkStream(1024);
+                lock (SyncLock)
+                {
+                    Allocations += 1;
 
+                    if (Allocations % 100 == 0)
+                        Log.Warning($"{Allocations} NetworkStreams Allocated, Are you Making Sure to Recylce Old Network Streams?");
+                }
+
+                var stream = new NetworkStream(1024);
                 stream.IsLeased = true;
 
                 return stream;
@@ -356,11 +377,10 @@ namespace MNet
             {
                 stream.Reset();
 
-                if (ThreadSafe) Monitor.Enter(SyncLock);
-
-                Queue.Enqueue(stream);
-
-                if (ThreadSafe) Monitor.Exit(SyncLock);
+                lock (SyncLock)
+                {
+                    Queue.Enqueue(stream);
+                }
             }
 
             static Pool()

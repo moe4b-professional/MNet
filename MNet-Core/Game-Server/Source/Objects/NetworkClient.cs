@@ -27,8 +27,6 @@ namespace MNet
         public NetworkClientInfo ReadInfo() => new NetworkClientInfo(ID, Profile);
         public static NetworkClientInfo ReadInfo(NetworkClient client) => client.ReadInfo();
 
-        public MessageSendQueue SendQueue;
-
         public override string ToString() => ID.ToString();
 
         public NetworkClient(NetworkClientID id, NetworkClientProfile profile, INetworkTransport transport)
@@ -39,8 +37,6 @@ namespace MNet
             Entities = new HashSet<NetworkEntity>();
 
             Groups = new HashSet<NetworkGroupID>() { NetworkGroupID.Default };
-
-            SendQueue = new MessageSendQueue(transport.CheckMTU);
         }
     }
 }

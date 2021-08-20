@@ -22,16 +22,15 @@ namespace MNet
 
         public void Set<T>(TKey key, T value)
         {
-            var writer = NetworkStream.Pool.Any;
+            using (var stream = NetworkStream.Pool.Any)
+            {
+                stream.Write(value);
 
-            writer.Write(value);
+                var raw = stream.ToArray();
 
-            var raw = writer.ToArray();
-
-            NetworkStream.Pool.Return(writer);
-
-            payload[key] = raw;
-            objects[key] = value;
+                payload[key] = raw;
+                objects[key] = value;
+            };
         }
         public T Get<T>(TKey key, T fallback = default)
         {

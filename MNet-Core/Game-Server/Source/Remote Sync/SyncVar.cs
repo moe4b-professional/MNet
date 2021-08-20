@@ -7,15 +7,15 @@ namespace MNet
 {
     class SyncVarBuffer
     {
-        public Dictionary<(NetworkBehaviourID behaviour, SyncVarID field), NetworkMessage> Dictionary { get; protected set; }
+        public Dictionary<(NetworkBehaviourID behaviour, SyncVarID field), BufferNetworkMessage> Dictionary { get; protected set; }
 
-        public HashSet<NetworkMessage> Hash { get; protected set; }
+        public HashSet<BufferNetworkMessage> Hash { get; protected set; }
 
-        public delegate void BufferDelegate(NetworkMessage message);
-        public delegate void UnBufferDelegate(NetworkMessage message);
-        public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> message);
+        public delegate void BufferDelegate(BufferNetworkMessage message);
+        public delegate void UnBufferDelegate(BufferNetworkMessage message);
+        public delegate void UnBufferAllDelegate(HashSet<BufferNetworkMessage> message);
 
-        public void Set<T>(NetworkMessage message, ref T request, BufferDelegate buffer, UnBufferDelegate unbuffer)
+        public void Set<T>(BufferNetworkMessage message, ref T request, BufferDelegate buffer, UnBufferDelegate unbuffer)
             where T : ISyncVarRequest
         {
             var id = (request.Behaviour, request.Field);
@@ -43,9 +43,9 @@ namespace MNet
 
         public SyncVarBuffer()
         {
-            Dictionary = new Dictionary<(NetworkBehaviourID, SyncVarID), NetworkMessage>();
+            Dictionary = new Dictionary<(NetworkBehaviourID, SyncVarID), BufferNetworkMessage>();
 
-            Hash = new HashSet<NetworkMessage>();
+            Hash = new HashSet<BufferNetworkMessage>();
         }
     }
 }

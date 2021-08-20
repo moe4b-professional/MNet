@@ -8,23 +8,23 @@ namespace MNet
 {
     class NetworkMessageCollection
     {
-        public HashSet<NetworkMessage> HashSet { get; protected set; }
+        public HashSet<BufferNetworkMessage> HashSet { get; protected set; }
 
-        public void Add(NetworkMessage message)
+        public void Add(BufferNetworkMessage message)
         {
             HashSet.Add(message);
         }
 
-        public bool Remove(NetworkMessage message)
+        public bool Remove(BufferNetworkMessage message)
         {
             return HashSet.Remove(message);
         }
-        public int RemoveAll(Predicate<NetworkMessage> match)
+        public int RemoveAll(Predicate<BufferNetworkMessage> match)
         {
             return HashSet.RemoveWhere(match);
         }
 
-        public bool Contains(NetworkMessage message) => HashSet.Contains(message);
+        public bool Contains(BufferNetworkMessage message) => HashSet.Contains(message);
 
         public void Clear()
         {
@@ -33,7 +33,7 @@ namespace MNet
 
         public NetworkMessageCollection()
         {
-            HashSet = new HashSet<NetworkMessage>();
+            HashSet = new HashSet<BufferNetworkMessage>();
         }
     }
 }

@@ -13,12 +13,12 @@ namespace MNet
     {
         public Dictionary<(NetworkBehaviourID behaviour, RpcID method), NetworkMessageCollection> Dictionary { get; protected set; }
 
-        public HashSet<NetworkMessage> Hash { get; protected set; }
+        public HashSet<BufferNetworkMessage> Hash { get; protected set; }
 
-        public delegate void BufferDelegate(NetworkMessage message);
-        public delegate void UnBufferAllDelegate(HashSet<NetworkMessage> collection);
+        public delegate void BufferDelegate(BufferNetworkMessage message);
+        public delegate void UnBufferAllDelegate(HashSet<BufferNetworkMessage> collection);
 
-        public void Set<T>(NetworkMessage message, ref T request, RemoteBufferMode mode, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
+        public void Set<T>(BufferNetworkMessage message, ref T request, RemoteBufferMode mode, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
             where T: IRpcRequest
         {
             var key = (request.Behaviour, request.Method);
@@ -55,7 +55,7 @@ namespace MNet
         {
             Dictionary = new Dictionary<(NetworkBehaviourID, RpcID), NetworkMessageCollection>();
 
-            Hash = new HashSet<NetworkMessage>();
+            Hash = new HashSet<BufferNetworkMessage>();
         }
     }
 }

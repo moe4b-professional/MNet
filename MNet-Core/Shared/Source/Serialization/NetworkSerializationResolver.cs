@@ -913,7 +913,7 @@ namespace MNet
 
     #region Tuple
     [Preserve]
-    public sealed class TupleNetwokrSerializationResolver<T1, T2> : NetworkSerializationDynamicResolver<(T1, T2)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2> : NetworkSerializationDynamicResolver<(T1, T2)>
     {
         public override void Serialize(NetworkStream writer, (T1, T2) instance)
         {

@@ -209,8 +209,6 @@ namespace MNet
                 Dictionary.Remove(client.ID);
                 List.Remove(client);
 
-                SendQueue.Remove(client);
-
                 if (client == Master.Client) ProcessMigration();
 
                 var payload = new ClientDisconnectPayload(client.ID);
@@ -404,12 +402,12 @@ namespace MNet
 
             Scene Add(byte index, NetworkSceneLoadMode loadMode, NetworkMessage loadMessage)
             {
-                var scene = new Scene(index, loadMode, loadMessage);
+                var scene = new Scene(index, loadMode, loadMessage.ToBuffer());
 
                 Dictionary.Add(index, scene);
                 List.Add(scene);
 
-                MessageBuffer.Add(loadMessage);
+                MessageBuffer.Add(scene.LoadMessage);
 
                 if (Active == null) SelectActive();
 
@@ -526,7 +524,7 @@ namespace MNet
                 NetworkClientID? exception = entity.IsDynamic ? sender.ID : null;
 
                 var command = SpawnEntityCommand.Write(sender.ID, entity.ID, request);
-                entity.SpawnMessage = Room.Broadcast(ref command, exception1: exception);
+                entity.SpawnMessage = Room.Broadcast(ref command, exception1: exception).ToBuffer();
                 MessageBuffer.Add(entity.SpawnMessage);
             }
 
@@ -615,7 +613,7 @@ namespace MNet
 
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
-                entity.OwnershipMessage = Room.Broadcast(ref payload, exception1: sender.ID);
+                entity.OwnershipMessage = Room.Broadcast(ref payload, exception1: sender.ID).ToBuffer();
 
                 MessageBuffer.Remove(entity.OwnershipMessage);
             }
@@ -643,7 +641,7 @@ namespace MNet
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
                 var command = TakeoverEntityCommand.Write(sender.ID, request);
-                entity.OwnershipMessage = Room.Broadcast(ref command, exception1: sender.ID);
+                entity.OwnershipMessage = Room.Broadcast(ref command, exception1: sender.ID).ToBuffer();
 
                 MessageBuffer.Add(entity.OwnershipMessage);
             }
@@ -796,7 +794,7 @@ namespace MNet
                 {
                     if (request.Group == NetworkGroupID.Default)
                     {
-                        entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                        entity.RpcBuffer.Set(message.ToBuffer(), ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
                     }
                     else
                     {
@@ -876,7 +874,7 @@ namespace MNet
 
                 var message = NetworkMessage.Write(ref command);
 
-                entity.RpcBuffer.Set(message, ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                entity.RpcBuffer.Set(message.ToBuffer(), ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
             }
             #endregion
 
@@ -917,7 +915,7 @@ namespace MNet
 
                 var message = Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID);
 
-                entity.SyncVarBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.Remove);
+                entity.SyncVarBuffer.Set(message.ToBuffer(), ref request, MessageBuffer.Add, MessageBuffer.Remove);
             }
 
             void InvokeBufferSyncVar(NetworkClient sender, ref BufferSyncVarRequest request)
@@ -934,7 +932,7 @@ namespace MNet
 
                 var message = NetworkMessage.Write(ref command);
 
-                entity.SyncVarBuffer.Set(message, ref request, MessageBuffer.Add, MessageBuffer.Remove);
+                entity.SyncVarBuffer.Set(message.ToBuffer(), ref request, MessageBuffer.Add, MessageBuffer.Remove);
             }
             #endregion
         }
@@ -942,33 +940,41 @@ namespace MNet
         public MessageBufferProperty MessageBuffer = new MessageBufferProperty();
         public class MessageBufferProperty : Property
         {
-            public List<NetworkMessage> List { get; protected set; }
+            public List<BufferNetworkMessage> List { get; protected set; }
 
-            public NetworkMessage[] ToArray() => List.ToArray();
+            public NetworkMessage[] ToArray()
+            {
+                var array = new NetworkMessage[List.Count];
 
-            public void Add(NetworkMessage message)
+                for (int i = 0; i < List.Count; i++)
+                    array[i] = List[i].ToMessage();
+
+                return array;
+            }
+
+            public void Add(BufferNetworkMessage message)
             {
                 if (message == null) return;
 
                 List.Add(message);
             }
 
-            public void Remove(NetworkMessage message)
+            public void Remove(BufferNetworkMessage message)
             {
                 if (message == null) return;
 
                 List.Remove(message);
             }
 
-            public void RemoveAll(ICollection<NetworkMessage> collection) => RemoveAll(collection.Contains);
-            public int RemoveAll(Predicate<NetworkMessage> predicate)
+            public void RemoveAll(ICollection<BufferNetworkMessage> collection) => RemoveAll(collection.Contains);
+            public int RemoveAll(Predicate<BufferNetworkMessage> predicate)
             {
                 return List.RemoveAll(predicate);
             }
 
             public MessageBufferProperty()
             {
-                List = new List<NetworkMessage>();
+                List = new List<BufferNetworkMessage>();
             }
         }
 
@@ -1035,35 +1041,6 @@ namespace MNet
             }
         }
 
-        public SendQueueProperty SendQueue = new SendQueueProperty();
-        public class SendQueueProperty : Property
-        {
-            HashSet<NetworkClient> hash;
-
-            public void Add(ArraySegment<byte> message, NetworkClient target, DeliveryMode mode, byte channel)
-            {
-                target.SendQueue.Add(message, mode, channel);
-
-                hash.Add(target);
-            }
-
-            public void Remove(NetworkClient client) => hash.Remove(client);
-
-            public void Resolve()
-            {
-                foreach (var client in hash)
-                    foreach (var packet in client.SendQueue.Iterate())
-                        TransportContext.Send(client.ID, packet.segment, packet.delivery, packet.channel);
-
-                hash.Clear();
-            }
-
-            public SendQueueProperty()
-            {
-                hash = new HashSet<NetworkClient>();
-            }
-        }
-
         void ForAllProperties(Action<Property> action)
         {
             action(Info);
@@ -1076,7 +1053,6 @@ namespace MNet
             action(RemoteCalls);
             action(MessageBuffer);
             action(MessageDispatcher);
-            action(SendQueue);
             action(System);
         }
 
@@ -1099,8 +1075,6 @@ namespace MNet
             public MessageDispatcherProperty MessageDispatcher => Room.MessageDispatcher;
 
             public MessageBufferProperty MessageBuffer => Room.MessageBuffer;
-
-            public SendQueueProperty SendQueue => Room.SendQueue;
 
             public TimeProperty Time => Room.Time;
 
@@ -1153,8 +1127,6 @@ namespace MNet
 
             TransportContext.Poll();
 
-            if (Scheduler.IsRunning) SendQueue.Resolve();
-
             OnTick?.Invoke();
         }
 
@@ -1163,14 +1135,13 @@ namespace MNet
         {
             var message = NetworkMessage.Write(ref payload);
 
-            var stream = NetworkStream.Pool.Any;
-            stream.Write(message);
+            using (var stream = NetworkStream.Pool.Any)
+            {
+                stream.Write(message);
+                var segment = stream.Segment();
 
-            var segment = stream.Segment();
-
-            SendQueue.Add(segment, target, mode, channel);
-
-            stream.Recycle();
+                TransportContext.Send(target.ID, segment, mode, channel);
+            }
 
             return message;
         }
@@ -1179,15 +1150,19 @@ namespace MNet
         {
             var message = NetworkMessage.Write(ref payload);
 
-            var raw = NetworkSerializer.Serialize(message);
-
-            for (int i = 0; i < Clients.Count; i++)
+            using (var stream = NetworkStream.Pool.Any)
             {
-                if (Clients[i].Groups.Contains(group) == false) continue;
-                if (exception1 == Clients[i].ID) continue;
-                if (exception2 == Clients[i].ID) continue;
+                stream.Write(message);
+                var segment = stream.Segment();
 
-                SendQueue.Add(raw, Clients[i], mode, channel);
+                for (int i = 0; i < Clients.Count; i++)
+                {
+                    if (Clients[i].Groups.Contains(group) == false) continue;
+                    if (exception1 == Clients[i].ID) continue;
+                    if (exception2 == Clients[i].ID) continue;
+
+                    TransportContext.Send(Clients[i].ID, segment, mode, channel);
+                }
             }
 
             return message;

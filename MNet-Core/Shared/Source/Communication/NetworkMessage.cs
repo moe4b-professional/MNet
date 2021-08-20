@@ -13,18 +13,18 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public class NetworkMessage
+    public struct NetworkMessage
     {
         object payload;
         public object Payload => payload;
 
         public Type Type => payload.GetType();
 
-        public void Set<T>(T target) => payload = target;
-
         public bool Is<TType>() => payload is TType;
 
         public T Read<T>() => (T)payload;
+
+        public BufferNetworkMessage ToBuffer() => new BufferNetworkMessage(payload);
 
         public void Serialize(NetworkStream writer)
         {
@@ -39,10 +39,9 @@ namespace MNet
 
         public override string ToString() => payload.ToString();
 
-        public NetworkMessage() { }
-        NetworkMessage(object payload)
+        public NetworkMessage(object payload)
         {
-            Set(payload);
+            this.payload = payload;
         }
 
         //Static Utility
@@ -75,6 +74,27 @@ namespace MNet
                     break;
                 }
             }
+        }
+    }
+
+    public class BufferNetworkMessage
+    {
+        object payload;
+        public object Payload => payload;
+
+        public Type Type => payload.GetType();
+
+        public bool Is<TType>() => payload is TType;
+
+        public T Read<T>() => (T)payload;
+
+        public void Set<T>(T target) => payload = target;
+
+        public NetworkMessage ToMessage() => new NetworkMessage(payload);
+
+        public BufferNetworkMessage(object payload)
+        {
+            this.payload = payload;
         }
     }
 }

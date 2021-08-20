@@ -44,7 +44,6 @@ namespace MNet
                 Profile = new NetworkClientProfile("Player");
 
                 MessageDispatcher.Configure();
-                SendQueue.Configure();
                 Prediction.Clear();
                 Register.Configure();
                 Groups.Configure();
@@ -82,14 +81,13 @@ namespace MNet
 
                 var message = NetworkMessage.Write(ref payload);
 
-                var stream = NetworkStream.Pool.Any;
-                stream.Write(message);
+                using (var stream = NetworkStream.Pool.Any)
+                {
+                    stream.Write(message);
+                    var segment = stream.Segment();
 
-                var segment = stream.Segment();
-
-                SendQueue.Add(segment, mode, channel);
-
-                stream.Recycle();
+                    Realtime.Send(segment, mode, channel);
+                }
 
                 return true;
             }
@@ -152,41 +150,6 @@ namespace MNet
 
                         handler(ref payload);
                     }
-                }
-            }
-
-            public static class SendQueue
-            {
-                public static MessageSendQueue Queue { get; private set; }
-
-                internal static void Configure()
-                {
-                    NetworkAPI.OnProcess += Process;
-
-                    Realtime.OnInitialize += Initialize;
-                }
-
-                static void Initialize(NetworkTransport transport)
-                {
-                    Queue = new MessageSendQueue(transport.CheckMTU);
-                }
-
-                static void Process()
-                {
-                    if (IsConnected) Resolve();
-                }
-
-                static void Resolve()
-                {
-                    foreach (var packet in Queue.Iterate())
-                        Realtime.Send(packet.segment, packet.delivery, packet.channel);
-                }
-
-                public static void Add(ArraySegment<byte> segment, DeliveryMode mode, byte channel) => Queue.Add(segment, mode, channel);
-
-                internal static void Clear()
-                {
-                    Queue.Clear();
                 }
             }
 
@@ -870,7 +833,6 @@ namespace MNet
             {
                 Self = default;
 
-                SendQueue.Clear();
                 Prediction.Clear();
                 Register.Clear();
                 Groups.Clear();

@@ -17,15 +17,12 @@ namespace MNet
         #region Serialize
         public static byte[] Serialize<T>(T instance)
         {
-            var writer = NetworkStream.Pool.Any;
+            using (var stream = NetworkStream.Pool.Any)
+            {
+                stream.Write(instance);
 
-            writer.Write(instance);
-
-            var raw = writer.ToArray();
-
-            NetworkStream.Pool.Return(writer);
-
-            return raw;
+                return stream.ToArray();
+            }
         }
 
         public static byte[] Serialize(object instance)
@@ -36,15 +33,12 @@ namespace MNet
         }
         public static byte[] Serialize(object instance, Type type)
         {
-            var writer = NetworkStream.Pool.Any;
+            using (var stream = NetworkStream.Pool.Any)
+            {
+                stream.Write(instance, type);
 
-            writer.Write(instance, type);
-
-            var raw = writer.ToArray();
-
-            NetworkStream.Pool.Return(writer);
-
-            return raw;
+                return stream.ToArray();
+            }
         }
         #endregion
 

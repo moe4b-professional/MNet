@@ -1,10 +1,9 @@
 {
-   "Player Name": "MOB Editor",
-   "Create Room":
-   {
-      "Name": "Game Room",
-      "Capacity": 0,
-      "Password": "",
-      "Offline": false
-   }
+  "Player Name": "MOB Editor",
+  "Create Room": {
+    "Name": "Game Room",
+    "Capacity": 4,
+    "Password": "",
+    "Offline": false
+  }
 }

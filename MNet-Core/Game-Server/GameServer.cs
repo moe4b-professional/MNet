@@ -90,6 +90,19 @@ namespace MNet
                         await Stop();
                         break;
 
+                    case "stream allocations":
+                        Log.Info($"{NetworkStream.Pool.Allocations} Network Streams Allocated");
+                        break;
+
+                    case "stream size":
+                        Log.Info($"Network Stream Pool Size: {NetworkStream.Pool.Size}");
+                        break;
+
+                    case "collect garbage":
+                        Log.Info($"Collecting Garbage");
+                        GC.Collect();
+                        break;
+
                     default:
                         return false;
                 }

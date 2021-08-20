@@ -57,9 +57,15 @@ namespace MNet.Example
 			Pause = GetComponentInChildren<LevelPause>();
 
 			RoomLog = GetComponentInChildren<RoomLog>();
+
+			if (NetworkAPI.Client.IsConnected == false)
+			{
+				Core.Scenes.LoadMainMenu();
+				return;
+			}
 		}
 
-		void SpawnCallback()
+        void SpawnCallback()
 		{
 			Player.Spawn(player, 4f);
 		}

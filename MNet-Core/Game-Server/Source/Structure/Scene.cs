@@ -12,11 +12,11 @@ namespace MNet
 
         internal NetworkSceneLoadMode LoadMode;
 
-        internal NetworkMessage LoadMessage;
+        internal BufferNetworkMessage LoadMessage;
 
         internal HashSet<NetworkEntity> Entities;
 
-        public Scene(byte index, NetworkSceneLoadMode loadMode, NetworkMessage loadMessage)
+        public Scene(byte index, NetworkSceneLoadMode loadMode, BufferNetworkMessage loadMessage)
         {
             this.Index = index;
             this.LoadMode = loadMode;

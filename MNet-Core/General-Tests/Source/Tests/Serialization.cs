@@ -17,59 +17,6 @@ namespace MNet
         }
 
         [Test]
-        public void DeliverySegmentation()
-        {
-            var original = new List<TargetRpcRequest>();
-
-            var delivery = new MessageSendQueue.Delivery(DeliveryMode.Unreliable, 500);
-
-            for (byte i = 1; i <= 40; i++)
-            {
-                var entity = new NetworkEntityID(i);
-                var behaviour = new NetworkBehaviourID(i);
-                var method = new RpcID(i);
-                var target = new NetworkClientID(i);
-
-                var payload = TargetRpcRequest.Write(entity, behaviour, method, target, new byte[] { i, i });
-
-                var message = NetworkMessage.Write(ref payload);
-                original.Add(payload);
-
-                var binary = NetworkSerializer.Serialize(message);
-                delivery.Add(binary, 0);
-            }
-
-            var copy = new List<TargetRpcRequest>();
-
-            foreach (var stream in delivery.Channels[0].Read())
-            {
-                var segment = stream.Segment();
-
-                foreach (var message in NetworkMessage.Read(segment))
-                {
-                    copy.Add(message.Read<TargetRpcRequest>());
-                }
-            }
-
-            Assert.AreEqual(original.Count, copy.Count);
-
-            for (int i = 0; i < original.Count; i++)
-                Compare(original[i], copy[i]);
-
-            static bool Compare(TargetRpcRequest a, TargetRpcRequest b)
-            {
-                Assert.AreEqual(a.Entity, b.Entity);
-                Assert.AreEqual(a.Behaviour, b.Behaviour);
-                Assert.AreEqual(a.Method, b.Method);
-                Assert.AreEqual(a.Target, b.Target);
-
-                TestUtility.Compare(a.Raw, b.Raw);
-
-                return true;
-            }
-        }
-
-        [Test]
         public void AttributesCollection()
         {
             var original = new AttributesCollection();
