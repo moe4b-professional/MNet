@@ -80,7 +80,7 @@ namespace MNet
             context.RegisterClient(peer);
         }
 
-        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod delivery, byte channel)
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader packet, DeliveryMethod delivery, byte channel)
         {
             if (Routes.TryGetValue(peer, out var context) == false)
             {
@@ -96,11 +96,11 @@ namespace MNet
                 return;
             }
 
-            var segment = reader.GetRemainingBytesSegment();
+            var segment = packet.GetRemainingBytesSegment();
 
             context.RegisterMessages(peer, segment, mode, channel);
 
-            reader.Recycle();
+            packet.Recycle();
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -117,7 +117,7 @@ namespace MNet
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
-        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType) { }
+        public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader packet, UnconnectedMessageType messageType) { }
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
         #endregion
 
