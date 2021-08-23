@@ -108,16 +108,16 @@ namespace MNet
             public static class Info
             {
                 static RoomID id;
-                public static RoomID ID { get { return id; } }
+                public static RoomID ID => id;
 
                 static string name;
-                public static string Name { get { return name; } }
+                public static string Name => name;
 
                 static byte capacity;
-                public static byte Capacity { get { return capacity; } }
+                public static byte Capacity => capacity;
 
                 static byte occupancy;
-                public static byte Occupancy { get { return occupancy; } }
+                public static byte Occupancy => occupancy;
 
                 static bool visible;
                 public static bool Visible
@@ -134,30 +134,54 @@ namespace MNet
                     }
                 }
 
-                static AttributesCollection attributes;
-                public static AttributesCollection Attributes => attributes;
-
-                public static void ModifyAttribute<TValue>(ushort key, TValue value)
+                public static class Attributes
                 {
-                    var collection = new AttributesCollection();
+                    static AttributesCollection collection;
+                    public static AttributesCollection Collection => collection;
 
-                    collection.Set(key, value);
+                    internal static void Load(AttributesCollection target)
+                    {
+                        collection = target;
+                    }
 
-                    ModifyAttributes(collection);
-                }
+                    internal static void Change(ref ChangeRoomInfoPayload payload)
+                    {
+                        if (payload.ModifyAttributes) collection.CopyFrom(payload.ModifiedAttributes);
 
-                public static void ModifyAttributes(AttributesCollection collection)
-                {
-                    var payload = new ChangeRoomInfoPayload() { ModifiedAttributes = collection };
+                        if (payload.RemoveAttributes) collection.RemoveAll(payload.RemovedAttributes);
+                    }
 
-                    Send(ref payload);
-                }
+                    internal static void Clear()
+                    {
+                        collection = default;
+                    }
 
-                public static void RemoveAttributes(params ushort[] keys)
-                {
-                    var payload = new ChangeRoomInfoPayload() { RemovedAttributes = keys };
+                    public static TValue Get<TValue>(ushort key) => collection.Get<TValue>(key);
+                    public static bool TryGetValue<TValue>(ushort key, out TValue value) => collection.TryGetValue(key, out value);
 
-                    Send(ref payload);
+                    public static bool Contains(ushort key) => collection.Contains(key);
+
+                    public static void Set<TValue>(ushort key, TValue value)
+                    {
+                        var collection = new AttributesCollection();
+
+                        collection.Set(key, value);
+
+                        Set(collection);
+                    }
+                    public static void Set(AttributesCollection collection)
+                    {
+                        var payload = new ChangeRoomInfoPayload() { ModifiedAttributes = collection };
+
+                        Send(ref payload);
+                    }
+
+                    public static void Remove(params ushort[] keys)
+                    {
+                        var payload = new ChangeRoomInfoPayload() { RemovedAttributes = keys };
+
+                        Send(ref payload);
+                    }
                 }
 
                 public static void Send(ref ChangeRoomInfoPayload payload)
@@ -204,7 +228,8 @@ namespace MNet
                     capacity = info.Capacity;
                     occupancy = info.Occupancy;
                     visible = info.Visibile;
-                    attributes = info.Attributes;
+
+                    Attributes.Load(info.Attributes);
 
                     OnLoad?.Invoke();
                 }
@@ -217,9 +242,7 @@ namespace MNet
                 {
                     if (payload.ModifyVisiblity) visible = payload.Visibile;
 
-                    if (payload.ModifyAttributes) Attributes.CopyFrom(payload.ModifiedAttributes);
-
-                    if (payload.RemoveAttributes) Attributes.RemoveAll(payload.RemovedAttributes);
+                    Attributes.Change(ref payload);
 
                     OnChange?.Invoke();
                 }
@@ -230,7 +253,8 @@ namespace MNet
                     name = default;
                     capacity = default;
                     occupancy = default;
-                    attributes = default;
+
+                    Attributes.Clear();
                 }
             }
 

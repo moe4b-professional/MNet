@@ -215,7 +215,7 @@ namespace MNet.Example
 			{
 				if (NetworkAPI.Client.IsMaster)
 				{
-					var level = Core.levels.ReadAttribute(NetworkAPI.Room.Info.Attributes);
+					var level = Core.levels.ReadAttribute(NetworkAPI.Room.Info.Attributes.Collection);
 
 					NetworkAPI.Room.Info.Visible = true;
 					NetworkAPI.Room.Scenes.Load.Request(level.Scene, LoadSceneMode.Single);

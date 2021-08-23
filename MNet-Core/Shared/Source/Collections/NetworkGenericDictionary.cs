@@ -15,12 +15,11 @@ namespace MNet
     public class NetworkGenericDictionary<TKey> : IManualNetworkSerializable
     {
         Dictionary<TKey, byte[]> payload;
-
-        Dictionary<TKey, object> objects;
-
         public IReadOnlyCollection<TKey> Keys => payload.Keys;
 
-        public void Set<T>(TKey key, T value)
+        Dictionary<TKey, object> cache;
+
+        public void Set<TValue>(TKey key, TValue value)
         {
             using (var stream = NetworkStream.Pool.Any)
             {
@@ -29,22 +28,21 @@ namespace MNet
                 var raw = stream.ToArray();
 
                 payload[key] = raw;
-                objects[key] = value;
+                cache[key] = value;
             };
         }
-        public T Get<T>(TKey key, T fallback = default)
+
+        public TValue Get<TValue>(TKey key)
         {
-            if (TryGetValue<T>(key, out var value) == false)
-                value = fallback;
+            if (TryGetValue<TValue>(key, out var value) == false)
+                value = default;
 
             return value;
         }
 
-        public bool ContainsKey(TKey key) => payload.ContainsKey(key);
-
         public bool TryGetValue<TValue>(TKey key, out TValue value)
         {
-            if (objects.TryGetValue(key, out var instance))
+            if (cache.TryGetValue(key, out var instance))
             {
                 if (instance is TValue cast)
                 {
@@ -72,7 +70,7 @@ namespace MNet
                         $"Exception: {ex}");
                 }
 
-                objects[key] = value;
+                cache[key] = value;
 
                 return true;
             }
@@ -81,13 +79,14 @@ namespace MNet
             return false;
         }
 
+        public bool Contains(TKey key) => payload.ContainsKey(key);
+
         public bool Remove(TKey key)
         {
-            objects.Remove(key);
+            cache.Remove(key);
 
             return payload.Remove(key);
         }
-
         public int RemoveAll(IList<TKey> keys)
         {
             var count = 0;
@@ -103,7 +102,7 @@ namespace MNet
         {
             foreach (var key in collection.Keys)
             {
-                objects.Remove(key);
+                cache.Remove(key);
                 payload[key] = collection.payload[key];
             }
         }
@@ -140,7 +139,7 @@ namespace MNet
         public NetworkGenericDictionary()
         {
             payload = new Dictionary<TKey, byte[]>();
-            objects = new Dictionary<TKey, object>();
+            cache = new Dictionary<TKey, object>();
         }
     }
 }
