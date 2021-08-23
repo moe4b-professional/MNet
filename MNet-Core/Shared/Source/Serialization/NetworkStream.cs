@@ -330,7 +330,7 @@ namespace MNet
         {
             static Queue<NetworkStream> Queue;
 
-            public static int Size
+            public static int Count
             {
                 get
                 {
@@ -344,12 +344,9 @@ namespace MNet
             public static NetworkStream Any => Lease();
             public static NetworkStream Lease()
             {
-                lock (Queue)
-                {
-                    var stream = Queue.Count == 0 ? Create() : Queue.Dequeue();
+                lock (Queue) if (Queue.Count > 0) return Queue.Dequeue();
 
-                    return stream;
-                }
+                return Create();
             }
 
             public static int Allocations { get; private set; } = 0;

@@ -95,7 +95,7 @@ namespace MNet
                         break;
 
                     case "stream size":
-                        Log.Info($"Network Stream Pool Size: {NetworkStream.Pool.Size}");
+                        Log.Info($"Network Stream Pool Size: {NetworkStream.Pool.Count}");
                         break;
 
                     case "collect garbage":
