@@ -334,19 +334,17 @@ namespace MNet
             {
                 get
                 {
-                    lock (SyncLock)
+                    lock (Queue)
                     {
                         return Queue.Count;
                     }
                 }
             }
 
-            static object SyncLock;
-
             public static NetworkStream Any => Lease();
             public static NetworkStream Lease()
             {
-                lock (SyncLock)
+                lock (Queue)
                 {
                     var stream = Queue.Count == 0 ? Create() : Queue.Dequeue();
 
@@ -358,7 +356,7 @@ namespace MNet
 
             static NetworkStream Create()
             {
-                lock (SyncLock)
+                lock (Queue)
                 {
                     Allocations += 1;
 
@@ -376,7 +374,7 @@ namespace MNet
             {
                 stream.Reset();
 
-                lock (SyncLock)
+                lock (Queue)
                 {
                     Queue.Enqueue(stream);
                 }
@@ -385,8 +383,6 @@ namespace MNet
             static Pool()
             {
                 Queue = new Queue<NetworkStream>();
-
-                SyncLock = new object();
             }
         }
 
