@@ -148,7 +148,7 @@ namespace MNet
         {
             this.Sender = sender;
 
-            this.IsBuffered = NetworkAPI.Realtime.IsOnBuffer;
+            this.IsBuffered = NetworkAPI.Realtime.Buffer.IsOn;
         }
     }
 

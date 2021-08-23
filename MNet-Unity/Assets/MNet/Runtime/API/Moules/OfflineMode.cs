@@ -41,18 +41,12 @@ namespace MNet
                 On = true;
 
                 var id = new RoomID(0);
-
                 RoomInfo = new RoomInfo(id, name, capacity, 1, false, false, attributes);
 
                 return RoomInfo;
             }
 
             internal static void Stop()
-            {
-                Clear();
-            }
-
-            internal static void Clear()
             {
                 On = false;
 

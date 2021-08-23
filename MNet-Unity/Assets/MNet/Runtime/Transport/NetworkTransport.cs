@@ -34,8 +34,7 @@ namespace MNet
 
         public abstract void Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
-        public virtual void Disconnect() => Disconnect(DisconnectCode.Normal);
-        public abstract void Disconnect(DisconnectCode code = DisconnectCode.Normal);
+        public abstract void Disconnect(DisconnectCode code);
 
         #region Callbacks
         public delegate void ConnectDelegate();

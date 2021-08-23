@@ -50,8 +50,11 @@ namespace MNet
                 Realtime.Connect(server, id);
             }
 
-            public delegate void JoinDelegate();
-            public static event JoinDelegate OnJoin;
+            public static event Client.ReadyDelegate OnJoin
+            {
+                add => Client.OnReady += value;
+                remove => Client.OnReady -= value;
+            }
             #endregion
 
             #region Create
@@ -83,15 +86,23 @@ namespace MNet
             }
             #endregion
 
+            #region Leave
+            public static void Leave() => Client.Disconnect();
+
+            public static event Client.DisconnectDelegate OnLeave
+            {
+                add => Client.OnDisconnect += value;
+                remove => Client.OnDisconnect -= value;
+            }
+            #endregion
+
             internal static void Register(ref RegisterClientResponse response)
             {
                 Info.Load(response.Room);
                 Clients.AddAll(response.Clients);
                 Master.Assign(response.Master);
 
-                Realtime.ApplyBuffer(response.Buffer).Forget();
-
-                OnJoin?.Invoke();
+                Realtime.Buffer.Apply(response.Buffer).Forget();
             }
 
             public static class Info
@@ -964,8 +975,6 @@ namespace MNet
                 }
             }
 
-            public static void Leave() => Client.Disconnect();
-
             internal static void Clear()
             {
                 Info.Clear();
@@ -974,8 +983,6 @@ namespace MNet
                 Scenes.Clear();
                 Master.Clear();
                 Entities.Clear();
-
-                if (OfflineMode.On) OfflineMode.Stop();
             }
         }
     }

@@ -48,42 +48,52 @@ namespace MNet
 
             public static bool OfflineMode { get; private set; }
 
-            #region Buffer
-            public static bool IsOnBuffer { get; private set; } = false;
-
-            public static event BufferDelegate OnBufferBegin;
-            internal static async UniTask ApplyBuffer(IList<NetworkMessage> list)
-            {
-                if (IsOnBuffer) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
-
-                IsOnBuffer = true;
-                OnBufferBegin?.Invoke(list);
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    while (Pause.Value) await UniTask.WaitWhile(Pause.IsOn);
-
-                    MessageCallback(list[i], DeliveryMode.ReliableOrdered);
-                }
-
-                IsOnBuffer = false;
-                OnBufferEnd?.Invoke(list);
-            }
-            public static event BufferDelegate OnBufferEnd;
-
-            public delegate void BufferDelegate(IList<NetworkMessage> list);
-            #endregion
-
             public static ConcurrentQueue<Action> InputQueue { get; private set; }
 
+            /// <summary>
+            /// Class responsible for applying room buffers for late joining clients
+            /// </summary>
+            public static class Buffer
+            {
+                public static bool IsOn { get; private set; } = false;
+
+                public delegate void BufferDelegate(IList<NetworkMessage> list);
+
+                public static event BufferDelegate OnBegin;
+
+                internal static async UniTask Apply(IList<NetworkMessage> list)
+                {
+                    if (IsOn) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
+
+                    IsOn = true;
+                    OnBegin?.Invoke(list);
+
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        while (Pause.Active) await UniTask.WaitWhile(Pause.IsOn);
+
+                        MessageCallback(list[i], DeliveryMode.ReliableOrdered);
+                    }
+
+                    IsOn = false;
+                    OnEnd?.Invoke(list);
+                }
+
+                public static event BufferDelegate OnEnd;
+            }
+
+            /// <summary>
+            /// Class responsible for pausing the RealtimeAPI processing when peforming asynchronous operations 
+            /// such as loading or unloading a scene
+            /// </summary>
             public static class Pause
             {
                 static HashSet<object> locks;
 
-                public static bool Value => locks.Count > 0;
+                public static bool Active => locks.Count > 0;
 
-                public static bool IsOn() => Value == true;
-                public static bool IsOff() => Value == false;
+                public static bool IsOn() => Active == true;
+                public static bool IsOff() => Active == false;
 
                 internal static void Configure()
                 {
@@ -129,8 +139,6 @@ namespace MNet
 
             internal static void Configure()
             {
-                OfflineMode = false;
-
                 InputQueue = new ConcurrentQueue<Action>();
 
                 Pause.Configure();
@@ -155,6 +163,39 @@ namespace MNet
                 OnInitialize?.Invoke(Transport);
             }
 
+            static void Process()
+            {
+                if (Transport == null) return;
+
+                if (Pause.Active) return;
+                if (Buffer.IsOn) return;
+
+                var count = InputQueue.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (Pause.Active) return;
+                    if (Buffer.IsOn) return;
+
+                    if (InputQueue.TryDequeue(out var action) == false) return;
+
+                    action();
+                }
+            }
+
+            static void Stop()
+            {
+                if (OfflineMode)
+                {
+                    NetworkAPI.OfflineMode.Stop();
+                    OfflineMode = false;
+                }
+
+                ///Manually reset the InputQueue just to ensure that no commands are executed after this method is invoked
+                InputQueue = new ConcurrentQueue<Action>();
+            }
+
+            #region Connect
             public static void Connect(GameServerID server, RoomID room)
             {
                 if (IsConnected)
@@ -163,17 +204,31 @@ namespace MNet
                     return;
                 }
 
-                if (NetworkAPI.OfflineMode.On)
-                {
-                    OfflineMode = true;
-                    QueueConnect();
-                    return;
-                }
+                OfflineMode = NetworkAPI.OfflineMode.On;
 
-                Transport.Connect(server, room);
+                if (OfflineMode)
+                    QueueConnect();
+                else
+                    Transport.Connect(server, room);
             }
 
-            internal static bool Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
+            public delegate void ConnectDelegate();
+            public static event ConnectDelegate OnConnect;
+            static void ConnectCallback()
+            {
+                OnConnect?.Invoke();
+            }
+
+            static void QueueConnect()
+            {
+                InputQueue.Enqueue(Action);
+
+                void Action() => ConnectCallback();
+            }
+            #endregion
+
+            #region Message
+            public static bool Send(ArraySegment<byte> segment, DeliveryMode mode, byte channel)
             {
                 if (IsConnected == false)
                 {
@@ -193,50 +248,6 @@ namespace MNet
                 return true;
             }
 
-            static void Process()
-            {
-                if (Transport == null) return;
-
-                if (Pause.Value) return;
-                if (IsOnBuffer) return;
-
-                var count = InputQueue.Count;
-
-                for (int i = 0; i < count; i++)
-                {
-                    if (Pause.Value) return;
-                    if (IsOnBuffer) return;
-
-                    if (InputQueue.TryDequeue(out var action) == false) return;
-
-                    action();
-                }
-            }
-
-            internal static void Clear()
-            {
-                OfflineMode = false;
-
-                InputQueue = new ConcurrentQueue<Action>();
-            }
-
-            #region Connect
-            public delegate void ConnectDelegate();
-            public static event ConnectDelegate OnConnect;
-            static void ConnectCallback()
-            {
-                OnConnect?.Invoke();
-            }
-
-            static void QueueConnect()
-            {
-                InputQueue.Enqueue(Action);
-
-                void Action() => ConnectCallback();
-            }
-            #endregion
-
-            #region Message
             public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
             public static event MessageDelegate OnMessage;
             static void MessageCallback(NetworkMessage message, DeliveryMode mode)
@@ -253,17 +264,27 @@ namespace MNet
             #endregion
 
             #region Disconnect
-            static void DisconnectCallback(DisconnectCode code)
+            public static void Disconnect(DisconnectCode code)
             {
-                Clear();
+                if (IsConnected == false)
+                {
+                    Debug.LogWarning("Disconnecting Client When They Aren't Connected, Ignoring");
+                    return;
+                }
 
-                InvokeDisconnect(code);
+                if (OfflineMode == false) Transport.Disconnect(code);
+
+                ///Manually invoke callback to make all Disconnect() invokes synchronous,
+                ///we ensure synchronicity by clearing the InputQueue within the callback
+                DisconnectCallback(code);
             }
 
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
-            static void InvokeDisconnect(DisconnectCode code)
+            static void DisconnectCallback(DisconnectCode code)
             {
+                Stop();
+
                 OnDisconnect?.Invoke(code);
             }
 
@@ -275,25 +296,11 @@ namespace MNet
             }
             #endregion
 
-            public static void Disconnect()
-            {
-                if (IsConnected == false)
-                {
-                    Debug.LogWarning("Disconnecting Client When They Aren't Connected, Ignoring");
-                    return;
-                }
-
-                if (OfflineMode == false) Transport.Disconnect();
-
-                InvokeDisconnect(DisconnectCode.Normal);
-                Clear();
-            }
-
             static void ApplicationQuitCallback()
             {
                 Application.quitting -= ApplicationQuitCallback;
 
-                if (IsConnected) Disconnect();
+                if (IsConnected) Disconnect(DisconnectCode.Normal);
             }
 
             static NetworkTransport CreateTransport(NetworkTransportType type)

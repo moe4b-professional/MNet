@@ -324,6 +324,8 @@ namespace MNet
 
         //Static Utility
 
+        public static NetworkStream From(ArraySegment<byte> segment) => new NetworkStream(segment.Array, segment.Offset);
+
         public static class Pool
         {
             static Queue<NetworkStream> Queue;

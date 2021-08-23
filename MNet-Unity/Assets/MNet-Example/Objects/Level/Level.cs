@@ -77,13 +77,8 @@ namespace MNet.Example
 				Popup.Show("Disconnecting");
 
 				await UniTask.Delay(100);
-
 				NetworkAPI.Client.Disconnect();
-
-				await UniTask.WaitWhile(IsConnected);
-				static bool IsConnected() => NetworkAPI.Client.IsConnected;
-
-				await UniTask.Delay(200);
+				await UniTask.Delay(100);
 
 				Popup.Hide();
 			}

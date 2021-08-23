@@ -201,7 +201,7 @@ namespace MNet
         public bool CheckAuthority(NetworkClient client, RemoteAuthority authority)
         {
             //instantly validate every buffered message
-            if (NetworkAPI.Realtime.IsOnBuffer) return true;
+            if (NetworkAPI.Realtime.Buffer.IsOn) return true;
 
             if (authority.HasFlag(RemoteAuthority.Any)) return true;
 
@@ -298,7 +298,7 @@ namespace MNet
 
             OnSpawn?.Invoke();
 
-            if (NetworkAPI.Realtime.IsOnBuffer)
+            if (NetworkAPI.Realtime.Buffer.IsOn)
                 ReadyAfterBuffer();
             else
                 Ready();
@@ -307,12 +307,12 @@ namespace MNet
         #region Ready After Buffer
         void ReadyAfterBuffer()
         {
-            NetworkAPI.Realtime.OnBufferEnd += ReadyAfterBufferCallback;
+            NetworkAPI.Realtime.Buffer.OnEnd += ReadyAfterBufferCallback;
         }
 
         void ReadyAfterBufferCallback(IList<NetworkMessage> list)
         {
-            NetworkAPI.Realtime.OnBufferEnd -= ReadyAfterBufferCallback;
+            NetworkAPI.Realtime.Buffer.OnEnd -= ReadyAfterBufferCallback;
             Ready();
         }
         #endregion
@@ -363,7 +363,7 @@ namespace MNet
         {
             if (UnityScene.isLoaded && Application.isPlaying == false) NetworkScene.UnregisterLocal(this);
 
-            NetworkAPI.Realtime.OnBufferEnd -= ReadyAfterBufferCallback;
+            NetworkAPI.Realtime.Buffer.OnEnd -= ReadyAfterBufferCallback;
         }
 
         //Static Utility

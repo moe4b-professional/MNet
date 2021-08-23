@@ -16,6 +16,7 @@ using UnityEditorInternal;
 
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
+using Cysharp.Threading.Tasks;
 
 namespace MNet
 {
@@ -92,13 +93,24 @@ namespace MNet
                 return true;
             }
 
-            public delegate void ConnectDelegate();
-            public static event ConnectDelegate OnConnect;
             static void ConnectCallback()
             {
                 Debug.Log("Client Connected");
 
-                OnConnect?.Invoke();
+                Register.Request();
+            }
+
+            public delegate void ReadyDelegate();
+            public static event ReadyDelegate OnReady;
+            internal static void ReadyCallback(ref RegisterClientResponse response)
+            {
+                Debug.Log("Client Ready");
+
+                Self = new NetworkClient(response.ID, Profile);
+
+                Room.Register(ref response);
+
+                OnReady?.Invoke();
             }
 
             static void MessageCallback(NetworkMessage message, DeliveryMode mode)
@@ -498,14 +510,10 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    OnConnect += ConnectCallback;
-
                     MessageDispatcher.RegisterHandler<RegisterClientResponse>(Callback);
                 }
 
-                static void ConnectCallback() => Request();
-
-                public static void Request()
+                internal static void Request()
                 {
                     var request = RegisterClientRequest.Write(Profile, Password);
 
@@ -516,12 +524,10 @@ namespace MNet
                 public static event callbackDelegate OnCallback;
                 static void Callback(ref RegisterClientResponse response)
                 {
-                    Self = new NetworkClient(response.ID, Profile);
-
                     Debug.Log("Client Registered");
 
-                    Room.Register(ref response);
-
+                    Client.ReadyCallback(ref response);
+                
                     OnCallback?.Invoke(response);
                 }
 
@@ -816,7 +822,8 @@ namespace MNet
                 }
             }
 
-            public static void Disconnect() => Realtime.Disconnect();
+            public static void Disconnect() => Disconnect(DisconnectCode.Normal);
+            public static void Disconnect(DisconnectCode code) => Realtime.Disconnect(code);
 
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
@@ -839,7 +846,7 @@ namespace MNet
                 Entities.Clear();
                 RPR.Clear();
 
-                NetworkAPI.Room.Clear();
+                Room.Clear();
             }
         }
     }

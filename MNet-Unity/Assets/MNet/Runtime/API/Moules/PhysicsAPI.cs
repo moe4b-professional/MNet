@@ -37,7 +37,7 @@ namespace MNet
 
             static void UpdateState()
             {
-                if (Realtime.Pause.Value)
+                if (Realtime.Pause.Active)
                     AutoSimulate = false;
                 else
                     AutoSimulate = true;
