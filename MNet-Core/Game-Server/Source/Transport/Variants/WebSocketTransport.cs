@@ -44,6 +44,43 @@ namespace MNet
             Server = new WebSocketServer(IPAddress.Any, Port);
 
             Server.KeepClean = false;
+
+            Server.Log.Output = LogOutput;
+            Server.Log.Level = LogLevel.Warn;
+        }
+
+        void LogOutput(LogData data, string arg2)
+        {
+            var level = ConvertLevel(data.Level);
+
+            MNet.Log.Add(data.Message, level);
+
+            MNet.Log.Level ConvertLevel(WebSocketSharp.LogLevel level)
+            {
+                switch (level)
+                {
+                    case LogLevel.Trace:
+                        return Log.Level.Info;
+
+                    case LogLevel.Debug:
+                        return Log.Level.Info;
+
+                    case LogLevel.Info:
+                        return Log.Level.Info;
+
+                    case LogLevel.Warn:
+                        return Log.Level.Warning;
+
+                    case LogLevel.Error:
+                        return Log.Level.Error;
+
+                    case LogLevel.Fatal:
+                        return Log.Level.Error;
+
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
         }
     }
 
@@ -55,42 +92,6 @@ namespace MNet
 
         public WebSocketServiceHost Host { get; protected set; }
         public WebSocketSessionManager Sessions => Host.Sessions;
-
-        public class Behaviour : WebSocketBehavior
-        {
-            public WebSocketTransportContext TransportContext { get; protected set; }
-            public void Set(WebSocketTransportContext reference) => TransportContext = reference;
-
-            public WebSocketTransportClient Client { get; protected set; }
-
-            public IWebSocketSession Session { get; protected set; }
-
-            protected override void OnOpen()
-            {
-                base.OnOpen();
-
-                Session = Sessions[ID];
-
-                Client = TransportContext.RegisterClient(Session);
-            }
-
-            protected override void OnMessage(MessageEventArgs args)
-            {
-                base.OnMessage(args);
-
-                var segment = new ArraySegment<byte>(args.RawData);
-
-                TransportContext.RegisterMessages(Client, segment, DeliveryMode.ReliableOrdered, 0);
-            }
-
-            protected override void OnClose(CloseEventArgs args)
-            {
-                base.OnClose(args);
-
-                TransportContext.UnregisterClient(Client);
-            }
-        }
-        void InitBehaviour(Behaviour behaviour) => behaviour.Set(this);
 
         protected override WebSocketTransportClient CreateClient(NetworkClientID clientID, IWebSocketSession session)
         {
@@ -127,7 +128,8 @@ namespace MNet
 
             Path = $"/{ID}";
 
-            Server.AddWebSocketService<Behaviour>(Path, InitBehaviour);
+            Server.AddWebSocketService<WebSocketTransportBehaviour>(Path, Init);
+            void Init(WebSocketTransportBehaviour behaviour) => behaviour.Set(this);
 
             Host = Server.WebSocketServices[Path];
         }
@@ -142,6 +144,41 @@ namespace MNet
         public WebSocketTransportClient(WebSocketTransportContext context, NetworkClientID clientID, IWebSocketSession session) : base(context, clientID, session)
         {
 
+        }
+    }
+
+    class WebSocketTransportBehaviour : WebSocketBehavior
+    {
+        public WebSocketTransportContext TransportContext { get; protected set; }
+        public void Set(WebSocketTransportContext reference) => TransportContext = reference;
+
+        public WebSocketTransportClient Client { get; protected set; }
+
+        public IWebSocketSession Session { get; protected set; }
+
+        protected override void OnOpen()
+        {
+            base.OnOpen();
+
+            Session = Sessions[ID];
+
+            Client = TransportContext.RegisterClient(Session);
+        }
+
+        protected override void OnMessage(MessageEventArgs args)
+        {
+            base.OnMessage(args);
+
+            var segment = new ArraySegment<byte>(args.RawData);
+
+            TransportContext.RegisterMessages(Client, segment, DeliveryMode.ReliableOrdered, 0);
+        }
+
+        protected override void OnClose(CloseEventArgs args)
+        {
+            base.OnClose(args);
+
+            TransportContext.UnregisterClient(Client);
         }
     }
 }
