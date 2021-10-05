@@ -34,11 +34,13 @@ namespace MNet
             AppsAPI.Set(response.Apps);
         }
 
-        public static async Task Remove()
+        public static async Task Unregister()
         {
             var payload = new RemoveGameServerRequest(GameServer.Info.ID, ApiKey.Token);
 
-            var response = await Rest.POST<RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Remove, payload);
+            var response = await Rest.POST<RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Unregister, payload);
+
+            AppsAPI.Clear();
         }
     }
 }

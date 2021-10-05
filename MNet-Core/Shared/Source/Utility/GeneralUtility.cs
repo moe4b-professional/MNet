@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
@@ -9,34 +9,44 @@ namespace MNet
 {
     public static class GeneralUtility
     {
-		public static string PrettifyName<T>(T value)
-		{
-			var text = value.ToString();
+        public static string PrettifyName<T>(T value)
+        {
+            var text = value.ToString();
 
-			var builder = new StringBuilder();
+            var builder = new StringBuilder();
 
-			for (int i = 0; i < text.Length; i++)
-			{
-				var current = text[i];
+            for (int i = 0; i < text.Length; i++)
+            {
+                var current = text[i];
 
-				if (char.IsUpper(current))
-				{
-					if (i + 1 < text.Length && i > 0)
-					{
-						var next = text[i + 1];
-						var previous = text[i - 1];
+                if (char.IsUpper(current))
+                {
+                    if (i + 1 < text.Length && i > 0)
+                    {
+                        var next = text[i + 1];
+                        var previous = text[i - 1];
 
-						if (char.IsLower(previous))
-							builder.Append(" ");
-					}
-				}
+                        if (char.IsLower(previous))
+                            builder.Append(" ");
+                    }
+                }
 
-				builder.Append(text[i]);
-			}
+                builder.Append(text[i]);
+            }
 
-			return builder.ToString();
-		}
-	}
+            return builder.ToString();
+        }
+
+        public static class Time
+        {
+            public static class Milliseconds
+            {
+                public static int FromSeconds(int seconds) => seconds * 1000;
+
+                public static int FromMinutes(int minutes) => FromSeconds(minutes * 60);
+            }
+        }
+    }
 
     public static class GeneralExtensions
     {

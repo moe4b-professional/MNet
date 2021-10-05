@@ -13,9 +13,12 @@ namespace MNet
         public static void Set(AppConfig[] array)
         {
             for (int i = 0; i < array.Length; i++)
-            {
-                Dictionary.Add(array[i].ID, array[i]);
-            }
+                Dictionary[array[i].ID] = array[i];
+        }
+
+        public static void Clear()
+        {
+            Dictionary.Clear();
         }
 
         static AppsAPI()

@@ -38,7 +38,7 @@ namespace MNet
 
                             public static string Register { get; private set; } = Path + nameof(Register);
 
-                            public static string Remove { get; private set; } = Path + nameof(Remove);
+                            public static string Unregister { get; private set; } = Path + nameof(Unregister);
                         }
                     }
                 }

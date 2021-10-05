@@ -32,6 +32,7 @@ namespace MNet
         public static class Realtime
         {
             public static NetworkTransport Transport { get; private set; }
+            public static bool IsInitialized => Transport != null;
 
             public static bool IsConnected
             {
@@ -198,6 +199,13 @@ namespace MNet
             #region Connect
             public static void Connect(GameServerID server, RoomID room)
             {
+                if (IsInitialized == false)
+                {
+                    Debug.LogError($"Cannot Connect Because Realtime API NetworkTransport is not Initialized, " +
+                        $"Did you not Retrieve the Master Server Scheme Yet?");
+                    return;
+                }
+
                 if (IsConnected)
                 {
                     Debug.LogError("Client Must Be Disconnected Before Reconnecting");
@@ -223,7 +231,7 @@ namespace MNet
             {
                 InputQueue.Enqueue(Action);
 
-                void Action() => ConnectCallback();
+                static void Action() => ConnectCallback();
             }
             #endregion
 

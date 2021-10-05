@@ -66,48 +66,78 @@ namespace MNet
 
         public static class Input
         {
-            public static async Task Process()
+            public static InputDispatcher Dispatcher { get; private set; }
+
+            public static void Process()
             {
                 while (true)
-                    await Poll();
-            }
-
-            static async Task Poll()
-            {
-                var command = ExtraConsole.Read();
-
-                if(await Execute(command) == false)
-                    Log.Error($"Unknown Command of '{command}'");
-            }
-
-            static async Task<bool> Execute(string command)
-            {
-                command = command.ToLower();
-
-                switch (command)
                 {
-                    case "stop":
-                        await Stop();
-                        break;
+                    var command = ExtraConsole.Read();
 
-                    case "stream allocations":
-                        Log.Info($"{NetworkStream.Pool.Allocations} Network Streams Allocated");
-                        break;
+                    if (Dispatcher.Invoke(command) == false)
+                        Log.Error($"Unknown Command of '{command}'");
+                }
+            }
 
-                    case "stream size":
-                        Log.Info($"Network Stream Pool Size: {NetworkStream.Pool.Count}");
-                        break;
-
-                    case "collect garbage":
-                        Log.Info($"Collecting Garbage");
-                        GC.Collect();
-                        break;
-
-                    default:
-                        return false;
+            public static class Stream
+            {
+                internal static void Configure()
+                {
+                    Dispatcher.Register("Stream Allocations", Allocations);
+                    Dispatcher.Register("Stream Pool Size", PoolSize);
                 }
 
-                return true;
+                static void PoolSize(InputDispatcher.Request request)
+                {
+                    Log.Info($"Network Stream Pool Size: {NetworkStream.Pool.Count}");
+                }
+
+                static void Allocations(InputDispatcher.Request request)
+                {
+                    Log.Info($"Network Streams Allocated: {NetworkStream.Pool.Allocations} ");
+                }
+            }
+
+            public static class Master
+            {
+                internal static void Configure()
+                {
+                    Dispatcher.Register("Master Register", Register);
+                    Dispatcher.Register("Master Unregister", Unregister);
+                }
+
+                static void Register(InputDispatcher.Request request)
+                {
+                    Log.Info("Registering Server in Master");
+
+                    MasterServer.Register().Forget();
+                }
+
+                static void Unregister(InputDispatcher.Request request)
+                {
+                    Log.Info("Unregistering Server from Master");
+
+                    MasterServer.Unregister().Forget();
+                }
+            }
+
+            static void CollectGarbage(InputDispatcher.Request request)
+            {
+                Log.Info($"Collecting Garbage");
+                GC.Collect();
+            }
+
+            static void Stop(InputDispatcher.Request request) => GameServer.Stop().Forget();
+
+            static Input()
+            {
+                Dispatcher = new InputDispatcher();
+
+                Dispatcher.Register("Stop", Stop);
+                Dispatcher.Register("Collect Garbage", CollectGarbage);
+
+                Stream.Configure();
+                Master.Configure();
             }
         }
 
@@ -136,16 +166,14 @@ namespace MNet
             Realtime.Start();
             RestServerAPI.Start();
 
-            await Input.Process();
+            Input.Process();
         }
 
         static async Task Stop()
         {
             Log.Info("Closing Server");
 
-            await Task.Delay(500);
-
-            await MasterServer.Remove();
+            await MasterServer.Unregister();
 
             Realtime.Close();
 

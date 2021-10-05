@@ -12,6 +12,7 @@ using System.Net.Http;
 
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace MNet
 {
@@ -51,100 +52,25 @@ namespace MNet
         public static class Servers
         {
             public static Dictionary<GameServerID, GameServer> Dictionary { get; private set; }
-
-            public static int Count => Dictionary.Count;
-
-            public static class Watchdog
+            public static int Count
             {
-                static List<GameServer> list;
-
-                public const int CheckInterval = 1 * 1000;
-
-                public const int LookupsInterval = 5 * 1000;
-
-                public const int MaxRetries = 2;
-
-                public static async void Run()
+                get
                 {
-                    list = new List<GameServer>();
-
-                    while (true)
-                    {
-                        if (Count == 0)
-                        {
-                            await Task.Delay(CheckInterval);
-                            continue;
-                        }
-
-                        CloneTo(ref list);
-
-                        for (int i = 0; i < list.Count; i++)
-                            Lookup(list[i].ID);
-
-                        await Task.Delay(LookupsInterval);
-                    }
-                }
-
-                public static async void Lookup(GameServerID id)
-                {
-                    GameServerInfo info;
-
-                    for (int i = 1; i <= MaxRetries; i++)
-                    {
-                        try
-                        {
-                            info = await Rest.GET<GameServerInfo>(id.Address, Constants.Server.Game.Rest.Requests.Info);
-                        }
-                        catch (Exception)
-                        {
-                            if (i == MaxRetries)
-                                break;
-                            else
-                                continue;
-                        }
-
-                        Update(info);
-                        return;
-                    }
-
-                    Remove(id);
+                    lock (Dictionary)
+                        return Dictionary.Count;
                 }
             }
 
             static RestClientAPI Rest;
-
-            static readonly object SyncLock = new object();
 
             internal static void Configure()
             {
                 Dictionary = new Dictionary<GameServerID, GameServer>();
 
                 RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, Register);
-                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Remove, Remove);
+                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Unregister, Unregister);
 
                 Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, Config.Local.RestScheme);
-
-                Watchdog.Run();
-            }
-
-            public static GameServerInfo[] Query()
-            {
-                lock (SyncLock)
-                {
-                    var array = Dictionary.ToArray(GameServer.GetInfo);
-
-                    return array;
-                }
-            }
-
-            public static void CloneTo(ref List<GameServer> target)
-            {
-                target.Clear();
-
-                lock (SyncLock)
-                {
-                    target.AddRange(Dictionary.Values);
-                }
             }
 
             #region Register
@@ -172,11 +98,22 @@ namespace MNet
 
             static GameServer Register(GameServerInfo info)
             {
-                var server = new GameServer(info);
+                GameServer server;
 
-                lock (SyncLock)
+                lock (Dictionary)
                 {
-                    Dictionary[info.ID] = server;
+                    if (Dictionary.TryGetValue(info.ID, out server))
+                    {
+                        Update(server, info);
+                        return server;
+                    }
+                }
+
+                server = new GameServer(info);
+
+                lock (Dictionary)
+                {
+                    Add(server);
                 }
 
                 Log.Info($"Registering Server: {server}");
@@ -185,35 +122,79 @@ namespace MNet
             }
             #endregion
 
-            static void Update(GameServerInfo info)
+            static void Add(GameServer server)
             {
-                if (Dictionary.TryGetValue(info.ID, out var server) == false)
-                {
-                    Log.Warning($"No Server with ID {info.ID} Found to Update");
-                    return;
-                }
-
-                server.Info = info;
+                Dictionary.Add(server.ID, server);
             }
 
-            #region Remove
-            static void Remove(RestRequest request, RestResponse response)
+            static bool Update(GameServerInfo info)
+            {
+                lock (Dictionary)
+                {
+                    if (Dictionary.TryGetValue(info.ID, out var server) == false)
+                    {
+                        Log.Warning($"No Server with ID {info.ID} Found to Update");
+                        return false;
+                    }
+
+                    Update(server, info);
+                    return true;
+                }
+            }
+            static void Update(GameServer server, GameServerInfo info)
+            {
+                lock (Dictionary)
+                {
+                    server.Info = info;
+                }
+            }
+
+            public static GameServerInfo[] Query()
+            {
+                lock (Dictionary)
+                {
+                    var array = Dictionary.ToArray(GameServer.GetInfo);
+
+                    return array;
+                }
+            }
+
+            public static bool Contains(GameServerID id)
+            {
+                lock (Dictionary)
+                {
+                    return Dictionary.ContainsKey(id);
+                }
+            }
+
+            public static void CloneTo(ref List<GameServer> target)
+            {
+                target.Clear();
+
+                lock (Dictionary)
+                {
+                    target.AddRange(Dictionary.Values);
+                }
+            }
+
+            #region Unregister
+            static void Unregister(RestRequest request, RestResponse response)
             {
                 if (RestServerAPI.TryRead(request, response, out RemoveGameServerRequest payload) == false) return;
 
-                Remove(payload.ID);
+                Unregister(payload.ID);
 
                 var result = new RemoveGameServerResponse(true);
                 RestServerAPI.Write(response, result);
             }
 
-            static bool Remove(GameServerID id)
+            public static bool Unregister(GameServerID id)
             {
-                lock (SyncLock)
+                lock (Dictionary)
                 {
                     if (Dictionary.Remove(id))
                     {
-                        Log.Info($"Removing Server: {id}");
+                        Log.Info($"Unregistering Server: {id}");
                         return true;
                     }
                 }
@@ -279,39 +260,75 @@ namespace MNet
 
         public static class Input
         {
-            public static async Task Process()
+            public static void Process()
             {
                 while (true)
-                    await Poll();
-            }
-
-            static async Task Poll()
-            {
-                var command = ExtraConsole.Read();
-
-                if (await Execute(command) == false)
-                    Log.Error($"Unknown Command of '{command}'");
-            }
-
-            static async Task<bool> Execute(string command)
-            {
-                command = command.ToLower();
-
-                switch (command)
                 {
-                    case "stop":
-                        await Stop();
-                        break;
+                    var command = ExtraConsole.Read();
 
-                    default:
-                        return false;
+                    if (Dispatcher.Invoke(command) == false)
+                        Log.Error($"Unknown Command of '{command}'");
+                }
+            }
+
+            public static InputDispatcher Dispatcher { get; private set; }
+
+            static class Servers
+            {
+                internal static void Configure()
+                {
+                    Dispatcher.Register("Servers List", List);
+                    Dispatcher.Register("Servers Remove", Remove);
                 }
 
-                return true;
+                static void List(InputDispatcher.Request request)
+                {
+                    var list = MasterServer.Servers.Query();
+
+                    if (list.Length == 0)
+                    {
+                        Log.Info("No Servers Registered");
+                        return;
+                    }
+
+                    var builder = new StringBuilder();
+
+                    builder.AppendLine($"Server List [{list.Length}]:");
+
+                    for (int i = 0; i < list.Length; i++)
+                    {
+                        builder.Append(i + 1);
+                        builder.Append("- ");
+
+                        builder.Append(list[i]);
+
+                        if (i + 1 > list.Length) builder.AppendLine();
+                    }
+
+                    Log.Info(builder);
+                }
+
+                static void Remove(InputDispatcher.Request request)
+                {
+                    var id = request[0].Parse(GameServerID.Parse);
+
+                    MasterServer.Servers.Unregister(id);
+                }
+            }
+
+            static void Stop(InputDispatcher.Request request) => MasterServer.Stop().Forget();
+
+            static Input()
+            {
+                Dispatcher = new InputDispatcher();
+
+                Dispatcher.Register("Stop", Stop);
+
+                Servers.Configure();
             }
         }
 
-        static async Task Main()
+        static void Main()
         {
             Console.Title = $"Master Sever | Network API v{Constants.ApiVersion}";
 
@@ -328,7 +345,7 @@ namespace MNet
             Servers.Configure();
             REST.Configure();
 
-            await Input.Process();
+            Input.Process();
         }
 
         static async Task Stop()
