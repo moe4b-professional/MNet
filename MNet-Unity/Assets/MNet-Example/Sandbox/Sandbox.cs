@@ -45,7 +45,7 @@ namespace MNet.Example
         [RuntimeInitializeOnLoadMethod]
         static void OnLoad()
         {
-
+            
         }
 
 #if UNITY_EDITOR

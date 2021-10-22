@@ -45,9 +45,9 @@ namespace MNet.Example
             button = GetComponent<Button>();
         }
 
-        public override void Init()
+        public override void Initialize()
         {
-            base.Init();
+            base.Initialize();
 
             button.onClick.AddListener(ClickAction);
         }

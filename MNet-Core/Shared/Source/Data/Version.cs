@@ -159,7 +159,7 @@ namespace MNet
 
 #if UNITY_EDITOR
         [CustomPropertyDrawer(typeof(Version))]
-        public class Drawer : PersistantPropertyDrawer
+        public class Drawer : PropertyDrawer
         {
             SerializedProperty major;
             SerializedProperty minor;
@@ -179,35 +179,29 @@ namespace MNet
                 };
             }
 
-            protected override void Init()
-            {
-                base.Init();
-
-                major = Property.FindPropertyRelative(nameof(major));
-                minor = Property.FindPropertyRelative(nameof(minor));
-                patch = Property.FindPropertyRelative(nameof(patch));
-            }
-
             public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-            public override float CalculateHeight()
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
                 return LineHeight;
             }
 
-            public override void Draw(Rect rect)
+            public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
             {
-                MUtility.GUICoordinates.ClearIndent();
+                rect = EditorGUI.IndentedRect(rect);
+                EditorGUI.indentLevel = 0;
 
-                DrawLabel(ref rect, Label);
+                major = property.FindPropertyRelative(nameof(major));
+                minor = property.FindPropertyRelative(nameof(minor));
+                patch = property.FindPropertyRelative(nameof(patch));
+
+                DrawLabel(ref rect, label);
 
                 DrawField(ref rect, major);
                 DrawSeperator(ref rect); // .
                 DrawField(ref rect, minor);
                 DrawSeperator(ref rect); // .
                 DrawField(ref rect, patch);
-
-                MUtility.GUICoordinates.RestoreIndent();
             }
 
             static void DrawLabel(ref Rect rect, GUIContent content)
@@ -253,7 +247,9 @@ namespace MNet
 
             public static void DrawReadOnly(Rect rect, GUIContent label, Version version)
             {
-                MUtility.GUICoordinates.ClearIndent();
+                var indent = EditorGUI.indentLevel;
+                rect = EditorGUI.IndentedRect(rect);
+                EditorGUI.indentLevel = 0;
 
                 DrawLabel(ref rect, label);
 
@@ -263,7 +259,7 @@ namespace MNet
                 DrawSeperator(ref rect); // .
                 DrawField(ref rect, version.patch);
 
-                MUtility.GUICoordinates.RestoreIndent();
+                EditorGUI.indentLevel = indent;
             }
         }
 #endif

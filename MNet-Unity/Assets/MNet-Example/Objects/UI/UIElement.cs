@@ -44,7 +44,7 @@ namespace MNet.Example
 
 		}
 
-		public virtual void Init()
+		public virtual void Initialize()
 		{
 
 		}

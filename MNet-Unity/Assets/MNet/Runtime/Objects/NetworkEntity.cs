@@ -393,7 +393,7 @@ namespace MNet
 
         public static NetworkEntity ResolveComponent(GameObject gameObject)
         {
-            var component = QueryComponent.InParents<NetworkEntity>(gameObject);
+            var component = ComponentQuery.Single.InParents<NetworkEntity>(gameObject);
 
 #if UNITY_EDITOR
             if (component == null)

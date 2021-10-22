@@ -1,16 +1,17 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &11400000
+--- !u!114 &1
 MonoBehaviour:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 36
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40ede18670c0489409ce0a138f89a30a, type: 3}
-  m_Name: Scriptable Object Initializer
+  m_Script: {fileID: 11500000, guid: 3b6ec588f55d9254096d99831570e11d, type: 3}
+  m_Name: ModelCollisionImporter
   m_EditorClassIdentifier: 
-  list:
-  - {fileID: 11400000, guid: a500b5246c5fb4946b62b340408c09a3, type: 2}
+  enabled: 1
+  mapping:
+    list: []

@@ -35,25 +35,22 @@ namespace MNet
 
 #if UNITY_EDITOR
         [CustomPropertyDrawer(typeof(BaseMixedEvent), true)]
-        public class Drawer : PersistantPropertyDrawer
+        public class Drawer : PropertyDrawer
         {
-            SerializedProperty unity;
+            SerializedProperty GetUnityProperty(SerializedProperty property) => property.FindPropertyRelative("unity");
 
-            protected override void Init()
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
-                base.Init();
+                var unity = GetUnityProperty(property);
 
-                unity = Property.FindPropertyRelative("unity");
-            }
-
-            public override float CalculateHeight()
-            {
                 return EditorGUI.GetPropertyHeight(unity);
             }
 
-            public override void Draw(Rect rect)
+            public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
             {
-                EditorGUI.PropertyField(rect, unity);
+                var unity = GetUnityProperty(property);
+
+                EditorGUI.PropertyField(rect, unity, label, true);
             }
         }
 #endif

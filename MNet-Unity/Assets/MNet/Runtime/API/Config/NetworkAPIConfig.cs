@@ -32,29 +32,14 @@ namespace MNet
         {
 #if UNITY_EDITOR
             [CustomPropertyDrawer(typeof(MetaProperty))]
-            public class Drawer : PersistantPropertyDrawer
+            public class Drawer : PropertyDrawer
             {
-                protected override void Init()
-                {
-                    base.Init();
-
-                    VersionStyle = new GUIStyle()
-                    {
-                        fontSize = 15,
-                        fontStyle = FontStyle.Bold,
-                        normal = new GUIStyleState()
-                        {
-                            textColor = new Color(0.27f, 1, 0.27f),
-                        }
-                    };
-                }
-
-                public override float CalculateHeight()
+                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
                 {
                     return 25f;
                 }
 
-                public override void Draw(Rect rect)
+                public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
                 {
                     DrawVersion(ref rect);
                 }
@@ -64,6 +49,19 @@ namespace MNet
                 {
                     var line = MUtility.GUICoordinates.SliceLine(ref rect, 20f);
                     EditorGUI.LabelField(line, $"API v{Constants.ApiVersion}", VersionStyle);
+                }
+
+                public Drawer()
+                {
+                    VersionStyle = new GUIStyle()
+                    {
+                        fontSize = 15,
+                        fontStyle = FontStyle.Bold,
+                        normal = new GUIStyleState()
+                        {
+                            textColor = new Color(0.27f, 1, 0.27f),
+                        }
+                    };
                 }
             }
 #endif
@@ -164,36 +162,29 @@ namespace MNet
 
 #if UNITY_EDITOR
             [CustomPropertyDrawer(typeof(GameVersionProperty))]
-            public class Drawer : PersistantPropertyDrawer
+            public class Drawer : PropertyDrawer
             {
                 SerializedProperty infer;
                 SerializedProperty value;
 
                 public static float LineHeight => EditorGUIUtility.singleLineHeight;
 
-                protected override void Init()
+                public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
                 {
-                    base.Init();
-
-                    infer = Property.FindPropertyRelative(nameof(infer));
-                    value = Property.FindPropertyRelative(nameof(value));
-                }
-
-                public override float CalculateHeight()
-                {
-                    if(Property.isExpanded)
+                    if (property.isExpanded)
                         return LineHeight * 3;
 
                     return LineHeight;
                 }
 
-                public override void Draw(Rect rect)
+                public override void OnGUI(Rect rect, SerializedProperty property, GUIContent label)
                 {
-                    base.Draw(rect);
+                    infer = property.FindPropertyRelative(nameof(infer));
+                    value = property.FindPropertyRelative(nameof(value));
 
-                    DrawExpand(ref rect, Label);
+                    DrawExpand(ref rect, property, label);
 
-                    if(Property.isExpanded)
+                    if (property.isExpanded)
                     {
                         EditorGUI.indentLevel++;
                         rect = EditorGUI.IndentedRect(rect);
@@ -204,11 +195,11 @@ namespace MNet
                     }
                 }
 
-                void DrawExpand(ref Rect rect, GUIContent label)
+                void DrawExpand(ref Rect rect, SerializedProperty property, GUIContent label)
                 {
                     var line = MUtility.GUICoordinates.SliceLine(ref rect);
 
-                    Property.isExpanded = EditorGUI.Foldout(line, Property.isExpanded, label, true);
+                    property.isExpanded = EditorGUI.Foldout(line, property.isExpanded, label, true);
                 }
 
                 void DrawValue(ref Rect rect)
@@ -390,7 +381,7 @@ namespace MNet
 
             public virtual void Configure() { }
 
-            public virtual void Init() { }
+            public virtual void Initialize() { }
         }
         public IEnumerable<Property> AllProperties()
         {
@@ -420,7 +411,7 @@ namespace MNet
             References.Set(this, AllProperties);
 
             Initializer.Configure(AllProperties);
-            Initializer.Init(AllProperties);
+            Initializer.Initialize(AllProperties);
         }
 
 #if UNITY_EDITOR
