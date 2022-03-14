@@ -39,7 +39,7 @@ namespace MNet
 		[NetworkRPC]
 		void Rpc(NetworkEntity entity, SerializationTest behaviour, RpcInfo info)
 		{
-			success = Network.Entity == entity && this == behaviour;
+			success = (Network.Entity == entity && this == behaviour);
 		}
 	}
 }

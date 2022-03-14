@@ -549,9 +549,12 @@ namespace MNet
                 if (changes.HasFlag(ChangeFlags.RotationY)) context.Select(ref rotationY);
                 if (changes.HasFlag(ChangeFlags.RotationZ)) context.Select(ref rotationZ);
 
-                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scaleX);
-                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scaleY);
-                if (changes.HasFlag(ChangeFlags.Scale)) context.Select(ref scaleZ);
+                if (changes.HasFlag(ChangeFlags.Scale))
+                {
+                    context.Select(ref scaleX);
+                    context.Select(ref scaleY);
+                    context.Select(ref scaleZ);
+                }
             }
 
             public override string ToString() => $"( {changes} ):\n{Position} | {Rotation} | {Scale}";
@@ -568,11 +571,10 @@ namespace MNet
                 rotationY = rotation.y;
                 rotationZ = rotation.z;
 
-                scaleX = rotation.x;
-                scaleY = rotation.y;
-                scaleZ = rotation.z;
+                scaleX = scale.x;
+                scaleY = scale.y;
+                scaleZ = scale.z;
             }
-
             public CoordinatesPacket(ChangeFlags changes) : this(changes, Vector3.zero, Vector3.zero, Vector3.zero) { }
         }
 
@@ -620,7 +622,8 @@ namespace MNet
             }
             else
             {
-                if (SendDelta() == false) return;
+                if (SendDelta() == false)
+                    return;
 
                 reliability.SetDirty();
             }
