@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30503.244
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32210.238
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Server", "Server\Server.csproj", "{02DD48EA-56E3-4A53-96BB-C9E4E7C58FE1}"
 EndProject
@@ -12,10 +12,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meta-Composer", "Meta-Composer\Meta-Composer.csproj", "{FEAF5553-ADDD-400F-B09D-B7C082B92B24}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "General-Tests", "General-Tests\General-Tests.csproj", "{4CA9B4D1-1B1A-4ABA-BB6B-C3FBBBF4E141}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sandbox", "Sandbox\Sandbox.csproj", "{4CE6561E-918C-4C54-B50E-B9900E63EDA6}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared-Extra", "Shared-Extra\Shared-Extra.csproj", "{116CB491-07E9-467D-8F54-351C323B7696}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Stress-Client", "Stress-Client\Stress-Client.csproj", "{AC98BE24-B9AE-4D7E-B03C-5375A7D19607}"
 EndProject
@@ -49,14 +45,6 @@ Global
 		{4CA9B4D1-1B1A-4ABA-BB6B-C3FBBBF4E141}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4CA9B4D1-1B1A-4ABA-BB6B-C3FBBBF4E141}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4CA9B4D1-1B1A-4ABA-BB6B-C3FBBBF4E141}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4CE6561E-918C-4C54-B50E-B9900E63EDA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4CE6561E-918C-4C54-B50E-B9900E63EDA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4CE6561E-918C-4C54-B50E-B9900E63EDA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4CE6561E-918C-4C54-B50E-B9900E63EDA6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{116CB491-07E9-467D-8F54-351C323B7696}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{116CB491-07E9-467D-8F54-351C323B7696}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{116CB491-07E9-467D-8F54-351C323B7696}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{116CB491-07E9-467D-8F54-351C323B7696}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AC98BE24-B9AE-4D7E-B03C-5375A7D19607}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AC98BE24-B9AE-4D7E-B03C-5375A7D19607}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC98BE24-B9AE-4D7E-B03C-5375A7D19607}.Release|Any CPU.ActiveCfg = Release|Any CPU

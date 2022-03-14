@@ -1398,7 +1398,7 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public static bool IsValid(Type target) => TupleUtility.CheckType(target);
+        public static bool IsValid(Type target) => typeof(ITuple).IsAssignableFrom(target);
 
         public override bool CanResolve(Type target) => IsValid(target);
 
@@ -1406,12 +1406,12 @@ namespace MNet
         {
             if (WriteNull(writer, instance, type)) return;
 
-            var values = TupleUtility.Extract(instance);
+            var tuple = instance as ITuple;
 
             Helper.GenericArguments.Retrieve(type, out Type[] arguments);
 
-            for (int i = 0; i < values.Length; i++)
-                writer.Write(values[i], arguments[i]);
+            for (int i = 0; i < tuple.Length; i++)
+                writer.Write(tuple[i], arguments[i]);
         }
 
         public override object Deserialize(NetworkStream reader, Type type)

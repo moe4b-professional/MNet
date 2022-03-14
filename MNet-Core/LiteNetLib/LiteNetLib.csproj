@@ -7,6 +7,7 @@
     <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net35;netstandard2.0;netcoreapp2.1</TargetFrameworks>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <OutputType>Library</OutputType>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' != 'net35'">
