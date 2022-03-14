@@ -138,10 +138,10 @@ namespace MNet.Example
 
 			public string PlayerName
 			{
-				get => AutoPrefs.Read("Player Name", "Player");
+				get => AutoPreferences.Read("Player Name", "Player");
 				set
 				{
-					AutoPrefs.Set("Player Name", value);
+					AutoPreferences.Set("Player Name", value);
 					NetworkAPI.Client.Name = value;
 				}
 			}
@@ -161,7 +161,7 @@ namespace MNet.Example
 			{
 				base.Init();
 
-				if (AutoPrefs.Contains("Player Name") == false)
+				if (AutoPreferences.Contains("Player Name") == false)
 					PlayerName = $"Player {Random.Range(0, 1000)}";
 
 				NetworkAPI.Client.Name = PlayerName;
@@ -300,21 +300,6 @@ namespace MNet.Example
 
 		void Configure()
 		{
-			AutoPrefs.Configure();
-
-			try
-			{
-				AutoPrefs.Load();
-			}
-			catch (Exception ex)
-			{
-				Debug.LogError($"Exception when Loading AutoPrefs, Will Reset Prefs" +
-					$"{Environment.NewLine}" +
-					$"Exception: {ex}");
-
-				AutoPrefs.Reset();
-			}
-
 			SceneAccessor = SceneAccessor.Create();
 
 			GlobalCoroutine.Configure();

@@ -463,7 +463,7 @@ namespace MNet
                     public static void Request(string scene) => Request(scene, LoadSceneMode.Single);
                     public static void Request(string scene, LoadSceneMode mode)
                     {
-                        if (MScenesCollection.TryFind(scene, out var asset) == false)
+                        if (ScenesCollection.TryFind(scene, out var asset) == false)
                             throw new Exception($"Cannot Find Scene named '{scene}' to Load");
 
                         Request(asset, mode);
@@ -571,7 +571,7 @@ namespace MNet
                     #region Request
                     public static void Request(string scene)
                     {
-                        if (MScenesCollection.TryFind(scene, out var asset) == false)
+                        if (ScenesCollection.TryFind(scene, out var asset) == false)
                             throw new Exception($"Cannot Find Scene named '{scene}' to Unload");
 
                         Request(asset);
