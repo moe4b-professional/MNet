@@ -20,7 +20,7 @@ using Random = UnityEngine.Random;
 namespace MNet.Example
 {
 #pragma warning disable CS0108 // Member hides inherited member; missing new keyword
-	public class PlayerMesh : NetworkBehaviour
+	public class PlayerMesh : NetworkListener
 	{
 		[SerializeField]
 		Renderer[] renderers = default;
@@ -37,10 +37,10 @@ namespace MNet.Example
 
         public override void OnNetwork()
         {
-            base.OnNetwork();
+			base.OnNetwork();
 
-            Network.OnSetup += SetupCallback;
-        }
+			Entity.OnSetup += SetupCallback;
+		}
 
         void SetupCallback()
         {

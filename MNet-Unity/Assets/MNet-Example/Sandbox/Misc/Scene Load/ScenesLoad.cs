@@ -23,7 +23,7 @@ using MB;
 
 namespace MNet
 {
-	public class ScenesLoad : NetworkBehaviour
+	public class ScenesLoad : MonoBehaviour
 	{
 		public MSceneAsset scene = default;
 

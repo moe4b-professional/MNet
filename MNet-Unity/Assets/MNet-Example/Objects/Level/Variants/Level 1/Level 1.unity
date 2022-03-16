@@ -851,10 +851,9 @@ MonoBehaviour:
     - {fileID: 358559473}
     - {fileID: 358559471}
     - {fileID: 358559478}
-    - {fileID: 408477756}
-    - {fileID: 1778937842}
-    - {fileID: 1778937843}
-    - {fileID: 1778937841}
+  listeners:
+    Entity: {fileID: 358559476}
+    components: []
 --- !u!114 &358559478
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1771,6 +1770,9 @@ MonoBehaviour:
     Entity: {fileID: 773831933}
     components:
     - {fileID: 773831932}
+  listeners:
+    Entity: {fileID: 773831933}
+    components: []
 --- !u!1 &817723692
 GameObject:
   m_ObjectHideFlags: 0
@@ -3279,6 +3281,9 @@ MonoBehaviour:
     components:
     - {fileID: 1697156422}
     - {fileID: 1898485325}
+  listeners:
+    Entity: {fileID: 1697156423}
+    components: []
 --- !u!1 &1735019178
 GameObject:
   m_ObjectHideFlags: 0

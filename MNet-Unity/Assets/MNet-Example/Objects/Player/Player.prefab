@@ -63,9 +63,11 @@ MonoBehaviour:
     - {fileID: 573034543577270255}
     - {fileID: 7220245031259833658}
     - {fileID: 4477643304426705265}
-    - {fileID: 7652149117374985965}
-    - {fileID: 3695600237215921321}
     - {fileID: 5611628225437611180}
+  listeners:
+    Entity: {fileID: 573034543577270254}
+    components:
+    - {fileID: 7652149117374985965}
 --- !u!54 &573034543577270225
 Rigidbody:
   m_ObjectHideFlags: 0

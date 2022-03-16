@@ -500,16 +500,29 @@ namespace MNet
         }
     }
 
-    public interface INetworkBehaviour
+    public interface INetworkCallback
     {
-        NetworkEntity.Behaviour Network { get; set; }
-
         /// <summary>
         /// Callback that allows users to configure Networking callbacks
         /// </summary>
         void OnNetwork();
     }
 
+    public interface INetworkListener : INetworkCallback
+    {
+        NetworkEntity Entity { get; set; }
+    }
+    public class NetworkListener : MonoBehaviour, INetworkListener
+    {
+        public NetworkEntity Entity { get; set; }
+
+        public virtual void OnNetwork() { }
+    }
+
+    public interface INetworkBehaviour : INetworkCallback
+    {
+        NetworkEntity.Behaviour Network { get; set; }
+    }
     public class NetworkBehaviour : MonoBehaviour, INetworkBehaviour
     {
         public NetworkEntity.Behaviour Network { get; set; }

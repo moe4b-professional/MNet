@@ -54,6 +54,9 @@ MonoBehaviour:
     Entity: {fileID: 92370369000106699}
     components:
     - {fileID: 92370369000106696}
+  listeners:
+    Entity: {fileID: 92370369000106699}
+    components: []
 --- !u!114 &92370369000106696
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -21,7 +21,7 @@ using MB;
 
 namespace MNet.Example
 {
-	public class NetworkEntityStresser : NetworkBehaviour
+	public class NetworkEntityStresser : MonoBehaviour
 	{
 		public PrefabAsset prefab;
 

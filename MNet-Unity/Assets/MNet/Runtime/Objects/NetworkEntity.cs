@@ -291,6 +291,43 @@ namespace MNet
             }
         }
 
+        [SerializeField]
+        ListenersProperty listeners;
+        public ListenersProperty Listeners => listeners;
+        [Serializable]
+        public class ListenersProperty
+        {
+            [SerializeField, DebugOnly]
+            NetworkEntity Entity;
+
+            [SerializeField, ReadOnly]
+            List<Component> components;
+
+            internal void PreAwake(NetworkEntity reference)
+            {
+                Entity = reference;
+
+                using (ComponentQuery.Collection.NonAlloc.InHierarchy<INetworkListener>(Entity, out var targets))
+                {
+                    components = new List<Component>(targets.Count);
+
+                    for (int i = 0; i < targets.Count; i++)
+                        components.Add(targets[i] as Component);
+                }
+            }
+
+            internal void Awake()
+            {
+                for (int i = 0; i < components.Count; i++)
+                {
+                    var target = components[i] as INetworkListener;
+
+                    target.Entity = Entity;
+                    target.OnNetwork();
+                }
+            }
+        }
+
         public Scene UnityScene => gameObject.scene;
         public NetworkScene NetworkScene { get; protected set; }
 
@@ -298,6 +335,7 @@ namespace MNet
         {
             sync.PreAwake(this);
             behaviours.PreAwake(this);
+            listeners.PreAwake(this);
         }
 
         protected virtual void Awake()
@@ -308,7 +346,8 @@ namespace MNet
                 return;
             }
 
-            Behaviours.Awake();
+            behaviours.Awake();
+            listeners.Awake();
         }
 
         public delegate void SetupDelegate();

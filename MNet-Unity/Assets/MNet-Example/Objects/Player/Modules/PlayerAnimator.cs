@@ -19,26 +19,26 @@ using Random = UnityEngine.Random;
 
 namespace MNet.Example
 {
-	public class PlayerAnimator : NetworkBehaviour
+	public class PlayerAnimator : MonoBehaviour
 	{
-		Player player;
-		public void Set(Player reference) => player = reference;
+		Player Player;
+		public void Set(Player reference) => Player = reference;
 
-		public float Speed => player.Movement.Speed;
+		public float Speed => Player.Movement.Speed;
 
-		public SimpleNetworkAnimator NetworkAnimator => player.NetworkAnimator;
+		public SimpleNetworkAnimator NetworkAnimator => Player.NetworkAnimator;
 
 		bool toggle = true;
 
 		void Update()
 		{
-			if (Entity.IsMine == false) return;
+			if (Player.Entity.IsMine == false) return;
 
 			if (Input.GetKeyDown(KeyCode.G)) toggle = !toggle;
 
 			if (toggle == false) return;
 
-			var velocity = Vector3.Scale(player.rigidbody.velocity, Vector3.forward + Vector3.right);
+			var velocity = Vector3.Scale(Player.rigidbody.velocity, Vector3.forward + Vector3.right);
 			NetworkAnimator.SetFloat("Move", velocity.magnitude / Speed * 2);
 		}
 	}
