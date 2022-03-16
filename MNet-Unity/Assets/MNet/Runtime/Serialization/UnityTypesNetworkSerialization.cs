@@ -233,7 +233,7 @@ namespace MNet
 
             if (entity == null) return null;
 
-            if (entity.Behaviours.TryGetValue(id, out var behaviour) == false)
+            if (entity.Behaviours.Dictionary.TryGetValue(id, out var behaviour) == false)
             {
                 Debug.LogWarning($"Network Behaviour {id} Couldn't be Found on Entity '{entity}' when Deserializing, Returning null");
                 return null;
