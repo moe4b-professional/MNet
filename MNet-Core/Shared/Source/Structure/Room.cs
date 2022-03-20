@@ -143,6 +143,8 @@ namespace MNet
 
         public AttributesCollection Attributes;
 
+        public byte? Scene;
+
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref Capacity);
@@ -152,6 +154,8 @@ namespace MNet
 
             context.Select(ref MigrationPolicy);
             context.Select(ref Attributes);
+
+            context.Select(ref Scene);
         }
 
         public static RoomOptions Default { get; } = new RoomOptions()

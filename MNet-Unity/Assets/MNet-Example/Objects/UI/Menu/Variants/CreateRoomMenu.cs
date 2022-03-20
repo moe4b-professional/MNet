@@ -74,6 +74,8 @@ namespace MNet.Example
 			var attributes = new AttributesCollection();
 			Core.Levels.WriteAttribute(attributes, level);
 
+			var scene = (byte)Core.Levels[level].Scene.Index;
+
 			RoomInfo info;
 
 			try
@@ -85,6 +87,7 @@ namespace MNet.Example
 					Password = password,
 					MigrationPolicy = MigrationPolicy.Continue,
 					Attributes = attributes,
+					Scene = scene,
 				};
 
 				info = await NetworkAPI.Room.Create(name, options, offline);

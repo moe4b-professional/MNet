@@ -67,6 +67,11 @@ namespace MNet.Example
 
         void SpawnCallback()
 		{
+			if (NetworkAPI.Client.IsMaster)
+			{
+				NetworkAPI.Room.Info.Visible = true;
+			}
+
 			Player.Spawn(player, 4f);
 		}
 

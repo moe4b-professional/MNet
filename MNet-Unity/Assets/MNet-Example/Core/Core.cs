@@ -156,7 +156,6 @@ namespace MNet.Example
 
                 NetworkAPI.Room.OnJoin += RoomJoinCallback;
 			}
-
             protected internal override void Init()
 			{
 				base.Init();
@@ -213,14 +212,6 @@ namespace MNet.Example
 
 			void RoomJoinCallback()
 			{
-				if (NetworkAPI.Client.IsMaster)
-				{
-					var level = Core.levels.ReadAttribute(NetworkAPI.Room.Info.Attributes.Collection);
-
-					NetworkAPI.Room.Info.Visible = true;
-					NetworkAPI.Room.Scenes.Load.Request(level.Scene, LoadSceneMode.Single);
-				}
-
 				Popup.Hide();
 			}
 		}

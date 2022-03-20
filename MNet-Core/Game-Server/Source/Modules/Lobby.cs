@@ -141,7 +141,7 @@ namespace MNet
 
                 room.OnStop += StopCallback;
 
-                room.Start();
+                room.Start(options);
 
                 return room;
             }
@@ -156,6 +156,9 @@ namespace MNet
                 IReadOnlyCollection<Room> targets;
 
                 lock (SyncLock) targets = app.Query(version);
+
+                if (targets == null)
+                    return null;
 
                 var list = new List<RoomInfo>(targets.Count);
 

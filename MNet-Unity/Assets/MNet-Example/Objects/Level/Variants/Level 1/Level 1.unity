@@ -1460,12 +1460,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scene:
-    asset: {fileID: 0}
-    registered: 0
-    active: 0
-    id: 
-    index: 0
-    path: 
+    asset: {fileID: 102900000, guid: b0ae2e226a3c36a44b27fedefab04aa7, type: 3}
+    registered: 1
+    active: 1
+    id: Single Scene
+    index: 4
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Single Scene/Single Scene.unity
 --- !u!114 &632690205
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1479,12 +1479,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scene:
-    asset: {fileID: 0}
-    registered: 0
-    active: 0
-    id: 
-    index: 0
-    path: 
+    asset: {fileID: 102900000, guid: 8e962b4c4fec19047a95a3ba7e5f03a7, type: 3}
+    registered: 1
+    active: 1
+    id: Additive Scene 2
+    index: 3
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 2/Additive
+      Scene 2.unity
 --- !u!114 &632690206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1498,12 +1499,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scene:
-    asset: {fileID: 0}
-    registered: 0
-    active: 0
-    id: 
-    index: 0
-    path: 
+    asset: {fileID: 102900000, guid: 5026097028f6fc54e9922affa2f85f4e, type: 3}
+    registered: 1
+    active: 1
+    id: Additive Scene 1
+    index: 2
+    path: Assets/MNet-Example/Sandbox/Misc/Scene Load/Additive Scenes/Scene 1/Additive
+      Scene 1.unity
 --- !u!1 &654277278
 GameObject:
   m_ObjectHideFlags: 0

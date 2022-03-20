@@ -16,29 +16,28 @@ namespace MNet
 {
     class Room
     {
+        #region Info
         public RoomID ID { get; protected set; }
-
         public AppConfig App { get; protected set; }
-
         public Version Version { get; protected set; }
 
         public string Name { get; protected set; }
 
         public byte Capacity { get; protected set; }
         public byte Occupancy => (byte)Clients.Count;
-
         public bool IsFull => Occupancy >= Capacity;
 
         public bool Visible { get; protected set; }
 
         public string Password { get; protected set; }
-
         public bool Locked => string.IsNullOrEmpty(Password) == false;
 
         public AttributesCollection Attributes { get; protected set; }
 
         public MigrationPolicy MigrationPolicy { get; protected set; }
+        #endregion
 
+        #region Properties
         public InfoProperty Info = new InfoProperty();
         public class InfoProperty : Property
         {
@@ -1087,14 +1086,14 @@ namespace MNet
 
             public virtual void Start() { }
         }
+        #endregion
 
         Scheduler Scheduler;
-
         public bool IsRunning => Scheduler.IsRunning;
 
         public INetworkTransportContext TransportContext;
 
-        public void Start()
+        public void Start(RoomOptions options)
         {
             Log.Info($"Starting Room {ID}");
 
@@ -1108,16 +1107,23 @@ namespace MNet
             Scheduler.Start();
 
             OnTick += ClearEarlyVacantProcedure;
-        }
-
-        void ClearEarlyVacantProcedure()
-        {
-            if (Time.Span.Seconds > 20)
+            void ClearEarlyVacantProcedure()
             {
-                OnTick -= ClearEarlyVacantProcedure;
+                if (Occupancy > 0)
+                {
+                    OnTick -= ClearEarlyVacantProcedure;
+                }
 
-                if (Occupancy == 0) Stop();
+                if (Time.Span.Seconds > 20)
+                {
+                    OnTick -= ClearEarlyVacantProcedure;
+
+                    if (Occupancy == 0) Stop();
+                }
             }
+
+            if (options.Scene.HasValue)
+                Scenes.Load(options.Scene.Value, NetworkSceneLoadMode.Single);
         }
 
         public event Action OnTick;
