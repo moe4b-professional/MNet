@@ -49,7 +49,14 @@ namespace MNet
 
                     OnScheme?.Invoke(response);
 
+                    InvokeInfo(response.Info);
+
                     return response;
+                }
+
+                static void InvokeInfo(MasterServerInfoResponse info)
+                {
+                    OnInfo?.Invoke(info);
                 }
 
                 public delegate void InfoDelegate(MasterServerInfoResponse info);
@@ -60,7 +67,7 @@ namespace MNet
 
                     var response = await Rest.POST<MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload);
 
-                    OnInfo?.Invoke(response);
+                    InvokeInfo(response);
 
                     return response;
                 }

@@ -241,9 +241,12 @@ namespace MNet
                     return;
                 }
 
-                var info = new MasterServerSchemeResponse(app, Config.Remote);
+                var servers = Servers.Query();
+                var info = new MasterServerInfoResponse(servers);
 
-                RestServerAPI.Write(response, info);
+                var scheme = new MasterServerSchemeResponse(app, Config.Remote, info);
+
+                RestServerAPI.Write(response, scheme);
             }
 
             static void GetInfo(RestRequest request, RestResponse response)

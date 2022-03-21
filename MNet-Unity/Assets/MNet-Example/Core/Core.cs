@@ -154,9 +154,9 @@ namespace MNet.Example
 
 				NetworkAPI.Configure();
 
-                NetworkAPI.Room.OnJoin += RoomJoinCallback;
+				NetworkAPI.Room.OnJoin += RoomJoinCallback;
 			}
-            protected internal override void Init()
+			protected internal override void Init()
 			{
 				base.Init();
 
@@ -170,19 +170,14 @@ namespace MNet.Example
 
 			async UniTask Process()
 			{
-				await GetMasterScheme();
-				await GetMasterInfo();
-
-				Popup.Hide();
-			}
-			async UniTask GetMasterScheme()
-			{
 				Start: //Yes, your eyes aren't deceiving you, I declared a goto stamement
 				Popup.Show("Getting Master Scheme");
 
+				MasterServerSchemeResponse scheme;
+
 				try
 				{
-					await NetworkAPI.Server.Master.GetScheme();
+					scheme = await NetworkAPI.Server.Master.GetScheme();
 				}
 				catch (Exception ex) when (ex is UnityWebRequestException)
 				{
@@ -191,25 +186,10 @@ namespace MNet.Example
 
 					goto Start; //Yes! I used it too
 				}
+
+				Popup.Hide();
 			}
-			async UniTask GetMasterInfo()
-			{
-				Start: //Yep, one more time
-				Popup.Show("Getting Master Info");
-
-				try
-				{
-					await NetworkAPI.Server.Master.GetInfo();
-				}
-				catch (Exception ex) when (ex is UnityWebRequestException)
-				{
-					Debug.LogError(ex);
-					await Popup.Show("Failed to Retrieve Master Info", "Retry");
-
-					goto Start; //Oh, the humanity!
-				}
-			}
-
+			
 			void RoomJoinCallback()
 			{
 				Popup.Hide();

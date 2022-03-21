@@ -255,16 +255,21 @@ namespace MNet
         RemoteConfig remoteConfig;
         public RemoteConfig RemoteConfig => remoteConfig;
 
+        MasterServerInfoResponse info;
+        public MasterServerInfoResponse Info => info;
+
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref app);
             context.Select(ref remoteConfig);
+            context.Select(ref info);
         }
 
-        public MasterServerSchemeResponse(AppConfig app, RemoteConfig remoteConfig)
+        public MasterServerSchemeResponse(AppConfig app, RemoteConfig remoteConfig, MasterServerInfoResponse info)
         {
             this.app = app;
             this.remoteConfig = remoteConfig;
+            this.info = info;
         }
     }
     #endregion
