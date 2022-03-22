@@ -41,15 +41,14 @@ namespace MNet
 
                 public const string Folder = "MNet-Core";
                 public const string Release = "Debug";
-                public const string Variant = "net5.0";
+                public const string Variant = "net6.0";
 
-                public static string ParsePath(string name) => $"../{Folder}/{name}/bin/{Release}/{Variant}/{name}.exe";
+                public static string ParsePath(string name) => $"../{Folder}/{name}/bin/{Release}/{Variant}/Start (Windows).bat";
 
                 [MenuItem(Path + "All", priority = Priority)]
                 public static void All()
                 {
                     Master();
-
                     Game();
                 }
 
