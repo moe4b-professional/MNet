@@ -1007,7 +1007,16 @@ namespace MNet
 
                 void Callback(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel)
                 {
-                    var payload = stream.Read<TPayload>();
+                    TPayload payload;
+                    try
+                    {
+                        payload = stream.Read<TPayload>();
+                    }
+                    catch (Exception)
+                    {
+                        Log.Warning($"Invalid data for ({typeof(TPayload)}) Recieved");
+                        return;
+                    }
 
                     handler.Invoke(sender, ref payload, mode, channel);
                 }
@@ -1022,7 +1031,16 @@ namespace MNet
 
                 void Callback(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel)
                 {
-                    var payload = stream.Read<TPayload>();
+                    TPayload payload;
+                    try
+                    {
+                        payload = stream.Read<TPayload>();
+                    }
+                    catch (Exception)
+                    {
+                        Log.Warning($"Invalid data for ({typeof(TPayload)}) Recieved");
+                        return;
+                    }
 
                     handler.Invoke(sender, ref payload);
                 }
@@ -1187,7 +1205,16 @@ namespace MNet
         {
             using (NetworkReader.Set(segment))
             {
-                var type = NetworkReader.Read<Type>();
+                Type type;
+                try
+                {
+                    type = NetworkReader.Read<Type>();
+                }
+                catch (Exception)
+                {
+                    Log.Warning($"Invalid payload recieved from {id}");
+                    return;
+                }
 
                 if (Clients.TryGet(id, out var sender))
                 {
