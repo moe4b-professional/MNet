@@ -134,6 +134,8 @@ namespace MNet
 
     public struct RoomOptions : INetworkSerializable
     {
+        public string Name;
+
         public byte Capacity;
 
         public bool Visible;
@@ -147,6 +149,8 @@ namespace MNet
 
         public void Select(ref NetworkSerializationContext context)
         {
+            context.Select(ref Name);
+
             context.Select(ref Capacity);
 
             context.Select(ref Visible);
@@ -160,11 +164,12 @@ namespace MNet
 
         public static RoomOptions Default { get; } = new RoomOptions()
         {
+            Name = "Game Room",
             Capacity = 10,
-            Visible = true,
+            Visible = false,
             Password = null,
-            MigrationPolicy = MigrationPolicy.Continue,
-            Attributes = new AttributesCollection(),
+            MigrationPolicy = MigrationPolicy.Stop,
+            Attributes = null,
         };
     }
 }

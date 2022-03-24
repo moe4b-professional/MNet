@@ -84,6 +84,7 @@ namespace MNet
 
             var options = new RoomOptions()
             {
+                Name = name,
                 Visible = true,
                 Capacity = capacity,
                 MigrationPolicy = MigrationPolicy.Continue,
@@ -91,7 +92,7 @@ namespace MNet
                 Attributes = attributes,
             };
 
-            var request = new CreateRoomRequest(AppID, GameVersion, name, options);
+            var request = new CreateRoomRequest(AppID, GameVersion, options);
 
             var info = await RestAPI.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
 

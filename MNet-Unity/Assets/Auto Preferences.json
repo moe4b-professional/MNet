@@ -1,7 +1,7 @@
 {
   "Player Name": "MOB Editor",
   "Create Room": {
-    "Name": "Game Room",
+    "Name": "MOB Room #1",
     "Capacity": 4,
     "Password": "",
     "Offline": false

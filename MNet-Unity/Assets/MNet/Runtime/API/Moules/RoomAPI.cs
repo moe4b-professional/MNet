@@ -60,14 +60,14 @@ namespace MNet
             #region Create
             public delegate void CreateDelegate(RoomInfo room);
             public static event CreateDelegate OnCreate;
-            public static async UniTask<RoomInfo> Create(string name, RoomOptions options, bool offline)
+            public static async UniTask<RoomInfo> Create(RoomOptions options, bool offline = false)
             {
                 if (offline)
                 {
                     var capacity = options.Capacity;
                     var attributes = options.Attributes;
 
-                    var info = OfflineMode.Start(name, capacity, attributes);
+                    var info = OfflineMode.Start(options.Name, capacity, attributes);
 
                     OnCreate?.Invoke(info);
 
@@ -75,7 +75,7 @@ namespace MNet
                 }
                 else
                 {
-                    var payload = new CreateRoomRequest(AppID, GameVersion, name, options);
+                    var payload = new CreateRoomRequest(AppID, GameVersion, options);
 
                     var info = await Server.Game.Rest.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload);
 

@@ -82,6 +82,7 @@ namespace MNet.Example
 			{
 				var options = new RoomOptions()
 				{
+					Name = name,
 					Capacity = capacity,
 					Visible = false,
 					Password = password,
@@ -90,7 +91,7 @@ namespace MNet.Example
 					Scene = scene,
 				};
 
-				info = await NetworkAPI.Room.Create(name, options, offline);
+				info = await NetworkAPI.Room.Create(options, offline);
 			}
 			catch (Exception ex) when (ex is UnityWebRequestException)
 			{

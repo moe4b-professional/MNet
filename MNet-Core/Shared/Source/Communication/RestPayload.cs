@@ -16,9 +16,6 @@ namespace MNet
         Version version;
         public Version Version => version;
 
-        string name;
-        public string Name => name;
-
         RoomOptions options;
         public RoomOptions Options => options;
 
@@ -27,17 +24,13 @@ namespace MNet
             context.Select(ref appID);
             context.Select(ref version);
 
-            context.Select(ref name);
-
             context.Select(ref options);
         }
 
-        public CreateRoomRequest(AppID appID, Version version, string name, RoomOptions options)
+        public CreateRoomRequest(AppID appID, Version version, RoomOptions options)
         {
             this.appID = appID;
             this.version = version;
-
-            this.name = name;
 
             this.options = options;
         }
