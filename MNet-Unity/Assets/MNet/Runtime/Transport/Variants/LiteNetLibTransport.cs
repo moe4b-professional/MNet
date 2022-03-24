@@ -91,9 +91,7 @@ namespace MNet
 
             var segment = reader.GetRemainingBytesSegment();
 
-            InvokeMessages(segment, mode);
-
-            reader.Recycle();
+            InvokeMessage(segment, mode, reader.Recycle);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)

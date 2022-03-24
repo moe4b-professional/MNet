@@ -170,6 +170,7 @@ namespace MNet
             Password = null,
             MigrationPolicy = MigrationPolicy.Stop,
             Attributes = null,
+            Scene = null,
         };
     }
 }

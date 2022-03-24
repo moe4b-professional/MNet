@@ -352,9 +352,9 @@ namespace MNet
                 if (mode == NetworkSceneLoadMode.Single) RemoveAll();
 
                 var payload = new LoadScenePayload(index, mode);
-                var message = Room.Broadcast(ref payload, exception1: exception?.ID);
+                Room.Broadcast(ref payload, exception1: exception?.ID);
 
-                Add(index, mode, message);
+                Add(index, mode, payload);
             }
 
             void Unload(NetworkClient sender, ref UnloadScenePayload payload)
@@ -399,14 +399,14 @@ namespace MNet
                 Room.Broadcast(ref payload, exception1: exception?.ID);
             }
 
-            Scene Add(byte index, NetworkSceneLoadMode loadMode, NetworkMessage loadMessage)
+            Scene Add(byte index, NetworkSceneLoadMode loadMode, LoadScenePayload payload)
             {
-                var scene = new Scene(index, loadMode, loadMessage.ToBuffer());
+                var handle = MessageBuffer.Add(payload);
+
+                var scene = new Scene(index, loadMode, handle);
 
                 Dictionary.Add(index, scene);
                 List.Add(scene);
-
-                MessageBuffer.Add(scene.LoadMessage);
 
                 if (Active == null) SelectActive();
 
@@ -420,7 +420,7 @@ namespace MNet
                 Dictionary.Remove(scene.Index);
                 List.Remove(scene);
 
-                MessageBuffer.Remove(scene.LoadMessage);
+                MessageBuffer.Remove(scene.LoaPayload);
 
                 if (scene == Active)
                 {
@@ -443,9 +443,8 @@ namespace MNet
 
             void ModifyActive()
             {
-                var payload = Active.LoadMessage.Read<LoadScenePayload>().SetMode(NetworkSceneLoadMode.Single);
-
-                Active.LoadMessage.Set(payload);
+                var payload = Active.LoaPayload.Target.SetMode(NetworkSceneLoadMode.Single);
+                Active.LoaPayload.Target = payload;
             }
 
             public ScenesProperty()
@@ -523,8 +522,10 @@ namespace MNet
                 NetworkClientID? exception = entity.IsDynamic ? sender.ID : null;
 
                 var command = SpawnEntityCommand.Write(sender.ID, entity.ID, request);
-                entity.SpawnMessage = Room.Broadcast(ref command, exception1: exception).ToBuffer();
-                MessageBuffer.Add(entity.SpawnMessage);
+                Room.Broadcast(ref command, exception1: exception);
+
+                var handle = MessageBuffer.Add(command);
+                entity.SpawnCommand = handle;
             }
 
             bool FindSceneFrom(NetworkClient sender, ref SpawnEntityRequest request, out Scene scene)
@@ -612,9 +613,10 @@ namespace MNet
 
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
-                entity.OwnershipMessage = Room.Broadcast(ref payload, exception1: sender.ID).ToBuffer();
+                Room.Broadcast(ref payload, exception1: sender.ID);
 
-                MessageBuffer.Remove(entity.OwnershipMessage);
+                var handle = MessageBuffer.Add((object)payload);
+                entity.OwnershipMessage = handle;
             }
 
             void Takeover(NetworkClient sender, ref TakeoverEntityRequest request)
@@ -640,9 +642,10 @@ namespace MNet
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
                 var command = TakeoverEntityCommand.Write(sender.ID, request);
-                entity.OwnershipMessage = Room.Broadcast(ref command, exception1: sender.ID).ToBuffer();
+                Room.Broadcast(ref command, exception1: sender.ID);
 
-                MessageBuffer.Add(entity.OwnershipMessage);
+                var handle = MessageBuffer.Add((object)entity.OwnershipMessage);
+                entity.OwnershipMessage = handle;
             }
 
             void ChangeOwner(NetworkEntity entity, NetworkClient owner)
@@ -660,8 +663,8 @@ namespace MNet
 
                 MasterObjects.Add(entity);
 
-                var command = entity.SpawnMessage.Read<SpawnEntityCommand>().MakeOrphan();
-                entity.SpawnMessage.Set(command);
+                var command = entity.SpawnCommand.Target.MakeOrphan();
+                entity.SpawnCommand.Target = command;
             }
 
             #region Destroy
@@ -690,11 +693,11 @@ namespace MNet
 
             public void Destroy(NetworkEntity entity)
             {
-                MessageBuffer.Remove(entity.SpawnMessage);
+                MessageBuffer.Remove(entity.SpawnCommand);
                 MessageBuffer.Remove(entity.OwnershipMessage);
 
-                entity.RpcBuffer.Clear(MessageBuffer.RemoveAll);
-                entity.SyncVarBuffer.Clear(MessageBuffer.RemoveAll);
+                entity.RpcBuffer.Clear(MessageBuffer);
+                entity.SyncVarBuffer.Clear(MessageBuffer);
 
                 Dictionary.Remove(entity.ID);
                 entity.Owner?.Entities.Remove(entity);
@@ -787,13 +790,13 @@ namespace MNet
 
                 var command = BroadcastRpcCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID, exception2: request.Exception);
+                Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID, exception2: request.Exception);
 
                 if (request.BufferMode != RemoteBufferMode.None)
                 {
                     if (request.Group == NetworkGroupID.Default)
                     {
-                        entity.RpcBuffer.Set(message.ToBuffer(), ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                        entity.RpcBuffer.Set(ref request, ref command, request.BufferMode, MessageBuffer);
                     }
                     else
                     {
@@ -871,9 +874,7 @@ namespace MNet
 
                 var command = BufferRpcCommand.Write(sender.ID, request);
 
-                var message = NetworkMessage.Write(ref command);
-
-                entity.RpcBuffer.Set(message.ToBuffer(), ref request, request.BufferMode, MessageBuffer.Add, MessageBuffer.RemoveAll);
+                entity.RpcBuffer.Set(ref request, ref command, request.BufferMode, MessageBuffer);
             }
             #endregion
 
@@ -912,9 +913,9 @@ namespace MNet
 
                 var command = SyncVarCommand.Write(sender.ID, request);
 
-                var message = Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID);
+                Room.Broadcast(ref command, mode: mode, channel: channel, group: request.Group, exception1: sender.ID);
 
-                entity.SyncVarBuffer.Set(message.ToBuffer(), ref request, MessageBuffer.Add, MessageBuffer.Remove);
+                entity.SyncVarBuffer.Set(ref request, ref command, MessageBuffer);
             }
 
             void InvokeBufferSyncVar(NetworkClient sender, ref BufferSyncVarRequest request)
@@ -929,9 +930,7 @@ namespace MNet
 
                 var command = SyncVarCommand.Write(sender.ID, request);
 
-                var message = NetworkMessage.Write(ref command);
-
-                entity.SyncVarBuffer.Set(message.ToBuffer(), ref request, MessageBuffer.Add, MessageBuffer.Remove);
+                entity.SyncVarBuffer.Set(ref request, ref command, MessageBuffer);
             }
             #endregion
         }
@@ -939,41 +938,44 @@ namespace MNet
         public MessageBufferProperty MessageBuffer = new MessageBufferProperty();
         public class MessageBufferProperty : Property
         {
-            public List<BufferNetworkMessage> List { get; protected set; }
+            public List<MessageBufferHandle> List { get; protected set; }
 
-            public NetworkMessage[] ToArray()
+            public object[] ToArray()
             {
-                var array = new NetworkMessage[List.Count];
+                var array = new object[List.Count];
 
                 for (int i = 0; i < List.Count; i++)
-                    array[i] = List[i].ToMessage();
+                    array[i] = List[i].GetTarget();
 
                 return array;
             }
 
-            public void Add(BufferNetworkMessage message)
+            public MessageBufferHandle<T> Add<T>(T payload)
             {
-                if (message == null) return;
+                if (payload == null)
+                    throw new Exception("Invalid Null Payload");
 
-                List.Add(message);
+                var handle = new MessageBufferHandle<T>(payload);
+
+                List.Add(handle);
+
+                return handle;
             }
 
-            public void Remove(BufferNetworkMessage message)
+            public bool Remove(MessageBufferHandle handle)
             {
-                if (message == null) return;
-
-                List.Remove(message);
+                return List.Remove(handle);
             }
 
-            public void RemoveAll(ICollection<BufferNetworkMessage> collection) => RemoveAll(collection.Contains);
-            public int RemoveAll(Predicate<BufferNetworkMessage> predicate)
+            public void RemoveAll(ICollection<MessageBufferHandle> collection) => RemoveAll(collection.Contains);
+            public int RemoveAll(Predicate<MessageBufferHandle> predicate)
             {
                 return List.RemoveAll(predicate);
             }
 
             public MessageBufferProperty()
             {
-                List = new List<BufferNetworkMessage>();
+                List = new();
             }
         }
 
@@ -981,19 +983,19 @@ namespace MNet
         public class MessageDispatcherProperty : Property
         {
             Dictionary<Type, MessageCallbackDelegate> Dictionary;
-            public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel);
+            public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel);
 
-            public void Invoke(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
+            public void Invoke(NetworkClient sender, Type type, NetworkStream stream, DeliveryMode mode, byte channel)
             {
-                if (Dictionary.TryGetValue(message.Type, out var callback) == false)
+                if (Dictionary.TryGetValue(type, out var callback) == false)
                 {
-                    var text = $"No Message Handler Registered for Payload {message.Type}";
+                    var text = $"No Message Handler Registered for Payload {type}";
                     Log.Warning(text);
                     Room.LogTo(sender, Log.Level.Error, text);
                     return;
                 }
 
-                callback(sender, message, mode, channel);
+                callback(sender, stream, mode, channel);
             }
 
             public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode, byte channel);
@@ -1003,9 +1005,9 @@ namespace MNet
 
                 RegisterHandler(type, Callback);
 
-                void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
+                void Callback(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel)
                 {
-                    var payload = message.Read<TPayload>();
+                    var payload = stream.Read<TPayload>();
 
                     handler.Invoke(sender, ref payload, mode, channel);
                 }
@@ -1018,9 +1020,9 @@ namespace MNet
 
                 RegisterHandler(type, Callback);
 
-                void Callback(NetworkClient sender, NetworkMessage message, DeliveryMode mode, byte channel)
+                void Callback(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel)
                 {
-                    var payload = message.Read<TPayload>();
+                    var payload = stream.Read<TPayload>();
 
                     handler.Invoke(sender, ref payload);
                 }
@@ -1136,30 +1138,30 @@ namespace MNet
             OnTick?.Invoke();
         }
 
+        NetworkStream NetworkReader;
+        NetworkStream NetworkWriter;
+
         #region Communication
-        NetworkMessage Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
+        void Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
         {
-            var message = NetworkMessage.Write(ref payload);
-
-            using (var stream = NetworkStream.Pool.Any)
+            using (NetworkWriter)
             {
-                stream.Write(message);
-                var segment = stream.Segment();
+                NetworkWriter.Write(typeof(T));
+                NetworkWriter.Write(payload);
 
+                var segment = NetworkWriter.Segment();
                 TransportContext.Send(target.ID, segment, mode, channel);
             }
-
-            return message;
         }
 
-        NetworkMessage Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
+        void Broadcast<T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0, NetworkGroupID group = default, NetworkClientID? exception1 = null, NetworkClientID? exception2 = null)
         {
-            var message = NetworkMessage.Write(ref payload);
-
-            using (var stream = NetworkStream.Pool.Any)
+            using (NetworkWriter)
             {
-                stream.Write(message);
-                var segment = stream.Segment();
+                NetworkWriter.Write(typeof(T));
+                NetworkWriter.Write(payload);
+
+                var segment = NetworkWriter.Segment();
 
                 for (int i = 0; i < Clients.Count; i++)
                 {
@@ -1170,8 +1172,6 @@ namespace MNet
                     TransportContext.Send(Clients[i].ID, segment, mode, channel);
                 }
             }
-
-            return message;
         }
         #endregion
 
@@ -1183,19 +1183,23 @@ namespace MNet
             Send(ref payload, target);
         }
 
-        void MessageRecievedCallback(NetworkClientID id, NetworkMessage message, DeliveryMode mode, byte channel)
+        void MessageRecievedCallback(NetworkClientID id, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
-            if (Clients.TryGet(id, out var sender))
+            using (NetworkReader.Set(segment))
             {
-                MessageDispatcher.Invoke(sender, message, mode, channel);
-            }
-            else
-            {
-                if (message.Is<RegisterClientRequest>())
-                {
-                    var request = message.Read<RegisterClientRequest>();
+                var type = NetworkReader.Read<Type>();
 
-                    Clients.Register(id, ref request);
+                if (Clients.TryGet(id, out var sender))
+                {
+                    MessageDispatcher.Invoke(sender, type, NetworkReader, mode, channel);
+                }
+                else
+                {
+                    if (type == typeof(RegisterClientRequest))
+                    {
+                        var request = NetworkReader.Read<RegisterClientRequest>();
+                        Clients.Register(id, ref request);
+                    }
                 }
             }
         }
@@ -1217,6 +1221,8 @@ namespace MNet
 
             Realtime.UnregisterContext(App.Transport, ID.Value);
 
+            NetworkStream.Pool.Return(NetworkWriter);
+
             OnStop?.Invoke(this);
         }
 
@@ -1237,8 +1243,27 @@ namespace MNet
 
             Scheduler = new Scheduler(App.TickDelay, Tick);
 
+            NetworkReader = new NetworkStream();
+            NetworkStream.Pool.Lease(out NetworkWriter);
+
             ForAllProperties(x => x.Set(this));
             ForAllProperties(x => x.Configure());
+        }
+    }
+
+    public abstract class MessageBufferHandle
+    {
+        protected internal abstract object GetTarget();
+    }
+    public class MessageBufferHandle<T> : MessageBufferHandle
+    {
+        public T Target;
+
+        protected internal override object GetTarget() => Target;
+
+        public MessageBufferHandle(T target)
+        {
+            this.Target = target;
         }
     }
 }

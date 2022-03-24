@@ -283,7 +283,7 @@ namespace MNet
         {
             this.Sender = sender;
 
-            this.IsBuffered = NetworkAPI.Realtime.Buffer.IsOn;
+            this.IsBuffered = NetworkAPI.Client.Buffer.IsOn;
         }
     }
 }

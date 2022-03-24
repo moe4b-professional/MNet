@@ -102,7 +102,7 @@ namespace MNet
                 Clients.AddAll(response.Clients);
                 Master.Assign(response.Master);
 
-                Realtime.Buffer.Apply(response.Buffer).Forget();
+                Client.Buffer.Apply(response.Buffer).Forget();
             }
 
             public static class Info

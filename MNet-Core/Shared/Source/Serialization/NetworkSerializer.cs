@@ -17,7 +17,7 @@ namespace MNet
         #region Serialize
         public static byte[] Serialize<T>(T instance)
         {
-            using (var stream = NetworkStream.Pool.Any)
+            using (NetworkStream.Pool.Lease(out var stream))
             {
                 stream.Write(instance);
 
@@ -33,7 +33,7 @@ namespace MNet
         }
         public static byte[] Serialize(object instance, Type type)
         {
-            using (var stream = NetworkStream.Pool.Any)
+            using (NetworkStream.Pool.Lease(out var stream))
             {
                 stream.Write(instance, type);
 

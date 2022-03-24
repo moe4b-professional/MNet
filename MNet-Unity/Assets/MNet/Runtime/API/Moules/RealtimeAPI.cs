@@ -52,38 +52,6 @@ namespace MNet
             public static ConcurrentQueue<Action> InputQueue { get; private set; }
 
             /// <summary>
-            /// Class responsible for applying room buffers for late joining clients
-            /// </summary>
-            public static class Buffer
-            {
-                public static bool IsOn { get; private set; } = false;
-
-                public delegate void BufferDelegate(IList<NetworkMessage> list);
-
-                public static event BufferDelegate OnBegin;
-
-                internal static async UniTask Apply(IList<NetworkMessage> list)
-                {
-                    if (IsOn) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
-
-                    IsOn = true;
-                    OnBegin?.Invoke(list);
-
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        while (Pause.Active) await UniTask.WaitWhile(Pause.IsOn);
-
-                        MessageCallback(list[i], DeliveryMode.ReliableOrdered);
-                    }
-
-                    IsOn = false;
-                    OnEnd?.Invoke(list);
-                }
-
-                public static event BufferDelegate OnEnd;
-            }
-
-            /// <summary>
             /// Class responsible for pausing the RealtimeAPI processing when peforming asynchronous operations 
             /// such as loading or unloading a scene
             /// </summary>
@@ -169,14 +137,14 @@ namespace MNet
                 if (Transport == null) return;
 
                 if (Pause.Active) return;
-                if (Buffer.IsOn) return;
+                if (Client.Buffer.IsOn) return;
 
                 var count = InputQueue.Count;
 
                 for (int i = 0; i < count; i++)
                 {
                     if (Pause.Active) return;
-                    if (Buffer.IsOn) return;
+                    if (Client.Buffer.IsOn) return;
 
                     if (InputQueue.TryDequeue(out var action) == false) return;
 
@@ -256,18 +224,22 @@ namespace MNet
                 return true;
             }
 
-            public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
+            public delegate void MessageDelegate(ArraySegment<byte> segment, DeliveryMode mode);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
+            static void MessageCallback(ArraySegment<byte> segment, DeliveryMode mode)
             {
-                OnMessage?.Invoke(message, mode);
+                OnMessage?.Invoke(segment, mode);
             }
 
-            static void QueueMessage(NetworkMessage message, DeliveryMode mode)
+            static void QueueMessage(ArraySegment<byte> segment, DeliveryMode mode, Action dispose)
             {
                 InputQueue.Enqueue(Action);
 
-                void Action() => MessageCallback(message, mode);
+                void Action()
+                {
+                    MessageCallback(segment, mode);
+                    dispose?.Invoke();
+                }
             }
             #endregion
 

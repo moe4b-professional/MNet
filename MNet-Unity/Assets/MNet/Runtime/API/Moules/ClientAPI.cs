@@ -17,6 +17,7 @@ using UnityEditorInternal;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 using Cysharp.Threading.Tasks;
+using MB;
 
 namespace MNet
 {
@@ -40,8 +41,14 @@ namespace MNet
 
             public static bool IsMaster => Self == null ? false : Self.IsMaster;
 
+            static NetworkStream NetworkReader;
+            static NetworkStream NetworkWriter;
+
             internal static void Configure()
             {
+                NetworkReader = new NetworkStream();
+                NetworkWriter = new NetworkStream(1024);
+
                 Profile = new NetworkClientProfile("Player");
 
                 MessageDispatcher.Configure();
@@ -80,13 +87,12 @@ namespace MNet
                     return false;
                 }
 
-                var message = NetworkMessage.Write(ref payload);
-
-                using (var stream = NetworkStream.Pool.Any)
+                using (NetworkWriter)
                 {
-                    stream.Write(message);
-                    var segment = stream.Segment();
+                    NetworkWriter.Write(typeof(T));
+                    NetworkWriter.Write(payload);
 
+                    var segment = NetworkWriter.Segment();
                     Realtime.Send(segment, mode, channel);
                 }
 
@@ -113,53 +119,103 @@ namespace MNet
                 OnReady?.Invoke();
             }
 
-            static void MessageCallback(NetworkMessage message, DeliveryMode mode)
+            static void MessageCallback(ArraySegment<byte> segment, DeliveryMode mode)
             {
-                MessageDispatcher.Invoke(message, mode);
+                using (NetworkReader.Set(segment))
+                {
+                    var type = NetworkReader.Read<Type>();
+                    MessageDispatcher.Invoke(type, NetworkReader);
+                }
+            }
+
+            /// <summary>
+            /// Class responsible for applying room buffers for late joining clients
+            /// </summary>
+            public static class Buffer
+            {
+                public static bool IsOn { get; private set; } = false;
+
+                public delegate void BufferDelegate(IList<object> list);
+
+                public static event BufferDelegate OnBegin;
+
+                internal static async UniTask Apply(IList<object> list)
+                {
+                    if (IsOn) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
+
+                    IsOn = true;
+                    OnBegin?.Invoke(list);
+
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        while (Realtime.Pause.Active) await UniTask.WaitWhile(Realtime.Pause.IsOn);
+
+                        var item = list[i];
+                        MessageDispatcher.Invoke(item);
+                    }
+
+                    IsOn = false;
+                    OnEnd?.Invoke(list);
+                }
+
+                public static event BufferDelegate OnEnd;
             }
 
             public static class MessageDispatcher
             {
-                static Dictionary<Type, MessageCallbackDelegate> Dictionary;
+                static Dictionary<Type, BinaryMessageCallbackDelegate> Binary;
+                public delegate void BinaryMessageCallbackDelegate(NetworkStream stream);
+
+                static Dictionary<Type, PayloadMessageCallbackDelegate> Payload;
+                public delegate void PayloadMessageCallbackDelegate(object target);
 
                 internal static void Configure()
                 {
-                    Dictionary = new Dictionary<Type, MessageCallbackDelegate>();
+                    Binary = new();
+                    Payload = new();
                 }
 
-                internal static void Invoke<TPayload>(ref TPayload payload, DeliveryMode mode)
+                internal static void Invoke(object payload)
                 {
-                    var message = NetworkMessage.Write(ref payload);
+                    var type = payload.GetType();
 
-                    Invoke(message, mode);
-                }
-
-                internal static void Invoke(NetworkMessage message, DeliveryMode mode)
-                {
-                    if (Dictionary.TryGetValue(message.Type, out var callback) == false)
+                    if (Payload.TryGetValue(type, out var callback) == false)
                     {
-                        Debug.LogWarning($"Recieved Message with Payload of {message.Type} Has no Handler");
+                        Debug.LogWarning($"Recieved Message with Payload of {type} Has no Handler");
                         return;
                     }
 
-                    callback(message);
+                    callback(payload);
+                }
+                internal static void Invoke(Type type, NetworkStream stream)
+                {
+                    if (Binary.TryGetValue(type, out var callback) == false)
+                    {
+                        Debug.LogWarning($"Recieved Message with Payload of {type} Has no Handler");
+                        return;
+                    }
+
+                    callback(stream);
                 }
 
-                public delegate void MessageCallbackDelegate(NetworkMessage message);
                 public delegate void MessageHandlerDelegate<TPayload>(ref TPayload payload);
-
                 public static void RegisterHandler<TPayload>(MessageHandlerDelegate<TPayload> handler)
                 {
                     var type = typeof(TPayload);
 
-                    if (Dictionary.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
+                    if (Binary.ContainsKey(type) || Payload.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
 
-                    Dictionary.Add(type, Callback);
+                    Binary.Add(type, BinaryCallback);
+                    Payload.Add(type, PayloadCallback);
 
-                    void Callback(NetworkMessage message)
+                    void BinaryCallback(NetworkStream stream)
                     {
-                        var payload = message.Read<TPayload>();
-
+                        var payload = stream.Read<TPayload>();
+                        handler(ref payload);
+                    }
+                    void PayloadCallback(object target)
+                    {
+                        var payload = (TPayload)target;
                         handler(ref payload);
                     }
                 }
@@ -250,12 +306,12 @@ namespace MNet
                     {
                         var id = new NetworkClientID();
                         var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Profile) };
-                        var buffer = new NetworkMessage[] { };
+                        var buffer = new object[] { };
                         var time = TimeResponse.Write(default, request.Time);
 
                         var response = new RegisterClientResponse(id, OfflineMode.RoomInfo, clients, id, buffer, time);
 
-                        MessageDispatcher.Invoke(ref response, mode);
+                        MessageDispatcher.Invoke(response);
 
                         return Response.Consume;
                     }
@@ -276,7 +332,7 @@ namespace MNet
                                 {
                                     var response = SpawnEntityResponse.Write(id, request.Token);
 
-                                    MessageDispatcher.Invoke(ref response, mode);
+                                    MessageDispatcher.Invoke(response);
 
                                     return Response.Consume;
                                 }
@@ -285,7 +341,7 @@ namespace MNet
                                 {
                                     var command = SpawnEntityCommand.Write(Client.ID, id, request);
 
-                                    MessageDispatcher.Invoke(ref command, mode);
+                                    MessageDispatcher.Invoke(command);
 
                                     return Response.Consume;
                                 }
@@ -300,7 +356,7 @@ namespace MNet
 
                 static Response TransferEntity(ref TransferEntityPayload payload, DeliveryMode mode)
                 {
-                    MessageDispatcher.Invoke(ref payload, mode);
+                    MessageDispatcher.Invoke(payload);
 
                     if (OfflineMode.On) return Response.Consume;
 
@@ -311,7 +367,7 @@ namespace MNet
                 {
                     var command = TakeoverEntityCommand.Write(Client.ID, request);
 
-                    MessageDispatcher.Invoke(ref command, mode);
+                    MessageDispatcher.Invoke(command);
 
                     if (OfflineMode.On) return Response.Consume;
 
@@ -320,7 +376,7 @@ namespace MNet
 
                 static Response DestroyEntity(ref DestroyEntityPayload request, DeliveryMode mode)
                 {
-                    MessageDispatcher.Invoke(ref request, DeliveryMode.ReliableOrdered);
+                    MessageDispatcher.Invoke(request);
 
                     if (OfflineMode.On)
                     {
@@ -340,7 +396,7 @@ namespace MNet
                     {
                         var command = BroadcastRpcCommand.Write(Client.ID, request);
 
-                        MessageDispatcher.Invoke(ref command, mode);
+                        MessageDispatcher.Invoke(command);
                     }
 
                     if (OfflineMode.On) return Response.Consume;
@@ -354,7 +410,7 @@ namespace MNet
                     {
                         var command = TargetRpcCommand.Write(Client.ID, request);
 
-                        MessageDispatcher.Invoke(ref command, mode);
+                        MessageDispatcher.Invoke(command);
 
                         return Response.Consume;
                     }
@@ -374,7 +430,7 @@ namespace MNet
                     {
                         var command = QueryRpcCommand.Write(Client.ID, request);
 
-                        MessageDispatcher.Invoke(ref command, mode);
+                        MessageDispatcher.Invoke(command);
 
                         return Response.Consume;
                     }
@@ -405,7 +461,7 @@ namespace MNet
                     {
                         var response = RprResponse.Write(Client.ID, request);
 
-                        MessageDispatcher.Invoke(ref response, mode);
+                        MessageDispatcher.Invoke(response);
 
                         return Response.Consume;
                     }
@@ -424,7 +480,7 @@ namespace MNet
                 {
                     var command = SyncVarCommand.Write(Client.ID, request);
 
-                    MessageDispatcher.Invoke(ref command, mode);
+                    MessageDispatcher.Invoke(command);
 
                     if (OfflineMode.On) return Response.Consume;
 
@@ -442,7 +498,7 @@ namespace MNet
                 #region Scenes
                 static Response LoadScene(ref LoadScenePayload payload, DeliveryMode mode)
                 {
-                    MessageDispatcher.Invoke(ref payload, mode);
+                    MessageDispatcher.Invoke(payload);
 
                     if (OfflineMode.On) return Response.Consume;
 
@@ -451,7 +507,7 @@ namespace MNet
 
                 static Response UnloadScene(ref UnloadScenePayload payload, DeliveryMode mode)
                 {
-                    MessageDispatcher.Invoke(ref payload, mode);
+                    MessageDispatcher.Invoke(payload);
 
                     if (OfflineMode.On) return Response.Consume;
 
@@ -461,7 +517,7 @@ namespace MNet
 
                 static Response ChangeRoomInfo(ref ChangeRoomInfoPayload payload, DeliveryMode mode)
                 {
-                    MessageDispatcher.Invoke(ref payload, mode);
+                    MessageDispatcher.Invoke(payload);
 
                     if (OfflineMode.On) return Response.Consume;
 
@@ -474,7 +530,7 @@ namespace MNet
                     {
                         var response = new PingResponse(request);
 
-                        MessageDispatcher.Invoke(ref response, mode);
+                        MessageDispatcher.Invoke(response);
 
                         return Response.Consume;
                     }
@@ -488,7 +544,7 @@ namespace MNet
                     {
                         var response = new TimeResponse(NetworkAPI.Time.Span, request.Timestamp);
 
-                        MessageDispatcher.Invoke(ref response, mode);
+                        MessageDispatcher.Invoke(response);
 
                         return Response.Consume;
                     }

@@ -13,11 +13,12 @@ namespace MNet
         protected byte[] data;
         public byte[] Data { get { return data; } }
 
-        public void Set(byte[] data)
+        public NetworkStream Set(ArraySegment<byte> segment)
         {
-            this.data = data;
+            data = segment.Array;
+            Position = segment.Offset;
 
-            Reset();
+            return this;
         }
 
         /// <summary>
@@ -38,15 +39,13 @@ namespace MNet
                     throw new IndexOutOfRangeException();
 
                 internal_position = value;
-
-                Remaining = Capacity - internal_position;
             }
         }
 
         /// <summary>
         /// The Remaining Amount of Capacity
         /// </summary>
-        public int Remaining { get; protected set; }
+        public int Remaining => Capacity - Position;
 
         #region Sizing
         public const uint DefaultResizeLength = 512;
@@ -291,27 +290,9 @@ namespace MNet
         }
 
         /// <summary>
-        /// Was this Stream Leased from The Network Stream Pool?
-        /// </summary>
-        public bool IsLeased { get; private set; }
-
-        /// <summary>
-        /// Returns the Stream to The Pool if it was Leased from It
-        /// </summary>
-        public void Recycle()
-        {
-            if(IsLeased == false)
-            {
-                Log.Warning($"Current Network Stream is Not Leased from Pool, no Use Recycling It, Ignoring");
-                return;
-            }
-
-            Pool.Return(this);
-        }
-        /// <summary>
         /// Recycles the Stream
         /// </summary>
-        public void Dispose() => Recycle();
+        public void Dispose() => Reset();
 
         public NetworkStream() : this(null) { }
         public NetworkStream(int capacity) : this(new byte[capacity]) { }
@@ -341,15 +322,36 @@ namespace MNet
                 }
             }
 
-            public static NetworkStream Any => Lease();
-            public static NetworkStream Lease()
-            {
-                lock (Queue) if (Queue.Count > 0) return Queue.Dequeue();
+            public static int Allocations { get; private set; } = 0;
 
-                return Create();
+            public const int DefaultBinarySize = 1024;
+
+            public ref struct Handle
+            {
+                NetworkStream stream;
+
+                public void Dispose() => Return(stream);
+
+                public Handle(NetworkStream stream)
+                {
+                    this.stream = stream;
+                }
             }
 
-            public static int Allocations { get; private set; } = 0;
+            public static Handle Lease(out NetworkStream stream)
+            {
+                lock (Queue)
+                {
+                    if (Queue.Count > 0)
+                    {
+                        stream = Queue.Dequeue();
+                        return new Handle(stream);
+                    }
+                }
+
+                stream = Create();
+                return new Handle(stream);
+            }
 
             static NetworkStream Create()
             {
@@ -357,12 +359,13 @@ namespace MNet
                 {
                     Allocations += 1;
 
+#if DEBUG
                     if (Allocations % 100 == 0)
-                        Log.Warning($"{Allocations} NetworkStreams Allocated, Are you Making Sure to Recylce Old Network Streams?");
+                        Log.Warning($"{Allocations} NetworkStreams Allocated, Are you Making Sure to Dispose of Old Network Streams?");
+#endif
                 }
 
-                var stream = new NetworkStream(1024);
-                stream.IsLeased = true;
+                var stream = new NetworkStream(DefaultBinarySize);
 
                 return stream;
             }
@@ -372,9 +375,7 @@ namespace MNet
                 stream.Reset();
 
                 lock (Queue)
-                {
                     Queue.Enqueue(stream);
-                }
             }
 
             static Pool()

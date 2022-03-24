@@ -12,15 +12,15 @@ namespace MNet
 
         internal NetworkSceneLoadMode LoadMode;
 
-        internal BufferNetworkMessage LoadMessage;
+        internal MessageBufferHandle<LoadScenePayload> LoaPayload;
 
         internal HashSet<NetworkEntity> Entities;
 
-        public Scene(byte index, NetworkSceneLoadMode loadMode, BufferNetworkMessage loadMessage)
+        public Scene(byte index, NetworkSceneLoadMode loadMode, MessageBufferHandle<LoadScenePayload> loadPayload)
         {
             this.Index = index;
             this.LoadMode = loadMode;
-            this.LoadMessage = loadMessage;
+            this.LoaPayload = loadPayload;
 
             Entities = new HashSet<NetworkEntity>();
         }

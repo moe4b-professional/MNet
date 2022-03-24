@@ -704,6 +704,7 @@ namespace MNet
     }
     #endregion
 
+    #region Collections
     [Preserve]
     public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
     {
@@ -726,6 +727,97 @@ namespace MNet
     }
 
     [Preserve]
+    public sealed class ObjectArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<object[]>
+    {
+        public override void Serialize(NetworkStream writer, object[] instance)
+        {
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
+
+            for (int i = 0; i < instance.Length; i++)
+            {
+                if(instance[i] is null)
+                {
+                    writer.Write(typeof(void));
+                }
+                else
+                {
+                    var type = instance[i].GetType();
+
+                    writer.Write(type);
+                    writer.Write(instance[i]);
+                }
+            }
+        }
+
+        public override object[] Deserialize(NetworkStream reader)
+        {
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
+
+            var array = new object[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                var type = reader.Read<Type>();
+
+                if (type == typeof(void))
+                    array[i] = null;
+                else
+                    array[i] = reader.Read(type);
+            }
+
+            return array;
+        }
+    }
+
+    [Preserve]
+    public sealed class ObjectListNetworkSerialziationResolver : NetworkSerializationExplicitResolver<List<object>>
+    {
+        public override void Serialize(NetworkStream writer, List<object> instance)
+        {
+            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
+
+            for (int i = 0; i < instance.Count; i++)
+            {
+                if (instance[i] is null)
+                {
+                    writer.Write(typeof(void));
+                }
+                else
+                {
+                    var type = instance[i].GetType();
+
+                    writer.Write(type);
+                    writer.Write(instance[i]);
+                }
+            }
+        }
+        public override List<object> Deserialize(NetworkStream reader)
+        {
+            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
+
+            var list = new List<object>(length);
+
+            for (int i = 0; i < length; i++)
+            {
+                var type = reader.Read<Type>();
+
+                if (type == typeof(void))
+                {
+                    list.Add(null);
+                }
+                else
+                {
+                    var item = reader.Read(type);
+                    list.Add(item);
+                }
+            }
+
+            return list;
+        }
+    }
+    #endregion
+
+    [Preserve]
     public class TypeNetworkSerializationResolver : NetworkSerializationExplicitResolver<Type>
     {
         public override void Serialize(NetworkStream writer, Type instance)
@@ -742,24 +834,6 @@ namespace MNet
             var value = NetworkPayload.GetType(code);
 
             return value;
-        }
-    }
-
-    [Preserve]
-    public class NetworkMessageSerializationResolver : NetworkSerializationExplicitResolver<NetworkMessage>
-    {
-        public override void Serialize(NetworkStream writer, NetworkMessage instance)
-        {
-            instance.Serialize(writer);
-        }
-
-        public override NetworkMessage Deserialize(NetworkStream reader)
-        {
-            var message = new NetworkMessage();
-
-            message.Deserialize(reader);
-
-            return message;
         }
     }
     #endregion

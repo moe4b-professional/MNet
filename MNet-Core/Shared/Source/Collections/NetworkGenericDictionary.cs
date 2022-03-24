@@ -21,7 +21,7 @@ namespace MNet
 
         public void Set<TValue>(TKey key, TValue value)
         {
-            using (var stream = NetworkStream.Pool.Any)
+            using (NetworkStream.Pool.Lease(out var stream))
             {
                 stream.Write(value);
 

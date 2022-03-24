@@ -7,35 +7,32 @@ namespace MNet
 {
     class SyncVarBuffer
     {
-        public Dictionary<(NetworkBehaviourID behaviour, SyncVarID field), BufferNetworkMessage> Dictionary { get; protected set; }
+        public Dictionary<ID, MessageBufferHandle> Dictionary { get; protected set; }
 
-        public HashSet<BufferNetworkMessage> Hash { get; protected set; }
+        public record struct ID(NetworkBehaviourID behaviour, SyncVarID field);
 
-        public delegate void BufferDelegate(BufferNetworkMessage message);
-        public delegate void UnBufferDelegate(BufferNetworkMessage message);
-        public delegate void UnBufferAllDelegate(HashSet<BufferNetworkMessage> message);
+        public HashSet<MessageBufferHandle> Hash { get; protected set; }
 
-        public void Set<T>(BufferNetworkMessage message, ref T request, BufferDelegate buffer, UnBufferDelegate unbuffer)
-            where T : ISyncVarRequest
+        public void Set<TRequest, TCommand>(ref TRequest request, ref TCommand command, Room.MessageBufferProperty buffer)
+            where TRequest : ISyncVarRequest
+            where TCommand : ISyncVarCommand
         {
-            var id = (request.Behaviour, request.Field);
+            var id = new ID(request.Behaviour, request.Field);
 
             if (Dictionary.TryGetValue(id, out var previous))
             {
-                unbuffer(previous);
-
+                buffer.Remove(previous);
                 Hash.Remove(previous);
             }
 
-            buffer(message);
-
-            Dictionary[id] = message;
-            Hash.Add(message);
+            var handle = buffer.Add(command);
+            Dictionary[id] = handle;
+            Hash.Add(handle);
         }
 
-        public void Clear(UnBufferAllDelegate unbuffer)
+        public void Clear(Room.MessageBufferProperty buffer)
         {
-            unbuffer(Hash);
+            buffer.RemoveAll(Hash);
 
             Hash.Clear();
             Dictionary.Clear();
@@ -43,9 +40,8 @@ namespace MNet
 
         public SyncVarBuffer()
         {
-            Dictionary = new Dictionary<(NetworkBehaviourID, SyncVarID), BufferNetworkMessage>();
-
-            Hash = new HashSet<BufferNetworkMessage>();
+            Dictionary = new();
+            Hash = new();
         }
     }
 }

@@ -46,7 +46,10 @@ namespace MNet
         public static void Register<T>(byte code)
         {
             var type = typeof(T);
-
+            Register(code, type);
+        }
+        public static void Register(byte code, Type type)
+        {
             Validate(code, type);
 
             Codes.Add(code, type);
@@ -82,7 +85,9 @@ namespace MNet
             Codes = new Dictionary<byte, Type>();
             Types = new Dictionary<Type, byte>();
 
-            byte index = 0;
+            Register(0, typeof(void));
+
+            byte index = 1;
             void Add<T>(ref byte index)
             {
                 Register<T>(index);
@@ -220,8 +225,8 @@ namespace MNet
         NetworkClientID master;
         public NetworkClientID Master => master;
 
-        NetworkMessage[] buffer;
-        public NetworkMessage[] Buffer => buffer;
+        object[] buffer;
+        public object[] Buffer => buffer;
 
         TimeResponse time;
         public TimeResponse Time => time;
@@ -236,7 +241,7 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, NetworkMessage[] buffer, TimeResponse time)
+        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, object[] buffer, TimeResponse time)
         {
             this.id = id;
             this.room = room;

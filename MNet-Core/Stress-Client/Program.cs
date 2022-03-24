@@ -118,8 +118,14 @@ namespace MNet
 
         bool IsReady = false;
 
+        NetworkStream writer;
+        NetworkStream reader;
+
         public Player(int index)
         {
+            writer = new NetworkStream(1024);
+            reader = new NetworkStream();
+
             this.Index = index;
 
             Client.Players.Add(this);
@@ -171,25 +177,27 @@ namespace MNet
             IsReady = true;
         }
 
-        public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod, byte deliveryChannel)
+        public void OnNetworkReceive(NetPeer peer, NetPacketReader packet, DeliveryMethod deliveryMethod, byte deliveryChannel)
         {
-            var segment = reader.GetRemainingBytesSegment();
+            var segment = packet.GetRemainingBytesSegment();
 
-            foreach (var message in NetworkMessage.Read(segment))
+            using (reader.Set(segment))
             {
-                switch (message.Payload)
-                {
-                    case RegisterClientResponse response:
-                        RegisterClientResponse(response);
-                        break;
+                var type = reader.Read<Type>();
 
-                    case SpawnEntityResponse response:
-                        SpawnEntityResponse(response);
-                        break;
+                if (type == typeof(RegisterClientResponse))
+                {
+                    var response = reader.Read<RegisterClientResponse>();
+                    RegisterClientResponse(response);
+                }
+                else if (type == typeof(SpawnEntityResponse))
+                {
+                    var response = reader.Read<SpawnEntityResponse>();
+                    SpawnEntityResponse(response);
                 }
             }
 
-            reader.Recycle();
+            packet.Recycle();
         }
 
         void Run()
@@ -227,11 +235,15 @@ namespace MNet
 
         void Send<T>(ref T payload, DeliveryMethod delivery)
         {
-            var message = NetworkMessage.Write(ref payload);
+            using (writer)
+            {
+                writer.Write(typeof(T));
+                writer.Write(payload);
 
-            var binary = NetworkSerializer.Serialize(message);
+                var segment = writer.Segment();
 
-            Peer.Send(binary, delivery);
+                Peer.Send(segment.Array, segment.Offset, segment.Count, delivery);
+            }
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

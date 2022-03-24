@@ -98,9 +98,7 @@ namespace MNet
 
             var segment = packet.GetRemainingBytesSegment();
 
-            context.RegisterMessages(peer, segment, mode, channel);
-
-            packet.Recycle();
+            context.QueueMessage(peer, segment, mode, channel, packet.Recycle);
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

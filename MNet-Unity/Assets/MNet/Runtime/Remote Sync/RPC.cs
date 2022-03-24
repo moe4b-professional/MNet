@@ -66,7 +66,7 @@ namespace MNet
                     throw new Exception($"RPC {this} Marked as Binary Exchange but the Only Parameter isn't a byte[]");
             }
 
-            using (var stream = NetworkStream.Pool.Any)
+            using (NetworkStream.Pool.Lease(out var stream))
             {
                 for (int i = 0; i < arguments.Length; i++)
                     stream.Write(arguments[i], ParametersInfo[i].ParameterType);
@@ -148,7 +148,7 @@ namespace MNet
         {
             this.Sender = sender;
 
-            this.IsBuffered = NetworkAPI.Realtime.Buffer.IsOn;
+            this.IsBuffered = NetworkAPI.Client.Buffer.IsOn;
         }
     }
 

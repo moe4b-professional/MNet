@@ -44,17 +44,11 @@ namespace MNet
             OnConnect?.Invoke();
         }
 
-        public delegate void MessageDelegate(NetworkMessage message, DeliveryMode mode);
+        public delegate void MessageDelegate(ArraySegment<byte> segment, DeliveryMode mode, Action dispose);
         public event MessageDelegate OnMessage;
-        protected virtual void InvokeMessage(NetworkMessage message, DeliveryMode mode)
+        protected virtual void InvokeMessage(ArraySegment<byte> segment, DeliveryMode mode, Action dispose)
         {
-            OnMessage?.Invoke(message, mode);
-        }
-
-        protected void InvokeMessages(ArraySegment<byte> segment, DeliveryMode mode)
-        {
-            foreach (var message in NetworkMessage.Read(segment))
-                InvokeMessage(message, mode);
+            OnMessage?.Invoke(segment, mode, dispose);
         }
 
         public delegate void DisconnectDelegate(DisconnectCode code);

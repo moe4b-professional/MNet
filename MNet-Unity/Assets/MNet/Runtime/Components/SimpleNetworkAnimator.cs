@@ -753,13 +753,14 @@ namespace MNet
 		void ReadAll<T>(IList<T> list, byte[] binary)
 			where T : ParametersProperty.Property
 		{
-			reader.Set(binary);
+            using (reader.Set(binary))
+            {
+				for (int i = 0; i < list.Count; i++)
+				{
+					if (list[i].Ignore) continue;
 
-			for (int i = 0; i < list.Count; i++)
-			{
-				if (list[i].Ignore) continue;
-
-				list[i].ReadBinary(reader);
+					list[i].ReadBinary(reader);
+				}
 			}
 		}
 		#endregion
@@ -1032,13 +1033,14 @@ namespace MNet
 		[NetworkRPC]
 		void BufferLayerWeights(byte[] binary, RpcInfo info)
 		{
-			reader.Set(binary);
-
-			for (int i = 0; i < layers.Count; i++)
+			using (reader.Set(binary))
 			{
-				if (layers[i].Ignore) continue;
+				for (int i = 0; i < layers.Count; i++)
+				{
+					if (layers[i].Ignore) continue;
 
-				layers[i].ReadBinary(reader);
+					layers[i].ReadBinary(reader);
+				}
 			}
 		}
 

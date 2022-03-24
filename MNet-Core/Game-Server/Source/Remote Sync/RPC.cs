@@ -11,41 +11,69 @@ namespace MNet
 {
     class RpcBuffer
     {
-        public Dictionary<(NetworkBehaviourID behaviour, RpcID method), NetworkMessageCollection> Dictionary { get; protected set; }
-
-        public HashSet<BufferNetworkMessage> Hash { get; protected set; }
-
-        public delegate void BufferDelegate(BufferNetworkMessage message);
-        public delegate void UnBufferAllDelegate(HashSet<BufferNetworkMessage> collection);
-
-        public void Set<T>(BufferNetworkMessage message, ref T request, RemoteBufferMode mode, BufferDelegate buffer, UnBufferAllDelegate unbuffer)
-            where T: IRpcRequest
+        public Dictionary<ID, Collection> Dictionary { get; protected set; }
+        public record struct ID(NetworkBehaviourID behaviour, RpcID method);
+        public class Collection
         {
-            var key = (request.Behaviour, request.Method);
+            public HashSet<MessageBufferHandle> HashSet { get; protected set; }
 
-            if (Dictionary.TryGetValue(key, out var collection) == false)
+            public void Add(MessageBufferHandle message)
             {
-                collection = new NetworkMessageCollection();
-                Dictionary.Add(key, collection);
+                HashSet.Add(message);
+            }
+
+            public bool Remove(MessageBufferHandle message)
+            {
+                return HashSet.Remove(message);
+            }
+            public int RemoveAll(Predicate<MessageBufferHandle> match)
+            {
+                return HashSet.RemoveWhere(match);
+            }
+
+            public bool Contains(MessageBufferHandle message) => HashSet.Contains(message);
+
+            public void Clear()
+            {
+                HashSet.Clear();
+            }
+
+            public Collection()
+            {
+                HashSet = new();
+            }
+        }
+
+        public HashSet<MessageBufferHandle> Hash { get; protected set; }
+
+        public void Set<TRequest, TCommand>(ref TRequest request, ref TCommand command, RemoteBufferMode mode, Room.MessageBufferProperty buffer)
+            where TRequest : IRpcRequest
+            where TCommand : IRpcCommand
+        {
+            var id = new ID(request.Behaviour, request.Method);
+
+            if (Dictionary.TryGetValue(id, out var collection) == false)
+            {
+                collection = new Collection();
+                Dictionary.Add(id, collection);
             }
 
             if (mode == RemoteBufferMode.Last)
             {
-                unbuffer(collection.HashSet);
+                buffer.RemoveAll(collection.HashSet);
 
                 Hash.RemoveWhere(collection.Contains);
                 collection.Clear();
             }
 
-            buffer(message);
-
-            collection.Add(message);
-            Hash.Add(message);
+            var handle = buffer.Add(command);
+            collection.Add(handle);
+            Hash.Add(handle);
         }
 
-        public void Clear(UnBufferAllDelegate unbuffer)
+        public void Clear(Room.MessageBufferProperty buffer)
         {
-            unbuffer(Hash);
+            buffer.RemoveAll(Hash);
 
             Hash.Clear();
             Dictionary.Clear();
@@ -53,9 +81,8 @@ namespace MNet
 
         public RpcBuffer()
         {
-            Dictionary = new Dictionary<(NetworkBehaviourID, RpcID), NetworkMessageCollection>();
-
-            Hash = new HashSet<BufferNetworkMessage>();
+            Dictionary = new();
+            Hash = new();
         }
     }
 }

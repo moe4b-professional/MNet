@@ -71,7 +71,7 @@ namespace MNet
         {
             var segment = new ArraySegment<byte>(raw);
 
-            InvokeMessages(segment, DeliveryMode.ReliableOrdered);
+            InvokeMessage(segment, DeliveryMode.ReliableOrdered, null);
         }
 
         void DisconnectCallback(DisconnectCode code, string reason) => InvokeDisconnect(code);

@@ -135,16 +135,31 @@ namespace MNet
 
         #region Message
         public event NetworkTransportMessageDelegate OnMessage;
-        void InvokeMessage(TClient client, NetworkMessage message, DeliveryMode mode, byte channel)
+        void InvokeMessage(TClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
-            OnMessage?.Invoke(client.ClientID, message, mode, channel);
+            OnMessage?.Invoke(client.ClientID, segment, mode, channel);
         }
 
-        protected virtual void QueueMessage(TClient client, NetworkMessage message, DeliveryMode mode, byte channel)
+        public virtual void QueueMessage(TConnection connection, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
+        {
+            if (Connections.TryGetValue(connection, out var client) == false)
+            {
+                Log.Warning($"Trying to Register Message from Connection: {connection} but said Connection was not Registered with Connections Dictionary");
+                return;
+            }
+
+            QueueMessage(client, segment, mode, channel, dispose);
+        }
+
+        public virtual void QueueMessage(TClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
         {
             InputQueue.Enqueue(Action);
 
-            void Action() => InvokeMessage(client, message, mode, channel);
+            void Action()
+            {
+                InvokeMessage(client, segment, mode, channel);
+                dispose?.Invoke();
+            }
         }
         #endregion
 
@@ -229,34 +244,6 @@ namespace MNet
         }
         #endregion
 
-        #region Register Messages
-        public virtual void RegisterMessages(TConnection connection, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
-        {
-            if (Connections.TryGetValue(connection, out var client) == false)
-            {
-                Log.Warning($"Trying to Register Message from Connection: {connection} but said Connection was not Registered with Connections Dictionary");
-                return;
-            }
-
-            RegisterMessages(client, segment, mode, channel);
-        }
-
-        public virtual void RegisterMessages(TClient sender, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
-        {
-            try
-            {
-                foreach (var message in NetworkMessage.Read(segment))
-                    QueueMessage(sender, message, mode, channel);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Invalid Network Messages Recieved from {sender.ClientID}");
-                Log.Error(ex);
-                Disconnect(sender, DisconnectCode.InvalidData);
-            }
-        }
-        #endregion
-
         protected abstract TClient CreateClient(NetworkClientID clientID, TConnection connection);
         protected virtual void DestroyClient(TClient client) { }
 
@@ -333,7 +320,7 @@ namespace MNet
 
     #region Delegates
     public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
-    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, NetworkMessage message, DeliveryMode mode, byte channel);
+    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
     #endregion
 }
