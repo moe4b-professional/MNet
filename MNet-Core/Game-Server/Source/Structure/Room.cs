@@ -111,16 +111,8 @@ namespace MNet
 
             NetworkClientInfo[] GetInfo() => Dictionary.ToArray(NetworkClient.ReadInfo);
 
-            public override void Start()
-            {
-                base.Start();
-
-                TransportContext.OnConnect += ConnectCallback;
-                TransportContext.OnDisconnect += DisconnectCallback;
-            }
-
             #region Connect & Add
-            void ConnectCallback(NetworkClientID id)
+            internal void ConnectCallback(NetworkClientID id)
             {
                 Log.Info($"Room {Room.ID}: Client {id} Connected");
             }
@@ -192,7 +184,7 @@ namespace MNet
             void Disconnect(NetworkClient client, DisconnectCode code) => Disconnect(client.ID, code);
             void Disconnect(NetworkClientID id, DisconnectCode code) => TransportContext.Disconnect(id, code);
 
-            void DisconnectCallback(NetworkClientID id)
+            internal void DisconnectCallback(NetworkClientID id)
             {
                 Log.Info($"Room {Room.ID}: Client {id} Disconnected");
 
@@ -935,6 +927,120 @@ namespace MNet
             #endregion
         }
 
+        public IncomingPacketsProperty IncomingPackets = new IncomingPacketsProperty();
+        public class IncomingPacketsProperty : Property
+        {
+            public override void Start()
+            {
+                base.Start();
+
+                Incoming = new ConcurrentQueue<Packet>();
+
+                TransportContext.OnConnect += QueueConnect;
+                TransportContext.OnMessage += QueueMessage;
+                TransportContext.OnDisconnect += QueueDisconnect;
+            }
+
+            ConcurrentQueue<Packet> Incoming;
+
+            public class Packet
+            {
+                public PacketType Type;
+
+                public NetworkClientID ClientID;
+
+                public ArraySegment<byte> Segment;
+                public DeliveryMode DeliveryMode;
+                public byte Channel;
+                public Action Dispose;
+
+                public void Connect(NetworkClientID clientID)
+                {
+                    Type = PacketType.Connection;
+
+                    this.ClientID = clientID;
+                }
+                public void Message(NetworkClientID clientID, ArraySegment<byte> segment, DeliveryMode deliveryMode, byte channel, Action dispose)
+                {
+                    Type = PacketType.Message;
+
+                    this.ClientID = clientID;
+                    this.Segment = segment;
+                    this.DeliveryMode = deliveryMode;
+                    this.Channel = channel;
+                    this.Dispose = dispose;
+                }
+                public void Disconnect(NetworkClientID clientID)
+                {
+                    Type = PacketType.Disconnection;
+
+                    this.ClientID = clientID;
+                }
+            }
+            public enum PacketType
+            {
+                Connection, Message, Disconnection
+            }
+
+            void QueueConnect(NetworkClientID client)
+            {
+                var packet = ObjectPool<Packet>.Lease();
+                packet.Connect(client);
+                Incoming.Enqueue(packet);
+            }
+            void QueueMessage(NetworkClientID client, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
+            {
+                var packet = ObjectPool<Packet>.Lease();
+                packet.Message(client, segment, mode, channel, dispose);
+                Incoming.Enqueue(packet);
+            }
+            void QueueDisconnect(NetworkClientID client)
+            {
+                var packet = ObjectPool<Packet>.Lease();
+                packet.Disconnect(client);
+                Incoming.Enqueue(packet);
+            }
+
+            public virtual void Poll()
+            {
+                var count = Incoming.Count;
+
+                while (true)
+                {
+                    if (Incoming.TryDequeue(out var packet) == false)
+                        break;
+
+                    switch (packet.Type)
+                    {
+                        case PacketType.Connection:
+                        {
+                            Clients.ConnectCallback(packet.ClientID);
+                        }
+                        break;
+
+                        case PacketType.Message:
+                        {
+                            Room.MessageRecievedCallback(packet.ClientID, packet.Segment, packet.DeliveryMode, packet.Channel);
+                            packet.Dispose?.Invoke();
+                        }
+                        break;
+
+                        case PacketType.Disconnection:
+                        {
+                            Clients.DisconnectCallback(packet.ClientID);
+                        }
+                        break;
+                    }
+
+                    ObjectPool<Packet>.Return(packet);
+
+                    count -= 1;
+
+                    if (count <= 0) break;
+                }
+            }
+        }
+
         public MessageBufferProperty MessageBuffer = new MessageBufferProperty();
         public class MessageBufferProperty : Property
         {
@@ -1076,6 +1182,7 @@ namespace MNet
             action(MessageBuffer);
             action(MessageDispatcher);
             action(System);
+            action(IncomingPackets);
         }
 
         public class Property
@@ -1123,7 +1230,6 @@ namespace MNet
             MessageDispatcher.RegisterHandler<PingRequest>(Ping);
 
             TransportContext = Realtime.RegisterContext(App.Transport, ID.Value);
-            TransportContext.OnMessage += MessageRecievedCallback;
 
             ForAllProperties(x => x.Start());
 
@@ -1154,7 +1260,7 @@ namespace MNet
         {
             Time.Calculate();
 
-            TransportContext.Poll();
+            IncomingPackets.Poll();
 
             OnTick?.Invoke();
         }
@@ -1278,22 +1384,6 @@ namespace MNet
 
             ForAllProperties(x => x.Set(this));
             ForAllProperties(x => x.Configure());
-        }
-    }
-
-    public abstract class MessageBufferHandle
-    {
-        protected internal abstract object GetTarget();
-    }
-    public class MessageBufferHandle<T> : MessageBufferHandle
-    {
-        public T Target;
-
-        protected internal override object GetTarget() => Target;
-
-        public MessageBufferHandle(T target)
-        {
-            this.Target = target;
         }
     }
 }

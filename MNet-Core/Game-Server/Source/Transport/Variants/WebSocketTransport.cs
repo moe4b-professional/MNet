@@ -171,7 +171,7 @@ namespace MNet
 
             var segment = new ArraySegment<byte>(args.RawData);
 
-            TransportContext.QueueMessage(Client, segment, DeliveryMode.ReliableOrdered, 0, null);
+            TransportContext.InvokeMessage(Client, segment, DeliveryMode.ReliableOrdered, 0, null);
         }
 
         protected override void OnClose(CloseEventArgs args)

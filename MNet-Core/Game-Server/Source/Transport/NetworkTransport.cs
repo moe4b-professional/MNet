@@ -78,8 +78,6 @@ namespace MNet
     {
         INetworkTransport Transport { get; }
 
-        void Poll();
-
         public event NetworkTransportConnectDelegate OnConnect;
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
@@ -87,7 +85,6 @@ namespace MNet
         void Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
         void Disconnect(NetworkClientID clientID, DisconnectCode code);
-
         void DisconnectAll(DisconnectCode code);
     }
 
@@ -102,8 +99,6 @@ namespace MNet
 
         public uint ID { get; protected set; }
 
-        public ConcurrentQueue<Action> InputQueue { get; protected set; }
-
         public AutoKeyCollection<NetworkClientID> ClientIDs { get; protected set; }
 
         public NetworkClientID ReserveClientID()
@@ -116,86 +111,28 @@ namespace MNet
         }
 
         public ConcurrentDictionary<NetworkClientID, TClient> Clients { get; protected set; }
-        public ConcurrentDictionary<TConnection, TClient> Connections { get; protected set; }
 
-        #region Connect
+        #region Callbacks
         public event NetworkTransportConnectDelegate OnConnect;
-        void InvokeConnect(TClient client)
+        internal void InvokeConnect(TClient client)
         {
             OnConnect?.Invoke(client.ClientID);
         }
 
-        protected virtual void QueueConnect(TClient client)
-        {
-            InputQueue.Enqueue(Action);
-
-            void Action() => InvokeConnect(client);
-        }
-        #endregion
-
-        #region Message
         public event NetworkTransportMessageDelegate OnMessage;
-        void InvokeMessage(TClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
+        internal void InvokeMessage(TClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
         {
-            OnMessage?.Invoke(client.ClientID, segment, mode, channel);
+            OnMessage?.Invoke(client.ClientID, segment, mode, channel, dispose);
         }
 
-        public virtual void QueueMessage(TConnection connection, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
-        {
-            if (Connections.TryGetValue(connection, out var client) == false)
-            {
-                Log.Warning($"Trying to Register Message from Connection: {connection} but said Connection was not Registered with Connections Dictionary");
-                return;
-            }
-
-            QueueMessage(client, segment, mode, channel, dispose);
-        }
-
-        public virtual void QueueMessage(TClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
-        {
-            InputQueue.Enqueue(Action);
-
-            void Action()
-            {
-                InvokeMessage(client, segment, mode, channel);
-                dispose?.Invoke();
-            }
-        }
-        #endregion
-
-        #region Disconnect
         public event NetworkTransportDisconnectDelegate OnDisconnect;
-        void InvokeDisconnect(TClient client)
+        internal void InvokeDisconnect(TClient client)
         {
             OnDisconnect?.Invoke(client.ClientID);
-
-            RemoveClient(client);
-        }
-
-        protected virtual void QueueDisconnect(TClient client)
-        {
-            InputQueue.Enqueue(Action);
-
-            void Action() => InvokeDisconnect(client);
         }
         #endregion
 
-        public virtual void Poll()
-        {
-            var count = InputQueue.Count;
-
-            while (true)
-            {
-                if (InputQueue.TryDequeue(out var action) == false) break;
-
-                action();
-                count -= 1;
-
-                if (count <= 0) break;
-            }
-        }
-
-        #region Register & Add Client
+        #region Register
         public virtual TClient RegisterClient(TConnection connection)
         {
             var id = ReserveClientID();
@@ -204,7 +141,7 @@ namespace MNet
 
             AddClient(id, connection, client);
 
-            QueueConnect(client);
+            InvokeConnect(client);
 
             return client;
         }
@@ -212,29 +149,31 @@ namespace MNet
         void AddClient(NetworkClientID id, TConnection connection, TClient client)
         {
             Clients.TryAdd(id, client);
-            Connections.TryAdd(connection, client);
 
             Statistics.Players.Add();
         }
         #endregion
 
-        #region Unregister & Remove Client
-        public virtual void UnregisterClient(TConnection connection)
+        #region Unregister
+        public virtual void UnregisterClient(TClient client)
         {
-            if (Connections.TryGetValue(connection, out var client) == false)
+            InvokeDisconnect(client);
+            RemoveClient(client);
+        }
+
+        void RemoveClient(NetworkClientID id)
+        {
+            if (Clients.TryGetValue(id, out var client) == false)
             {
-                Log.Warning($"Trying to Unregister Client with Connection '{connection}' but said Connection was not Registered with Connections Dictionary");
+                Log.Warning($"Trying to Disconnect Client with ID: {id} but said Connection was not Registered with Clients Dictionary");
                 return;
             }
 
-            UnregisterClient(client);
+            RemoveClient(client);
         }
-        public virtual void UnregisterClient(TClient client) => QueueDisconnect(client);
-
         void RemoveClient(TClient client)
         {
             Clients.TryRemove(client.ClientID);
-            Connections.TryRemove(client.Connection);
 
             FreeClientID(client.ClientID);
 
@@ -252,7 +191,7 @@ namespace MNet
         {
             if (Clients.TryGetValue(target, out var client) == false)
             {
-                Log.Warning($"No Transport Client Registered With ID: {target}");
+                Log.Warning($"No Transport Client Registered With ID: {target} on Send");
                 return;
             }
 
@@ -269,7 +208,7 @@ namespace MNet
         {
             if (Clients.TryGetValue(clientID, out var client) == false)
             {
-                Log.Warning($"No Transport Client Registered With ID: {clientID}");
+                Log.Warning($"No Transport Client Registered With ID: {clientID} to Disconnect");
                 return;
             }
 
@@ -293,9 +232,6 @@ namespace MNet
             ClientIDs = new AutoKeyCollection<NetworkClientID>(NetworkClientID.Min, NetworkClientID.Max, NetworkClientID.Increment, Constants.IdRecycleLifeTime);
 
             Clients = new ConcurrentDictionary<NetworkClientID, TClient>();
-            Connections = new ConcurrentDictionary<TConnection, TClient>();
-
-            InputQueue = new ConcurrentQueue<Action>();
         }
     }
     #endregion
@@ -320,7 +256,7 @@ namespace MNet
 
     #region Delegates
     public delegate void NetworkTransportConnectDelegate(NetworkClientID client);
-    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
+    public delegate void NetworkTransportMessageDelegate(NetworkClientID client, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose);
     public delegate void NetworkTransportDisconnectDelegate(NetworkClientID client);
     #endregion
 }

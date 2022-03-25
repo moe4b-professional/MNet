@@ -20,8 +20,6 @@ namespace MNet
 
         public const ushort Port = Utility.Port;
 
-        public Dictionary<NetPeer, LiteNetLibTransportContext> Routes { get; protected set; }
-
         public override int CheckMTU(DeliveryMode mode) => Utility.CheckMTU(mode);
 
         public override void Start()
@@ -51,13 +49,11 @@ namespace MNet
                 Reject(request, DisconnectCode.ConnectionRejected);
                 return;
             }
-
             if (RoomID.TryParse(key, out var room) == false)
             {
                 Reject(request, DisconnectCode.ConnectionRejected);
                 return;
             }
-
             if (Contexts.TryGetValue(room.Value, out var context) == false)
             {
                 Reject(request, DisconnectCode.InvalidContext);
@@ -66,28 +62,21 @@ namespace MNet
 
             var peer = request.Accept();
 
-            Routes[peer] = context;
+            var tag = new LiteNetLibClientTag();
+            tag.Context = context;
+
+            peer.Tag = tag;
         }
 
         public void OnPeerConnected(NetPeer peer)
         {
-            if (Routes.TryGetValue(peer, out var context) == false)
-            {
-                Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
-                return;
-            }
+            var tag = peer.Tag as LiteNetLibClientTag;
 
-            context.RegisterClient(peer);
+            tag.Client = tag.Context.RegisterClient(peer);
         }
-
         public void OnNetworkReceive(NetPeer peer, NetPacketReader packet, DeliveryMethod delivery, byte channel)
         {
-            if (Routes.TryGetValue(peer, out var context) == false)
-            {
-                Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
-                Disconnect(peer, DisconnectCode.InvalidData);
-                return;
-            }
+            var tag = peer.Tag as LiteNetLibClientTag;
 
             if (Utility.Delivery.Glossary.TryGetKey(delivery, out var mode) == false)
             {
@@ -98,20 +87,12 @@ namespace MNet
 
             var segment = packet.GetRemainingBytesSegment();
 
-            context.QueueMessage(peer, segment, mode, channel, packet.Recycle);
+            tag.Context.InvokeMessage(tag.Client, segment, mode, channel, packet.Recycle);
         }
-
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            if (Routes.TryGetValue(peer, out var context) == false)
-            {
-                Log.Warning($"Peer {peer.Id} not Registered with any Context Route");
-                return;
-            }
-
-            Routes.Remove(peer);
-
-            context.UnregisterClient(peer);
+            var tag = peer.Tag as LiteNetLibClientTag;
+            tag.Context.UnregisterClient(tag.Client);
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
@@ -134,8 +115,6 @@ namespace MNet
             Server = new NetManager(this);
             Server.ChannelsCount = 64;
             Server.UpdateTime = 1;
-
-            Routes = new Dictionary<NetPeer, LiteNetLibTransportContext>();
 
             new Thread(Run).Start();
         }
@@ -199,5 +178,11 @@ namespace MNet
         {
 
         }
+    }
+
+    class LiteNetLibClientTag
+    {
+        public LiteNetLibTransportContext Context;
+        public LiteNetLibTransportClient Client;
     }
 }
