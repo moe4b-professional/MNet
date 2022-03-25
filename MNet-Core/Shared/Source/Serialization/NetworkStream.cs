@@ -129,8 +129,19 @@ namespace MNet
             Position += 1;
         }
 
-        public void Insert(ArraySegment<byte> segment) => Insert(segment.Array, segment.Offset, segment.Count);
+        public void Insert(Span<byte> span) => Insert(span, 0, span.Length);
+        public void Insert(Span<byte> span, int offset, int count)
+        {
+            if (count > Remaining) Fit(count);
 
+            for (int i = offset; i < count; i++)
+            {
+                data[Position] = span[i];
+                Position += 1;
+            }
+        }
+
+        public void Insert(ArraySegment<byte> segment) => Insert(segment.Array, segment.Offset, segment.Count);
         public void Insert(byte[] source) => Insert(source, 0, source.Length);
         public void Insert(byte[] source, int offset, int count)
         {
@@ -166,6 +177,20 @@ namespace MNet
 
             return raw;
         }
+
+        /// <summary>
+        /// Retrieves the Next Bytes in Memory and Iterates the Position by the Length
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public Span<byte> TakeSpan(int length)
+        {
+            var span = new Span<byte>(data, Position, length);
+
+            Position += length;
+
+            return span;
+        }
         #endregion
 
         #region Write
@@ -200,7 +225,15 @@ namespace MNet
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
 
-            if (resolver == null) return false;
+            if (resolver == null)
+            {
+                NetworkSerializationResolver.Retrive(typeof(T));
+
+                resolver = NetworkSerializationExplicitResolver<T>.Instance;
+
+                if (resolver == null)
+                    return false;
+            }
 
             resolver.Serialize(this, value);
             return true;

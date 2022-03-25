@@ -399,6 +399,19 @@ namespace MNet
             return reader.Take();
         }
     }
+    [Preserve]
+    public sealed class SByteNetworkSerializationResolver : NetworkSerializationExplicitResolver<sbyte>
+    {
+        public override void Serialize(NetworkStream writer, sbyte instance)
+        {
+            writer.Insert((byte)instance);
+        }
+
+        public override sbyte Deserialize(NetworkStream reader)
+        {
+            return (sbyte)reader.Take();
+        }
+    }
 
     [Preserve]
     public sealed class BoolNetworkSerializationResolver : NetworkSerializationExplicitResolver<bool>
@@ -410,7 +423,7 @@ namespace MNet
 
         public override bool Deserialize(NetworkStream reader)
         {
-            reader.Read(out byte value);
+            var value = reader.Take();
 
             return value == 0 ? false : true;
         }
@@ -421,9 +434,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, short instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(short)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override short Deserialize(NetworkStream reader)
@@ -440,9 +456,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, ushort instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(ushort)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override ushort Deserialize(NetworkStream reader)
@@ -460,9 +479,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, int instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(int)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override int Deserialize(NetworkStream reader)
@@ -479,9 +501,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, uint instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(uint)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override uint Deserialize(NetworkStream reader)
@@ -499,9 +524,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, long instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(long)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override long Deserialize(NetworkStream reader)
@@ -518,9 +546,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, ulong instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(ulong)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override ulong Deserialize(NetworkStream reader)
@@ -538,9 +569,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, float instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(float)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override float Deserialize(NetworkStream reader)
@@ -558,9 +592,12 @@ namespace MNet
     {
         public override void Serialize(NetworkStream writer, double instance)
         {
-            var binary = BitConverter.GetBytes(instance);
+            Span<byte> span = stackalloc byte[sizeof(double)];
 
-            writer.Insert(binary);
+            if (BitConverter.TryWriteBytes(span, instance) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override double Deserialize(NetworkStream reader)
@@ -576,6 +613,8 @@ namespace MNet
     [Preserve]
     public sealed class StringNetworkSerializationResolver : NetworkSerializationExplicitResolver<string>
     {
+        public const int MaxStackAllocationSize = 1024;
+
         public override void Serialize(NetworkStream writer, string instance)
         {
             if (instance == null)
@@ -588,19 +627,24 @@ namespace MNet
             }
             else
             {
-                var binary = Encoding.UTF8.GetBytes(instance);
+                var size = Encoding.UTF8.GetByteCount(instance);
 
-                Helper.Length.Collection.WriteValue(writer, binary.Length);
+                Span<byte> span = size > MaxStackAllocationSize ? new byte[size] : stackalloc byte[size];
 
-                writer.Insert(binary);
+                size = Encoding.UTF8.GetBytes(instance, span);
+
+                Helper.Length.Collection.WriteValue(writer, size);
+                writer.Insert(span, 0, size);
             }
         }
 
         public override string Deserialize(NetworkStream reader)
         {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
+            if (Helper.Length.Collection.Read(reader, out var length) == false)
+                return null;
 
-            if (length == 0) return string.Empty;
+            if (length == 0)
+                return string.Empty;
 
             var value = Encoding.UTF8.GetString(reader.Data, reader.Position, length);
 
@@ -619,16 +663,19 @@ namespace MNet
 
         public override void Serialize(NetworkStream writer, Guid instance)
         {
-            var binary = instance.ToByteArray();
+            Span<byte> span = stackalloc byte[Size];
 
-            writer.Insert(binary);
+            if (instance.TryWriteBytes(span) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
+
+            writer.Insert(span);
         }
 
         public override Guid Deserialize(NetworkStream reader)
         {
-            var binary = reader.Take(Size);
+            var span = reader.TakeSpan(Size);
 
-            var value = new Guid(binary);
+            var value = new Guid(span);
 
             return value;
         }
@@ -673,6 +720,8 @@ namespace MNet
     [Preserve]
     public class IPAddressNetworkSerializationResolver : NetworkSerializationExplicitResolver<IPAddress>
     {
+        public const int MaxSize = 16;
+
         public override void Serialize(NetworkStream writer, IPAddress instance)
         {
             if (instance == null)
@@ -681,23 +730,25 @@ namespace MNet
                 return;
             }
 
-            var bytes = instance.GetAddressBytes();
+            Span<byte> span = stackalloc byte[MaxSize];
 
-            var length = (byte)bytes.Length;
+            if(instance.TryWriteBytes(span, out var length) == false)
+                throw new InvalidOperationException($"Couldn't Convert to Binary");
 
-            writer.Insert(length);
-            writer.Insert(bytes);
+            writer.Insert((byte)length);
+            writer.Insert(span, 0, length);
         }
 
         public override IPAddress Deserialize(NetworkStream reader)
         {
             var length = reader.Take();
 
-            if (length == 0) return null;
+            if (length == 0)
+                return null;
 
-            var binary = reader.Take(length);
+            var span = reader.TakeSpan(length);
 
-            var value = new IPAddress(binary);
+            var value = new IPAddress(span);
 
             return value;
         }

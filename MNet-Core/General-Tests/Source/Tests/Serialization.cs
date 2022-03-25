@@ -3,7 +3,7 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Net;
 using System.Runtime.CompilerServices;
 
 namespace MNet
@@ -99,6 +99,26 @@ namespace MNet
         public void EmptyString()
         {
             string original = "";
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, copy);
+        }
+
+        [Test]
+        public void IpAddress()
+        {
+            var original = IPAddress.Loopback;
+
+            var copy = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, copy);
+        }
+
+        [Test]
+        public void HashString()
+        {
+            string original = "%K<@2s7UDp('N_rS,'j`@c8)fX4B^Eqy";
 
             var copy = NetworkSerializer.Clone(original);
 
