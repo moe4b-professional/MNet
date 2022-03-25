@@ -942,6 +942,9 @@ namespace MNet
 
             public object[] ToArray()
             {
+                if (List.Count == 0)
+                    return null;
+
                 var array = new object[List.Count];
 
                 for (int i = 0; i < List.Count; i++)

@@ -18,6 +18,7 @@ using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 using Cysharp.Threading.Tasks;
 using MB;
+using System.Runtime.CompilerServices;
 
 namespace MNet
 {
@@ -79,7 +80,8 @@ namespace MNet
                     return false;
                 }
 
-                if (Prediction.Process(ref payload, mode) == Prediction.Response.Consume) return true;
+                if (Prediction.Process(ref payload, mode) == Prediction.Response.Consume)
+                    return true;
 
                 if (OfflineMode.On)
                 {
@@ -139,22 +141,56 @@ namespace MNet
 
                 public static event BufferDelegate OnBegin;
 
-                internal static async UniTask Apply(IList<object> list)
+                static IList<object> list;
+                static int index;
+
+                public static void Apply(IList<object> list)
                 {
                     if (IsOn) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
 
                     IsOn = true;
                     OnBegin?.Invoke(list);
 
-                    for (int i = 0; i < list.Count; i++)
+                    if (OfflineMode.On && OfflineMode.Scene.HasValue)
                     {
-                        while (Realtime.Pause.Active) await UniTask.WaitWhile(Realtime.Pause.IsOn);
-
-                        var item = list[i];
-                        MessageDispatcher.Invoke(item);
+                        var payload = new LoadScenePayload(OfflineMode.Scene.Value, NetworkSceneLoadMode.Single);
+                        MessageDispatcher.Invoke(payload);
                     }
 
+                    Buffer.list = list;
+                    Buffer.index = 0;
+
+                    NetworkAPI.OnProcess += Process;
+
+                    if (list == null || list.Count == 0)
+                        End();
+                }
+
+                static void Process()
+                {
+                    while (true)
+                    {
+                        if (Realtime.Pause.Active)
+                            break;
+
+                        MessageDispatcher.Invoke(list[index]);
+
+                        index += 1;
+
+                        if (index >= list.Count)
+                        {
+                            End();
+                            break;
+                        }
+                    }
+                }
+
+                public static void End()
+                {
                     IsOn = false;
+
+                    NetworkAPI.OnProcess -= Process;
+                    
                     OnEnd?.Invoke(list);
                 }
 
@@ -306,7 +342,7 @@ namespace MNet
                     {
                         var id = new NetworkClientID();
                         var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Profile) };
-                        var buffer = new object[] { };
+                        object[] buffer = null;
                         var time = TimeResponse.Write(default, request.Time);
 
                         var response = new RegisterClientResponse(id, OfflineMode.RoomInfo, clients, id, buffer, time);

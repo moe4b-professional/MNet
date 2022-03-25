@@ -29,6 +29,8 @@ namespace MNet
 
             internal static AutoKeyCollection<NetworkEntityID> EntityIDs { get; private set; }
 
+            internal static byte? Scene { get; private set; }
+
             internal static void Configure()
             {
                 On = false;
@@ -36,12 +38,13 @@ namespace MNet
                 EntityIDs = new AutoKeyCollection<NetworkEntityID>(NetworkEntityID.Min, NetworkEntityID.Max, NetworkEntityID.Increment, Constants.IdRecycleLifeTime);
             }
 
-            internal static RoomInfo Start(string name, byte capacity, AttributesCollection attributes)
+            internal static RoomInfo Start(RoomOptions options)
             {
                 On = true;
 
                 var id = new RoomID(0);
-                RoomInfo = new RoomInfo(id, name, capacity, 1, false, false, attributes);
+                RoomInfo = new RoomInfo(id, options.Name, options.Capacity, 1, false, false, options.Attributes);
+                Scene = options.Scene;
 
                 return RoomInfo;
             }

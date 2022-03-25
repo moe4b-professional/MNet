@@ -64,10 +64,7 @@ namespace MNet
             {
                 if (offline)
                 {
-                    var capacity = options.Capacity;
-                    var attributes = options.Attributes;
-
-                    var info = OfflineMode.Start(options.Name, capacity, attributes);
+                    var info = OfflineMode.Start(options);
 
                     OnCreate?.Invoke(info);
 
@@ -102,7 +99,7 @@ namespace MNet
                 Clients.AddAll(response.Clients);
                 Master.Assign(response.Master);
 
-                Client.Buffer.Apply(response.Buffer).Forget();
+                Client.Buffer.Apply(response.Buffer);
             }
 
             public static class Info
