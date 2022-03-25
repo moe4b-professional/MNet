@@ -70,13 +70,14 @@ namespace MNet
 
         public void OnPeerConnected(NetPeer peer)
         {
-            var tag = peer.Tag as LiteNetLibClientTag;
+            var tag = LiteNetLibClientTag.Retrieve(peer, out var context, out var client);
 
-            tag.Client = tag.Context.RegisterClient(peer);
+            client = context.RegisterClient(peer);
+            tag.Client = client;
         }
         public void OnNetworkReceive(NetPeer peer, NetPacketReader packet, DeliveryMethod delivery, byte channel)
         {
-            var tag = peer.Tag as LiteNetLibClientTag;
+            LiteNetLibClientTag.Retrieve(peer, out var context, out var client);
 
             if (Utility.Delivery.Glossary.TryGetKey(delivery, out var mode) == false)
             {
@@ -87,12 +88,13 @@ namespace MNet
 
             var segment = packet.GetRemainingBytesSegment();
 
-            tag.Context.InvokeMessage(tag.Client, segment, mode, channel, packet.Recycle);
+            context.InvokeMessage(client, segment, mode, channel, packet.Recycle);
         }
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            var tag = peer.Tag as LiteNetLibClientTag;
-            tag.Context.UnregisterClient(tag.Client);
+            LiteNetLibClientTag.Retrieve(peer, out var context, out var client);
+
+            context.UnregisterClient(client);
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError) { }
@@ -184,5 +186,16 @@ namespace MNet
     {
         public LiteNetLibTransportContext Context;
         public LiteNetLibTransportClient Client;
+
+        public static LiteNetLibClientTag Retrieve(NetPeer peer) => peer.Tag as LiteNetLibClientTag;
+        public static LiteNetLibClientTag Retrieve(NetPeer peer, out LiteNetLibTransportContext context, out LiteNetLibTransportClient client)
+        {
+            var tag = Retrieve(peer);
+
+            context = tag.Context;
+            client = tag.Client;
+
+            return tag;
+        }
     }
 }

@@ -161,16 +161,6 @@ namespace MNet
             RemoveClient(client);
         }
 
-        void RemoveClient(NetworkClientID id)
-        {
-            if (Clients.TryGetValue(id, out var client) == false)
-            {
-                Log.Warning($"Trying to Disconnect Client with ID: {id} but said Connection was not Registered with Clients Dictionary");
-                return;
-            }
-
-            RemoveClient(client);
-        }
         void RemoveClient(TClient client)
         {
             Clients.TryRemove(client.ClientID);
@@ -214,7 +204,6 @@ namespace MNet
 
             Disconnect(client, code);
         }
-
         public virtual void DisconnectAll(DisconnectCode code)
         {
             foreach (var client in Clients.Values)
