@@ -43,10 +43,7 @@ namespace MNet
         public delegate void ResponseDelegate<TResult>(TResult result, RestError error);
 
         #region GET
-        public Task<TResult> GET<TResult>(string path)
-        {
-            return GET<TResult>(IP, path);
-        }
+        public Task<TResult> GET<TResult>(string path) => GET<TResult>(IP, path);
         public async Task<TResult> GET<TResult>(string ip, string path)
         {
             var url = FormatURL(ip, path);
@@ -54,24 +51,30 @@ namespace MNet
             var response = await Client.GetAsync(url);
             EnsureSuccess(response);
 
-            var result = await ReadResult<TResult>(response);
+            var result = await Read<TResult>(response);
 
             return result;
         }
         #endregion
 
         #region POST
-        public Task<TResult> POST<TResult>(string path, object payload) => POST<TResult>(IP, path, payload);
-        public async Task<TResult> POST<TResult>(string ip, string path, object payload)
+        public Task<TResult> POST<TRequest, TResult>(string path, TRequest payload) => POST<TRequest, TResult>(IP, path, payload);
+        public async Task<TResult> POST<TRequest, TResult>(string ip, string path, TRequest payload)
         {
             var url = FormatURL(ip, path);
 
-            var content = WriteContent(payload);
+            var stream = NetworkStream.Pool.Take();
+
+            stream.Write(payload);
+            var content = new ByteArrayContent(stream.Data, 0, stream.Position);
 
             var response = await Client.PostAsync(url, content);
+
+            NetworkStream.Pool.Return(stream);
+
             EnsureSuccess(response);
 
-            var result = await ReadResult<TResult>(response);
+            var result = await Read<TResult>(response);
 
             return result;
         }
@@ -98,7 +101,7 @@ namespace MNet
             throw new RestException(code, message.ReasonPhrase);
         }
 
-        public static ByteArrayContent WriteContent(object payload)
+        public static ByteArrayContent Write<T>(T payload)
         {
             var binary = NetworkSerializer.Serialize(payload);
 
@@ -107,13 +110,18 @@ namespace MNet
             return content;
         }
 
-        public static async Task<TPayload> ReadResult<TPayload>(HttpResponseMessage response)
+        public static async Task<TPayload> Read<TPayload>(HttpResponseMessage response)
         {
-            var binary = await response.Content.ReadAsByteArrayAsync();
+            var content = await response.Content.ReadAsStreamAsync();
 
-            var result = NetworkSerializer.Deserialize<TPayload>(binary);
+            using (NetworkStream.Pool.Lease(out var stream))
+            {
+                stream.Read(content);
 
-            return result;
+                var result = stream.Read<TPayload>();
+
+                return result;
+            }
         }
     }
 
@@ -194,65 +202,74 @@ namespace MNet
         public static void Write(RestResponse response, RestStatusCode code) => Write(response, code, code.ToString());
         public static void Write(RestResponse response, RestStatusCode code, string message)
         {
-            var data = Encoding.UTF8.GetBytes(message);
-
             response.StatusCode = (int)code;
             response.StatusDescription = message;
 
-            response.ContentEncoding = Encoding.UTF8;
-            response.WriteContent(data);
+            var length = Encoding.UTF8.GetByteCount(message);
+            Span<byte> span = length > 1024 ? new byte[length] : stackalloc byte[length];
+            length = Encoding.UTF8.GetBytes(message, span);
 
+            response.ContentEncoding = Encoding.UTF8;
+            response.WriteContent(span);
+            
             response.Close();
         }
 
         public static void Write<TPayload>(RestResponse response, TPayload payload)
         {
-            var raw = NetworkSerializer.Serialize(payload);
+            using (NetworkStream.Pool.Lease(out var stream))
+            {
+                response.StatusCode = (int)HttpStatusCode.OK;
 
-            response.StatusCode = (int)HttpStatusCode.OK;
-            response.WriteContent(raw);
-            response.Close();
+                stream.Write(payload);
+                var span = stream.ToSpan();
+                response.WriteContent(span);
+
+                response.Close();
+            }
         }
         #endregion
 
         #region Read
-        public static void Read<TPayload>(RestRequest request, out TPayload payload) => payload = Read<TPayload>(request);
-        public static TPayload Read<TPayload>(RestRequest request)
-        {
-            var binary = Read(request);
-
-            var value = NetworkSerializer.Deserialize<TPayload>(binary);
-
-            return value;
-        }
-
         public static bool TryRead<TPayload>(RestRequest request, RestResponse response, out TPayload payload)
         {
-            try
+            using (NetworkStream.Pool.Lease(out var stream))
             {
-                Read(request, out payload);
-            }
-            catch (Exception)
-            {
-                Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
-                payload = default;
-                return false;
-            }
+                stream.Read(request.InputStream, (int)request.ContentLength64);
 
-            return true;
-        }
+                try
+                {
+                    payload = stream.Read<TPayload>();
+                }
+                catch (Exception)
+                {
+                    Write(response, RestStatusCode.InvalidPayload, $"Error Reading Request");
+                    payload = default;
+                    return false;
+                }
 
-        public static byte[] Read(RestRequest request)
-        {
-            using (var memory = new MemoryStream())
-            {
-                request.InputStream.CopyTo(memory);
-
-                var binary = memory.ToArray();
-
-                return binary;
+                return true;
             }
         }
         #endregion
+
+        public static void WriteContent(this RestResponse response, Span<byte> span)
+        {
+            if (response == null)
+                throw new ArgumentNullException("response");
+
+            if (span == null)
+                throw new ArgumentNullException("content");
+
+            if (span.Length == 0)
+            {
+                response.Close();
+                return;
+            }
+
+            response.ContentLength64 = span.Length;
+            response.OutputStream.Write(span);
+            response.OutputStream.Close();
+        }
     }
 }

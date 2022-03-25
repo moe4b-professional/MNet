@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -13,10 +14,20 @@ namespace MNet
         protected byte[] data;
         public byte[] Data { get { return data; } }
 
-        public NetworkStream Set(ArraySegment<byte> segment)
+        public NetworkStream Assign(ArraySegment<byte> segment)
         {
             data = segment.Array;
             Position = segment.Offset;
+
+            return this;
+        }
+
+        public NetworkStream Read(Stream stream) => Read(stream, (int)(stream.Length));
+        public NetworkStream Read(Stream stream, int count)
+        {
+            if (count > Remaining) Fit(count);
+
+            stream.Read(data, Position, count);
 
             return this;
         }
@@ -85,11 +96,14 @@ namespace MNet
         /// Returns an Array Segment Representing the Current State of the Stream
         /// </summary>
         /// <returns></returns>
-        public ArraySegment<byte> Segment() => Segment(0, Position);
-        public ArraySegment<byte> Segment(int offset, int count)
+        public ArraySegment<byte> ToSegment() => ToSegment(0, Position);
+        public ArraySegment<byte> ToSegment(int offset, int count)
         {
             return new ArraySegment<byte>(data, offset, count);
         }
+
+        public Span<byte> ToSpan() => ToSpan(0, Position);
+        public Span<byte> ToSpan(int offset, int count) => new Span<byte>(data, offset, count);
 
         /// <summary>
         /// Clones the Stream to a Byte Array
@@ -373,17 +387,20 @@ namespace MNet
 
             public static Handle Lease(out NetworkStream stream)
             {
+                stream = Take();
+                return new Handle(stream);
+            }
+            public static NetworkStream Take()
+            {
                 lock (Queue)
                 {
                     if (Queue.Count > 0)
                     {
-                        stream = Queue.Dequeue();
-                        return new Handle(stream);
+                        return Queue.Dequeue();
                     }
                 }
 
-                stream = Create();
-                return new Handle(stream);
+                return Create();
             }
 
             static NetworkStream Create()

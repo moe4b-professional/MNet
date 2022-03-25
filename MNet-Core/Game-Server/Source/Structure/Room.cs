@@ -1167,7 +1167,7 @@ namespace MNet
                 NetworkWriter.Write(typeof(T));
                 NetworkWriter.Write(payload);
 
-                var segment = NetworkWriter.Segment();
+                var segment = NetworkWriter.ToSegment();
                 TransportContext.Send(target.ID, segment, mode, channel);
             }
         }
@@ -1179,7 +1179,7 @@ namespace MNet
                 NetworkWriter.Write(typeof(T));
                 NetworkWriter.Write(payload);
 
-                var segment = NetworkWriter.Segment();
+                var segment = NetworkWriter.ToSegment();
 
                 for (int i = 0; i < Clients.Count; i++)
                 {
@@ -1203,7 +1203,7 @@ namespace MNet
 
         void MessageRecievedCallback(NetworkClientID id, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
-            using (NetworkReader.Set(segment))
+            using (NetworkReader.Assign(segment))
             {
                 Type type;
                 try

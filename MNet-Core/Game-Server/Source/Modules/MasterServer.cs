@@ -28,7 +28,7 @@ namespace MNet
             var info = GameServer.Info.Read();
             var payload = new RegisterGameServerRequest(info, ApiKey.Token);
 
-            var response = await Rest.POST<RegisterGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Register, payload);
+            var response = await Rest.POST<RegisterGameServerRequest, RegisterGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Register, payload);
 
             Log.Info(response.RemoteConfig);
 
@@ -40,7 +40,7 @@ namespace MNet
         {
             var payload = new RemoveGameServerRequest(GameServer.Info.ID, ApiKey.Token);
 
-            var response = await Rest.POST<RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Unregister, payload);
+            var response = await Rest.POST<RemoveGameServerRequest, RemoveGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Unregister, payload);
 
             AppsAPI.Clear();
         }

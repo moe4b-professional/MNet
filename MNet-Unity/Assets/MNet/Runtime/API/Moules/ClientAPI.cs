@@ -92,7 +92,7 @@ namespace MNet
                     NetworkWriter.Write(typeof(T));
                     NetworkWriter.Write(payload);
 
-                    var segment = NetworkWriter.Segment();
+                    var segment = NetworkWriter.ToSegment();
                     Realtime.Send(segment, mode, channel);
                 }
 
@@ -121,7 +121,7 @@ namespace MNet
 
             static void MessageCallback(ArraySegment<byte> segment, DeliveryMode mode)
             {
-                using (NetworkReader.Set(segment))
+                using (NetworkReader.Assign(segment))
                 {
                     var type = NetworkReader.Read<Type>();
                     MessageDispatcher.Invoke(type, NetworkReader);

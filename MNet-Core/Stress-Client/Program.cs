@@ -94,7 +94,7 @@ namespace MNet
 
             var request = new CreateRoomRequest(AppID, GameVersion, options);
 
-            var info = await RestAPI.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
+            var info = await RestAPI.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, request);
 
             return info;
         }
@@ -181,7 +181,7 @@ namespace MNet
         {
             var segment = packet.GetRemainingBytesSegment();
 
-            using (reader.Set(segment))
+            using (reader.Assign(segment))
             {
                 var type = reader.Read<Type>();
 
@@ -240,7 +240,7 @@ namespace MNet
                 writer.Write(typeof(T));
                 writer.Write(payload);
 
-                var segment = writer.Segment();
+                var segment = writer.ToSegment();
 
                 Peer.Send(segment.Array, segment.Offset, segment.Count, delivery);
             }

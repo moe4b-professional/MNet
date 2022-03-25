@@ -753,7 +753,7 @@ namespace MNet
 		void ReadAll<T>(IList<T> list, byte[] binary)
 			where T : ParametersProperty.Property
 		{
-            using (reader.Set(binary))
+            using (reader.Assign(binary))
             {
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -1033,7 +1033,7 @@ namespace MNet
 		[NetworkRPC]
 		void BufferLayerWeights(byte[] binary, RpcInfo info)
 		{
-			using (reader.Set(binary))
+			using (reader.Assign(binary))
 			{
 				for (int i = 0; i < layers.Count; i++)
 				{
