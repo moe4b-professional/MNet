@@ -59,6 +59,7 @@ namespace MNet
                 Entities.Configure();
                 RPR.Configure();
                 System.Configure();
+                Buffer.Configure();
 
                 Realtime.OnConnect += ConnectCallback;
                 Realtime.OnMessage += MessageCallback;
@@ -137,19 +138,23 @@ namespace MNet
             {
                 public static bool IsOn { get; private set; } = false;
 
-                public delegate void BufferDelegate(IList<object> list);
+                public delegate void BufferDelegate();
 
                 public static event BufferDelegate OnBegin;
 
-                static IList<object> list;
-                static int index;
+                static NetworkStream NetworkReader;
 
-                public static void Apply(IList<object> list)
+                internal static void Configure()
+                {
+                    NetworkReader = new NetworkStream();
+                }
+
+                internal static void Apply(ArraySegment<byte> buffer)
                 {
                     if (IsOn) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
 
                     IsOn = true;
-                    OnBegin?.Invoke(list);
+                    OnBegin?.Invoke();
 
                     if (OfflineMode.On && OfflineMode.Scene.HasValue)
                     {
@@ -157,13 +162,12 @@ namespace MNet
                         MessageDispatcher.Invoke(payload);
                     }
 
-                    Buffer.list = list;
-                    Buffer.index = 0;
-
                     NetworkAPI.OnProcess += Process;
 
-                    if (list == null || list.Count == 0)
+                    if (buffer.Count == 0)
                         End();
+                    else
+                        NetworkReader.Assign(buffer);
                 }
 
                 static void Process()
@@ -173,11 +177,11 @@ namespace MNet
                         if (Realtime.Pause.Active)
                             break;
 
-                        MessageDispatcher.Invoke(list[index]);
+                        var type = NetworkReader.Read<Type>();
 
-                        index += 1;
+                        MessageDispatcher.Invoke(type, NetworkReader);
 
-                        if (index >= list.Count)
+                        if(NetworkReader.Remaining == 0)
                         {
                             End();
                             break;
@@ -191,7 +195,7 @@ namespace MNet
 
                     NetworkAPI.OnProcess -= Process;
                     
-                    OnEnd?.Invoke(list);
+                    OnEnd?.Invoke();
                 }
 
                 public static event BufferDelegate OnEnd;
@@ -342,7 +346,7 @@ namespace MNet
                     {
                         var id = new NetworkClientID();
                         var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Profile) };
-                        object[] buffer = null;
+                        var buffer = default(ArraySegment<byte>);
                         var time = TimeResponse.Write(default, request.Time);
 
                         var response = new RegisterClientResponse(id, OfflineMode.RoomInfo, clients, id, buffer, time);

@@ -225,8 +225,8 @@ namespace MNet
         NetworkClientID master;
         public NetworkClientID Master => master;
 
-        object[] buffer;
-        public object[] Buffer => buffer;
+        ArraySegment<byte> buffer;
+        public ArraySegment<byte> Buffer => buffer;
 
         TimeResponse time;
         public TimeResponse Time => time;
@@ -241,7 +241,7 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, object[] buffer, TimeResponse time)
+        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, ArraySegment<byte> buffer, TimeResponse time)
         {
             this.id = id;
             this.room = room;

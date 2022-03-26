@@ -391,7 +391,7 @@ namespace MNet
             NetworkAPI.Client.Buffer.OnEnd += ReadyAfterBufferCallback;
         }
 
-        void ReadyAfterBufferCallback(IList<object> list)
+        void ReadyAfterBufferCallback()
         {
             NetworkAPI.Client.Buffer.OnEnd -= ReadyAfterBufferCallback;
             Ready();

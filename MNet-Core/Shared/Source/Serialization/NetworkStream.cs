@@ -289,7 +289,16 @@ namespace MNet
         bool ResolveExplicit<T>(ref T value)
         {
             var resolver = NetworkSerializationExplicitResolver<T>.Instance;
-            if (resolver == null) return false;
+
+            if (resolver == null)
+            {
+                NetworkSerializationResolver.Retrive(typeof(T));
+
+                resolver = NetworkSerializationExplicitResolver<T>.Instance;
+
+                if (resolver == null)
+                    return false;
+            }
 
             value = resolver.Deserialize(this);
             return true;

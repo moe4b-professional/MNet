@@ -146,7 +146,7 @@ namespace MNet
 
                 var time = Time.CreateResponse(request.Time);
 
-                ///DO NOT PASS the Message Buffer in as an argument for the Response
+                ///DO NOT PASS the Message Buffer list in as an argument for the Response
                 ///You'll get what I can only describe as a very rare single-threaded race condition
                 ///In reality this is because the Response will be serialized later on
                 ///And the MessageBuffer.List will get passed by reference
@@ -155,7 +155,7 @@ namespace MNet
                 ///Because by the time the buffer list gets serialized, it would be the latest version in the room
                 ///And the client will still recieve the entity spawn command in real-time because they are now registered
                 ///And yeah ... don't ask me how I found this bug :P
-                var buffer = MessageBuffer.ToArray();
+                var buffer = MessageBuffer.ToSegment();
 
                 var room = Info.Get();
                 var clients = GetInfo();
@@ -1046,17 +1046,28 @@ namespace MNet
         {
             public List<MessageBufferHandle> List { get; protected set; }
 
-            public object[] ToArray()
-            {
-                if (List.Count == 0)
-                    return null;
+            NetworkStream Writer;
 
-                var array = new object[List.Count];
+            public override void Configure()
+            {
+                base.Configure();
+
+                Writer = NetworkStream.Pool.Take();
+
+                Room.OnStop += StopRoomCallback;
+            }
+
+            public ArraySegment<byte> ToSegment()
+            {
+                Writer.Reset();
+
+                if (List.Count == 0)
+                    return default;
 
                 for (int i = 0; i < List.Count; i++)
-                    array[i] = List[i].GetTarget();
+                    List[i].Write(Writer);
 
-                return array;
+                return Writer.ToSegment();
             }
 
             public MessageBufferHandle<T> Add<T>(T payload)
@@ -1080,6 +1091,11 @@ namespace MNet
             public int RemoveAll(Predicate<MessageBufferHandle> predicate)
             {
                 return List.RemoveAll(predicate);
+            }
+
+            void StopRoomCallback(Room room)
+            {
+                NetworkStream.Pool.Return(Writer);
             }
 
             public MessageBufferProperty()

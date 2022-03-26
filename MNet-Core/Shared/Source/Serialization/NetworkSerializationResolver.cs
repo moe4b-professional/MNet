@@ -778,6 +778,29 @@ namespace MNet
     }
 
     [Preserve]
+    public sealed class ByteArraySegmentSerilizationResolver : NetworkSerializationExplicitResolver<ArraySegment<byte>>
+    {
+        public override void Serialize(NetworkStream writer, ArraySegment<byte> instance)
+        {
+            Helper.Length.Write(writer, instance.Count);
+
+            writer.Insert(instance);
+
+            for (int i = 0; i < instance.Count; i++)
+                writer.Write(instance[i]);
+        }
+
+        public override ArraySegment<byte> Deserialize(NetworkStream reader)
+        {
+            Helper.Length.Read(reader, out var length);
+
+            var array = reader.Take(length);
+
+            return new ArraySegment<byte>(array);
+        }
+    }
+
+    [Preserve]
     public sealed class ObjectArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<object[]>
     {
         public override void Serialize(NetworkStream writer, object[] instance)
@@ -1236,8 +1259,8 @@ namespace MNet
         {
             Helper.Length.Write(writer, instance.Count);
 
-            for (int i = instance.Offset; i < instance.Array.Length; i++)
-                writer.Write(instance.Array[i]);
+            for (int i = 0; i < instance.Count; i++)
+                writer.Write(instance[i]);
         }
 
         public override ArraySegment<TElement> Deserialize(NetworkStream reader)
@@ -1246,11 +1269,10 @@ namespace MNet
 
             var array = new TElement[length];
 
-            for (int i = 0; i < length; i++) array[i] = reader.Read<TElement>();
+            for (int i = 0; i < length; i++)
+                array[i] = reader.Read<TElement>();
 
-            var segment = new ArraySegment<TElement>(array);
-
-            return segment;
+            return new ArraySegment<TElement>(array);
         }
     }
 

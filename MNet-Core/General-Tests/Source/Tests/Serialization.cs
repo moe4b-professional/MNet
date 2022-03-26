@@ -148,9 +148,9 @@ namespace MNet
         [Test]
         public void ArraySegment()
         {
-            var array = new int[] { 42, 43, 44, 45 };
+            var array = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
 
-            var original = new ArraySegment<int>(array, 1, 3);
+            var original = new ArraySegment<int>(array, 2, 4);
 
             var copy = NetworkSerializer.Clone(original);
 

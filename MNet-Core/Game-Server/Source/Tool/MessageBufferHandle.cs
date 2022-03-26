@@ -8,14 +8,18 @@ namespace MNet
 {
     public abstract class MessageBufferHandle
     {
-        protected internal abstract object GetTarget();
+        internal abstract void Write(NetworkStream stream);
     }
 
     public class MessageBufferHandle<T> : MessageBufferHandle
     {
         public T Target;
 
-        protected internal override object GetTarget() => Target;
+        internal override void Write(NetworkStream stream)
+        {
+            stream.Write(typeof(T));
+            stream.Write(Target);
+        }
 
         public MessageBufferHandle(T target)
         {
