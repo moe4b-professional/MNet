@@ -84,7 +84,6 @@ namespace MNet
 
         #region Callbacks
         public void OnPeerConnected(NetPeer peer) => InvokeConnect();
-
         public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
             var mode = Utility.Delivery.Glossary[deliveryMethod];
@@ -93,7 +92,6 @@ namespace MNet
 
             InvokeMessage(segment, mode, reader.Recycle);
         }
-
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
             var code = Utility.Disconnect.InfoToCode(info);

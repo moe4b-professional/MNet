@@ -66,14 +66,12 @@ namespace MNet
 
         #region Callbacks
         void ConnectCallback() => InvokeConnect();
-
         void RecievedMessageCallback(byte[] raw)
         {
             var segment = new ArraySegment<byte>(raw);
 
             InvokeMessage(segment, DeliveryMode.ReliableOrdered, null);
         }
-
         void DisconnectCallback(DisconnectCode code, string reason) => InvokeDisconnect(code);
         #endregion
 

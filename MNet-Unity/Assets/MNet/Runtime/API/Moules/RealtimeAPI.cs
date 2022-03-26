@@ -49,7 +49,141 @@ namespace MNet
 
             public static bool OfflineMode { get; private set; }
 
-            public static ConcurrentQueue<Action> InputQueue { get; private set; }
+            internal static class InputPackets
+            {
+                static Queue<Packet> Incoming;
+                internal class Packet
+                {
+                    public PacketType Type;
+
+                    public ArraySegment<byte> Segment;
+                    public DeliveryMode DeliveryMode;
+                    public Action Dispose;
+
+                    public DisconnectCode DisconnectCode;
+
+                    public void Connect()
+                    {
+                        Type = PacketType.Connection;
+                    }
+                    public void Message(ArraySegment<byte> segment, DeliveryMode deliveryMode, Action dispose)
+                    {
+                        Type = PacketType.Message;
+
+                        this.Segment = segment;
+                        this.DeliveryMode = deliveryMode;
+                        this.Dispose = dispose;
+                    }
+                    public void Disconnect(DisconnectCode code)
+                    {
+                        Type = PacketType.Disconnection;
+
+                        this.DisconnectCode = code;
+                    }
+                }
+                internal enum PacketType
+                {
+                    Connection, Message, Disconnection
+                }
+
+                static void Release(Packet packet)
+                {
+                    if (packet.Type == PacketType.Message)
+                        packet.Dispose?.Invoke();
+
+                    ObjectPool<Packet>.Return(packet);
+                }
+
+                internal static void Configure()
+                {
+                    Incoming = new Queue<Packet>();
+
+                    OnInitialize += Initialize;
+                }
+
+                static void Initialize(NetworkTransport transport)
+                {
+                    Transport.OnConnect += QueueConnect;
+                    Transport.OnMessage += QueueMessage;
+                    Transport.OnDisconnect += QueueDisconnect;
+                }
+
+                static void QueueConnect()
+                {
+                    var packet = ObjectPool<Packet>.Lease();
+                    packet.Connect();
+
+                    lock(Incoming) Incoming.Enqueue(packet);
+                }
+                static void QueueMessage(ArraySegment<byte> segment, DeliveryMode mode, Action dispose)
+                {
+                    var packet = ObjectPool<Packet>.Lease();
+                    packet.Message(segment, mode, dispose);
+
+                    lock (Incoming) Incoming.Enqueue(packet);
+                }
+                static void QueueDisconnect(DisconnectCode code)
+                {
+                    var packet = ObjectPool<Packet>.Lease();
+                    packet.Disconnect(code);
+
+                    lock (Incoming) Incoming.Enqueue(packet);
+                }
+
+                internal static void Poll()
+                {
+                    var count = Incoming.Count;
+
+                    while (true)
+                    {
+                        Packet packet;
+
+                        lock (Incoming)
+                        {
+                            if (Incoming.TryDequeue(out packet) == false)
+                                break;
+                        }
+
+                        switch (packet.Type)
+                        {
+                            case PacketType.Connection:
+                            {
+                                InvokeConnect();
+                            }
+                            break;
+
+                            case PacketType.Message:
+                            {
+                                InvokeMessage(packet.Segment, packet.DeliveryMode);
+                            }
+                            break;
+
+                            case PacketType.Disconnection:
+                            {
+                                InvokeDisconnect(packet.DisconnectCode);
+                            }
+                            break;
+                        }
+
+                        Release(packet);
+
+                        count -= 1;
+
+                        if (count <= 0) break;
+                    }
+                }
+
+                internal static void Clear()
+                {
+                    lock (Incoming)
+                    {
+                        while (Incoming.TryDequeue(out var packet))
+                        {
+                            Release(packet);
+                        }
+                    }
+                }
+            }
 
             /// <summary>
             /// Class responsible for pausing the RealtimeAPI processing when peforming asynchronous operations 
@@ -108,9 +242,8 @@ namespace MNet
 
             internal static void Configure()
             {
-                InputQueue = new ConcurrentQueue<Action>();
-
                 Pause.Configure();
+                InputPackets.Configure();
 
                 NetworkAPI.OnProcess += Process;
 
@@ -124,10 +257,24 @@ namespace MNet
             static void Initialize(AppConfig app)
             {
                 Transport = CreateTransport(app.Transport);
+                static NetworkTransport CreateTransport(NetworkTransportType type)
+                {
+                    var platform = MUtility.CheckPlatform();
 
-                Transport.OnConnect += QueueConnect;
-                Transport.OnMessage += QueueMessage;
-                Transport.OnDisconnect += QueueDisconnect;
+                    if (NetworkTransport.IsSupported(type, platform) == false)
+                        throw new Exception($"{type} Transport not Supported on {platform}");
+
+                    switch (type)
+                    {
+                        case NetworkTransportType.WebSockets:
+                            return new WebSocketTransport();
+
+                        case NetworkTransportType.LiteNetLib:
+                            return new LiteNetLibTransport();
+                    }
+
+                    throw new NotImplementedException();
+                }
 
                 OnInitialize?.Invoke(Transport);
             }
@@ -139,29 +286,7 @@ namespace MNet
                 if (Pause.Active) return;
                 if (Client.Buffer.IsOn) return;
 
-                var count = InputQueue.Count;
-
-                for (int i = 0; i < count; i++)
-                {
-                    if (Pause.Active) return;
-                    if (Client.Buffer.IsOn) return;
-
-                    if (InputQueue.TryDequeue(out var action) == false) return;
-
-                    action();
-                }
-            }
-
-            static void Stop()
-            {
-                if (OfflineMode)
-                {
-                    NetworkAPI.OfflineMode.Stop();
-                    OfflineMode = false;
-                }
-
-                ///Manually reset the InputQueue just to ensure that no commands are executed after this method is invoked
-                InputQueue = new ConcurrentQueue<Action>();
+                InputPackets.Poll();
             }
 
             #region Connect
@@ -182,24 +307,19 @@ namespace MNet
 
                 OfflineMode = NetworkAPI.OfflineMode.On;
 
+                InputPackets.Clear();
+
                 if (OfflineMode)
-                    QueueConnect();
+                    InvokeConnect();
                 else
                     Transport.Connect(server, room);
             }
 
             public delegate void ConnectDelegate();
             public static event ConnectDelegate OnConnect;
-            static void ConnectCallback()
+            static void InvokeConnect()
             {
                 OnConnect?.Invoke();
-            }
-
-            static void QueueConnect()
-            {
-                InputQueue.Enqueue(Action);
-
-                static void Action() => ConnectCallback();
             }
             #endregion
 
@@ -226,20 +346,9 @@ namespace MNet
 
             public delegate void MessageDelegate(ArraySegment<byte> segment, DeliveryMode mode);
             public static event MessageDelegate OnMessage;
-            static void MessageCallback(ArraySegment<byte> segment, DeliveryMode mode)
+            static void InvokeMessage(ArraySegment<byte> segment, DeliveryMode mode)
             {
                 OnMessage?.Invoke(segment, mode);
-            }
-
-            static void QueueMessage(ArraySegment<byte> segment, DeliveryMode mode, Action dispose)
-            {
-                InputQueue.Enqueue(Action);
-
-                void Action()
-                {
-                    MessageCallback(segment, mode);
-                    dispose?.Invoke();
-                }
             }
             #endregion
 
@@ -256,23 +365,16 @@ namespace MNet
 
                 ///Manually invoke callback to make all Disconnect() invokes synchronous,
                 ///we ensure synchronicity by clearing the InputQueue within the callback
-                DisconnectCallback(code);
+                InvokeDisconnect(code);
             }
 
             public delegate void DisconnectDelegate(DisconnectCode code);
             public static event DisconnectDelegate OnDisconnect;
-            static void DisconnectCallback(DisconnectCode code)
+            static void InvokeDisconnect(DisconnectCode code)
             {
                 Stop();
 
                 OnDisconnect?.Invoke(code);
-            }
-
-            static void QueueDisconnect(DisconnectCode code)
-            {
-                InputQueue.Enqueue(Action);
-
-                void Action() => DisconnectCallback(code);
             }
             #endregion
 
@@ -283,23 +385,15 @@ namespace MNet
                 if (IsConnected) Disconnect(DisconnectCode.Normal);
             }
 
-            static NetworkTransport CreateTransport(NetworkTransportType type)
+            static void Stop()
             {
-                var platform = MUtility.CheckPlatform();
-
-                if (NetworkTransport.IsSupported(type, platform) == false)
-                    throw new Exception($"{type} Transport not Supported on {platform}");
-
-                switch (type)
+                if (OfflineMode)
                 {
-                    case NetworkTransportType.WebSockets:
-                        return new WebSocketTransport();
-
-                    case NetworkTransportType.LiteNetLib:
-                        return new LiteNetLibTransport();
+                    NetworkAPI.OfflineMode.Stop();
+                    OfflineMode = false;
                 }
 
-                throw new NotImplementedException();
+                InputPackets.Clear();
             }
         }
     }
