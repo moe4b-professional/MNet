@@ -32,6 +32,8 @@ namespace MNet
         public Component Component => Behaviour.Component;
         public NetworkEntity Entity => Behaviour.Entity;
 
+        public bool IsByteChunkExchange { get; }
+
         #region Attribute
         public NetworkRPCAttribute Attribute { get; protected set; }
 
@@ -54,23 +56,39 @@ namespace MNet
             return MethodInfo.Invoke(Component, arguments);
         }
 
-        public void SerializeArguments(NetworkWriter writer, object[] arguments)
+        public void SerializeArguments(NetworkWriter writer, object[] arguments, out ByteChunk raw)
         {
-            for (int i = 0; i < arguments.Length; i++)
-                writer.Write(arguments[i], ParametersInfo[i].ParameterType);
+            if (IsByteChunkExchange)
+            {
+                raw = (ByteChunk)arguments[0];
+            }
+            else
+            {
+                for (int i = 0; i < arguments.Length; i++)
+                    writer.Write(arguments[i], ParametersInfo[i].ParameterType);
+
+                raw = writer.AsChunk();
+            }
         }
 
         public void ParseCommand<T>(T command, out object[] arguments, out RpcInfo info)
             where T : IRpcCommand
         {
-            using (NetworkReader.Pool.Lease(out var stream))
+            arguments = new object[ParametersInfo.Length];
+
+            if (IsByteChunkExchange)
             {
-                stream.Assign(command.Raw);
+                arguments[0] = command.Raw;
+            }
+            else
+            {
+                using (NetworkReader.Pool.Lease(out var stream))
+                {
+                    stream.Assign(command.Raw);
 
-                arguments = new object[ParametersInfo.Length];
-
-                for (int i = 0; i < ParametersInfo.Length - 1; i++)
-                    arguments[i] = stream.Read(ParametersInfo[i].ParameterType);
+                    for (int i = 0; i < ParametersInfo.Length - 1; i++)
+                        arguments[i] = stream.Read(ParametersInfo[i].ParameterType);
+                }
             }
 
             NetworkAPI.Room.Clients.TryGet(command.Sender, out var sender);
@@ -98,20 +116,12 @@ namespace MNet
 
             IsAsync = typeof(IUniTask).IsAssignableFrom(ReturnType);
             IsCoroutine = ReturnType == typeof(IEnumerator);
+            IsByteChunkExchange = ParametersInfo.Length == 2 && ParametersInfo[0].ParameterType == typeof(ByteChunk);
         }
+
+        //Static Utility
 
         public static string GetName(MethodInfo method) => method.Name;
-
-        public static int Count(params bool[] list)
-        {
-            var count = 0;
-
-            for (int i = 0; i < list.Length; i++)
-                if (list[i])
-                    count += 1;
-
-            return count;
-        }
     }
 
     public struct RpcInfo

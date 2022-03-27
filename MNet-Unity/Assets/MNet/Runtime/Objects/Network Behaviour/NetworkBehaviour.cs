@@ -201,10 +201,8 @@ namespace MNet
 
                     using (NetworkWriter.Pool.Lease(out var writer))
                     {
-                        Bind.SerializeArguments(writer, Arguments);
-
-                        var raw = writer.AsChunk();
-                        var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, raw);
+                        Bind.SerializeArguments(writer, Arguments, out var chunk);
+                        var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, chunk);
 
                         Send(ref request);
                     }
@@ -241,10 +239,8 @@ namespace MNet
                 {
                     using (NetworkWriter.Pool.Lease(out var writer))
                     {
-                        Bind.SerializeArguments(writer, Arguments);
-
-                        var raw = writer.AsChunk();
-                        var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, raw);
+                        Bind.SerializeArguments(writer, Arguments, out var chunk);
+                        var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, chunk);
 
                         Send(ref request);
                     }
@@ -284,10 +280,8 @@ namespace MNet
                     var writer = NetworkWriter.Pool.Take();
                     try
                     {
-                        Bind.SerializeArguments(writer, Arguments);
-
-                        var raw = writer.AsChunk();
-                        var request = QueryRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, promise.Channel, raw);
+                        Bind.SerializeArguments(writer, Arguments, out var chunk);
+                        var request = QueryRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, promise.Channel, chunk);
 
                         if (Send(ref request) == false)
                         {
@@ -344,10 +338,8 @@ namespace MNet
                 {
                     using (NetworkWriter.Pool.Lease(out var writer))
                     {
-                        Bind.SerializeArguments(writer, Arguments);
-
-                        var raw = writer.AsChunk();
-                        var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, raw);
+                        Bind.SerializeArguments(writer, Arguments, out var chunk);
+                        var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, chunk);
 
                         Send(ref request);
                     }

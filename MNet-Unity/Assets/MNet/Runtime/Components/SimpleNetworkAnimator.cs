@@ -553,11 +553,16 @@ namespace MNet
 
 		void BufferBools()
 		{
-			var binary = WriteAll(parameters.Floats);
-			Network.BufferRPC(BufferBools, binary).Send();
+			using (NetworkWriter)
+			{
+				WriteAll(NetworkWriter, parameters.Floats);
+
+				var chunk = NetworkWriter.AsChunk();
+				Network.BufferRPC(BufferBools, chunk).Send();
+			}
 		}
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void BufferBools(byte[] binary, RpcInfo info)
+		void BufferBools(ByteChunk binary, RpcInfo info)
 		{
 			ReadAll(parameters.Bools, binary);
 		}
@@ -630,11 +635,16 @@ namespace MNet
 
 		void BufferIntergers()
 		{
-			var binary = WriteAll(parameters.Floats);
-			Network.BufferRPC(BufferIntergers, binary).Send();
+			using (NetworkWriter)
+			{
+				WriteAll(NetworkWriter, parameters.Floats);
+
+				var chunk = NetworkWriter.AsChunk();
+				Network.BufferRPC(BufferIntergers, chunk).Send();
+			}
 		}
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void BufferIntergers(byte[] binary, RpcInfo info)
+		void BufferIntergers(ByteChunk binary, RpcInfo info)
 		{
 			ReadAll(parameters.Integers, binary);
 		}
@@ -710,12 +720,16 @@ namespace MNet
 
 		void BufferFloats()
 		{
-			var binary = WriteAll(parameters.Floats);
+			using (NetworkWriter)
+			{
+				WriteAll(NetworkWriter, parameters.Floats);
 
-			Network.BufferRPC(BufferFloats, binary).Send();
+				var chunk = NetworkWriter.AsChunk();
+				Network.BufferRPC(BufferFloats, chunk).Send();
+			}
 		}
 		[NetworkRPC(Authority = RemoteAuthority.Owner)]
-		void BufferFloats(byte[] binary, RpcInfo info)
+		void BufferFloats(ByteChunk binary, RpcInfo info)
 		{
 			ReadAll(parameters.Floats, binary);
 		}
@@ -737,7 +751,7 @@ namespace MNet
 		}
 		#endregion
 
-		byte[] WriteAll<T>(IList<T> list)
+		void WriteAll<T>(NetworkWriter writer, IList<T> list)
 			where T : ParametersProperty.Property
 		{
 			for (int i = 0; i < list.Count; i++)
@@ -746,10 +760,8 @@ namespace MNet
 
 				list[i].WriteBinary(NetworkWriter);
 			}
-
-			return NetworkWriter.Flush();
 		}
-		void ReadAll<T>(IList<T> list, byte[] binary)
+		void ReadAll<T>(IList<T> list, ByteChunk binary)
 			where T : ParametersProperty.Property
 		{
 			NetworkReader.Assign(binary);
@@ -863,7 +875,6 @@ namespace MNet
 					else
 						writer.Write(Value);
 				}
-
 				public void ReadBinary(NetworkReader reader)
 				{
 					if (useHalf)
@@ -1020,19 +1031,22 @@ namespace MNet
 
 		void BufferLayerWeights()
 		{
-			for (int i = 0; i < layers.Count; i++)
+			using (NetworkWriter)
 			{
-				if (layers[i].Ignore) continue;
+				for (int i = 0; i < layers.Count; i++)
+				{
+					if (layers[i].Ignore) continue;
 
-				layers[i].WriteBinary(NetworkWriter);
+					layers[i].WriteBinary(NetworkWriter);
+				}
+
+				var chunk = NetworkWriter.AsChunk();
+
+				Network.BufferRPC(BufferLayerWeights, chunk).Send();
 			}
-
-			var binary = NetworkWriter.Flush();
-
-			Network.BufferRPC(BufferLayerWeights, binary).Send();
 		}
 		[NetworkRPC]
-		void BufferLayerWeights(byte[] binary, RpcInfo info)
+		void BufferLayerWeights(ByteChunk binary, RpcInfo info)
 		{
 			NetworkReader.Assign(binary);
 

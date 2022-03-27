@@ -101,7 +101,7 @@ namespace MNet
         {
             if (TryParse(text, out var result)) return result;
 
-            throw new ArgumentException($"{text} Cannot be Parsed as a Version");
+            throw new ArgumentException($"({text}) Cannot be Parsed as a Version");
         }
 
         public static bool TryParse(string text, out Version version)
@@ -120,7 +120,7 @@ namespace MNet
                 return false;
             }
 
-            var numbers = new byte[words.Length];
+            Span<byte> numbers = stackalloc byte[words.Length];
 
             for (int i = 0; i < words.Length; i++)
             {
@@ -137,10 +137,8 @@ namespace MNet
             return true;
         }
 
-        public static Version Create(params byte[] numbers)
+        public static Version Create(Span<byte> numbers)
         {
-            if (numbers == null) throw new ArgumentNullException();
-
             switch (numbers.Length)
             {
                 case 1:
