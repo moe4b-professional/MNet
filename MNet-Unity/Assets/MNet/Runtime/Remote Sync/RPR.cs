@@ -41,7 +41,7 @@ namespace MNet
             Complete = true;
 
             this.Response = response;
-            this.Raw = raw.Clone().Array;
+            this.Raw = raw.ToArray();
         }
 
         public RprPromise(NetworkClient target, RprChannelID channel)

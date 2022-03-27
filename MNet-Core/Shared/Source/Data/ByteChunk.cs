@@ -48,11 +48,21 @@ namespace MNet
         /// <returns></returns>
         public ByteChunk Clone()
         {
+            var destination = ToArray();
+            return new ByteChunk(destination);
+        }
+
+        /// <summary>
+        /// Clones the ByteChunk's memory to a new array
+        /// </summary>
+        /// <returns></returns>
+        public byte[] ToArray()
+        {
             var destination = new byte[Count];
 
             Buffer.BlockCopy(Array, Offset, destination, 0, Count);
 
-            return new ByteChunk(destination);
+            return destination;
         }
     }
 }
