@@ -58,6 +58,9 @@ namespace MNet
 
             for (byte i = 0; i < flag.Length; i++)
                 Assert.AreEqual(flag[i], i % 2 == 0);
+
+            var clone = NetworkSerializer.Clone(flag);
+            Assert.AreEqual(flag, clone);
         }
     }
 }

@@ -302,7 +302,13 @@ namespace MNet
             where T : IBoolFlags
         {
             for (byte i = 0; i < flag.Length; i++)
+            {
+                flag[i] = true;
+                flag[i] = false;
+                flag[i] = i % 3 == 0;
+
                 flag[i] = i % 2 == 0;
+            }
 
             var clone = NetworkSerializer.Clone(flag);
 

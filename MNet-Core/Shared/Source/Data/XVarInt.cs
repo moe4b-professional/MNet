@@ -22,7 +22,7 @@ using static MNet.XVarInt;
 
 namespace MNet
 {
-    public class XVarInt
+    public static class XVarInt
     {
         public static int CalculateBitCount(long value)
         {
@@ -64,19 +64,18 @@ namespace MNet
         /// Reads all binary data according to 
         /// </summary>
         /// <param name="reader"></param>
-        /// <param name="binary"></param>
+        /// <param name="span"></param>
         /// <param name="bits"></param>
-        public static void ReadAllBytes(NetworkReader reader, out byte[] binary, out int bits)
+        public static void ReadAllBytes(NetworkReader reader, ref Span<byte> span, out int bits)
         {
-            binary = new byte[8];
-            binary[0] = reader.TakeByte();
+            span[0] = reader.TakeByte();
 
             bits = 8;
 
-            for (int i = 1; i < binary.Length; i++)
+            for (int i = 1; i < span.Length; i++)
             {
-                if (IsReadBitSet(binary[i - 1]))
-                    binary[i] = reader.TakeByte();
+                if (IsReadBitSet(span[i - 1]))
+                    span[i] = reader.TakeByte();
                 else
                     break;
 
@@ -87,32 +86,35 @@ namespace MNet
         public static bool IsReadBitSet(byte value) => IsIndexBitSet(value, 7);
         public static bool IsIndexBitSet(byte value, int index) => (value & (1 << index)) != 0;
 
-        public static string BinaryToString(long value)
+        public static class BinaryHelper
         {
-            var raw = BitConverter.GetBytes(value);
-
-            return BinaryToString(raw);
-        }
-        public static string BinaryToString(ulong value)
-        {
-            var raw = BitConverter.GetBytes(value);
-
-            return BinaryToString(raw);
-        }
-        public static string BinaryToString(byte[] raw)
-        {
-            var array = new BitArray(raw);
-
-            var builder = new StringBuilder();
-
-            for (int i = array.Length - 1; i >= 0; i--)
+            public static string BinaryToString(long value)
             {
-                builder.Append(array[i] ? 1 : 0);
+                var raw = BitConverter.GetBytes(value);
 
-                if (i % 8 == 0) builder.Append(" ");
+                return BinaryToString(raw);
             }
+            public static string BinaryToString(ulong value)
+            {
+                var raw = BitConverter.GetBytes(value);
 
-            return builder.ToString();
+                return BinaryToString(raw);
+            }
+            public static string BinaryToString(byte[] raw)
+            {
+                var array = new BitArray(raw);
+
+                var builder = new StringBuilder();
+
+                for (int i = array.Length - 1; i >= 0; i--)
+                {
+                    builder.Append(array[i] ? 1 : 0);
+
+                    if (i % 8 == 0) builder.Append(" ");
+                }
+
+                return builder.ToString();
+            }
         }
 
 #if UNITY_EDITOR
@@ -180,18 +182,23 @@ namespace MNet
 
             exchange &= ~(1L << (bytes * 8 - 1)); //Clear the last read flag, if it exists
 
-            var raw = BitConverter.GetBytes(exchange);
+            Span<byte> span = stackalloc byte[sizeof(long)];
+
+            if (BitConverter.TryWriteBytes(span, exchange) == false)
+                throw new Exception($"Failed to Serialize");
 
             for (int i = 0; i < bytes; i++)
-                writer.Insert(raw[i]);
+                writer.Insert(span[i]);
         }
         public void Deserialize(NetworkReader reader)
         {
-            ReadAllBytes(reader, out var binary, out var bits);
+            Span<byte> span = stackalloc byte[sizeof(long)];
 
-            var sign = ReadSignFlag(binary[0]);
+            ReadAllBytes(reader, ref span, out var bits);
 
-            long exchange = BitConverter.ToInt64(binary, 0);
+            var sign = ReadSignFlag(span[0]);
+
+            long exchange = BitConverter.ToInt64(span);
 
             ///Accounts for bit shif (to skip bits written as sign flag or read flags
             ///Initialized to 1 to account for the sign bit
@@ -315,16 +322,21 @@ namespace MNet
 
             exchange &= ~(1UL << (bytes * 8 - 1)); //Clear the last read flag, if it exists
 
-            var raw = BitConverter.GetBytes(exchange);
+            Span<byte> span = stackalloc byte[sizeof(long)];
+
+            if (BitConverter.TryWriteBytes(span, exchange) == false)
+                throw new Exception($"Failed to Serialize");
 
             for (int i = 0; i < bytes; i++)
-                writer.Insert(raw[i]);
+                writer.Insert(span[i]);
         }
         public void Deserialize(NetworkReader reader)
         {
-            ReadAllBytes(reader, out var binary, out var bits);
+            Span<byte> span = stackalloc byte[sizeof(long)];
 
-            ulong exchange = BitConverter.ToUInt64(binary, 0);
+            ReadAllBytes(reader, ref span, out var bits);
+
+            ulong exchange = BitConverter.ToUInt64(span);
 
             ///Accounts for bit shif (to skip bits written as sign flag or read flags
             ///Initialized to 0 because we don't have a sign bit to skip

@@ -4,13 +4,6 @@ using System.Collections.Generic;
 
 namespace MNet
 {
-    public interface IBoolFlags
-    {
-        byte Length { get; }
-
-        bool this[byte index] { get; set; }
-    }
-
     public static class BoolFlags
     {
         public static void Populate<T>(T flag, params bool[] values)
@@ -63,6 +56,13 @@ namespace MNet
 
             return builder.ToString();
         }
+    }
+
+    public interface IBoolFlags
+    {
+        byte Length { get; }
+
+        bool this[byte index] { get; set; }
     }
 
     public struct Bool8Flags : IBoolFlags, INetworkSerializable
