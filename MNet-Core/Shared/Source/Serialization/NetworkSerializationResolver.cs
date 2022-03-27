@@ -1579,7 +1579,16 @@ namespace MNet
     [Preserve]
     public sealed class ArrayNetworkSerializationResolver : NetworkSerializationImplicitResolver
     {
-        public static bool IsValid(Type target) => target.IsArray;
+        public static bool IsValid(Type target)
+        {
+            if (target.IsArray == false)
+                return false;
+
+            if (target.GetArrayRank() != 1)
+                return false;
+
+            return true;
+        }
 
         public override bool CanResolve(Type target) => IsValid(target);
 

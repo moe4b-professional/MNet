@@ -138,7 +138,7 @@ namespace MNet
         }
         public static NotImplementedException FormatResolverException(Type type)
         {
-            return new NotImplementedException($"Type {type} isn't supported for Network Serialization");
+            return new NotImplementedException($"Type ({type}) isn't supported for Network Serialization");
         }
     }
 

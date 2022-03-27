@@ -52,7 +52,9 @@ namespace MNet.Example
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
+            var array = new byte[4, 4];
 
+            NetworkSerializer.Clone(array);
         }
 #endif
     }
