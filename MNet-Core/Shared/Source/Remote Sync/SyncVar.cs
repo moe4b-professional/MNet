@@ -11,12 +11,12 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             writer.Insert(value);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             reader.Read(out value);
         }
@@ -94,7 +94,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw => raw;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
             behaviour.Serialize(writer);
@@ -104,7 +104,7 @@ namespace MNet
             writer.Write(raw);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
@@ -154,7 +154,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw => raw;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
             behaviour.Serialize(writer);
@@ -164,7 +164,7 @@ namespace MNet
             writer.Write(raw);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
@@ -223,7 +223,7 @@ namespace MNet
             return value;
         }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
             entity.Serialize(writer);
@@ -232,7 +232,7 @@ namespace MNet
 
             writer.Write(raw);
         }
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
             entity.Deserialize(reader);

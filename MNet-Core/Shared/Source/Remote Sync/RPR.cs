@@ -14,11 +14,11 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             writer.Insert(value);
         }
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             value = reader.TakeByte();
         }

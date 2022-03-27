@@ -1092,12 +1092,12 @@ namespace MNet.Example
     [Preserve]
     public class HalfNetworkSerializationResolver : NetworkSerializationExplicitResolver<Half>
     {
-        public override void Serialize(NetworkStream writer, Half instance)
+        public override void Serialize(NetworkWriter writer, Half instance)
         {
             writer.Write(instance.Value);
         }
 
-        public override Half Deserialize(NetworkStream reader)
+        public override Half Deserialize(NetworkReader reader)
         {
             reader.Read(out ushort value);
 

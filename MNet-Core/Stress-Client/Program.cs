@@ -118,13 +118,13 @@ namespace MNet
 
         bool IsReady = false;
 
-        NetworkStream writer;
-        NetworkStream reader;
+        NetworkWriter NetworkWriter;
+        NetworkReader NetworkReader;
 
         public Player(int index)
         {
-            writer = NetworkStream.Pool.Writer.Take();
-            reader = NetworkStream.Pool.Reader.Take();
+            NetworkWriter = NetworkWriter.Pool.Take();
+            NetworkReader = NetworkReader.Pool.Take();
 
             this.Index = index;
 
@@ -181,20 +181,20 @@ namespace MNet
         {
             var segment = packet.GetRemainingBytesSegment();
 
-            reader.Assign(segment);
+            NetworkReader.Assign(segment);
 
-            using (reader)
+            using (NetworkReader)
             {
-                var type = reader.Read<Type>();
+                var type = NetworkReader.Read<Type>();
 
                 if (type == typeof(RegisterClientResponse))
                 {
-                    var response = reader.Read<RegisterClientResponse>();
+                    var response = NetworkReader.Read<RegisterClientResponse>();
                     RegisterClientResponse(response);
                 }
                 else if (type == typeof(SpawnEntityResponse))
                 {
-                    var response = reader.Read<SpawnEntityResponse>();
+                    var response = NetworkReader.Read<SpawnEntityResponse>();
                     SpawnEntityResponse(response);
                 }
             }
@@ -237,12 +237,12 @@ namespace MNet
 
         void Send<T>(ref T payload, DeliveryMethod delivery)
         {
-            using (writer)
+            using (NetworkWriter)
             {
-                writer.Write(typeof(T));
-                writer.Write(payload);
+                NetworkWriter.Write(typeof(T));
+                NetworkWriter.Write(payload);
 
-                var segment = writer.ToSegment();
+                var segment = NetworkWriter.AsSegment();
 
                 Peer.Send(segment.Array, segment.Offset, segment.Count, delivery);
             }
@@ -251,6 +251,9 @@ namespace MNet
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
             IsReady = false;
+
+            NetworkWriter.Pool.Return(NetworkWriter);
+            NetworkReader.Pool.Return(NetworkReader);
 
             Log.Error($"Player Disconnected: {disconnectInfo.Reason}");
         }

@@ -89,12 +89,12 @@ namespace MNet
 
                 static void PoolSize(InputDispatcher.Request request)
                 {
-                    Log.Info($"Network Stream Pool Size: Writer: {NetworkStream.Pool.Writer.Count} | Reader: {NetworkStream.Pool.Reader.Count}");
+                    Log.Info($"Network Stream Pool Size: Writer: {NetworkWriter.Pool.Count} | Reader: {NetworkReader.Pool.Count}");
                 }
 
                 static void Allocations(InputDispatcher.Request request)
                 {
-                    Log.Info($"Network Stream Allocated: Writer: {NetworkStream.Pool.Writer.Allocations} | Reader: {NetworkStream.Pool.Reader.Allocations}");
+                    Log.Info($"Network Stream Allocated: Writer: {NetworkWriter.Pool.Allocations} | Reader: {NetworkReader.Pool.Allocations}");
                 }
             }
 

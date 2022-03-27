@@ -1046,13 +1046,13 @@ namespace MNet
         {
             public List<MessageBufferHandle> List { get; protected set; }
 
-            NetworkStream Writer;
+            NetworkWriter Writer;
 
             public override void Configure()
             {
                 base.Configure();
 
-                Writer = NetworkStream.Pool.Writer.Take();
+                Writer = NetworkWriter.Pool.Take();
 
                 Room.OnStop += StopRoomCallback;
             }
@@ -1067,7 +1067,7 @@ namespace MNet
                 for (int i = 0; i < List.Count; i++)
                     List[i].Write(Writer);
 
-                return Writer.ToChunk();
+                return Writer.AsChunk();
             }
 
             public MessageBufferHandle<T> Add<T>(T payload)
@@ -1095,7 +1095,7 @@ namespace MNet
 
             void StopRoomCallback(Room room)
             {
-                NetworkStream.Pool.Writer.Return(Writer);
+                NetworkWriter.Pool.Return(Writer);
             }
 
             public MessageBufferProperty()
@@ -1108,9 +1108,9 @@ namespace MNet
         public class MessageDispatcherProperty : Property
         {
             Dictionary<Type, MessageCallbackDelegate> Dictionary;
-            public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel);
+            public delegate void MessageCallbackDelegate(NetworkClient sender, NetworkReader reader, DeliveryMode mode, byte channel);
 
-            public void Invoke(NetworkClient sender, Type type, NetworkStream stream, DeliveryMode mode, byte channel)
+            public void Invoke(NetworkClient sender, Type type, NetworkReader reader, DeliveryMode mode, byte channel)
             {
                 if (Dictionary.TryGetValue(type, out var callback) == false)
                 {
@@ -1120,7 +1120,7 @@ namespace MNet
                     return;
                 }
 
-                callback(sender, stream, mode, channel);
+                callback(sender, reader, mode, channel);
             }
 
             public delegate void MessageHandler1Delegate<TPayload>(NetworkClient sender, ref TPayload payload, DeliveryMode mode, byte channel);
@@ -1130,12 +1130,12 @@ namespace MNet
 
                 RegisterHandler(type, Callback);
 
-                void Callback(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel)
+                void Callback(NetworkClient sender, NetworkReader reader, DeliveryMode mode, byte channel)
                 {
                     TPayload payload;
                     try
                     {
-                        payload = stream.Read<TPayload>();
+                        payload = reader.Read<TPayload>();
                     }
                     catch (Exception)
                     {
@@ -1154,12 +1154,12 @@ namespace MNet
 
                 RegisterHandler(type, Callback);
 
-                void Callback(NetworkClient sender, NetworkStream stream, DeliveryMode mode, byte channel)
+                void Callback(NetworkClient sender, NetworkReader reader, DeliveryMode mode, byte channel)
                 {
                     TPayload payload;
                     try
                     {
-                        payload = stream.Read<TPayload>();
+                        payload = reader.Read<TPayload>();
                     }
                     catch (Exception)
                     {
@@ -1281,8 +1281,8 @@ namespace MNet
             OnTick?.Invoke();
         }
 
-        NetworkStream NetworkReader;
-        NetworkStream NetworkWriter;
+        NetworkReader NetworkReader;
+        NetworkWriter NetworkWriter;
 
         #region Communication
         void Send<T>(ref T payload, NetworkClient target, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
@@ -1292,7 +1292,7 @@ namespace MNet
                 NetworkWriter.Write(typeof(T));
                 NetworkWriter.Write(payload);
 
-                var segment = NetworkWriter.ToSegment();
+                var segment = NetworkWriter.AsSegment();
                 TransportContext.Send(target.ID, segment, mode, channel);
             }
         }
@@ -1304,7 +1304,7 @@ namespace MNet
                 NetworkWriter.Write(typeof(T));
                 NetworkWriter.Write(payload);
 
-                var segment = NetworkWriter.ToSegment();
+                var segment = NetworkWriter.AsSegment();
 
                 for (int i = 0; i < Clients.Count; i++)
                 {
@@ -1375,8 +1375,7 @@ namespace MNet
 
             Realtime.UnregisterContext(App.Transport, ID.Value);
 
-            NetworkStream.Pool.Writer.Return(NetworkWriter);
-            NetworkStream.Pool.Reader.Return(NetworkReader);
+            NetworkStream.Pool.Return(NetworkReader, NetworkWriter);
 
             OnStop?.Invoke(this);
         }
@@ -1398,8 +1397,7 @@ namespace MNet
 
             Scheduler = new Scheduler(App.TickDelay, Tick);
 
-            NetworkReader = NetworkStream.Pool.Reader.Take();
-            NetworkWriter = NetworkStream.Pool.Writer.Take();
+            NetworkStream.Pool.Take(out NetworkReader, out NetworkWriter);
 
             ForAllProperties(x => x.Set(this));
             ForAllProperties(x => x.Configure());

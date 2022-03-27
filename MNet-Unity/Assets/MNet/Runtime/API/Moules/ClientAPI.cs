@@ -42,13 +42,12 @@ namespace MNet
 
             public static bool IsMaster => Self == null ? false : Self.IsMaster;
 
-            static NetworkStream NetworkReader;
-            static NetworkStream NetworkWriter;
+            static NetworkReader NetworkReader;
+            static NetworkWriter NetworkWriter;
 
             internal static void Configure()
             {
-                NetworkReader = NetworkStream.Pool.Reader.Take();
-                NetworkWriter = NetworkStream.Pool.Writer.Take();
+                NetworkStream.Pool.Take(out NetworkReader, out NetworkWriter);
 
                 Profile = new NetworkClientProfile("Player");
 
@@ -95,7 +94,7 @@ namespace MNet
                     NetworkWriter.Write(typeof(T));
                     NetworkWriter.Write(payload);
 
-                    var segment = NetworkWriter.ToSegment();
+                    var segment = NetworkWriter.AsSegment();
                     Realtime.Send(segment, mode, channel);
                 }
 
@@ -144,12 +143,13 @@ namespace MNet
 
                 public static event BufferDelegate OnBegin;
 
-                static NetworkStream NetworkStream;
+                static NetworkWriter NetworkWriter;
+                static NetworkReader NetworkReader;
                 static int StreamLength;
 
                 internal static void Configure()
                 {
-                    NetworkStream = NetworkStream.Pool.Writer.Take();
+                    NetworkStream.Pool.Take(out NetworkReader, out NetworkWriter);
                 }
 
                 internal static void Apply(ByteChunk buffer)
@@ -175,8 +175,10 @@ namespace MNet
                     }
                     else
                     {
-                        NetworkStream.Reset();
-                        NetworkStream.Copy(buffer);
+                        NetworkWriter.Reset();
+                        NetworkWriter.Copy(buffer);
+
+                        NetworkReader.Assign(NetworkWriter);
                     }
                 }
 
@@ -187,13 +189,13 @@ namespace MNet
                         if (Realtime.Pause.Active)
                             break;
 
-                        var type = NetworkStream.Read<Type>();
+                        var type = NetworkReader.Read<Type>();
 
-                        MessageDispatcher.Invoke(type, NetworkStream);
+                        MessageDispatcher.Invoke(type, NetworkReader);
 
-                        if(NetworkStream.Position >= StreamLength)
+                        if (NetworkReader.Position >= StreamLength)
                         {
-                            if (NetworkStream.Position > StreamLength)
+                            if (NetworkReader.Position > StreamLength)
                                 Debug.LogError($"Buffer stream read past desired length, corrupted data parsed most likely");
 
                             End();
@@ -207,7 +209,7 @@ namespace MNet
                     IsOn = false;
 
                     NetworkAPI.OnProcess -= Process;
-                    
+
                     OnEnd?.Invoke();
                 }
 
@@ -217,7 +219,7 @@ namespace MNet
             public static class MessageDispatcher
             {
                 static Dictionary<Type, BinaryMessageCallbackDelegate> Binary;
-                public delegate void BinaryMessageCallbackDelegate(NetworkStream stream);
+                public delegate void BinaryMessageCallbackDelegate(NetworkReader reader);
 
                 static Dictionary<Type, PayloadMessageCallbackDelegate> Payload;
                 public delegate void PayloadMessageCallbackDelegate(object target);
@@ -240,7 +242,7 @@ namespace MNet
 
                     callback(payload);
                 }
-                internal static void Invoke(Type type, NetworkStream stream)
+                internal static void Invoke(Type type, NetworkReader reader)
                 {
                     if (Binary.TryGetValue(type, out var callback) == false)
                     {
@@ -248,7 +250,7 @@ namespace MNet
                         return;
                     }
 
-                    callback(stream);
+                    callback(reader);
                 }
 
                 public delegate void MessageHandlerDelegate<TPayload>(ref TPayload payload);
@@ -261,7 +263,7 @@ namespace MNet
                     Binary.Add(type, BinaryCallback);
                     Payload.Add(type, PayloadCallback);
 
-                    void BinaryCallback(NetworkStream stream)
+                    void BinaryCallback(NetworkReader stream)
                     {
                         var payload = stream.Read<TPayload>();
                         handler(ref payload);
@@ -382,22 +384,22 @@ namespace MNet
                         switch (request.Type)
                         {
                             case EntityType.Dynamic:
-                                {
-                                    var response = SpawnEntityResponse.Write(id, request.Token);
+                            {
+                                var response = SpawnEntityResponse.Write(id, request.Token);
 
-                                    MessageDispatcher.Invoke(response);
+                                MessageDispatcher.Invoke(response);
 
-                                    return Response.Consume;
-                                }
+                                return Response.Consume;
+                            }
 
                             case EntityType.SceneObject:
-                                {
-                                    var command = SpawnEntityCommand.Write(Client.ID, id, request);
+                            {
+                                var command = SpawnEntityCommand.Write(Client.ID, id, request);
 
-                                    MessageDispatcher.Invoke(command);
+                                MessageDispatcher.Invoke(command);
 
-                                    return Response.Consume;
-                                }
+                                return Response.Consume;
+                            }
 
                             default:
                                 throw new NotImplementedException($"No Case Defined for {request.Type}");
@@ -636,7 +638,7 @@ namespace MNet
                     Debug.Log("Client Registered");
 
                     Client.ReadyCallback(ref response);
-                
+
                     OnCallback?.Invoke(response);
                 }
 

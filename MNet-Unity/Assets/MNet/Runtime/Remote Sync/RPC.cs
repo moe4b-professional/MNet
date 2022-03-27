@@ -66,7 +66,7 @@ namespace MNet
                     throw new Exception($"RPC {this} Marked as Binary Exchange but the Only Parameter isn't a byte[]");
             }
 
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkWriter.Pool.Lease(out var stream))
             {
                 for (int i = 0; i < arguments.Length; i++)
                     stream.Write(arguments[i], ParametersInfo[i].ParameterType);
@@ -78,7 +78,7 @@ namespace MNet
         public void ParseCommand<T>(T command, out object[] arguments, out RpcInfo info)
             where T : IRpcCommand
         {
-            using (NetworkStream.Pool.Reader.Lease(out var stream))
+            using (NetworkReader.Pool.Lease(out var stream))
             {
                 stream.Assign(command.Raw);
 

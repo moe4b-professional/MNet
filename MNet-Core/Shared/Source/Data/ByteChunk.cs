@@ -19,12 +19,12 @@ namespace MNet
 
         public byte this[int index] => Array[index + Offset];
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             NetworkSerializationHelper.Length.Write(writer, Count);
             writer.Insert(Array, Offset, Count);
         }
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             Count = NetworkSerializationHelper.Length.Read(reader);
 

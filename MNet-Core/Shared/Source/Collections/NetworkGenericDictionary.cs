@@ -21,7 +21,7 @@ namespace MNet
 
         public void Set<TValue>(TKey key, TValue value)
         {
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkWriter.Pool.Lease(out var stream))
             {
                 stream.Write(value);
 
@@ -60,7 +60,7 @@ namespace MNet
             {
                 try
                 {
-                    using (NetworkStream.Pool.Reader.Lease(out var stream))
+                    using (NetworkReader.Pool.Lease(out var stream))
                     {
                         stream.Assign(raw);
                         value = stream.Read<TValue>();
@@ -109,7 +109,7 @@ namespace MNet
             }
         }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             NetworkSerializationHelper.Length.Write(writer, payload.Count);
 
@@ -121,7 +121,7 @@ namespace MNet
                 writer.Insert(pair.Value);
             }
         }
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             NetworkSerializationHelper.Length.Read(reader, out var count);
 

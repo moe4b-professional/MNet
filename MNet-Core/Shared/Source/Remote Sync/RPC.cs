@@ -14,12 +14,12 @@ namespace MNet
         byte value;
         public byte Value { get { return value; } }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             writer.Insert(value);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             value = reader.TakeByte();
         }
@@ -115,7 +115,7 @@ namespace MNet
         NetworkClientID? exception;
         public NetworkClientID? Exception => exception;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
             behaviour.Serialize(writer);
@@ -128,7 +128,7 @@ namespace MNet
             writer.Write(exception);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
@@ -187,7 +187,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw { get { return raw; } }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
             entity.Serialize(writer);
@@ -197,7 +197,7 @@ namespace MNet
             writer.Write(raw);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
             entity.Deserialize(reader);
@@ -244,7 +244,7 @@ namespace MNet
         NetworkClientID target;
         public NetworkClientID Target => target;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
             behaviour.Serialize(writer);
@@ -255,7 +255,7 @@ namespace MNet
             target.Serialize(writer);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
@@ -307,7 +307,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw { get { return raw; } }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
 
@@ -319,7 +319,7 @@ namespace MNet
             writer.Write(raw);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
 
@@ -371,7 +371,7 @@ namespace MNet
         RprChannelID channel;
         public RprChannelID Channel => channel;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
             behaviour.Serialize(writer);
@@ -383,7 +383,7 @@ namespace MNet
             channel.Serialize(writer);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
@@ -442,7 +442,7 @@ namespace MNet
         RprChannelID channel;
         public RprChannelID Channel => channel;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
             entity.Serialize(writer);
@@ -454,7 +454,7 @@ namespace MNet
             channel.Serialize(writer);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
             entity.Deserialize(reader);
@@ -504,7 +504,7 @@ namespace MNet
         RemoteBufferMode bufferMode;
         public RemoteBufferMode BufferMode => bufferMode;
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             entity.Serialize(writer);
             behaviour.Serialize(writer);
@@ -515,7 +515,7 @@ namespace MNet
             writer.Write(bufferMode);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
             behaviour.Deserialize(reader);
@@ -568,7 +568,7 @@ namespace MNet
         byte[] raw;
         public byte[] Raw { get { return raw; } }
 
-        public void Serialize(NetworkStream writer)
+        public void Serialize(NetworkWriter writer)
         {
             sender.Serialize(writer);
             entity.Serialize(writer);
@@ -578,7 +578,7 @@ namespace MNet
             writer.Write(raw);
         }
 
-        public void Deserialize(NetworkStream reader)
+        public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
             entity.Deserialize(reader);

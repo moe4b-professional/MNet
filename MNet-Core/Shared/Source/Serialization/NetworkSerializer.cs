@@ -17,7 +17,7 @@ namespace MNet
         #region Serialize
         public static byte[] Serialize<T>(T instance)
         {
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkWriter.Pool.Lease(out var stream))
             {
                 stream.Write(instance);
 
@@ -33,7 +33,7 @@ namespace MNet
         }
         public static byte[] Serialize(object instance, Type type)
         {
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkWriter.Pool.Lease(out var stream))
             {
                 stream.Write(instance, type);
 
@@ -45,7 +45,7 @@ namespace MNet
         #region Deserialize
         public static T Deserialize<T>(byte[] data)
         {
-            using (NetworkStream.Pool.Reader.Lease(out var stream))
+            using (NetworkReader.Pool.Lease(out var stream))
             {
                 stream.Assign(data);
                 return stream.Read<T>();
@@ -54,7 +54,7 @@ namespace MNet
 
         public static object Deserialize(byte[] data, Type type)
         {
-            using (NetworkStream.Pool.Reader.Lease(out var stream))
+            using (NetworkReader.Pool.Lease(out var stream))
             {
                 stream.Assign(data);
                 return stream.Read(type);
@@ -88,8 +88,8 @@ namespace MNet
 
     public interface IManualNetworkSerializable
     {
-        void Serialize(NetworkStream writer);
+        void Serialize(NetworkWriter writer);
 
-        void Deserialize(NetworkStream reader);
+        void Deserialize(NetworkReader reader);
     }
 }

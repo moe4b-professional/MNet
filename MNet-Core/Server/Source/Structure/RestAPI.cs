@@ -63,14 +63,14 @@ namespace MNet
         {
             var url = FormatURL(ip, path);
 
-            var stream = NetworkStream.Pool.Writer.Take();
+            var stream = NetworkWriter.Pool.Take();
 
             stream.Write(payload);
             var content = new ByteArrayContent(stream.Data, 0, stream.Position);
 
             var response = await Client.PostAsync(url, content);
 
-            NetworkStream.Pool.Writer.Return(stream);
+            NetworkWriter.Pool.Return(stream);
 
             EnsureSuccess(response);
 
@@ -112,15 +112,15 @@ namespace MNet
 
         public static async Task<TPayload> Read<TPayload>(HttpResponseMessage response)
         {
-            var content = await response.Content.ReadAsStreamAsync();
+            var content = await response.Content.ReadAsStreamAsync() as MemoryStream;
 
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkStream.Pool.Lease(out var reader, out var writer))
             {
-                stream.Copy(content);
+                writer.Copy(content);
 
-                var result = stream.Read<TPayload>();
+                reader.Assign(writer);
 
-                return result;
+                return reader.Read<TPayload>();
             }
         }
     }
@@ -217,12 +217,12 @@ namespace MNet
 
         public static void Write<TPayload>(RestResponse response, TPayload payload)
         {
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkWriter.Pool.Lease(out var stream))
             {
                 response.StatusCode = (int)HttpStatusCode.OK;
 
                 stream.Write(payload);
-                var span = stream.ToSpan();
+                var span = stream.AsSpan();
                 response.WriteContent(span);
 
                 response.Close();
@@ -233,13 +233,14 @@ namespace MNet
         #region Read
         public static bool TryRead<TPayload>(RestRequest request, RestResponse response, out TPayload payload)
         {
-            using (NetworkStream.Pool.Writer.Lease(out var stream))
+            using (NetworkStream.Pool.Lease(out var reader, out var writer))
             {
-                stream.Copy(request.InputStream, (int)request.ContentLength64);
+                writer.Copy(request.InputStream, (int)request.ContentLength64);
+                reader.Assign(writer);
 
                 try
                 {
-                    payload = stream.Read<TPayload>();
+                    payload = reader.Read<TPayload>();
                 }
                 catch (Exception)
                 {
@@ -269,7 +270,16 @@ namespace MNet
 
             response.ContentLength64 = span.Length;
             response.OutputStream.Write(span);
-            response.OutputStream.Close();
+
+            try
+            {
+                response.OutputStream.Close();
+            }
+            catch (Exception)
+            {
+                Log.Warning($"Couldn't Close REST Response Stream");
+                throw;
+            }
         }
     }
 }
