@@ -21,7 +21,7 @@ namespace MNet
 
         public void Set<TValue>(TKey key, TValue value)
         {
-            using (NetworkStream.Pool.Lease(out var stream))
+            using (NetworkStream.Pool.Writer.Lease(out var stream))
             {
                 stream.Write(value);
 
@@ -58,11 +58,13 @@ namespace MNet
 
             if (payload.TryGetValue(key, out byte[] raw))
             {
-                var reader = new NetworkStream(raw);
-
                 try
                 {
-                    value = reader.Read<TValue>();
+                    using (NetworkStream.Pool.Reader.Lease(out var stream))
+                    {
+                        stream.Assign(raw);
+                        value = stream.Read<TValue>();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -130,7 +132,7 @@ namespace MNet
                 var key = reader.Read<TKey>();
 
                 var length = NetworkSerializationHelper.Length.Read(reader);
-                var raw = reader.Take(length);
+                var raw = reader.TakeArray(length);
 
                 payload.Add(key, raw);
             }

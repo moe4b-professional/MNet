@@ -47,8 +47,8 @@ namespace MNet
 
             internal static void Configure()
             {
-                NetworkReader = new NetworkStream();
-                NetworkWriter = new NetworkStream(1024);
+                NetworkReader = NetworkStream.Pool.Reader.Take();
+                NetworkWriter = NetworkStream.Pool.Writer.Take();
 
                 Profile = new NetworkClientProfile("Player");
 
@@ -124,7 +124,9 @@ namespace MNet
 
             static void MessageCallback(ArraySegment<byte> segment, DeliveryMode mode)
             {
-                using (NetworkReader.Assign(segment))
+                NetworkReader.Assign(segment);
+
+                using (NetworkReader)
                 {
                     var type = NetworkReader.Read<Type>();
                     MessageDispatcher.Invoke(type, NetworkReader);
@@ -146,7 +148,7 @@ namespace MNet
 
                 internal static void Configure()
                 {
-                    NetworkReader = new NetworkStream();
+                    NetworkReader = NetworkStream.Pool.Reader.Take();
                 }
 
                 internal static void Apply(ArraySegment<byte> buffer)

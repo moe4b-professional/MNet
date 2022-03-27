@@ -63,14 +63,14 @@ namespace MNet
         {
             var url = FormatURL(ip, path);
 
-            var stream = NetworkStream.Pool.Take();
+            var stream = NetworkStream.Pool.Writer.Take();
 
             stream.Write(payload);
             var content = new ByteArrayContent(stream.Data, 0, stream.Position);
 
             var response = await Client.PostAsync(url, content);
 
-            NetworkStream.Pool.Return(stream);
+            NetworkStream.Pool.Writer.Return(stream);
 
             EnsureSuccess(response);
 
@@ -114,9 +114,9 @@ namespace MNet
         {
             var content = await response.Content.ReadAsStreamAsync();
 
-            using (NetworkStream.Pool.Lease(out var stream))
+            using (NetworkStream.Pool.Writer.Lease(out var stream))
             {
-                stream.Read(content);
+                stream.Copy(content);
 
                 var result = stream.Read<TPayload>();
 
@@ -217,7 +217,7 @@ namespace MNet
 
         public static void Write<TPayload>(RestResponse response, TPayload payload)
         {
-            using (NetworkStream.Pool.Lease(out var stream))
+            using (NetworkStream.Pool.Writer.Lease(out var stream))
             {
                 response.StatusCode = (int)HttpStatusCode.OK;
 
@@ -233,9 +233,9 @@ namespace MNet
         #region Read
         public static bool TryRead<TPayload>(RestRequest request, RestResponse response, out TPayload payload)
         {
-            using (NetworkStream.Pool.Lease(out var stream))
+            using (NetworkStream.Pool.Writer.Lease(out var stream))
             {
-                stream.Read(request.InputStream, (int)request.ContentLength64);
+                stream.Copy(request.InputStream, (int)request.ContentLength64);
 
                 try
                 {

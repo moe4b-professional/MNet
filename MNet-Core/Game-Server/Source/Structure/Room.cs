@@ -1052,7 +1052,7 @@ namespace MNet
             {
                 base.Configure();
 
-                Writer = NetworkStream.Pool.Take();
+                Writer = NetworkStream.Pool.Writer.Take();
 
                 Room.OnStop += StopRoomCallback;
             }
@@ -1095,7 +1095,7 @@ namespace MNet
 
             void StopRoomCallback(Room room)
             {
-                NetworkStream.Pool.Return(Writer);
+                NetworkStream.Pool.Writer.Return(Writer);
             }
 
             public MessageBufferProperty()
@@ -1328,7 +1328,9 @@ namespace MNet
 
         void MessageRecievedCallback(NetworkClientID id, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
-            using (NetworkReader.Assign(segment))
+            NetworkReader.Assign(segment);
+
+            using (NetworkReader)
             {
                 Type type;
                 try
@@ -1373,7 +1375,8 @@ namespace MNet
 
             Realtime.UnregisterContext(App.Transport, ID.Value);
 
-            NetworkStream.Pool.Return(NetworkWriter);
+            NetworkStream.Pool.Writer.Return(NetworkWriter);
+            NetworkStream.Pool.Reader.Return(NetworkReader);
 
             OnStop?.Invoke(this);
         }
@@ -1395,8 +1398,8 @@ namespace MNet
 
             Scheduler = new Scheduler(App.TickDelay, Tick);
 
-            NetworkReader = new NetworkStream();
-            NetworkStream.Pool.Lease(out NetworkWriter);
+            NetworkReader = NetworkStream.Pool.Reader.Take();
+            NetworkWriter = NetworkStream.Pool.Writer.Take();
 
             ForAllProperties(x => x.Set(this));
             ForAllProperties(x => x.Configure());

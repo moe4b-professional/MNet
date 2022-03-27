@@ -56,7 +56,7 @@ namespace MNet
 
         protected static bool ReadNull(NetworkStream reader)
         {
-            return reader.Take() == 1 ? true : false;
+            return reader.TakeByte() == 1 ? true : false;
         }
         protected static bool ReadNull(NetworkStream reader, Type type)
         {
@@ -396,7 +396,7 @@ namespace MNet
 
         public override byte Deserialize(NetworkStream reader)
         {
-            return reader.Take();
+            return reader.TakeByte();
         }
     }
     [Preserve]
@@ -409,7 +409,7 @@ namespace MNet
 
         public override sbyte Deserialize(NetworkStream reader)
         {
-            return (sbyte)reader.Take();
+            return (sbyte)reader.TakeByte();
         }
     }
 
@@ -423,7 +423,7 @@ namespace MNet
 
         public override bool Deserialize(NetworkStream reader)
         {
-            var value = reader.Take();
+            var value = reader.TakeByte();
 
             return value == 0 ? false : true;
         }
@@ -741,7 +741,7 @@ namespace MNet
 
         public override IPAddress Deserialize(NetworkStream reader)
         {
-            var length = reader.Take();
+            var length = reader.TakeByte();
 
             if (length == 0)
                 return null;
@@ -771,7 +771,7 @@ namespace MNet
             if (Helper.Length.Collection.Read(reader, out var length) == false)
                 return null;
 
-            var value = reader.Take(length);
+            var value = reader.TakeArray(length);
 
             return value;
         }
@@ -785,16 +785,13 @@ namespace MNet
             Helper.Length.Write(writer, instance.Count);
 
             writer.Insert(instance);
-
-            for (int i = 0; i < instance.Count; i++)
-                writer.Write(instance[i]);
         }
 
         public override ArraySegment<byte> Deserialize(NetworkStream reader)
         {
             Helper.Length.Read(reader, out var length);
 
-            var array = reader.Take(length);
+            var array = reader.TakeArray(length);
 
             return new ArraySegment<byte>(array);
         }
@@ -903,7 +900,7 @@ namespace MNet
 
         public override Type Deserialize(NetworkStream reader)
         {
-            var code = reader.Take();
+            var code = reader.TakeByte();
 
             var value = NetworkPayload.GetType(code);
 

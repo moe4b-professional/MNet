@@ -24,15 +24,15 @@ namespace MNet
 	{
 		public Animator Component { get; protected set; }
 
-		NetworkStream writer;
-		NetworkStream reader;
+		NetworkStream NetworkWriter;
+		NetworkStream NetworkReader;
 
 		void Awake()
 		{
 			Component = GetComponent<Animator>();
 
-			writer = new NetworkStream(100);
-			reader = new NetworkStream();
+			NetworkWriter = NetworkStream.Pool.Writer.Take();
+			NetworkReader = NetworkStream.Pool.Reader.Take();
 
 			parameters.Configure(this);
 			layers.Configure(this);
@@ -745,21 +745,23 @@ namespace MNet
 			{
 				if (list[i].Ignore) continue;
 
-				list[i].WriteBinary(writer);
+				list[i].WriteBinary(NetworkWriter);
 			}
 
-			return writer.Flush();
+			return NetworkWriter.Flush();
 		}
 		void ReadAll<T>(IList<T> list, byte[] binary)
 			where T : ParametersProperty.Property
 		{
-            using (reader.Assign(binary))
+			NetworkReader.Assign(binary);
+
+			using (NetworkReader)
             {
 				for (int i = 0; i < list.Count; i++)
 				{
 					if (list[i].Ignore) continue;
 
-					list[i].ReadBinary(reader);
+					list[i].ReadBinary(NetworkReader);
 				}
 			}
 		}
@@ -1023,23 +1025,25 @@ namespace MNet
 			{
 				if (layers[i].Ignore) continue;
 
-				layers[i].WriteBinary(writer);
+				layers[i].WriteBinary(NetworkWriter);
 			}
 
-			var binary = writer.Flush();
+			var binary = NetworkWriter.Flush();
 
 			Network.BufferRPC(BufferLayerWeights, binary).Send();
 		}
 		[NetworkRPC]
 		void BufferLayerWeights(byte[] binary, RpcInfo info)
 		{
-			using (reader.Assign(binary))
+			NetworkReader.Assign(binary);
+
+			using (NetworkReader)
 			{
 				for (int i = 0; i < layers.Count; i++)
 				{
 					if (layers[i].Ignore) continue;
 
-					layers[i].ReadBinary(reader);
+					layers[i].ReadBinary(NetworkReader);
 				}
 			}
 		}
@@ -1096,6 +1100,12 @@ namespace MNet
 
 				if (layer.Translate() == false) continue;
 			}
+		}
+
+		void OnDestroy()
+		{
+			NetworkStream.Pool.Writer.Return(NetworkWriter);
+			NetworkStream.Pool.Reader.Return(NetworkReader);
 		}
 
 #if UNITY_EDITOR

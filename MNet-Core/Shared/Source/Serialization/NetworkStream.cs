@@ -14,24 +14,6 @@ namespace MNet
         protected byte[] data;
         public byte[] Data { get { return data; } }
 
-        public NetworkStream Assign(ArraySegment<byte> segment)
-        {
-            data = segment.Array;
-            Position = segment.Offset;
-
-            return this;
-        }
-
-        public NetworkStream Read(Stream stream) => Read(stream, (int)(stream.Length));
-        public NetworkStream Read(Stream stream, int count)
-        {
-            if (count > Remaining) Fit(count);
-
-            stream.Read(data, Position, count);
-
-            return this;
-        }
-
         /// <summary>
         /// The Available Binary Capacity
         /// </summary>
@@ -57,6 +39,26 @@ namespace MNet
         /// The Remaining Amount of Capacity
         /// </summary>
         public int Remaining => Capacity - Position;
+
+        #region Assign
+        public void Assign(ArraySegment<byte> segment)
+        {
+            data = segment.Array;
+            Position = segment.Offset;
+        }
+        #endregion
+
+        #region Copy
+        public NetworkStream Copy(Stream stream) => Copy(stream, (int)(stream.Length));
+        public NetworkStream Copy(Stream stream, int count)
+        {
+            if (count > Remaining) Fit(count);
+
+            stream.Read(data, Position, count);
+
+            return this;
+        }
+        #endregion
 
         #region Sizing
         public const uint DefaultResizeLength = 512;
@@ -97,10 +99,7 @@ namespace MNet
         /// </summary>
         /// <returns></returns>
         public ArraySegment<byte> ToSegment() => ToSegment(0, Position);
-        public ArraySegment<byte> ToSegment(int offset, int count)
-        {
-            return new ArraySegment<byte>(data, offset, count);
-        }
+        public ArraySegment<byte> ToSegment(int offset, int count) => new ArraySegment<byte>(data, offset, count);
 
         public Span<byte> ToSpan() => ToSpan(0, Position);
         public Span<byte> ToSpan(int offset, int count) => new Span<byte>(data, offset, count);
@@ -172,7 +171,7 @@ namespace MNet
         /// Retrieves the Next Byte in Stream and Iterates the Position by 1
         /// </summary>
         /// <returns></returns>
-        public byte Take()
+        public byte TakeByte()
         {
             Position += 1;
 
@@ -184,7 +183,7 @@ namespace MNet
         /// </summary>
         /// <param name="length"></param>
         /// <returns></returns>
-        public byte[] Take(int length)
+        public byte[] TakeArray(int length)
         {
             var raw = ToArray(Position, length);
             Position += length;
@@ -350,10 +349,10 @@ namespace MNet
         /// </summary>
         public void Dispose() => Reset();
 
-        public NetworkStream() : this(null) { }
-        public NetworkStream(int capacity) : this(new byte[capacity]) { }
-        public NetworkStream(byte[] data) : this(data, 0) { }
-        public NetworkStream(byte[] data, int position)
+        private NetworkStream() : this(null) { }
+        private NetworkStream(int capacity) : this(new byte[capacity]) { }
+        private NetworkStream(byte[] data) : this(data, 0) { }
+        private NetworkStream(byte[] data, int position)
         {
             this.data = data;
             this.Position = position;
@@ -365,81 +364,163 @@ namespace MNet
 
         public static class Pool
         {
-            static Queue<NetworkStream> Queue;
-
-            public static int Count
+            public static class Writer
             {
-                get
+                static Queue<NetworkStream> Queue;
+
+                public static int Count
+                {
+                    get
+                    {
+                        lock (Queue)
+                        {
+                            return Queue.Count;
+                        }
+                    }
+                }
+
+                public static int Allocations { get; private set; } = 0;
+
+                public const int DefaultBinarySize = 1024;
+
+                public ref struct Handle
+                {
+                    NetworkStream stream;
+
+                    public void Dispose() => Return(stream);
+
+                    public Handle(NetworkStream stream)
+                    {
+                        this.stream = stream;
+                    }
+                }
+
+                public static Handle Lease(out NetworkStream stream)
+                {
+                    stream = Take();
+                    return new Handle(stream);
+                }
+                public static NetworkStream Take()
                 {
                     lock (Queue)
                     {
-                        return Queue.Count;
+                        if (Queue.Count > 0)
+                        {
+                            return Queue.Dequeue();
+                        }
                     }
+
+                    return Create();
                 }
-            }
 
-            public static int Allocations { get; private set; } = 0;
-
-            public const int DefaultBinarySize = 1024;
-
-            public ref struct Handle
-            {
-                NetworkStream stream;
-
-                public void Dispose() => Return(stream);
-
-                public Handle(NetworkStream stream)
+                static NetworkStream Create()
                 {
-                    this.stream = stream;
-                }
-            }
-
-            public static Handle Lease(out NetworkStream stream)
-            {
-                stream = Take();
-                return new Handle(stream);
-            }
-            public static NetworkStream Take()
-            {
-                lock (Queue)
-                {
-                    if (Queue.Count > 0)
+                    lock (Queue)
                     {
-                        return Queue.Dequeue();
-                    }
-                }
-
-                return Create();
-            }
-
-            static NetworkStream Create()
-            {
-                lock (Queue)
-                {
-                    Allocations += 1;
+                        Allocations += 1;
 
 #if DEBUG
-                    if (Allocations % 100 == 0)
-                        Log.Warning($"{Allocations} NetworkStreams Allocated, Are you Making Sure to Dispose of Old Network Streams?");
+                        if (Allocations % 100 == 0)
+                            Log.Warning($"{Allocations} NetworkStreams Allocated, Are you Making Sure to Dispose of Old Network Streams?");
 #endif
+                    }
+
+                    var stream = new NetworkStream(DefaultBinarySize);
+
+                    return stream;
                 }
 
-                var stream = new NetworkStream(DefaultBinarySize);
+                public static void Return(NetworkStream stream)
+                {
+                    stream.Reset();
 
-                return stream;
+                    lock (Queue)
+                        Queue.Enqueue(stream);
+                }
+
+                static Writer()
+                {
+                    Queue = new Queue<NetworkStream>();
+                }
             }
 
-            public static void Return(NetworkStream stream)
+            public static class Reader
             {
-                stream.Reset();
+                static Queue<NetworkStream> Queue;
 
-                lock (Queue)
-                    Queue.Enqueue(stream);
-            }
+                public static int Count
+                {
+                    get
+                    {
+                        lock (Queue)
+                        {
+                            return Queue.Count;
+                        }
+                    }
+                }
 
-            static Pool()
-            {
-                Queue = new Queue<NetworkStream>();
+                public static int Allocations { get; private set; } = 0;
+
+                public ref struct Handle
+                {
+                    NetworkStream stream;
+
+                    public void Dispose() => Return(stream);
+
+                    public Handle(NetworkStream stream)
+                    {
+                        this.stream = stream;
+                    }
+                }
+
+                public static Handle Lease(out NetworkStream stream)
+                {
+                    stream = Take();
+                    return new Handle(stream);
+                }
+                public static NetworkStream Take()
+                {
+                    lock (Queue)
+                    {
+                        if (Queue.Count > 0)
+                        {
+                            return Queue.Dequeue();
+                        }
+                    }
+
+                    return Create();
+                }
+
+                static NetworkStream Create()
+                {
+                    lock (Queue)
+                    {
+                        Allocations += 1;
+
+#if DEBUG
+                        if (Allocations % 100 == 0)
+                            Log.Warning($"{Allocations} NetworkStreams Allocated, Are you Making Sure to Dispose of Old Network Streams?");
+#endif
+                    }
+
+                    var stream = new NetworkStream();
+
+                    return stream;
+                }
+
+                public static void Return(NetworkStream stream)
+                {
+                    stream.Reset();
+                    stream.data = null;
+
+                    lock (Queue)
+                        Queue.Enqueue(stream);
+                }
+
+                static Reader()
+                {
+                    Queue = new Queue<NetworkStream>();
+                }
             }
         }
 

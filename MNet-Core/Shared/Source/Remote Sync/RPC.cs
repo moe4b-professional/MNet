@@ -21,7 +21,7 @@ namespace MNet
 
         public void Deserialize(NetworkStream reader)
         {
-            value = reader.Take();
+            value = reader.TakeByte();
         }
 
         public RpcID(byte value)

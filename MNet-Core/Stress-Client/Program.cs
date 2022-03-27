@@ -123,8 +123,8 @@ namespace MNet
 
         public Player(int index)
         {
-            writer = new NetworkStream(1024);
-            reader = new NetworkStream();
+            writer = NetworkStream.Pool.Writer.Take();
+            reader = NetworkStream.Pool.Reader.Take();
 
             this.Index = index;
 
@@ -181,7 +181,9 @@ namespace MNet
         {
             var segment = packet.GetRemainingBytesSegment();
 
-            using (reader.Assign(segment))
+            reader.Assign(segment);
+
+            using (reader)
             {
                 var type = reader.Read<Type>();
 

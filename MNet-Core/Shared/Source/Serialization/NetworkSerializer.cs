@@ -17,7 +17,7 @@ namespace MNet
         #region Serialize
         public static byte[] Serialize<T>(T instance)
         {
-            using (NetworkStream.Pool.Lease(out var stream))
+            using (NetworkStream.Pool.Writer.Lease(out var stream))
             {
                 stream.Write(instance);
 
@@ -33,7 +33,7 @@ namespace MNet
         }
         public static byte[] Serialize(object instance, Type type)
         {
-            using (NetworkStream.Pool.Lease(out var stream))
+            using (NetworkStream.Pool.Writer.Lease(out var stream))
             {
                 stream.Write(instance, type);
 
@@ -45,20 +45,20 @@ namespace MNet
         #region Deserialize
         public static T Deserialize<T>(byte[] data)
         {
-            var reader = new NetworkStream(data);
-
-            reader.Read(out T result);
-
-            return result;
+            using (NetworkStream.Pool.Reader.Lease(out var stream))
+            {
+                stream.Assign(data);
+                return stream.Read<T>();
+            }
         }
 
         public static object Deserialize(byte[] data, Type type)
         {
-            var reader = new NetworkStream(data);
-
-            var result = reader.Read(type);
-
-            return result;
+            using (NetworkStream.Pool.Reader.Lease(out var stream))
+            {
+                stream.Assign(data);
+                return stream.Read(type);
+            }
         }
         #endregion
 

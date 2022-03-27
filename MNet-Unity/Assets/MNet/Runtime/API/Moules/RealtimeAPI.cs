@@ -168,8 +168,10 @@ namespace MNet
                         Release(packet);
 
                         count -= 1;
-
                         if (count <= 0) break;
+
+                        if (Pause.Active) break;
+                        if (Client.Buffer.IsOn) break;
                     }
                 }
 
