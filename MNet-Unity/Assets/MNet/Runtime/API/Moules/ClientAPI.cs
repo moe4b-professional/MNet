@@ -144,14 +144,15 @@ namespace MNet
 
                 public static event BufferDelegate OnBegin;
 
-                static NetworkStream NetworkReader;
+                static NetworkStream NetworkStream;
+                static int StreamLength;
 
                 internal static void Configure()
                 {
-                    NetworkReader = NetworkStream.Pool.Reader.Take();
+                    NetworkStream = NetworkStream.Pool.Writer.Take();
                 }
 
-                internal static void Apply(ArraySegment<byte> buffer)
+                internal static void Apply(ByteChunk buffer)
                 {
                     if (IsOn) throw new Exception($"Cannot Apply Multiple Buffers at the Same Time");
 
@@ -166,10 +167,17 @@ namespace MNet
 
                     NetworkAPI.OnProcess += Process;
 
-                    if (buffer.Count == 0)
+                    StreamLength = buffer.Count;
+
+                    if (StreamLength == 0)
+                    {
                         End();
+                    }
                     else
-                        NetworkReader.Assign(buffer);
+                    {
+                        NetworkStream.Reset();
+                        NetworkStream.Copy(buffer);
+                    }
                 }
 
                 static void Process()
@@ -179,12 +187,15 @@ namespace MNet
                         if (Realtime.Pause.Active)
                             break;
 
-                        var type = NetworkReader.Read<Type>();
+                        var type = NetworkStream.Read<Type>();
 
-                        MessageDispatcher.Invoke(type, NetworkReader);
+                        MessageDispatcher.Invoke(type, NetworkStream);
 
-                        if(NetworkReader.Remaining == 0)
+                        if(NetworkStream.Position >= StreamLength)
                         {
+                            if (NetworkStream.Position > StreamLength)
+                                Debug.LogError($"Buffer stream read past desired length, corrupted data parsed most likely");
+
                             End();
                             break;
                         }
@@ -348,7 +359,7 @@ namespace MNet
                     {
                         var id = new NetworkClientID();
                         var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Profile) };
-                        var buffer = default(ArraySegment<byte>);
+                        var buffer = default(ByteChunk);
                         var time = TimeResponse.Write(default, request.Time);
 
                         var response = new RegisterClientResponse(id, OfflineMode.RoomInfo, clients, id, buffer, time);

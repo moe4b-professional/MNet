@@ -46,9 +46,21 @@ namespace MNet
             data = segment.Array;
             Position = segment.Offset;
         }
+        public void Assign(ByteChunk segment)
+        {
+            data = segment.Array;
+            Position = segment.Offset;
+        }
         #endregion
 
         #region Copy
+        public void Copy(ByteChunk segment)
+        {
+            if (segment.Count > Remaining) Fit(segment.Count);
+
+            Buffer.BlockCopy(segment.Array, segment.Offset, data, Position, segment.Count);
+        }
+
         public NetworkStream Copy(Stream stream) => Copy(stream, (int)(stream.Length));
         public NetworkStream Copy(Stream stream, int count)
         {
@@ -100,6 +112,9 @@ namespace MNet
         /// <returns></returns>
         public ArraySegment<byte> ToSegment() => ToSegment(0, Position);
         public ArraySegment<byte> ToSegment(int offset, int count) => new ArraySegment<byte>(data, offset, count);
+
+        public ByteChunk ToChunk() => ToChunk(0, Position);
+        public ByteChunk ToChunk(int offset, int count) => new ByteChunk(Data, offset, count);
 
         public Span<byte> ToSpan() => ToSpan(0, Position);
         public Span<byte> ToSpan(int offset, int count) => new Span<byte>(data, offset, count);
@@ -199,6 +214,20 @@ namespace MNet
         public Span<byte> TakeSpan(int length)
         {
             var span = new Span<byte>(data, Position, length);
+
+            Position += length;
+
+            return span;
+        }
+
+        /// <summary>
+        /// Retrieves the Next Bytes in Memory and Iterates the Position by the Length
+        /// </summary>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public ByteChunk TakeChunk(int length)
+        {
+            var span = new ByteChunk(data, Position, length);
 
             Position += length;
 

@@ -155,7 +155,7 @@ namespace MNet
                 ///Because by the time the buffer list gets serialized, it would be the latest version in the room
                 ///And the client will still recieve the entity spawn command in real-time because they are now registered
                 ///And yeah ... don't ask me how I found this bug :P
-                var buffer = MessageBuffer.ToSegment();
+                var buffer = MessageBuffer.ToChunk();
 
                 var room = Info.Get();
                 var clients = GetInfo();
@@ -1057,7 +1057,7 @@ namespace MNet
                 Room.OnStop += StopRoomCallback;
             }
 
-            public ArraySegment<byte> ToSegment()
+            public ByteChunk ToChunk()
             {
                 Writer.Reset();
 
@@ -1067,7 +1067,7 @@ namespace MNet
                 for (int i = 0; i < List.Count; i++)
                     List[i].Write(Writer);
 
-                return Writer.ToSegment();
+                return Writer.ToChunk();
             }
 
             public MessageBufferHandle<T> Add<T>(T payload)

@@ -225,23 +225,23 @@ namespace MNet
         NetworkClientID master;
         public NetworkClientID Master => master;
 
-        ArraySegment<byte> buffer;
-        public ArraySegment<byte> Buffer => buffer;
+        ByteChunk buffer;
+        public ByteChunk Buffer => buffer;
 
         TimeResponse time;
         public TimeResponse Time => time;
 
         public void Select(ref NetworkSerializationContext context)
         {
+            context.Select(ref buffer);
             context.Select(ref id);
             context.Select(ref room);
             context.Select(ref clients);
-            context.Select(ref buffer);
             context.Select(ref master);
             context.Select(ref time);
         }
 
-        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, ArraySegment<byte> buffer, TimeResponse time)
+        public RegisterClientResponse(NetworkClientID id, RoomInfo room, NetworkClientInfo[] clients, NetworkClientID master, ByteChunk buffer, TimeResponse time)
         {
             this.id = id;
             this.room = room;
