@@ -840,7 +840,7 @@ namespace MNet
                     var selection = promises.Values.Where(IsClient).ToArray();
                     bool IsClient(RprPromise promise) => promise.Target == client;
 
-                    foreach (var promise in selection) Fullfil(promise, RemoteResponseType.Disconnect, null);
+                    foreach (var promise in selection) Fullfil(promise, RemoteResponseType.Disconnect, default);
                 }
 
                 #region Fullfil
@@ -852,7 +852,7 @@ namespace MNet
                         return;
                     }
 
-                    Fullfil(promise, command.Response, null);
+                    Fullfil(promise, command.Response, default);
                 }
 
                 static void Fullfil(ref RprResponse response)
@@ -877,7 +877,7 @@ namespace MNet
                     Fullfil(promise, response.Response, response.Raw);
                 }
 
-                static void Fullfil(RprPromise promise, RemoteResponseType response, byte[] raw)
+                static void Fullfil(RprPromise promise, RemoteResponseType response, ByteChunk raw)
                 {
                     promise.Fullfil(response, raw);
 
@@ -912,8 +912,15 @@ namespace MNet
 
                 internal static bool Respond(QueryRpcCommand command, object value, Type type)
                 {
-                    var request = RprRequest.Write(command.Sender, command.Channel, value, type);
-                    return Send(ref request);
+                    using (NetworkWriter.Pool.Lease(out var stream))
+                    {
+                        stream.Write(value, type);
+
+                        var chunk = stream.AsChunk();
+                        var request = RprRequest.Write(command.Sender, command.Channel, chunk);
+
+                        return Send(ref request);
+                    }
                 }
                 #endregion
             }

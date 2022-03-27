@@ -110,7 +110,11 @@ namespace MNet
             T value;
             try
             {
-                value = command.Read<T>();
+                using (NetworkReader.Pool.Lease(out var stream))
+                {
+                    stream.Assign(command.Raw);
+                    value = stream.Read<T>();
+                }
             }
             catch (Exception ex)
             {
@@ -242,9 +246,15 @@ namespace MNet
         {
             FluentObjectRecord.Remove(this);
 
-            var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+            using (NetworkWriter.Pool.Lease(out var stream))
+            {
+                stream.Write(value);
 
-            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+                var raw = stream.AsChunk();
+                var request = BroadcastSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, raw);
+
+                Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            }
         }
 
         public BroadcastSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour) : base(SyncVar, value, behaviour)
@@ -259,9 +269,15 @@ namespace MNet
         {
             FluentObjectRecord.Remove(this);
 
-            var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, value);
+            using (NetworkWriter.Pool.Lease(out var stream))
+            {
+                stream.Write(value);
 
-            Behaviour.Send(ref request, delivery: delivery, channel: channel);
+                var raw = stream.AsChunk();
+                var request = BufferSyncVarRequest.Write(Entity.ID, Behaviour.ID, Variable.ID, group, raw);
+
+                Behaviour.Send(ref request, delivery: delivery, channel: channel);
+            }
         }
 
         public BufferSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour) : base(SyncVar, value, behaviour)

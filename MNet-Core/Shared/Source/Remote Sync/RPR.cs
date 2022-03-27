@@ -73,8 +73,8 @@ namespace MNet
         RemoteResponseType response;
         public RemoteResponseType Response => response;
 
-        byte[] raw;
-        public byte[] Raw => raw;
+        ByteChunk raw;
+        public ByteChunk Raw => raw;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -90,7 +90,7 @@ namespace MNet
             }
         }
 
-        public RprRequest(NetworkClientID target, RprChannelID channel, RemoteResponseType response, byte[] raw)
+        public RprRequest(NetworkClientID target, RprChannelID channel, RemoteResponseType response, ByteChunk raw)
         {
             this.target = target;
             this.channel = channel;
@@ -98,17 +98,14 @@ namespace MNet
             this.raw = raw;
         }
 
-        public static RprRequest Write(NetworkClientID target, RprChannelID channel, object result, Type type)
+        public static RprRequest Write(NetworkClientID target, RprChannelID channel, ByteChunk raw)
         {
-            var raw = NetworkSerializer.Serialize(result, type);
-
             var request = new RprRequest(target, channel, RemoteResponseType.Success, raw);
             return request;
         }
-
         public static RprRequest Write(NetworkClientID target, RprChannelID channel, RemoteResponseType response)
         {
-            var request = new RprRequest(target, channel, response, null);
+            var request = new RprRequest(target, channel, response, default);
             return request;
         }
     }
@@ -125,8 +122,8 @@ namespace MNet
         RemoteResponseType response;
         public RemoteResponseType Response => response;
 
-        byte[] raw;
-        public byte[] Raw => raw;
+        ByteChunk raw;
+        public ByteChunk Raw => raw;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -142,7 +139,7 @@ namespace MNet
             }
         }
 
-        public RprResponse(NetworkClientID sender, RprChannelID channel, RemoteResponseType response, byte[] raw)
+        public RprResponse(NetworkClientID sender, RprChannelID channel, RemoteResponseType response, ByteChunk raw)
         {
             this.sender = sender;
             this.channel = channel;

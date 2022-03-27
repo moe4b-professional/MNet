@@ -18,7 +18,6 @@ namespace MNet
         {
             writer.Insert(value);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             value = reader.TakeByte();
@@ -73,7 +72,7 @@ namespace MNet
 
         RpcID Method { get; }
 
-        byte[] Raw { get; }
+        ByteChunk Raw { get; }
     }
 
     [Preserve]
@@ -87,7 +86,7 @@ namespace MNet
 
         RpcID Method { get; }
 
-        byte[] Raw { get; }
+        ByteChunk Raw { get; }
     }
 
     #region Broadcast
@@ -103,8 +102,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         RemoteBufferMode bufferMode;
         public RemoteBufferMode BufferMode => bufferMode;
@@ -127,7 +126,6 @@ namespace MNet
             group.Serialize(writer);
             writer.Write(exception);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
@@ -152,7 +150,7 @@ namespace MNet
             RemoteBufferMode bufferMode,
             NetworkGroupID group,
             NetworkClientID? exception,
-            byte[] raw)
+            ByteChunk raw)
         {
             var request = new BroadcastRpcRequest()
             {
@@ -184,8 +182,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         public void Serialize(NetworkWriter writer)
         {
@@ -196,7 +194,6 @@ namespace MNet
 
             writer.Write(raw);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
@@ -211,13 +208,15 @@ namespace MNet
 
         public static BroadcastRpcCommand Write(NetworkClientID sender, BroadcastRpcRequest request)
         {
+            var raw = request.BufferMode == RemoteBufferMode.None ? request.Raw : request.Raw.Clone();
+
             var command = new BroadcastRpcCommand()
             {
                 sender = sender,
                 entity = request.Entity,
                 behaviour = request.Behaviour,
                 method = request.Method,
-                raw = request.Raw,
+                raw = raw,
             };
 
             return command;
@@ -238,8 +237,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         NetworkClientID target;
         public NetworkClientID Target => target;
@@ -254,7 +253,6 @@ namespace MNet
 
             target.Serialize(writer);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
@@ -274,7 +272,7 @@ namespace MNet
             NetworkEntityID entity,
             NetworkBehaviourID behaviour,
             RpcID method, NetworkClientID target,
-            byte[] raw)
+            ByteChunk raw)
         {
             var request = new TargetRpcRequest()
             {
@@ -304,8 +302,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         public void Serialize(NetworkWriter writer)
         {
@@ -318,7 +316,6 @@ namespace MNet
 
             writer.Write(raw);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
@@ -362,8 +359,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         NetworkClientID target;
         public NetworkClientID Target => target;
@@ -382,7 +379,6 @@ namespace MNet
             target.Serialize(writer);
             channel.Serialize(writer);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
@@ -405,7 +401,7 @@ namespace MNet
             RpcID method,
             NetworkClientID target,
             RprChannelID channel,
-            byte[] raw)
+            ByteChunk raw)
         {
             var request = new QueryRpcRequest()
             {
@@ -436,8 +432,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         RprChannelID channel;
         public RprChannelID Channel => channel;
@@ -453,7 +449,6 @@ namespace MNet
 
             channel.Serialize(writer);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
@@ -498,8 +493,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         RemoteBufferMode bufferMode;
         public RemoteBufferMode BufferMode => bufferMode;
@@ -514,7 +509,6 @@ namespace MNet
 
             writer.Write(bufferMode);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
@@ -535,7 +529,7 @@ namespace MNet
             NetworkBehaviourID behaviour,
             RpcID method,
             RemoteBufferMode bufferMode,
-            byte[] raw)
+            ByteChunk raw)
         {
             var request = new BufferRpcRequest()
             {
@@ -565,8 +559,8 @@ namespace MNet
         RpcID method;
         public RpcID Method { get { return method; } }
 
-        byte[] raw;
-        public byte[] Raw { get { return raw; } }
+        ByteChunk raw;
+        public ByteChunk Raw { get { return raw; } }
 
         public void Serialize(NetworkWriter writer)
         {
@@ -577,7 +571,6 @@ namespace MNet
 
             writer.Write(raw);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             sender.Deserialize(reader);
@@ -592,13 +585,15 @@ namespace MNet
 
         public static BufferRpcCommand Write(NetworkClientID sender, BufferRpcRequest request)
         {
+            var raw = request.Raw.Clone();
+
             var command = new BufferRpcCommand()
             {
                 sender = sender,
                 entity = request.Entity,
                 behaviour = request.Behaviour,
                 method = request.Method,
-                raw = request.Raw,
+                raw = raw,
             };
 
             return command;

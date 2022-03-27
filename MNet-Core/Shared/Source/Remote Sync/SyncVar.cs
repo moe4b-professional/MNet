@@ -52,9 +52,8 @@ namespace MNet
 
         NetworkGroupID Group { get; set; }
 
-        byte[] Raw { get; }
+        ByteChunk Raw { get; }
     }
-
     public interface ISyncVarCommand
     {
         NetworkClientID Sender { get; }
@@ -65,10 +64,7 @@ namespace MNet
 
         SyncVarID Field { get; }
 
-        byte[] Raw { get; }
-
-        T Read<T>();
-        object Read(Type type);
+        ByteChunk Raw { get; }
     }
 
     [Preserve]
@@ -91,8 +87,8 @@ namespace MNet
             set => group = value;
         }
 
-        byte[] raw;
-        public byte[] Raw => raw;
+        ByteChunk raw;
+        public ByteChunk Raw => raw;
 
         public void Serialize(NetworkWriter writer)
         {
@@ -103,7 +99,6 @@ namespace MNet
 
             writer.Write(raw);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
@@ -114,10 +109,8 @@ namespace MNet
             reader.Read(out raw);
         }
 
-        public static BroadcastSyncVarRequest Write<T>(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, T value)
+        public static BroadcastSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, ByteChunk raw)
         {
-            var raw = NetworkSerializer.Serialize(value);
-
             var request = new BroadcastSyncVarRequest()
             {
                 entity = entity,
@@ -151,8 +144,8 @@ namespace MNet
             set => group = value;
         }
 
-        byte[] raw;
-        public byte[] Raw => raw;
+        ByteChunk raw;
+        public ByteChunk Raw => raw;
 
         public void Serialize(NetworkWriter writer)
         {
@@ -163,7 +156,6 @@ namespace MNet
 
             writer.Write(raw);
         }
-
         public void Deserialize(NetworkReader reader)
         {
             entity.Deserialize(reader);
@@ -174,10 +166,8 @@ namespace MNet
             reader.Read(out raw);
         }
 
-        public static BufferSyncVarRequest Write<T>(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, T value)
+        public static BufferSyncVarRequest Write(NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, NetworkGroupID group, ByteChunk raw)
         {
-            var raw = NetworkSerializer.Serialize(value);
-
             var request = new BufferSyncVarRequest()
             {
                 entity = entity,
@@ -207,21 +197,8 @@ namespace MNet
         SyncVarID field;
         public SyncVarID Field => field;
 
-        byte[] raw;
-        public byte[] Raw => raw;
-
-        public T Read<T>()
-        {
-            var value = NetworkSerializer.Deserialize<T>(raw);
-
-            return value;
-        }
-        public object Read(Type type)
-        {
-            var value = NetworkSerializer.Deserialize(raw, type);
-
-            return value;
-        }
+        ByteChunk raw;
+        public ByteChunk Raw => raw;
 
         public void Serialize(NetworkWriter writer)
         {
@@ -245,20 +222,18 @@ namespace MNet
         public static SyncVarCommand Write<T>(NetworkClientID sender, T request)
             where T : ISyncVarRequest
         {
-            return Write(sender, request.Entity, request.Behaviour, request.Field, request.Raw);
-        }
-        public static SyncVarCommand Write(NetworkClientID sender, NetworkEntityID entity, NetworkBehaviourID behaviour, SyncVarID field, byte[] raw)
-        {
-            var request = new SyncVarCommand()
+            var raw = request.Raw.Clone();
+
+            var command = new SyncVarCommand()
             {
                 sender = sender,
-                entity = entity,
-                behaviour = behaviour,
-                field = field,
+                entity = request.Entity,
+                behaviour = request.Behaviour,
+                field = request.Field,
                 raw = raw,
             };
 
-            return request;
+            return command;
         }
     }
 }

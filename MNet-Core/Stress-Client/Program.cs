@@ -223,14 +223,16 @@ namespace MNet
 
         void SendBroadcastRPC(DeliveryMethod delivery)
         {
-            var request = BroadcastRpcRequest.Write(EntityID, default, default, RemoteBufferMode.Last, default, null, Client.Payload);
+            var chunk = new ByteChunk(Client.Payload);
+            var request = BroadcastRpcRequest.Write(EntityID, default, default, RemoteBufferMode.Last, default, null, chunk);
 
             Send(ref request, delivery);
         }
 
         void SendSyncVar(DeliveryMethod delivery)
         {
-            var request = BroadcastSyncVarRequest.Write(EntityID, default, default, default, Client.Payload);
+            var chunk = new ByteChunk(Client.Payload);
+            var request = BroadcastSyncVarRequest.Write(EntityID, default, default, default, chunk);
 
             Send(ref request, delivery);
         }

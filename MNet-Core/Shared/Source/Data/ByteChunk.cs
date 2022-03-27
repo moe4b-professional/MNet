@@ -43,10 +43,10 @@ namespace MNet
         public ByteChunk(byte[] array) : this(array, 0, array.Length) { }
 
         /// <summary>
-        /// Pins the ByteChunk in memory by allocating it's contents
+        /// Clones the ByteChunk in memory by allocating it's contents so it's no longer dangerous to use
         /// </summary>
         /// <returns></returns>
-        public ByteChunk Pin()
+        public ByteChunk Clone()
         {
             var destination = new byte[Count];
 
