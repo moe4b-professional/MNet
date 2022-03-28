@@ -1,2 +1,11 @@
 MNet-Release/
 MNet-Release.zip
+
+#Symbolic Links
+
+MNet-Core/LiteNetLib/Source
+MNet-Core/Shared/Source
+MNet-Unity/Assets/MNet/Shared
+MNet-Unity/Assets/MNet/Shared.meta
+MNet-Unity/Assets/MNet/Third Party/LiteNetLib/Source
+MNet-Unity/Assets/MNet/Third Party/LiteNetLib/Source.meta
