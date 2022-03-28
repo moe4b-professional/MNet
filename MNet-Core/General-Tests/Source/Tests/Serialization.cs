@@ -67,7 +67,7 @@ namespace MNet
         {
             SampleClass original = null;
 
-            var copy = NetworkSerializer.Clone(original, typeof(SampleClass));
+            var copy = NetworkSerializer.Clone(original);
 
             Assert.IsTrue(original == null);
             Assert.IsTrue(copy == null);

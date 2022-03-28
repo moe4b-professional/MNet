@@ -116,7 +116,7 @@ namespace MNet
 
             using (NetworkStream.Pool.Lease(out var reader, out var writer))
             {
-                writer.Copy(content);
+                writer.Insert(content);
 
                 reader.Assign(writer);
 
@@ -235,7 +235,7 @@ namespace MNet
         {
             using (NetworkStream.Pool.Lease(out var reader, out var writer))
             {
-                writer.Copy(request.InputStream, (int)request.ContentLength64);
+                writer.Insert(request.InputStream, (int)request.ContentLength64);
                 reader.Assign(writer);
 
                 try

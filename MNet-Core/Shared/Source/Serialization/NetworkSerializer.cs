@@ -64,20 +64,24 @@ namespace MNet
 
         public static T Clone<T>(T original)
         {
-            var binary = Serialize(original);
+            using (NetworkStream.Pool.Lease(out var reader, out var writer))
+            {
+                writer.Write(original);
+                reader.Assign(writer);
 
-            var instance = Deserialize<T>(binary);
-
-            return instance;
+                return reader.Read<T>();
+            }
         }
 
         public static object Clone(object original, Type type)
         {
-            var binary = Serialize(original, type);
+            using (NetworkStream.Pool.Lease(out var reader, out var writer))
+            {
+                writer.Write(original);
+                reader.Assign(writer);
 
-            var instance = Deserialize(binary, type);
-
-            return instance;
+                return reader.Read(type);
+            }
         }
     }
 

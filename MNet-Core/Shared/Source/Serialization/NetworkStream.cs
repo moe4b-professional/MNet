@@ -18,9 +18,9 @@ namespace MNet
         /// <summary>
         /// The Available Binary Capacity
         /// </summary>
-        public int Capacity => data == null ? 0 : data.Length;
+        public virtual int Capacity => data.Length;
 
-        int internal_position;
+        protected int internal_position;
         /// <summary>
         /// The Current Position of the Stream
         /// </summary>
@@ -144,27 +144,22 @@ namespace MNet
 
     public class NetworkReader : NetworkStream
     {
+        int internal_capacity;
+        public override int Capacity => internal_capacity;
+
         #region Assign
-        public void Assign(byte[] array) => Assign(array, 0);
-        public void Assign(byte[] array, int offset)
+        public void Assign(byte[] array) => Assign(array, 0, array.Length);
+        public void Assign(byte[] array, int offset, int count)
         {
             data = array;
-            Position = offset;
+
+            internal_capacity = count + offset;
+            internal_position = offset;
         }
 
-        public void Assign(ArraySegment<byte> segment)
-        {
-            data = segment.Array;
-            Position = segment.Offset;
-        }
-
-        public void Assign(ByteChunk segment)
-        {
-            data = segment.Array;
-            Position = segment.Offset;
-        }
-
-        public void Assign(NetworkWriter writer) => Assign(writer.Data);
+        public void Assign(ArraySegment<byte> segment) => Assign(segment.Array, segment.Offset, segment.Count);
+        public void Assign(ByteChunk chunk) => Assign(chunk.Array, chunk.Offset, chunk.Count);
+        public void Assign(NetworkWriter writer) => Assign(writer.Data, 0, writer.Position);
         #endregion
 
         #region Take
@@ -297,6 +292,7 @@ namespace MNet
         {
             base.Reset();
             data = default;
+            internal_capacity = 0;
         }
 
         protected NetworkReader() : base(null, 0) { }
@@ -373,16 +369,16 @@ namespace MNet
         /// <summary>
         /// Resize stream to fit a certian capacity
         /// </summary>
-        /// <param name="capacity"></param>
-        protected void Fit(int capacity)
+        /// <param name="size"></param>
+        protected void Fit(int size)
         {
-            if (Remaining >= capacity) return;
+            if (Remaining >= size) return;
 
-            if (capacity <= 0) throw new Exception($"Cannot Resize Network Buffer to Fit {capacity}");
+            if (size <= 0) throw new Exception($"Cannot Resize Network Buffer to Fit {size}");
 
             uint extra = DefaultResizeLength;
 
-            while (capacity > Remaining + extra)
+            while (size > Remaining + extra)
                 extra += DefaultResizeLength;
 
             Resize(extra);
@@ -394,30 +390,12 @@ namespace MNet
         /// <param name="extra"></param>
         protected void Resize(uint extra)
         {
-            var value = new byte[Capacity + extra];
+            var destination = new byte[Capacity + extra];
 
-            Buffer.BlockCopy(data, 0, value, 0, Position);
+            Buffer.BlockCopy(data, 0, destination, 0, Position);
 
-            this.data = value;
-        }
-        #endregion
-
-        #region Copy
-        public void Copy(ByteChunk segment)
-        {
-            Fit(segment.Count);
-
-            Buffer.BlockCopy(segment.Array, segment.Offset, data, Position, segment.Count);
-        }
-
-        public NetworkStream Copy(Stream stream) => Copy(stream, (int)(stream.Length));
-        public NetworkStream Copy(Stream stream, int count)
-        {
-            Fit(count);
-
-            stream.Read(data, Position, count);
-
-            return this;
+            Pool.Buffer.Return(data);
+            data = destination;
         }
         #endregion
 
@@ -446,25 +424,37 @@ namespace MNet
             Position += 1;
         }
 
-        public void Insert(Span<byte> span) => Insert(span, 0, span.Length);
-        public void Insert(Span<byte> span, int offset, int count)
-        {
-            Fit(count);
-
-            for (int i = offset; i < count; i++)
-            {
-                data[Position] = span[i];
-                Position += 1;
-            }
-        }
-
-        public void Insert(ArraySegment<byte> segment) => Insert(segment.Array, segment.Offset, segment.Count);
         public void Insert(byte[] source) => Insert(source, 0, source.Length);
         public void Insert(byte[] source, int offset, int count)
         {
             Fit(count);
 
             Buffer.BlockCopy(source, offset, data, Position, count);
+
+            Position += count;
+        }
+
+        public void Insert(ArraySegment<byte> segment) => Insert(segment.Array, segment.Offset, segment.Count);
+        public void Insert(ByteChunk chunk) => Insert(chunk.Array, chunk.Offset, chunk.Count);
+
+        public void Insert(Span<byte> span)
+        {
+            Fit(span.Length);
+
+            var destination = new Span<byte>(data, Position, span.Length);
+
+            if (span.TryCopyTo(destination) == false)
+                throw new InvalidOperationException("Couldn't Insert Span in Stream");
+
+            Position += span.Length;
+        }
+
+        public void Insert(Stream stream) => Insert(stream, (int)(stream.Length));
+        public void Insert(Stream stream, int count)
+        {
+            Fit(count);
+
+            stream.Read(data, Position, count);
 
             Position += count;
         }
@@ -532,11 +522,34 @@ namespace MNet
 
         public new static class Pool
         {
+            public static class Buffer
+            {
+                static ConcurrentQueue<byte[]> Queue;
+
+                public const int AllocationSize = 1024;
+
+                public static byte[] Take()
+                {
+                    if (Queue.TryDequeue(out var buffer) == false)
+                        buffer = new byte[AllocationSize];
+
+                    return buffer;
+                }
+
+                public static void Return(byte[] buffer)
+                {
+                    Queue.Enqueue(buffer);
+                }
+
+                static Buffer()
+                {
+                    Queue = new ConcurrentQueue<byte[]>();
+                }
+            }
+
             static ConcurrentQueue<NetworkWriter> Queue;
 
             public static int Count => Queue.Count;
-
-            public const int DefaultBinaryAllocationSize = 1024;
 
             public static int Allocations { get; private set; } = 0;
 
@@ -577,7 +590,7 @@ namespace MNet
 #endif
                 }
 
-                var binary = new byte[DefaultBinaryAllocationSize];
+                var binary = Buffer.Take();
                 var stream = new NetworkWriter(binary, 0);
 
                 return stream;

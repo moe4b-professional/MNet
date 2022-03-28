@@ -631,10 +631,10 @@ namespace MNet
 
                 Span<byte> span = size > MaxStackAllocationSize ? new byte[size] : stackalloc byte[size];
 
-                size = Encoding.UTF8.GetBytes(instance, span);
+                Encoding.UTF8.GetBytes(instance, span);
 
                 Helper.Length.Collection.WriteValue(writer, size);
-                writer.Insert(span, 0, size);
+                writer.Insert(span);
             }
         }
 
@@ -735,8 +735,10 @@ namespace MNet
             if(instance.TryWriteBytes(span, out var length) == false)
                 throw new InvalidOperationException($"Couldn't Convert to Binary");
 
+            span = span.Slice(0, length);
+
             writer.Insert((byte)length);
-            writer.Insert(span, 0, length);
+            writer.Insert(span);
         }
 
         public override IPAddress Deserialize(NetworkReader reader)

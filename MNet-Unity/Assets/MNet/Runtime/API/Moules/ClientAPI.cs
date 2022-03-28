@@ -145,7 +145,6 @@ namespace MNet
 
                 static NetworkWriter NetworkWriter;
                 static NetworkReader NetworkReader;
-                static int StreamLength;
 
                 internal static void Configure()
                 {
@@ -167,16 +166,14 @@ namespace MNet
 
                     NetworkAPI.OnProcess += Process;
 
-                    StreamLength = buffer.Count;
-
-                    if (StreamLength == 0)
+                    if (buffer.Count == 0)
                     {
                         End();
                     }
                     else
                     {
                         NetworkWriter.Reset();
-                        NetworkWriter.Copy(buffer);
+                        NetworkWriter.Insert(buffer);
 
                         NetworkReader.Assign(NetworkWriter);
                     }
@@ -193,11 +190,8 @@ namespace MNet
 
                         MessageDispatcher.Invoke(type, NetworkReader);
 
-                        if (NetworkReader.Position >= StreamLength)
+                        if (NetworkReader.Remaining == 0)
                         {
-                            if (NetworkReader.Position > StreamLength)
-                                Debug.LogError($"Buffer stream read past desired length, corrupted data parsed most likely");
-
                             End();
                             break;
                         }
