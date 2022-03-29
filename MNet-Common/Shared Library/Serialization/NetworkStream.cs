@@ -217,7 +217,6 @@ namespace MNet
         #endregion
 
         #region Read
-        public void Read<T>(out T value) => value = Read<T>();
         public T Read<T>()
         {
             T value = default;
@@ -228,6 +227,7 @@ namespace MNet
 
             throw FormatResolverException<T>();
         }
+        public void Read<T>(out T value) => value = Read<T>();
 
         public object Read(Type type)
         {
@@ -235,6 +235,7 @@ namespace MNet
 
             throw FormatResolverException(type);
         }
+        #endregion
 
         #region Resolve
         bool ResolveExplicit<T>(ref T value)
@@ -273,6 +274,7 @@ namespace MNet
 
             return true;
         }
+
         bool ResolveAny(Type type, out object value)
         {
             var resolver = NetworkSerializationResolver.Retrive(type);
@@ -285,7 +287,6 @@ namespace MNet
             value = resolver.Deserialize(this, type);
             return true;
         }
-        #endregion
         #endregion
 
         public override void Reset()
@@ -486,6 +487,7 @@ namespace MNet
 
             throw FormatResolverException(type);
         }
+        #endregion
 
         #region Resolve
         bool ResolveExplicit<T>(T value)
@@ -515,7 +517,6 @@ namespace MNet
             resolver.Serialize(this, value, type);
             return true;
         }
-        #endregion
         #endregion
 
         protected NetworkWriter(byte[] data, int position) : base(data, position) { }

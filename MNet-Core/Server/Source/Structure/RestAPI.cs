@@ -45,7 +45,7 @@ namespace MNet
             var response = await Client.GetAsync(url);
             EnsureSuccess(response);
 
-            var result = await Read<TResult>(response);
+            var result = Read<TResult>(response);
 
             return result;
         }
@@ -68,7 +68,7 @@ namespace MNet
 
             EnsureSuccess(response);
 
-            var result = await Read<TResult>(response);
+            var result = Read<TResult>(response);
 
             return result;
         }
@@ -95,22 +95,13 @@ namespace MNet
             throw new RestException(code, message.ReasonPhrase);
         }
 
-        public static ByteArrayContent Write<T>(T payload)
+        public static TPayload Read<TPayload>(HttpResponseMessage response)
         {
-            var binary = NetworkSerializer.Serialize(payload);
-
-            var content = new ByteArrayContent(binary);
-
-            return content;
-        }
-
-        public static async Task<TPayload> Read<TPayload>(HttpResponseMessage response)
-        {
-            var content = await response.Content.ReadAsStreamAsync() as MemoryStream;
+            var stream = response.Content.ReadAsStream();
 
             using (NetworkStream.Pool.Lease(out var reader, out var writer))
             {
-                writer.Insert(content);
+                writer.Insert(stream);
 
                 reader.Assign(writer);
 
