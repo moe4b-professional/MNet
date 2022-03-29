@@ -5,9 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 
 using Newtonsoft.Json;
-
-using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
-using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
+using System.Net;
 
 namespace MNet
 {
@@ -79,7 +77,7 @@ namespace MNet
                 Apps = new Dictionary<AppID, AppCollection>();
                 IDs = new AutoKeyCollection<RoomID>(RoomID.Min, RoomID.Max, RoomID.Increment, Constants.IdRecycleLifeTime);
 
-                RestServerAPI.Router.Register(Constants.Server.Game.Rest.Requests.Room.Create, Create);
+                RestServerAPI.Register(Constants.Server.Game.Rest.Requests.Room.Create, Create);
             }
 
             public static RoomID Reserve()
@@ -114,20 +112,20 @@ namespace MNet
                 }
             }
 
-            public static void Create(RestRequest request, RestResponse response)
+            public static void Create(HttpListenerContext context)
             {
-                if (RestServerAPI.TryRead(request, response, out CreateRoomRequest payload) == false) return;
+                if (RestServerAPI.TryRead(context.Request, context.Response, out CreateRoomRequest payload) == false) return;
 
                 if (AppsAPI.TryGet(payload.AppID, out var app) == false)
                 {
-                    RestServerAPI.Write(response, RestStatusCode.InvalidAppID);
+                    RestServerAPI.Write(context.Response, RestStatusCode.InvalidAppID);
                     return;
                 }
 
                 var room = Create(app, payload.Version, payload.Options);
                 var info = room.Info.Get();
 
-                RestServerAPI.Write(response, info);
+                RestServerAPI.Write(context.Response, info);
             }
             public static Room Create(AppConfig app, Version version, RoomOptions options)
             {
@@ -179,18 +177,18 @@ namespace MNet
         {
             Rooms.Configure();
 
-            RestServerAPI.Router.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
+            RestServerAPI.Register(Constants.Server.Game.Rest.Requests.Lobby.Info, GetInfo);
         }
 
-        public static void GetInfo(RestRequest request, RestResponse response)
+        public static void GetInfo(HttpListenerContext context)
         {
-            if (RestServerAPI.TryRead(request, response, out GetLobbyInfoRequest payload) == false) return;
+            if (RestServerAPI.TryRead(context.Request, context.Response, out GetLobbyInfoRequest payload) == false) return;
 
             var list = Rooms.QueryInfo(payload.AppID, payload.Version);
 
             var info = new LobbyInfo(GameServer.Info.ID, list);
 
-            RestServerAPI.Write(response, info);
+            RestServerAPI.Write(context.Response, info);
         }
     }
 }

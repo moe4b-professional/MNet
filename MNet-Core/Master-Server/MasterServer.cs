@@ -4,15 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
-using RestRequest = WebSocketSharp.Net.HttpListenerRequest;
-using RestResponse = WebSocketSharp.Net.HttpListenerResponse;
-
-using System.Net;
-using System.Net.Http;
-
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+using System.Net;
 
 namespace MNet
 {
@@ -67,33 +62,33 @@ namespace MNet
             {
                 Dictionary = new Dictionary<GameServerID, GameServer>();
 
-                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Register, Register);
-                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Server.Unregister, Unregister);
+                RestServerAPI.Register(Constants.Server.Master.Rest.Requests.Server.Register, Register);
+                RestServerAPI.Register(Constants.Server.Master.Rest.Requests.Server.Unregister, Unregister);
 
                 Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, Config.Local.RestScheme);
             }
 
             #region Register
-            static void Register(RestRequest request, RestResponse response)
+            static void Register(HttpListenerContext context)
             {
-                if (RestServerAPI.TryRead(request, response, out RegisterGameServerRequest payload) == false) return;
+                if (RestServerAPI.TryRead(context.Request, context.Response, out RegisterGameServerRequest payload) == false) return;
 
                 if (payload.ApiVersion != Constants.ApiVersion)
                 {
-                    RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion);
+                    RestServerAPI.Write(context.Response, RestStatusCode.MismatchedApiVersion);
                     return;
                 }
 
                 if (payload.Key != ApiKey.Token)
                 {
-                    RestServerAPI.Write(response, RestStatusCode.InvalidApiKey);
+                    RestServerAPI.Write(context.Response, RestStatusCode.InvalidApiKey);
                     return;
                 }
 
                 Register(payload.Info);
 
                 var result = new RegisterGameServerResponse(Apps.Array, Config.Remote);
-                RestServerAPI.Write(response, result);
+                RestServerAPI.Write(context.Response, result);
             }
 
             static GameServer Register(GameServerInfo info)
@@ -178,14 +173,14 @@ namespace MNet
             }
 
             #region Unregister
-            static void Unregister(RestRequest request, RestResponse response)
+            static void Unregister(HttpListenerContext context)
             {
-                if (RestServerAPI.TryRead(request, response, out RemoveGameServerRequest payload) == false) return;
+                if (RestServerAPI.TryRead(context.Request, context.Response, out RemoveGameServerRequest payload) == false) return;
 
                 Unregister(payload.ID);
 
                 var result = new RemoveGameServerResponse(true);
-                RestServerAPI.Write(response, result);
+                RestServerAPI.Write(context.Response, result);
             }
 
             public static bool Unregister(GameServerID id)
@@ -210,34 +205,34 @@ namespace MNet
             {
                 RestServerAPI.Configure(Constants.Server.Master.Rest.Port);
 
-                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Scheme, GetScheme);
-                RestServerAPI.Router.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
+                RestServerAPI.Register(Constants.Server.Master.Rest.Requests.Scheme, GetScheme);
+                RestServerAPI.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
 
                 RestServerAPI.Start();
             }
 
-            static void GetScheme(RestRequest request, RestResponse response)
+            static void GetScheme(HttpListenerContext context)
             {
-                if (RestServerAPI.TryRead(request, response, out MasterServerSchemeRequest payload) == false) return;
+                if (RestServerAPI.TryRead(context.Request, context.Response, out MasterServerSchemeRequest payload) == false) return;
 
                 if (payload.ApiVersion != Constants.ApiVersion)
                 {
                     var text = $"Mismatched API Versions [Client: {payload.ApiVersion}, Server: {Constants.ApiVersion}]" +
                         $", Please use the Same Network API Release on the Client and Server";
-                    RestServerAPI.Write(response, RestStatusCode.MismatchedApiVersion, text);
+                    RestServerAPI.Write(context.Response, RestStatusCode.MismatchedApiVersion, text);
                     return;
                 }
 
                 if (Apps.Dictionary.TryGetValue(payload.AppID, out var app) == false)
                 {
-                    RestServerAPI.Write(response, RestStatusCode.InvalidAppID, $"App ID '{payload.AppID}' Not Registered with Server");
+                    RestServerAPI.Write(context.Response, RestStatusCode.InvalidAppID, $"App ID '{payload.AppID}' Not Registered with Server");
                     return;
                 }
 
                 if (payload.GameVersion < app.MinimumVersion)
                 {
                     var text = $"Version {payload.GameVersion} no Longer Supported, Minimum Supported Version: {app.MinimumVersion}";
-                    RestServerAPI.Write(response, RestStatusCode.VersionNotSupported, text);
+                    RestServerAPI.Write(context.Response, RestStatusCode.VersionNotSupported, text);
                     return;
                 }
 
@@ -246,18 +241,18 @@ namespace MNet
 
                 var scheme = new MasterServerSchemeResponse(app, Config.Remote, info);
 
-                RestServerAPI.Write(response, scheme);
+                RestServerAPI.Write(context.Response, scheme);
             }
 
-            static void GetInfo(RestRequest request, RestResponse response)
+            static void GetInfo(HttpListenerContext context)
             {
-                if (RestServerAPI.TryRead(request, response, out MasterServerInfoRequest payload) == false) return;
+                if (RestServerAPI.TryRead(context.Request, context.Response, out MasterServerInfoRequest payload) == false) return;
 
                 var servers = Servers.Query();
 
                 var info = new MasterServerInfoResponse(servers);
 
-                RestServerAPI.Write(response, info);
+                RestServerAPI.Write(context.Response, info);
             }
         }
 
@@ -343,10 +338,10 @@ namespace MNet
 
             ApiKey.Read();
 
+            REST.Configure();
             Config.Configure();
             Apps.Configure();
             Servers.Configure();
-            REST.Configure();
 
             Input.Process();
         }

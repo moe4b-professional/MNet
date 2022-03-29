@@ -1,6 +1,6 @@
 @echo off
 
-cd %~dp0
+cd "%~dp0"
 cd ../
 
 rmdir /s /q "MNet-Release"

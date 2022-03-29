@@ -82,9 +82,9 @@ namespace MNet
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
 
-        void Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
+        bool Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
-        void Disconnect(NetworkClientID clientID, DisconnectCode code);
+        bool Disconnect(NetworkClientID clientID, DisconnectCode code);
         void DisconnectAll(DisconnectCode code);
     }
 
@@ -177,15 +177,13 @@ namespace MNet
         protected virtual void DestroyClient(TClient client) { }
 
         #region Send
-        public void Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
+        public bool Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             if (Clients.TryGetValue(target, out var client) == false)
-            {
-                Log.Warning($"No Transport Client Registered With ID: {target} on Send");
-                return;
-            }
+                return false;
 
             Send(client, segment, mode, channel);
+            return true;
         }
 
         public abstract void Send(TClient target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
@@ -194,15 +192,13 @@ namespace MNet
         #region Disconnect
         public abstract void Disconnect(TClient client, DisconnectCode code);
 
-        public virtual void Disconnect(NetworkClientID clientID, DisconnectCode code)
+        public virtual bool Disconnect(NetworkClientID clientID, DisconnectCode code)
         {
             if (Clients.TryGetValue(clientID, out var client) == false)
-            {
-                Log.Warning($"No Transport Client Registered With ID: {clientID} to Disconnect");
-                return;
-            }
+                return false;
 
             Disconnect(client, code);
+            return true;
         }
         public virtual void DisconnectAll(DisconnectCode code)
         {
