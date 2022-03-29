@@ -226,6 +226,7 @@ namespace MNet
                 response.AddHeader("Access-Control-Allow-Headers", "*");
                 response.AddHeader("Access-Control-Allow-Methods", "GET,PUT,POST");
                 response.StatusCode = 200;
+                response.Close();
             }
             else if (SynchronusDictionary.TryGetValue(context.Request.RawUrl, out var sync))
             {

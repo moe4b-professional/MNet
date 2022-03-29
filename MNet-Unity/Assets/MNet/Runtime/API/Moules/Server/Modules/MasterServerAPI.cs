@@ -45,7 +45,7 @@ namespace MNet
                 {
                     var payload = new MasterServerSchemeRequest(AppID, GameVersion);
 
-                    var response = await Rest.POST<MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload);
+                    var response = await Rest.POST<MasterServerSchemeRequest, MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload);
 
                     OnScheme?.Invoke(response);
 
@@ -65,7 +65,7 @@ namespace MNet
                 {
                     var payload = new MasterServerInfoRequest();
 
-                    var response = await Rest.POST<MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload);
+                    var response = await Rest.POST<MasterServerInfoRequest, MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload);
 
                     InvokeInfo(response);
 

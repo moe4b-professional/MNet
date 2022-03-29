@@ -45,7 +45,7 @@ namespace MNet
 
         public delegate void ResponseDelegate<TResult>(TResult result, RestError error);
 
-        public async UniTask<TResult> POST<TResult>(string path, object payload)
+        public async UniTask<TResult> POST<TPayload, TResult>(string path, TPayload payload)
         {
             var url = FormatURL(path);
 

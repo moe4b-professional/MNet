@@ -4,8 +4,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using WebSocketSharp;
-
 namespace MNet
 {
     public static partial class NetworkTransportUtility
@@ -39,11 +37,9 @@ namespace MNet
                 {
                     if (value < CodeOffset)
                     {
-                        var code = (CloseStatusCode)value;
-
-                        switch (code)
+                        switch (value)
                         {
-                            case CloseStatusCode.Normal:
+                            case 1000:
                                 return DisconnectCode.Normal;
                         }
 

@@ -18,7 +18,7 @@ MonoBehaviour:
     global: Game 1 (Global)
     overrides:
     - _ID: Game 1 (Web)
-      platforms: 11000000
+      platforms: 110000000200000007000000
   gameVersion:
     infer: 1
     value:

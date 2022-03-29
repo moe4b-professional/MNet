@@ -74,7 +74,7 @@ namespace MNet
                 {
                     var payload = new CreateRoomRequest(AppID, GameVersion, options);
 
-                    var info = await Server.Game.Rest.POST<RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload);
+                    var info = await Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload);
 
                     OnCreate?.Invoke(info);
 

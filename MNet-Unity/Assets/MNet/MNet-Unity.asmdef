@@ -1,9 +1,11 @@
 {
     "name": "MNet-Unity",
+    "rootNamespace": "",
     "references": [
         "GUID:bec3474887684a1448244449366c612b",
         "GUID:f51ebe6a0ceec4240a699833d6309b23",
-        "GUID:25bbaff0f61abea489d3a55b470819db"
+        "GUID:25bbaff0f61abea489d3a55b470819db",
+        "GUID:04376767bc1f3b428aefa3d20743e819"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

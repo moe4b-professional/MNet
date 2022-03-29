@@ -40,7 +40,7 @@ namespace MNet
             {
                 var payload = new GetLobbyInfoRequest(AppID, GameVersion);
 
-                Info = await Server.Game.Rest.POST<LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload);
+                Info = await Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload);
 
                 OnInfo?.Invoke(Info);
 
