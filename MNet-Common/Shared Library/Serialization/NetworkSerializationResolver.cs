@@ -66,7 +66,7 @@ namespace MNet
 
         public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
 
-        protected static readonly object SyncLock = new object();
+        protected static readonly object StaticSyncLock = new object();
 
         static bool TryFindExplicit(Type type, out NetworkSerializationResolver resolver)
         {
@@ -97,9 +97,22 @@ namespace MNet
             return false;
         }
 
+        public static NetworkSerializationExplicitResolver<T> Retrieve<T>()
+        {
+            lock (StaticSyncLock)
+            {
+                if (NetworkSerializationExplicitResolver<T>.Instance != null)
+                    return NetworkSerializationExplicitResolver<T>.Instance;
+
+                DynamicNetworkSerialization.Resolve(typeof(T), out var resolver);
+
+                return NetworkSerializationExplicitResolver<T>.Instance;
+            }
+        }
+
         public static NetworkSerializationResolver Retrive(Type type)
         {
-            lock (SyncLock)
+            lock (StaticSyncLock)
             {
                 if (Dictionary.TryGetValue(type, out var resolver))
                     return resolver;
@@ -169,7 +182,7 @@ namespace MNet
     [Preserve]
     public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
     {
-        public static NetworkSerializationExplicitResolver<T> Instance;
+        internal static NetworkSerializationExplicitResolver<T> Instance;
 
         public static Type Type => typeof(T);
 
@@ -229,7 +242,10 @@ namespace MNet
     [Preserve]
     public abstract class NetworkSerializationDynamicResolver<T> : NetworkSerializationExplicitResolver<T>
     {
-        public NetworkSerializationDynamicResolver() : base() { }
+        public NetworkSerializationDynamicResolver() : base()
+        {
+
+        }
     }
     #endregion
 
@@ -1705,8 +1721,8 @@ namespace MNet
     public sealed class EnumNetworkSerializationResolver<TType, TBacking> : NetworkSerializationDynamicResolver<TType>
         where TType : struct, Enum
     {
-        ConcurrentDictionary<TBacking, TType> values;
-        ConcurrentDictionary<TType, TBacking> backings;
+        Dictionary<TBacking, TType> values;
+        Dictionary<TType, TBacking> backings;
 
         public override void Serialize(NetworkWriter writer, TType instance)
         {
@@ -1742,8 +1758,8 @@ namespace MNet
 
         public EnumNetworkSerializationResolver()
         {
-            values = new ConcurrentDictionary<TBacking, TType>();
-            backings = new ConcurrentDictionary<TType, TBacking>();
+            values = new Dictionary<TBacking, TType>();
+            backings = new Dictionary<TType, TBacking>();
 
             foreach (TType instance in Enum.GetValues(typeof(TType)))
             {

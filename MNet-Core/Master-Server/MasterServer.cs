@@ -207,7 +207,10 @@ namespace MNet
 
                 RestServerAPI.Register(Constants.Server.Master.Rest.Requests.Scheme, GetScheme);
                 RestServerAPI.Register(Constants.Server.Master.Rest.Requests.Info, GetInfo);
+            }
 
+            internal static void Start()
+            {
                 RestServerAPI.Start();
             }
 
@@ -339,9 +342,12 @@ namespace MNet
             ApiKey.Read();
 
             REST.Configure();
+
             Config.Configure();
             Apps.Configure();
             Servers.Configure();
+
+            REST.Start();
 
             Input.Process();
         }

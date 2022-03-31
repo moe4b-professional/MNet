@@ -14,7 +14,7 @@ using System.Collections.Concurrent;
 
 namespace MNet
 {
-    class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>, INetEventListener
+    class LiteNetLibTransport : NetworkTransport<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer>, INetEventListener
     {
         public NetManager Server { get; protected set; }
 
@@ -138,7 +138,7 @@ namespace MNet
         }
     }
 
-    class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer, int>
+    class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer>
     {
         protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
         {
@@ -170,10 +170,8 @@ namespace MNet
         }
     }
 
-    class LiteNetLibTransportClient : NetworkTransportClient<LiteNetLibTransportContext, NetPeer, int>
+    class LiteNetLibTransportClient : NetworkTransportClient<LiteNetLibTransportContext, NetPeer>
     {
-        public override int InternalID => Connection.Id;
-
         public NetPeer Peer => Connection;
 
         public LiteNetLibTransportClient(LiteNetLibTransportContext context, NetworkClientID clientID, NetPeer peer) : base(context, clientID, peer)

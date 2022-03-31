@@ -50,6 +50,9 @@ namespace MNet.Example
 
         void MasterServerInfoCallback(MasterServerInfoResponse info)
         {
+            if (info.Servers.Length == 0)
+                return;
+
             NetworkAPI.Server.Game.Select(info.Servers[0]);
         }
 

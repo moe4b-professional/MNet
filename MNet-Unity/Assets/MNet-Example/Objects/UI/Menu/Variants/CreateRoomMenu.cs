@@ -86,7 +86,7 @@ namespace MNet.Example
 					Capacity = capacity,
 					Visible = false,
 					Password = password,
-					MigrationPolicy = MigrationPolicy.Continue,
+					MigrationPolicy = MigrationPolicy.Stop,
 					Attributes = attributes,
 					Scene = scene,
 				};

@@ -2,19 +2,22 @@
 using System.Text;
 using System.Collections.Generic;
 
+using System.IO;
+
+using System.Threading;
+
 using System.Net;
 
-using WebSocketSharp;
-using WebSocketSharp.Server;
-
 using Utility = MNet.NetworkTransportUtility.WebSocket;
-using System.IO;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MNet
 {
-    class WebSocketTransport : NetworkTransport<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, IWebSocketSession, string>
+    class WebSocketTransport : NetworkTransport<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocket>
     {
-        public WebSocketServer Server { get; protected set; }
+        public WebSocketServer Server { get; }
 
         public const ushort Port = Utility.Port;
 
@@ -25,6 +28,52 @@ namespace MNet
             Server.Start();
         }
 
+        #region Callbacks
+        void ConnectCallback(WebSocket socket)
+        {
+            var key = socket.URL.TrimStart('/');
+
+            if (RoomID.TryParse(key, out var room) == false)
+            {
+                var value = Utility.Disconnect.CodeToValue(DisconnectCode.ConnectionRejected);
+                var code = (WebSocketCloseCode)value;
+
+                socket.Disconnect(code);
+                return;
+            }
+            if (Contexts.TryGetValue(room.Value, out var context) == false)
+            {
+                var value = Utility.Disconnect.CodeToValue(DisconnectCode.ConnectionRejected);
+                var code = (WebSocketCloseCode)value;
+
+                socket.Disconnect(code);
+                return;
+            }
+
+            Thread.Sleep(200);
+
+            var tag = new WebSocketClientTag();
+            socket.Tag = tag;
+
+            tag.Context = context;
+            tag.Client = context.RegisterClient(socket);
+        }
+        void MessageCallback(WebSocket socket, WebSocketPacket packet)
+        {
+            WebSocketClientTag.Retrieve(socket, out var context, out var client);
+
+            var segment = packet.AsSegment();
+
+            context.InvokeMessage(client, segment, DeliveryMode.ReliableOrdered, 0, packet.Recycle);
+        }
+        void DisconnectCallback(WebSocket socket, WebSocketCloseCode code, string message)
+        {
+            WebSocketClientTag.Retrieve(socket, out var context, out var client);
+
+            context.UnregisterClient(client);
+        }
+        #endregion
+
         protected override WebSocketTransportContext CreateContext(uint id)
         {
             var context = new WebSocketTransportContext(this, id);
@@ -34,69 +83,34 @@ namespace MNet
 
         public override void Stop()
         {
-            var value = Utility.Disconnect.CodeToValue(DisconnectCode.ServerClosed);
+            WebSocketTransportContext[] collection;
 
-            Server.Stop(value, null);
+            lock (Contexts)
+            {
+                collection = Contexts.Values.ToArray();
+            }
+
+            foreach (var context in collection)
+                Unregister(context);
         }
 
         public WebSocketTransport() : base()
         {
             Server = new WebSocketServer(IPAddress.Any, Port);
 
-            Server.KeepClean = false;
-
-            Server.Log.Output = LogOutput;
-            Server.Log.Level = LogLevel.Warn;
-        }
-
-        void LogOutput(LogData data, string arg2)
-        {
-            var level = ConvertLevel(data.Level);
-
-            MNet.Log.Add(data.Message, level);
-
-            MNet.Log.Level ConvertLevel(WebSocketSharp.LogLevel level)
-            {
-                switch (level)
-                {
-                    case LogLevel.Trace:
-                        return Log.Level.Info;
-
-                    case LogLevel.Debug:
-                        return Log.Level.Info;
-
-                    case LogLevel.Info:
-                        return Log.Level.Info;
-
-                    case LogLevel.Warn:
-                        return Log.Level.Warning;
-
-                    case LogLevel.Error:
-                        return Log.Level.Error;
-
-                    case LogLevel.Fatal:
-                        return Log.Level.Error;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
+            Server.OnConnect += ConnectCallback;
+            Server.OnMessage += MessageCallback;
+            Server.OnDisconnect += DisconnectCallback;
         }
     }
 
-    class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, IWebSocketSession, string>
+    class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocket>
     {
-        public WebSocketServer Server => Transport.Server;
-
         public string Path { get; protected set; }
 
-        public WebSocketServiceHost Host { get; protected set; }
-        public WebSocketSessionManager Sessions => Host.Sessions;
-
-        protected override WebSocketTransportClient CreateClient(NetworkClientID clientID, IWebSocketSession session)
+        protected override WebSocketTransportClient CreateClient(NetworkClientID clientID, WebSocket socket)
         {
-            var client = new WebSocketTransportClient(this, clientID, session);
-
+            var client = new WebSocketTransportClient(this, clientID, socket);
             return client;
         }
 
@@ -104,81 +118,56 @@ namespace MNet
         {
             if (client.IsOpen == false) return;
 
-            using (var stream = new MemoryStream(segment.Array, segment.Offset, segment.Count))
-            {
-                Sessions.SendTo(stream, segment.Count, client.InternalID);
-            }
+            segment = segment.ToArray();
+
+            client.Connection.SendBinary(segment.AsSpan());
         }
 
         public override void Disconnect(WebSocketTransportClient client, DisconnectCode code)
         {
-            var value = Utility.Disconnect.CodeToValue(code);
+            if (client.IsOpen == false)
+                return;
 
-            Sessions.CloseSession(client.InternalID, value, null);
+            var value = (WebSocketCloseCode)Utility.Disconnect.CodeToValue(code);
+
+            client.Connection.Disconnect(value);
         }
 
         public override void Close()
         {
-            Server.RemoveWebSocketService(Path);
+
         }
 
         public WebSocketTransportContext(WebSocketTransport transport, uint id) : base(transport, id)
         {
             this.Transport = transport;
-
-            Path = $"/{ID}";
-
-            Server.AddWebSocketService<WebSocketTransportBehaviour>(Path, Init);
-            void Init(WebSocketTransportBehaviour behaviour) => behaviour.Set(this);
-
-            Host = Server.WebSocketServices[Path];
         }
     }
 
-    class WebSocketTransportClient : NetworkTransportClient<WebSocketTransportContext, IWebSocketSession, string>
+    class WebSocketTransportClient : NetworkTransportClient<WebSocketTransportContext, WebSocket>
     {
-        public override string InternalID => Connection.ID;
-
         public bool IsOpen => Connection.State == WebSocketState.Open;
 
-        public WebSocketTransportClient(WebSocketTransportContext context, NetworkClientID clientID, IWebSocketSession session) : base(context, clientID, session)
+        public WebSocketTransportClient(WebSocketTransportContext context, NetworkClientID id, WebSocket socket) : base(context, id, socket)
         {
 
         }
     }
 
-    class WebSocketTransportBehaviour : WebSocketBehavior
+    class WebSocketClientTag
     {
-        public WebSocketTransportContext TransportContext { get; protected set; }
-        public void Set(WebSocketTransportContext reference) => TransportContext = reference;
+        public WebSocketTransportContext Context;
+        public WebSocketTransportClient Client;
 
-        public WebSocketTransportClient Client { get; protected set; }
-
-        public IWebSocketSession Session { get; protected set; }
-
-        protected override void OnOpen()
+        public static WebSocketClientTag Retrieve(WebSocket socket) => socket.Tag as WebSocketClientTag;
+        public static WebSocketClientTag Retrieve(WebSocket socket, out WebSocketTransportContext context, out WebSocketTransportClient client)
         {
-            base.OnOpen();
+            var tag = Retrieve(socket);
 
-            Session = Sessions[ID];
+            context = tag.Context;
+            client = tag.Client;
 
-            Client = TransportContext.RegisterClient(Session);
-        }
-
-        protected override void OnMessage(MessageEventArgs args)
-        {
-            base.OnMessage(args);
-
-            var segment = new ArraySegment<byte>(args.RawData);
-
-            TransportContext.InvokeMessage(Client, segment, DeliveryMode.ReliableOrdered, 0, null);
-        }
-
-        protected override void OnClose(CloseEventArgs args)
-        {
-            base.OnClose(args);
-
-            TransportContext.UnregisterClient(Client);
+            return tag;
         }
     }
 }

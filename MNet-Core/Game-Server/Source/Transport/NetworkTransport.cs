@@ -23,10 +23,10 @@ namespace MNet
         void Stop();
     }
 
-    abstract class NetworkTransport<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransport
-        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection, TIID>
-        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
-        where TClient : NetworkTransportClient<TContext, TConnection, TIID>
+    abstract class NetworkTransport<TTransport, TContext, TClient, TConnection> : INetworkTransport
+        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection>
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection>
+        where TClient : NetworkTransportClient<TContext, TConnection>
     {
         public ConcurrentDictionary<uint, TContext> Contexts { get; protected set; }
 
@@ -88,10 +88,10 @@ namespace MNet
         void DisconnectAll(DisconnectCode code);
     }
 
-    abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID> : INetworkTransportContext
-        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection, TIID>
-        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection, TIID>
-        where TClient : NetworkTransportClient<TContext, TConnection, TIID>
+    abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection> : INetworkTransportContext
+        where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection>
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection>
+        where TClient : NetworkTransportClient<TContext, TConnection>
     {
         public TTransport Transport { get; protected set; }
 
@@ -116,19 +116,19 @@ namespace MNet
         public event NetworkTransportConnectDelegate OnConnect;
         internal void InvokeConnect(TClient client)
         {
-            OnConnect?.Invoke(client.ClientID);
+            OnConnect?.Invoke(client.ID);
         }
 
         public event NetworkTransportMessageDelegate OnMessage;
         internal void InvokeMessage(TClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel, Action dispose)
         {
-            OnMessage?.Invoke(client.ClientID, segment, mode, channel, dispose);
+            OnMessage?.Invoke(client.ID, segment, mode, channel, dispose);
         }
 
         public event NetworkTransportDisconnectDelegate OnDisconnect;
         internal void InvokeDisconnect(TClient client)
         {
-            OnDisconnect?.Invoke(client.ClientID);
+            OnDisconnect?.Invoke(client.ID);
         }
         #endregion
 
@@ -163,9 +163,9 @@ namespace MNet
 
         void RemoveClient(TClient client)
         {
-            Clients.TryRemove(client.ClientID);
+            Clients.TryRemove(client.ID);
 
-            FreeClientID(client.ClientID);
+            FreeClientID(client.ID);
 
             DestroyClient(client);
 
@@ -221,21 +221,19 @@ namespace MNet
     }
     #endregion
 
-    abstract class NetworkTransportClient<TContext, TConnection, TIID>
+    abstract class NetworkTransportClient<TContext, TConnection>
     {
         public TContext Context { get; protected set; }
 
-        public NetworkClientID ClientID { get; protected set; }
+        public NetworkClientID ID { get; protected set; }
 
         public TConnection Connection { get; protected set; }
 
-        public abstract TIID InternalID { get; }
-
-        public NetworkTransportClient(TContext context, NetworkClientID clientID, TConnection session)
+        public NetworkTransportClient(TContext context, NetworkClientID id, TConnection connection)
         {
             this.Context = context;
-            this.ClientID = clientID;
-            this.Connection = session;
+            this.ID = id;
+            this.Connection = connection;
         }
     }
 

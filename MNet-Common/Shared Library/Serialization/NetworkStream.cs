@@ -240,17 +240,10 @@ namespace MNet
         #region Resolve
         bool ResolveExplicit<T>(ref T value)
         {
-            var resolver = NetworkSerializationExplicitResolver<T>.Instance;
+            var resolver = NetworkSerializationResolver.Retrieve<T>();
 
             if (resolver == null)
-            {
-                NetworkSerializationResolver.Retrive(typeof(T));
-
-                resolver = NetworkSerializationExplicitResolver<T>.Instance;
-
-                if (resolver == null)
-                    return false;
-            }
+                return false;
 
             value = resolver.Deserialize(this);
             return true;
@@ -492,17 +485,10 @@ namespace MNet
         #region Resolve
         bool ResolveExplicit<T>(T value)
         {
-            var resolver = NetworkSerializationExplicitResolver<T>.Instance;
+            var resolver = NetworkSerializationResolver.Retrieve<T>();
 
             if (resolver == null)
-            {
-                NetworkSerializationResolver.Retrive(typeof(T));
-
-                resolver = NetworkSerializationExplicitResolver<T>.Instance;
-
-                if (resolver == null)
-                    return false;
-            }
+                return false;
 
             resolver.Serialize(this, value);
             return true;
