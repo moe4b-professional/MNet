@@ -4,7 +4,7 @@
     "Name": "MOB Room #1",
     "Capacity": 4,
     "Password": "",
-    "Offline": true
+    "Offline": false
   },
   "Game Server Region": 1
 }

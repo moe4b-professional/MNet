@@ -161,13 +161,14 @@ namespace MNet
         readonly WebSocketServer Server;
 
         readonly TcpClient Client;
+        Socket Socket => Client.Client;
         readonly Stream Stream;
 
         public int ID { get; }
         public string URL { get; }
 
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public volatile WebSocketState State;
+        volatile WebSocketState state;
+        public WebSocketState State => state;
 
         public object Tag;
 
@@ -186,6 +187,8 @@ namespace MNet
 
             Server.InvokeConnect(this);
 
+            RunningThreads = 2;
+
             ReceiveThread = new Thread(ReceiveLoop);
             ReceiveThread.IsBackground = true;
             ReceiveThread.Name = $"Client {ID} Receive Loop";
@@ -202,57 +205,43 @@ namespace MNet
 
         void ReceiveLoop()
         {
-            var packet = WebSocketPacket.Lease();
-
             var opCode = WebSocketOPCode.Binary;
 
-            try
-            {
-                while (true)
-                {
-                    if (WebSocketFrame.TryReadHeader(Stream, out var header) == false)
-                    {
-                        Disconnect(WebSocketCloseCode.ProtocolError);
-                        return;
-                    }
-                    if (header.Mask.HasValue == false)
-                    {
-                        Disconnect(WebSocketCloseCode.ProtocolError);
-                        return;
-                    }
+            var packet = WebSocketPacket.Lease();
 
-                    if (WebSocketFrame.IsControlOpCode(header.OpCode))
-                    {
-                        if (HandleControlFrame(header, Stream) == false)
-                            break;
-                    }
-                    else
-                    {
-                        if (HandlePayloadFrame(header, ref opCode, ref packet) == false)
-                            break;
-                    }
+            while (true)
+            {
+                if (WebSocketFrame.TryReadHeader(Stream, out var header) == false)
+                {
+                    Disconnect(WebSocketCloseCode.ProtocolError);
+                    break;
                 }
-            }
-            catch (Exception ex)
-            {
-                if (ex is IOException || ex is SocketException || ex is ObjectDisposedException)
+                if (header.Mask.HasValue == false)
                 {
-                    if (State == WebSocketState.Open)
-                        Close(WebSocketCloseCode.Abnormal, default);
+                    Disconnect(WebSocketCloseCode.ProtocolError);
+                    break;
+                }
 
-                    Log.Error(ex);
+                if (WebSocketFrame.IsControlOpCode(header.OpCode))
+                {
+                    if (HandleControlFrame(header, Stream) == false)
+                        break;
                 }
                 else
                 {
-                    throw;
+                    if (HandlePayloadFrame(header, ref opCode, ref packet) == false)
+                        break;
                 }
             }
-            finally
-            {
-                packet.Recycle();
 
-                Log.Info($"Recieve Loop Closed");
-            }
+            packet.Recycle();
+
+            if (state == WebSocketState.Open)
+                Stop(WebSocketCloseCode.Abnormal);
+
+            Log.Info($"Recieve Loop Closed");
+
+            CloseThread();
         }
 
         bool HandlePayloadFrame(WebSocketHeader header, ref WebSocketOPCode opCode, ref WebSocketPacket packet)
@@ -277,7 +266,7 @@ namespace MNet
                 switch (opCode)
                 {
                     case WebSocketOPCode.Binary:
-                        HandleBinaryPacket(header, packet);
+                        HandleBinaryPacket(packet);
                         break;
 
                     default:
@@ -289,7 +278,7 @@ namespace MNet
 
             return true;
         }
-        void HandleBinaryPacket(WebSocketHeader header, WebSocketPacket packet)
+        void HandleBinaryPacket(WebSocketPacket packet)
         {
             Server.InvokeMessage(this, packet);
         }
@@ -327,9 +316,9 @@ namespace MNet
         }
         bool HandleCloseFrame(Span<byte> span)
         {
-            WebSocketFrame.ReadCloseFrameCode(span, out var code);
+            WebSocketFrame.ReadCloseFrameData(span, out var code, out var message);
 
-            Disconnect(span);
+            Disconnect(code, message);
             return false;
         }
         bool HandlePingFrame(Span<byte> span)
@@ -350,48 +339,37 @@ namespace MNet
 
         readonly ConcurrentQueue<SendCommand> PayloadSendQueue;
         readonly ConcurrentQueue<SendCommand> ControlSendQueue;
-
-        WebSocketPacket DisconnectPacket;
-
         readonly record struct SendCommand(WebSocketOPCode opCode, WebSocketPacket packet);
+
+        DisconnectCommand DisconnectPacket;
+        readonly record struct DisconnectCommand(WebSocketCloseCode code, string message);
 
         void SendLoop()
         {
             while (true)
             {
-                if (State != WebSocketState.Open) break;
+                if (state != WebSocketState.Open) break;
 
-                try
-                {
-                    if (ProcessKeepAlive() == false)
-                        break;
+                if (ProcessKeepAlive() == false)
+                    break;
 
-                    if (SendQueuesImmediate(ControlSendQueue, PayloadSendQueue) == false)
-                        break;
-                }
-                catch (Exception ex)
-                {
-                    if (ex is SocketException || ex is IOException)
-                    {
-                        Log.Error(ex);
-
-                        break;
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                if (SendQueuesImmediate(ControlSendQueue, PayloadSendQueue) == false)
+                    break;
 
                 Thread.Sleep(10);
             }
 
-            ValidateSendLoopClosure();
-
             ClearCommandQueue(ControlSendQueue);
             ClearCommandQueue(PayloadSendQueue);
 
+            if (state == WebSocketState.Open)
+                Stop(WebSocketCloseCode.Abnormal);
+            else
+                ValidateSendLoopClosure();
+
             Log.Info($"Send Loop Closed");
+
+            CloseThread();
         }
 
         bool ProcessKeepAlive()
@@ -404,7 +382,7 @@ namespace MNet
 
                 if (timespan > Server.Timeout)
                 {
-                    Close(WebSocketCloseCode.EndpointUnavailable, string.Empty);
+                    Disconnect(WebSocketCloseCode.EndpointUnavailable);
                     return false;
                 }
             }
@@ -413,11 +391,11 @@ namespace MNet
             {
                 var timespan = time - LastPingSendTime;
 
-                if (timespan < Server.PingInterval)
-                    return true;
-
-                LastPingSendTime = time;
-                SendImmediate(WebSocketOPCode.Ping, default);
+                if (timespan > Server.PingInterval)
+                {
+                    LastPingSendTime = time;
+                    SendImmediate(WebSocketOPCode.Ping, default);
+                }
             }
 
             return true;
@@ -474,54 +452,58 @@ namespace MNet
 
         bool SendImmediate(WebSocketOPCode opCode, Span<byte> span)
         {
-            if (State != WebSocketState.Open)
-                if (opCode != WebSocketOPCode.Close)
+            if (state != WebSocketState.Open && opCode != WebSocketOPCode.Close)
+                return false;
+
+            try
+            {
+                //Header
+                {
+                    var header = new WebSocketHeader(true, opCode, span.Length, default);
+
+                    Span<byte> buffer = stackalloc byte[WebSocketFrame.MaxServerHeaderSize];
+                    var raw = WebSocketFrame.WriteHeader(header, ref buffer);
+
+                    Stream.Write(raw);
+                }
+
+                Stream.Write(span);
+            }
+            catch (IOException ex)
+            {
+                if (ex.InnerException is SocketException so)
                     return false;
 
-            //Header
-            {
-                var header = new WebSocketHeader(true, opCode, span.Length, default);
-
-                Span<byte> buffer = stackalloc byte[WebSocketFrame.MaxServerHeaderSize];
-                var raw = WebSocketFrame.WriteHeader(header, ref buffer);
-
-                Stream.Write(raw);
+                throw;
             }
-
-            Stream.Write(span);
 
             return true;
         }
 
         void ValidateSendLoopClosure()
         {
-            switch (State)
+            if (state != WebSocketState.Closing)
+                return;
+
+            DisconnectPacket.Deconstruct(out var code, out var message);
+
+            var packet = WebSocketPacket.Lease();
+            WebSocketFrame.WriteCloseFrame(packet, code, message);
+            var span = packet.AsSpan();
+
+            try
             {
-                case WebSocketState.Open:
-                    throw new Exception($"Send Loop Clsoed while Socket is still Open");
-
-                case WebSocketState.Closing:
-                {
-                    var span = DisconnectPacket.AsSpan();
-
-                    WebSocketFrame.ReadCloseFrameData(span, out var code, out var message);
-
-                    try
-                    {
-                        SendImmediate(WebSocketOPCode.Close, span);
-                    }
-                    catch (Exception)
-                    {
-                        code = WebSocketCloseCode.Abnormal;
-                        message = string.Empty;
-                    }
-                    finally
-                    {
-                        Close(code, message);
-                        DisconnectPacket.Recycle();
-                    }
-                }
-                break;
+                SendImmediate(WebSocketOPCode.Close, span);
+            }
+            catch (Exception)
+            {
+                code = WebSocketCloseCode.Abnormal;
+                message = string.Empty;
+            }
+            finally
+            {
+                Stop(code, message);
+                packet.Recycle();
             }
         }
 
@@ -537,7 +519,7 @@ namespace MNet
 
         internal bool Send(WebSocketOPCode opCode, Span<byte> span)
         {
-            if (State != WebSocketState.Open)
+            if (state != WebSocketState.Open)
                 return false;
 
             var packet = WebSocketPacket.Lease();
@@ -554,40 +536,58 @@ namespace MNet
         }
         #endregion
 
+        #region Disconnect
         public bool Disconnect(WebSocketCloseCode code) => Disconnect(code, string.Empty);
+
         public bool Disconnect(WebSocketCloseCode code, string message)
         {
-            var packet = WebSocketPacket.Lease();
-            WebSocketFrame.WriteCloseFrame(packet, code, message);
-            return Disconnect(packet);
-        }
-        internal bool Disconnect(Span<byte> span)
-        {
-            var packet = WebSocketPacket.Lease();
-            packet.Insert(span);
-            return Disconnect(packet);
-        }
-        internal bool Disconnect(WebSocketPacket packet)
-        {
-            if (State != WebSocketState.Open)
+            if (state != WebSocketState.Open)
                 return false;
 
-            State = WebSocketState.Closing;
-            DisconnectPacket = packet;
+            DisconnectPacket = new DisconnectCommand(code, message);
+            Socket.Shutdown(SocketShutdown.Receive);
+            state = WebSocketState.Closing;
 
             return true;
         }
+        #endregion
 
-        internal void Close(WebSocketCloseCode code, string message)
+        #region Stop
+        void Stop(WebSocketCloseCode code) => Stop(code, string.Empty);
+        void Stop(WebSocketCloseCode code, string message)
         {
-            if (State == WebSocketState.Closed)
+            Log.Info("WebSocket Stopped");
+
+            if (state == WebSocketState.Closed)
                 throw new InvalidOperationException($"Socket Already Closed");
 
-            State = WebSocketState.Closed;
-            Client.Close();
+            state = WebSocketState.Closed;
 
             Server.InvokeDisconnect(this, code, message);
         }
+        #endregion
+
+        #region Close
+        int RunningThreads;
+
+        void CloseThread()
+        {
+            var value = Interlocked.Decrement(ref RunningThreads);
+
+            if (value == 0)
+                Close();
+            else if (value < 0)
+                throw new InvalidOperationException($"More Threads Close Calls than Running");
+        }
+
+        void Close()
+        {
+            Log.Info("WebSocket Closed");
+
+            Stream.Dispose();
+            Client.Dispose();
+        }
+        #endregion
 
         public WebSocket(WebSocketServer server, TcpClient client, Stream stream, int id, string url)
         {
@@ -597,7 +597,7 @@ namespace MNet
             this.ID = id;
             this.URL = url;
 
-            State = WebSocketState.Open;
+            state = WebSocketState.Open;
 
             PayloadSendQueue = new();
             ControlSendQueue = new();
@@ -739,7 +739,6 @@ namespace MNet
         public static bool TryReadPayload(Stream stream, WebSocketHeader header, ref WebSocketPacket packet)
         {
             var span = packet.TakeSpan(header.PayloadLength);
-
             return TryReadPayload(stream, header, ref span);
         }
         public static bool TryReadPayload(Stream stream, WebSocketHeader header, ref Span<byte> span)
@@ -748,31 +747,6 @@ namespace MNet
                 return false;
 
             ToggleMask(span, header.Mask.Value);
-
-            return true;
-        }
-
-        public static bool TryReadExact(this Stream stream, ref Span<byte> span, int offset, int length)
-        {
-            var segment = span.Slice(offset, length);
-
-            return TryReadExact(stream, ref segment);
-        }
-        public static bool TryReadExact(this Stream stream, ref Span<byte> span)
-        {
-            var position = 0;
-
-            while (position < span.Length)
-            {
-                var slice = span.Slice(position, span.Length - position);
-
-                var read = stream.Read(slice);
-
-                if (read <= 0)
-                    return false;
-
-                position += read;
-            }
 
             return true;
         }
@@ -869,6 +843,45 @@ namespace MNet
 
                 code = (WebSocketCloseCode)value;
             }
+        }
+    }
+
+    public static class WebSocketExtensions
+    {
+        public static bool TryReadExact(this Stream stream, ref Span<byte> span, int offset, int length)
+        {
+            var segment = span.Slice(offset, length);
+            return TryReadExact(stream, ref segment);
+        }
+        public static bool TryReadExact(this Stream stream, ref Span<byte> span)
+        {
+            var position = 0;
+
+            while (position < span.Length)
+            {
+                var slice = span.Slice(position, span.Length - position);
+
+                int read;
+
+                try
+                {
+                    read = stream.Read(slice);
+                }
+                catch (IOException ex)
+                {
+                    if (ex.InnerException is SocketException so)
+                        return false;
+
+                    throw;
+                }
+
+                if (read <= 0)
+                    return false;
+
+                position += read;
+            }
+
+            return true;
         }
     }
 
