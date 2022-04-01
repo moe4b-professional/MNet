@@ -22,6 +22,10 @@ namespace MNet
         public int Timeout = 10 * 1000;
         public int PingInterval = 4 * 1000;
 
+        public int PollingInterval = 5;
+
+        public bool NoDelay = false;
+
         Stopwatch Stopwatch;
         public long GetTime() => Stopwatch.ElapsedMilliseconds;
 
@@ -119,6 +123,8 @@ namespace MNet
 
         WebSocket Register(TcpClient client, Stream stream, string url)
         {
+            client.NoDelay = NoDelay;
+
             var ID = Interlocked.Increment(ref IDIndex);
 
             var socket = new WebSocket(this, client, stream, ID, url);
@@ -167,6 +173,7 @@ namespace MNet
         public int ID { get; }
         public string URL { get; }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         volatile WebSocketState state;
         public WebSocketState State => state;
 
@@ -211,6 +218,9 @@ namespace MNet
 
             while (true)
             {
+                if (ReceivePoll() == false)
+                    break;
+
                 if (WebSocketFrame.TryReadHeader(Stream, out var header) == false)
                 {
                     Disconnect(WebSocketCloseCode.ProtocolError);
@@ -242,6 +252,29 @@ namespace MNet
             Log.Info($"Recieve Loop Closed");
 
             CloseThread();
+        }
+
+        bool ReceivePoll()
+        {
+            while (true)
+            {
+                if (State != WebSocketState.Open)
+                    return false;
+
+                try
+                {
+                    if (Client.Available > 0)
+                        return true;
+                }
+                catch (Exception ex)
+                {
+                    if (WebSocketExtensions.IsRemoteDisconnectException(ex))
+
+                        throw;
+                }
+
+                Thread.Sleep(Server.PollingInterval);
+            }
         }
 
         bool HandlePayloadFrame(WebSocketHeader header, ref WebSocketOPCode opCode, ref WebSocketPacket packet)
@@ -356,7 +389,7 @@ namespace MNet
                 if (SendQueuesImmediate(ControlSendQueue, PayloadSendQueue) == false)
                     break;
 
-                Thread.Sleep(10);
+                Thread.Sleep(Server.PollingInterval);
             }
 
             ClearCommandQueue(ControlSendQueue);
@@ -394,7 +427,9 @@ namespace MNet
                 if (timespan > Server.PingInterval)
                 {
                     LastPingSendTime = time;
-                    SendImmediate(WebSocketOPCode.Ping, default);
+
+                    if (SendImmediate(WebSocketOPCode.Ping, default) == false)
+                        return false;
                 }
             }
 
@@ -469,9 +504,9 @@ namespace MNet
 
                 Stream.Write(span);
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
-                if (ex.InnerException is SocketException so)
+                if (WebSocketExtensions.IsRemoteDisconnectException(ex))
                     return false;
 
                 throw;
@@ -491,20 +526,14 @@ namespace MNet
             WebSocketFrame.WriteCloseFrame(packet, code, message);
             var span = packet.AsSpan();
 
-            try
-            {
-                SendImmediate(WebSocketOPCode.Close, span);
-            }
-            catch (Exception)
+            if (SendImmediate(WebSocketOPCode.Close, span) == false)
             {
                 code = WebSocketCloseCode.Abnormal;
                 message = string.Empty;
             }
-            finally
-            {
-                Stop(code, message);
-                packet.Recycle();
-            }
+
+            Stop(code, message);
+            packet.Recycle();
         }
 
         void ClearCommandQueue(ConcurrentQueue<SendCommand> queue)
@@ -556,10 +585,10 @@ namespace MNet
         void Stop(WebSocketCloseCode code) => Stop(code, string.Empty);
         void Stop(WebSocketCloseCode code, string message)
         {
-            Log.Info("WebSocket Stopped");
-
             if (state == WebSocketState.Closed)
                 throw new InvalidOperationException($"Socket Already Closed");
+
+            Log.Info("WebSocket Stopped");
 
             state = WebSocketState.Closed;
 
@@ -867,9 +896,9 @@ namespace MNet
                 {
                     read = stream.Read(slice);
                 }
-                catch (IOException ex)
+                catch (Exception ex)
                 {
-                    if (ex.InnerException is SocketException so)
+                    if (IsRemoteDisconnectException(ex))
                         return false;
 
                     throw;
@@ -882,6 +911,14 @@ namespace MNet
             }
 
             return true;
+        }
+
+        public static bool IsRemoteDisconnectException(Exception exception)
+        {
+            if (exception is IOException && exception.InnerException is SocketException so)
+                return true;
+
+            return false;
         }
     }
 
