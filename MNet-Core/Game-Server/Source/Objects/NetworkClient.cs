@@ -29,7 +29,7 @@ namespace MNet
 
         public override string ToString() => ID.ToString();
 
-        public NetworkClient(NetworkClientID id, NetworkClientProfile profile, INetworkTransport transport)
+        public NetworkClient(NetworkClientID id, NetworkClientProfile profile)
         {
             this.ID = id;
             this.Profile = profile;

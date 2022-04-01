@@ -163,6 +163,7 @@ namespace MNet
                 foreach (var room in targets)
                 {
                     if (room.Visible == false) continue;
+                    if (room.HostConnected == false) continue;
 
                     var info = room.Info.Get();
 

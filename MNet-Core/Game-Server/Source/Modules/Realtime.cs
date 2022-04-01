@@ -57,28 +57,28 @@ namespace MNet
             }
         }
 
-        public static INetworkTransportContext RegisterContext(NetworkTransportType type, uint code)
+        public static INetworkTransportContext StartContext(NetworkTransportType type, uint id)
         {
             if (Transports.TryGetValue(type, out var transport) == false)
                 throw new Exception($"No Transport of Type {type} Defined in Realtime");
 
-            var context = transport.Register(code);
+            var context = transport.StartContext(id);
 
             return context;
         }
 
-        public static void UnregisterContext(NetworkTransportType type, uint code)
+        public static void StopContext(NetworkTransportType type, uint id, DisconnectCode code)
         {
             if (Transports.TryGetValue(type, out var transport) == false)
                 throw new Exception($"No Transport of Type {type} Defined in Realtime");
 
-            transport.Unregister(code);
+            transport.StopContext(id, code);
         }
 
-        public static void Close()
+        public static void Stop(DisconnectCode code)
         {
             foreach (var transport in Transports.Values)
-                transport.Stop();
+                transport.Stop(code);
         }
     }
 }

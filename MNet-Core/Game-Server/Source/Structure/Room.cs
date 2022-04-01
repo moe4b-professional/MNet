@@ -27,6 +27,8 @@ namespace MNet
         public byte Occupancy => (byte)Clients.Count;
         public bool IsFull => Occupancy >= Capacity;
 
+        public bool HostConnected { get; protected set; }
+
         public bool Visible { get; protected set; }
 
         public string Password { get; protected set; }
@@ -169,7 +171,7 @@ namespace MNet
 
             NetworkClient Add(NetworkClientID id, NetworkClientProfile profile)
             {
-                var client = new NetworkClient(id, profile, TransportContext.Transport);
+                var client = new NetworkClient(id, profile);
 
                 if (Clients.Count == 0) Master.Set(client);
 
@@ -188,37 +190,47 @@ namespace MNet
             {
                 Log.Info($"Room {Room.ID}: Client {id} Disconnected");
 
-                if (Dictionary.TryGetValue(id, out var client)) Remove(client);
+                if (Dictionary.TryGetValue(id, out var client) == false)
+                    return;
 
-                if (Room.Occupancy == 0 && Room.IsRunning) Room.Stop();
+                Remove(client);
             }
 
-            void Remove(NetworkClient client)
+            bool Remove(NetworkClient client)
             {
                 Entities.DestroyForClient(client);
 
                 Dictionary.Remove(client.ID);
                 List.Remove(client);
 
-                if (client == Master.Client) ProcessMigration();
+                if (client == Master.Client)
+                    if (ProcessMigration() == false)
+                        return false;
+
+                if (Room.Occupancy == 0)
+                    Room.Stop(DisconnectCode.Normal);
 
                 var payload = new ClientDisconnectPayload(client.ID);
                 Room.Broadcast(ref payload);
+
+                return true;
             }
             #endregion
 
-            void ProcessMigration()
+            bool ProcessMigration()
             {
                 switch (Room.MigrationPolicy)
                 {
                     case MigrationPolicy.Continue:
                         Master.ChooseNew();
-                        break;
+                        return true;
 
                     case MigrationPolicy.Stop:
-                        TransportContext.DisconnectAll(DisconnectCode.HostDisconnected);
-                        Room.Stop();
-                        break;
+                        Room.Stop(DisconnectCode.HostDisconnected);
+                        return false;
+
+                    default:
+                        throw new NotImplementedException();
                 }
             }
 
@@ -1010,6 +1022,9 @@ namespace MNet
                     if (Incoming.TryDequeue(out var packet) == false)
                         break;
 
+                    if (Room.IsRunning == false)
+                        break;
+
                     switch (packet.Type)
                     {
                         case PacketType.Connection:
@@ -1245,7 +1260,7 @@ namespace MNet
 
             MessageDispatcher.RegisterHandler<PingRequest>(Ping);
 
-            TransportContext = Realtime.RegisterContext(App.Transport, ID.Value);
+            TransportContext = Realtime.StartContext(App.Transport, ID.Value);
 
             ForAllProperties(x => x.Start());
 
@@ -1256,6 +1271,7 @@ namespace MNet
             {
                 if (Occupancy > 0)
                 {
+                    HostConnected = true;
                     OnTick -= ClearEarlyVacantProcedure;
                 }
 
@@ -1263,7 +1279,7 @@ namespace MNet
                 {
                     OnTick -= ClearEarlyVacantProcedure;
 
-                    if (Occupancy == 0) Stop();
+                    if (Occupancy == 0) Stop(DisconnectCode.ConnectionClosed);
                 }
             }
 
@@ -1367,13 +1383,16 @@ namespace MNet
 
         public delegate void StopDelegate(Room room);
         public event StopDelegate OnStop;
-        void Stop()
+        void Stop(DisconnectCode code)
         {
+            if (IsRunning == false)
+                throw new Exception($"Room already Closed");
+
             Log.Info($"Stopping Room {ID}");
 
             Scheduler.Stop();
 
-            Realtime.UnregisterContext(App.Transport, ID.Value);
+            Realtime.StopContext(App.Transport, ID.Value, code);
 
             NetworkStream.Pool.Return(NetworkReader, NetworkWriter);
 
@@ -1394,6 +1413,7 @@ namespace MNet
             Password = options.Password;
             MigrationPolicy = options.MigrationPolicy;
             Attributes = options.Attributes;
+            HostConnected = false;
 
             Scheduler = new Scheduler(App.TickDelay, Tick);
 

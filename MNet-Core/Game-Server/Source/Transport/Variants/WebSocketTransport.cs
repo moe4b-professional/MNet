@@ -74,25 +74,13 @@ namespace MNet
         }
         #endregion
 
-        protected override WebSocketTransportContext CreateContext(uint id)
+        public override void Stop(DisconnectCode code)
         {
-            var context = new WebSocketTransportContext(this, id);
+            var value = (WebSocketCloseCode)Utility.Disconnect.CodeToValue(code);
 
-            return context;
+            Server.Stop(value);
         }
-
-        public override void Stop()
-        {
-            WebSocketTransportContext[] collection;
-
-            lock (Contexts)
-            {
-                collection = Contexts.Values.ToArray();
-            }
-
-            foreach (var context in collection)
-                Unregister(context);
-        }
+        protected override void Close() { }
 
         public WebSocketTransport() : base()
         {
@@ -106,14 +94,6 @@ namespace MNet
 
     class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocket>
     {
-        public string Path { get; protected set; }
-
-        protected override WebSocketTransportClient CreateClient(NetworkClientID clientID, WebSocket socket)
-        {
-            var client = new WebSocketTransportClient(this, clientID, socket);
-            return client;
-        }
-
         public override void Send(WebSocketTransportClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             if (client.IsOpen == false) return;
@@ -133,25 +113,12 @@ namespace MNet
             client.Connection.Disconnect(value);
         }
 
-        public override void Close()
-        {
-
-        }
-
-        public WebSocketTransportContext(WebSocketTransport transport, uint id) : base(transport, id)
-        {
-            this.Transport = transport;
-        }
+        protected override void Close() { }
     }
 
     class WebSocketTransportClient : NetworkTransportClient<WebSocketTransportContext, WebSocket>
     {
         public bool IsOpen => Connection.State == WebSocketState.Open;
-
-        public WebSocketTransportClient(WebSocketTransportContext context, NetworkClientID id, WebSocket socket) : base(context, id, socket)
-        {
-
-        }
     }
 
     class WebSocketClientTag

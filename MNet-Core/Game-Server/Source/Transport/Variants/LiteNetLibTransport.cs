@@ -25,16 +25,16 @@ namespace MNet
         public override void Start()
         {
             Server.Start(Port);
+
+            new Thread(Run).Start();
         }
 
         void Run()
         {
             while (true) Tick();
         }
-
         void Tick()
         {
-            if (Server == null) return;
             if (Server.IsRunning == false) return;
 
             Server.PollEvents();
@@ -102,23 +102,20 @@ namespace MNet
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency) { }
         #endregion
 
-        protected override LiteNetLibTransportContext CreateContext(uint id) => new LiteNetLibTransportContext(this, id);
-
-        public override void Stop()
+        public override void Stop(DisconnectCode code)
         {
             var binary = Utility.Disconnect.CodeToBinary(DisconnectCode.ServerClosed);
 
             Server.DisconnectAll(binary, 0, binary.Length);
             Server.Stop();
         }
+        protected override void Close() { }
 
         public LiteNetLibTransport()
         {
             Server = new NetManager(this);
             Server.ChannelsCount = 64;
             Server.UpdateTime = 1;
-
-            new Thread(Run).Start();
         }
 
         //Static Utility
@@ -140,11 +137,6 @@ namespace MNet
 
     class LiteNetLibTransportContext : NetworkTransportContext<LiteNetLibTransport, LiteNetLibTransportContext, LiteNetLibTransportClient, NetPeer>
     {
-        protected override LiteNetLibTransportClient CreateClient(NetworkClientID clientID, NetPeer connection)
-        {
-            return new LiteNetLibTransportClient(this, clientID, connection);
-        }
-
         public override void Send(LiteNetLibTransportClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             var method = Utility.Delivery.Glossary[mode];
@@ -159,25 +151,12 @@ namespace MNet
             client.Peer.Disconnect(binary);
         }
 
-        public override void Close()
-        {
-
-        }
-
-        public LiteNetLibTransportContext(LiteNetLibTransport transport, uint id) : base(transport, id)
-        {
-
-        }
+        protected override void Close() { }
     }
 
     class LiteNetLibTransportClient : NetworkTransportClient<LiteNetLibTransportContext, NetPeer>
     {
         public NetPeer Peer => Connection;
-
-        public LiteNetLibTransportClient(LiteNetLibTransportContext context, NetworkClientID clientID, NetPeer peer) : base(context, clientID, peer)
-        {
-
-        }
     }
 
     class LiteNetLibClientTag

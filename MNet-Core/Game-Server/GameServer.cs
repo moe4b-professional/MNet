@@ -123,7 +123,7 @@ namespace MNet
                 GC.Collect();
             }
 
-            static void Stop(InputDispatcher.Request request) => GameServer.Stop().Forget();
+            static void Stop(InputDispatcher.Request request) => GameServer.Stop().Wait();
 
             static Input()
             {
@@ -172,7 +172,9 @@ namespace MNet
 
             await MasterServer.Unregister();
 
-            Realtime.Close();
+            Realtime.Stop(DisconnectCode.ServerClosed);
+
+            await Task.Delay(5000);
 
             Environment.Exit(0);
         }

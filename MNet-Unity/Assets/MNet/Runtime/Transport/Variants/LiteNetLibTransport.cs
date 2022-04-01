@@ -36,7 +36,8 @@ namespace MNet
         {
             get
             {
-                if (Peer == null) return false;
+                if (Peer == null)
+                    return false;
 
                 return Peer.ConnectionState == ConnectionState.Connected;
             }
@@ -79,7 +80,6 @@ namespace MNet
             var data = Utility.Disconnect.CodeToBinary(code);
 
             Peer.Disconnect(data);
-            Client.Stop(true);
         }
 
         #region Callbacks
@@ -95,6 +95,8 @@ namespace MNet
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo info)
         {
             var code = Utility.Disconnect.InfoToCode(info);
+
+            Client.Stop(true);
 
             InvokeDisconnect(code);
         }

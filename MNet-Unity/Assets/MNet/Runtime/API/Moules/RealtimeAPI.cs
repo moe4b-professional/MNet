@@ -363,11 +363,10 @@ namespace MNet
                     return;
                 }
 
-                if (OfflineMode == false) Transport.Disconnect(code);
-
-                ///Manually invoke callback to make all Disconnect() invokes synchronous,
-                ///we ensure synchronicity by clearing the InputQueue within the callback
-                InvokeDisconnect(code);
+                if (OfflineMode)
+                    InvokeDisconnect(code);
+                else
+                    Transport.Disconnect(code);
             }
 
             public delegate void DisconnectDelegate(DisconnectCode code);

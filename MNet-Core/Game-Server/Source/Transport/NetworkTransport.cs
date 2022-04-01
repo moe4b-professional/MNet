@@ -17,17 +17,19 @@ namespace MNet
 
         void Start();
 
-        INetworkTransportContext Register(uint id);
-        void Unregister(uint id);
+        INetworkTransportContext StartContext(uint id);
+        void StopContext(uint id, DisconnectCode code);
 
-        void Stop();
+        void Stop(DisconnectCode code);
     }
 
     abstract class NetworkTransport<TTransport, TContext, TClient, TConnection> : INetworkTransport
         where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection>
-        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection>
-        where TClient : NetworkTransportClient<TContext, TConnection>
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection>, new()
+        where TClient : NetworkTransportClient<TContext, TConnection>, new()
     {
+        public TTransport Self { get; }
+
         public ConcurrentDictionary<uint, TContext> Contexts { get; protected set; }
 
         public TContext this[uint code] => Contexts[code];
@@ -36,38 +38,44 @@ namespace MNet
 
         public abstract void Start();
 
-        public virtual TContext Register(uint id)
+        INetworkTransportContext INetworkTransport.StartContext(uint id) => StartContext(id);
+        public virtual TContext StartContext(uint id)
         {
-            var context = CreateContext(id);
-
+            var context = new TContext();
             Contexts.TryAdd(id, context);
+            context.Configure(Self, id);
 
             return context;
         }
-        protected abstract TContext CreateContext(uint id);
 
-        INetworkTransportContext INetworkTransport.Register(uint id) => Register(id);
-        public virtual void Unregister(uint id)
+        public virtual void StopContext(uint id, DisconnectCode code)
         {
             if (Contexts.TryGetValue(id, out var context) == false)
-            {
-                Log.Error($"No Network Transport Context Registered With {id}");
-                return;
-            }
+                throw new InvalidOperationException($"No Network Transport Context Registered With {id}");
 
-            Unregister(context);
+            StopContext(context, code);
         }
-        protected virtual bool Unregister(TContext context)
+        public virtual void StopContext(TContext context, DisconnectCode code)
         {
-            context.Close();
-
-            return Contexts.TryRemove(context.ID);
+            context.Stop(code);
+            Contexts.TryRemove(context.ID);
         }
 
-        public abstract void Stop();
+        public virtual void Stop(DisconnectCode code)
+        {
+            var contexts = Contexts.Values.ToArray();
+
+            foreach (var context in contexts)
+                StopContext(context, code);
+
+            Close();
+        }
+        protected abstract void Close();
 
         public NetworkTransport()
         {
+            Self = this as TTransport;
+
             Contexts = new ConcurrentDictionary<uint, TContext>();
         }
     }
@@ -76,8 +84,6 @@ namespace MNet
     #region Context
     public interface INetworkTransportContext
     {
-        INetworkTransport Transport { get; }
-
         public event NetworkTransportConnectDelegate OnConnect;
         public event NetworkTransportMessageDelegate OnMessage;
         public event NetworkTransportDisconnectDelegate OnDisconnect;
@@ -85,20 +91,20 @@ namespace MNet
         bool Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel);
 
         bool Disconnect(NetworkClientID clientID, DisconnectCode code);
-        void DisconnectAll(DisconnectCode code);
     }
 
     abstract class NetworkTransportContext<TTransport, TContext, TClient, TConnection> : INetworkTransportContext
         where TTransport : NetworkTransport<TTransport, TContext, TClient, TConnection>
-        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection>
-        where TClient : NetworkTransportClient<TContext, TConnection>
+        where TContext : NetworkTransportContext<TTransport, TContext, TClient, TConnection>, new()
+        where TClient : NetworkTransportClient<TContext, TConnection>, new()
     {
-        public TTransport Transport { get; protected set; }
+        public TContext Self { get; }
 
-        INetworkTransport INetworkTransportContext.Transport => Transport;
+        public TTransport Transport { get; protected set; }
 
         public uint ID { get; protected set; }
 
+        #region Client IDs
         public AutoKeyCollection<NetworkClientID> ClientIDs { get; protected set; }
 
         public NetworkClientID ReserveClientID()
@@ -109,12 +115,19 @@ namespace MNet
         {
             lock (ClientIDs) return ClientIDs.Free(id);
         }
+        #endregion
 
         public ConcurrentDictionary<NetworkClientID, TClient> Clients { get; protected set; }
 
+        public virtual void Configure(TTransport transport, uint id)
+        {
+            this.Transport = transport;
+            this.ID = id;
+        }
+
         #region Callbacks
         public event NetworkTransportConnectDelegate OnConnect;
-        internal void InvokeConnect(TClient client)
+        void InvokeConnect(TClient client)
         {
             OnConnect?.Invoke(client.ID);
         }
@@ -126,55 +139,40 @@ namespace MNet
         }
 
         public event NetworkTransportDisconnectDelegate OnDisconnect;
-        internal void InvokeDisconnect(TClient client)
+        void InvokeDisconnect(TClient client)
         {
             OnDisconnect?.Invoke(client.ID);
         }
         #endregion
 
-        #region Register
+        #region Register & Unregister
         public virtual TClient RegisterClient(TConnection connection)
         {
             var id = ReserveClientID();
 
-            var client = CreateClient(id, connection);
+            var client = new TClient();
+            client.Configure(Self, connection, id);
 
-            AddClient(id, connection, client);
+            Clients.TryAdd(id, client);
+
+            Statistics.Players.Add();
 
             InvokeConnect(client);
 
             return client;
         }
 
-        void AddClient(NetworkClientID id, TConnection connection, TClient client)
-        {
-            Clients.TryAdd(id, client);
-
-            Statistics.Players.Add();
-        }
-        #endregion
-
-        #region Unregister
         public virtual void UnregisterClient(TClient client)
         {
             InvokeDisconnect(client);
-            RemoveClient(client);
-        }
 
-        void RemoveClient(TClient client)
-        {
             Clients.TryRemove(client.ID);
 
             FreeClientID(client.ID);
 
-            DestroyClient(client);
-
             Statistics.Players.Remove();
         }
         #endregion
-
-        protected abstract TClient CreateClient(NetworkClientID clientID, TConnection connection);
-        protected virtual void DestroyClient(TClient client) { }
 
         #region Send
         public bool Send(NetworkClientID target, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
@@ -190,8 +188,6 @@ namespace MNet
         #endregion
 
         #region Disconnect
-        public abstract void Disconnect(TClient client, DisconnectCode code);
-
         public virtual bool Disconnect(NetworkClientID clientID, DisconnectCode code)
         {
             if (Clients.TryGetValue(clientID, out var client) == false)
@@ -200,23 +196,28 @@ namespace MNet
             Disconnect(client, code);
             return true;
         }
-        public virtual void DisconnectAll(DisconnectCode code)
-        {
-            foreach (var client in Clients.Values)
-                Disconnect(client, code);
-        }
+
+        public abstract void Disconnect(TClient client, DisconnectCode code);
         #endregion
 
-        public abstract void Close();
-
-        public NetworkTransportContext(TTransport transport, uint id)
+        public virtual void Stop(DisconnectCode code)
         {
-            this.Transport = transport;
-            this.ID = id;
+            var clients = Clients.Values.ToArray();
 
-            ClientIDs = new AutoKeyCollection<NetworkClientID>(NetworkClientID.Min, NetworkClientID.Max, NetworkClientID.Increment, Constants.IdRecycleLifeTime);
+            foreach (var client in clients)
+                Disconnect(client, code);
+
+            Close();
+        }
+
+        protected abstract void Close();
+
+        public NetworkTransportContext()
+        {
+            Self = this as TContext;
 
             Clients = new ConcurrentDictionary<NetworkClientID, TClient>();
+            ClientIDs = new AutoKeyCollection<NetworkClientID>(NetworkClientID.Min, NetworkClientID.Max, NetworkClientID.Increment, Constants.IdRecycleLifeTime);
         }
     }
     #endregion
@@ -224,16 +225,14 @@ namespace MNet
     abstract class NetworkTransportClient<TContext, TConnection>
     {
         public TContext Context { get; protected set; }
-
+        public TConnection Connection { get; protected set; }
         public NetworkClientID ID { get; protected set; }
 
-        public TConnection Connection { get; protected set; }
-
-        public NetworkTransportClient(TContext context, NetworkClientID id, TConnection connection)
+        public virtual void Configure(TContext context, TConnection connection, NetworkClientID id)
         {
             this.Context = context;
-            this.ID = id;
             this.Connection = connection;
+            this.ID = id;
         }
     }
 
