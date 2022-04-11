@@ -27,12 +27,7 @@ namespace MNet
 
             internal static void Configure()
             {
-                Server.Master.OnScheme += MasterServerSchemeCallback;
-            }
 
-            static void MasterServerSchemeCallback(MasterServerSchemeResponse response)
-            {
-                Set(response.App);
             }
 
             public delegate void SetDelegate(AppConfig app);

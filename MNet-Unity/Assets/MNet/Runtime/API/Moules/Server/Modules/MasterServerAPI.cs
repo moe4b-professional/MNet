@@ -39,35 +39,32 @@ namespace MNet
                     Rest.SetIP(Address);
                 }
 
-                public delegate void SchemeDelegate(MasterServerSchemeResponse response);
-                public static event SchemeDelegate OnScheme;
                 public static async UniTask<MasterServerSchemeResponse> GetScheme()
                 {
                     var payload = new MasterServerSchemeRequest(AppID, GameVersion);
 
                     var response = await Rest.POST<MasterServerSchemeRequest, MasterServerSchemeResponse>(Constants.Server.Master.Rest.Requests.Scheme, payload);
 
-                    OnScheme?.Invoke(response);
+                    Server.SetRemoteConfig(response.RemoteConfig);
+                    AppAPI.Set(response.App);
 
-                    InvokeInfo(response.Info);
+                    SetInfo(response.Info);
 
                     return response;
                 }
 
-                static void InvokeInfo(MasterServerInfoResponse info)
+                static void SetInfo(MasterServerInfoResponse info)
                 {
-                    OnInfo?.Invoke(info);
+                    Server.Game.Register(info.Servers);
                 }
 
-                public delegate void InfoDelegate(MasterServerInfoResponse info);
-                public static event InfoDelegate OnInfo;
                 public static async UniTask<MasterServerInfoResponse> GetInfo()
                 {
                     var payload = new MasterServerInfoRequest();
 
                     var response = await Rest.POST<MasterServerInfoRequest, MasterServerInfoResponse>(Constants.Server.Master.Rest.Requests.Info, payload);
 
-                    InvokeInfo(response);
+                    SetInfo(response);
 
                     return response;
                 }

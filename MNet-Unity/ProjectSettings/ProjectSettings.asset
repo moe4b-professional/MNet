@@ -135,31 +135,7 @@ PlayerSettings:
     16:9: 1
     Others: 1
   bundleVersion: 1.0
-  preloadedAssets:
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
-  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
-  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
-  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -730,11 +706,11 @@ PlayerSettings:
   platformArchitecture: {}
   scriptingBackend:
     Android: 0
-    Standalone: 1
+    Standalone: 0
   il2cppCompilerConfiguration:
     WebGL: 1
   managedStrippingLevel:
-    Standalone: 3
+    Standalone: 0
     WebGL: 3
   incrementalIl2cppBuild: {}
   suppressCommonWarnings: 1

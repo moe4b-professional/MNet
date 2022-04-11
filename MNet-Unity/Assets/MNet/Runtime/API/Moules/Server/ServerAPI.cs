@@ -29,22 +29,11 @@ namespace MNet
             {
                 Master.Configure();
                 Game.Configure();
-
-                Master.OnScheme += MasterSchemeCallback;
             }
 
-            static void MasterSchemeCallback(MasterServerSchemeResponse response)
-            {
-                SetRemoteConfig(response.RemoteConfig);
-            }
-
-            public delegate void RemoteConfigDelegate(RemoteConfig config);
-            public static event RemoteConfigDelegate OnRemoteConfig;
             public static void SetRemoteConfig(RemoteConfig instance)
             {
                 RemoteConfig = instance;
-
-                OnRemoteConfig?.Invoke(instance);
             }
         }
     }

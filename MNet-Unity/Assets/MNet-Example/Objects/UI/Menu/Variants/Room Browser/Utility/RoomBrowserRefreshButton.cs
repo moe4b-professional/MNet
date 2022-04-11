@@ -32,25 +32,15 @@ namespace MNet.Example
 		{
 			button = GetComponent<Button>();
 			button.onClick.AddListener(Action);
-
-			NetworkAPI.Lobby.OnInfo += Callback;
 		}
 
-		void Action()
+		async void Action()
 		{
 			button.interactable = false;
 
-			browser.Refresh().Forget();
-		}
+			await browser.Refresh();
 
-		void Callback(LobbyInfo lobby)
-		{
 			button.interactable = true;
-		}
-
-		void OnDestroy()
-		{
-			NetworkAPI.Lobby.OnInfo -= Callback;
 		}
 	}
 }

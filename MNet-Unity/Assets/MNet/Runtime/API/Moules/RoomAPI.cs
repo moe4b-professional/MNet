@@ -58,15 +58,11 @@ namespace MNet
             #endregion
 
             #region Create
-            public delegate void CreateDelegate(RoomInfo room);
-            public static event CreateDelegate OnCreate;
             public static async UniTask<RoomInfo> Create(RoomOptions options, bool offline = false)
             {
                 if (offline)
                 {
                     var info = OfflineMode.Start(options);
-
-                    OnCreate?.Invoke(info);
 
                     return info;
                 }
@@ -75,8 +71,6 @@ namespace MNet
                     var payload = new CreateRoomRequest(AppID, GameVersion, options);
 
                     var info = await Server.Game.Rest.POST<CreateRoomRequest, RoomInfo>(Constants.Server.Game.Rest.Requests.Room.Create, payload);
-
-                    OnCreate?.Invoke(info);
 
                     return info;
                 }

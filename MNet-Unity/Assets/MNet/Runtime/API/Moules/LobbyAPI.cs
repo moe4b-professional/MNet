@@ -34,15 +34,11 @@ namespace MNet
 
             public static int Size => Info.Size;
 
-            public delegate void InfoDelegate(LobbyInfo lobby);
-            public static event InfoDelegate OnInfo;
             public static async UniTask<LobbyInfo> GetInfo()
             {
                 var payload = new GetLobbyInfoRequest(AppID, GameVersion);
 
                 Info = await Server.Game.Rest.POST<GetLobbyInfoRequest, LobbyInfo>(Constants.Server.Game.Rest.Requests.Lobby.Info, payload);
-
-                OnInfo?.Invoke(Info);
 
                 return Info;
             }

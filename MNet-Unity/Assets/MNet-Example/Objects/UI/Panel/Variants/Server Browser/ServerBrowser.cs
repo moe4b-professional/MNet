@@ -86,18 +86,9 @@ namespace MNet.Example
 
         void Start()
         {
-            NetworkAPI.Server.Master.OnInfo += MasterInfoCallback;
-
-            Populate(NetworkAPI.Server.Game.Collection.Values);
+            Populate(NetworkAPI.Server.Game.Collection);
 
             Visible = NetworkAPI.Server.Game.Selection == null;
-        }
-
-        void MasterInfoCallback(MasterServerInfoResponse info)
-        {
-            Populate(info.Servers);
-
-            if (NetworkAPI.Server.Game.Selection == null) Show();
         }
 
         void Populate(ICollection<GameServerInfo> collection)
@@ -109,7 +100,6 @@ namespace MNet.Example
 
             ScrollToLast();
         }
-
         void InitTemplate(GameServerUITemplate template, int index)
         {
             Initializer.Perform(template);
@@ -147,6 +137,10 @@ namespace MNet.Example
                 Popup.Show("No Game Servers Found on Master", "Okay").Forget();
             else
                 Popup.Hide();
+
+            Populate(info.Servers);
+
+            if (NetworkAPI.Server.Game.Selection == null) Show();
         }
 
         void ScrollToLast()
@@ -168,11 +162,6 @@ namespace MNet.Example
             templates.ForEach(GameServerUITemplate.Destroy);
 
             templates.Clear();
-        }
-
-        void OnDestroy()
-        {
-            NetworkAPI.Server.Master.OnInfo -= MasterInfoCallback;
         }
     }
 }

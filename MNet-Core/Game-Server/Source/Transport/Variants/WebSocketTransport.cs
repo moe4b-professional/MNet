@@ -86,6 +86,9 @@ namespace MNet
         {
             Server = new WebSocketServer(IPAddress.Any, Port);
 
+            Server.NoDelay = true;
+            Server.PollingInterval = 1;
+
             Server.OnConnect += ConnectCallback;
             Server.OnMessage += MessageCallback;
             Server.OnDisconnect += DisconnectCallback;

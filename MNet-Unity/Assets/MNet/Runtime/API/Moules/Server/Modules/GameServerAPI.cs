@@ -28,7 +28,9 @@ namespace MNet
         {
             public static partial class Game
             {
-                public static Dictionary<GameServerID, GameServerInfo> Collection { get; private set; }
+                public static Dictionary<GameServerID, GameServerInfo> Dictionary { get; private set; }
+
+                public static ICollection<GameServerInfo> Collection => Dictionary.Values;
 
                 public static GameServerID? Selection { get; private set; }
 
@@ -43,7 +45,7 @@ namespace MNet
                     }
                 }
 
-                public static GameServerInfo Info => Collection[ID];
+                public static GameServerInfo Info => Dictionary[ID];
 
                 public static RestClientAPI Rest { get; private set; }
 
@@ -51,23 +53,16 @@ namespace MNet
                 {
                     Rest = new RestClientAPI(Constants.Server.Game.Rest.Port, NetworkAPI.Config.RestScheme);
 
-                    Collection = new Dictionary<GameServerID, GameServerInfo>();
-
-                    Master.OnInfo += MasterInfoCallback;
-                }
-
-                static void MasterInfoCallback(MasterServerInfoResponse info)
-                {
-                    Register(info.Servers);
+                    Dictionary = new Dictionary<GameServerID, GameServerInfo>();
                 }
 
                 public delegate void RegisterDelegate();
                 public static event RegisterDelegate OnRegister;
-                static void Register(IList<GameServerInfo> list)
+                internal static void Register(IList<GameServerInfo> list)
                 {
-                    Collection.Clear();
+                    Dictionary.Clear();
 
-                    for (int i = 0; i < list.Count; i++) Collection.Add(list[i].ID, list[i]);
+                    for (int i = 0; i < list.Count; i++) Dictionary.Add(list[i].ID, list[i]);
 
                     OnRegister?.Invoke();
                 }
