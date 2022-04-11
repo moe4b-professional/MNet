@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace MNet
 {
@@ -328,19 +329,15 @@ namespace MNet
     }
 
     [Preserve]
-    public struct SpawnEntityResponse : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SpawnEntityResponse
     {
         NetworkEntityID id;
         public NetworkEntityID ID => id;
 
         EntitySpawnToken token;
         public EntitySpawnToken Token => token;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref id);
-            context.Select(ref token);
-        }
 
         public static SpawnEntityResponse Write(NetworkEntityID id, EntitySpawnToken token)
         {
@@ -438,19 +435,15 @@ namespace MNet
 
     #region Entity Ownership
     [Preserve]
-    public struct TransferEntityPayload : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TransferEntityPayload
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
 
         NetworkClientID client;
         public NetworkClientID Client => client;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref entity);
-            context.Select(ref client);
-        }
 
         public TransferEntityPayload(NetworkEntityID entity, NetworkClientID client)
         {
@@ -460,15 +453,12 @@ namespace MNet
     }
 
     [Preserve]
-    public struct TakeoverEntityRequest : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TakeoverEntityRequest
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref entity);
-        }
 
         public TakeoverEntityRequest(NetworkEntityID entity)
         {
@@ -477,19 +467,15 @@ namespace MNet
     }
 
     [Preserve]
-    public struct TakeoverEntityCommand : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TakeoverEntityCommand
     {
         NetworkClientID client;
         public NetworkClientID Client => client;
 
         NetworkEntityID entity;
         public NetworkEntityID Entity => entity;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref client);
-            context.Select(ref entity);
-        }
 
         public TakeoverEntityCommand(NetworkClientID client, NetworkEntityID entity)
         {
@@ -509,15 +495,12 @@ namespace MNet
     #region Destroy Entity
     [Preserve]
     [Serializable]
-    public struct DestroyEntityPayload : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct DestroyEntityPayload
     {
         NetworkEntityID id;
         public NetworkEntityID ID => id;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref id);
-        }
 
         public DestroyEntityPayload(NetworkEntityID id)
         {
@@ -552,15 +535,12 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct ClientDisconnectPayload : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ClientDisconnectPayload
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref id);
-        }
 
         public ClientDisconnectPayload(NetworkClientID id)
         {
@@ -571,15 +551,12 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct ChangeMasterCommand : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ChangeMasterCommand
     {
         NetworkClientID id;
         public NetworkClientID ID => id;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref id);
-        }
 
         public ChangeMasterCommand(NetworkClientID id)
         {
@@ -590,15 +567,12 @@ namespace MNet
     #region Time
     [Preserve]
     [Serializable]
-    public struct TimeRequest : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TimeRequest
     {
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref timestamp);
-        }
 
         TimeRequest(DateTime timestamp)
         {
@@ -610,19 +584,15 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct TimeResponse : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TimeResponse
     {
         NetworkTimeSpan time;
         public NetworkTimeSpan Time => time;
 
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref time);
-            context.Select(ref timestamp);
-        }
 
         public TimeResponse(NetworkTimeSpan time, DateTime timestamp)
         {
@@ -637,15 +607,12 @@ namespace MNet
     #region Ping
     [Preserve]
     [Serializable]
-    public struct PingRequest : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PingRequest
     {
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref timestamp);
-        }
 
         public PingRequest(DateTime timestamp)
         {
@@ -657,17 +624,14 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct PingResponse : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PingResponse
     {
         DateTime timestamp;
         public DateTime Timestamp => timestamp;
 
         public TimeSpan GetTimeSpan() => DateTime.UtcNow - timestamp;
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref timestamp);
-        }
 
         public PingResponse(DateTime timestamp)
         {
@@ -750,7 +714,9 @@ namespace MNet
 
     #region Scene
     [Preserve]
-    public struct LoadScenePayload : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct LoadScenePayload
     {
         byte index;
         public byte Index => index;
@@ -762,12 +728,6 @@ namespace MNet
         {
             mode = value;
             return this;
-        }
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref index);
-            context.Select(ref mode);
         }
 
         public LoadScenePayload(byte index, NetworkSceneLoadMode mode)

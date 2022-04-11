@@ -19,6 +19,37 @@ using Random = UnityEngine.Random;
 
 namespace MNet
 {
+    public static class UnityTypesNetworkSerialization
+    {
+#if UNITY_EDITOR
+        [InitializeOnLoadMethod]
+#else
+        [RuntimeInitializeOnLoadMethod]
+#endif
+        static void OnLoad()
+        {
+            DynamicNetworkSerialization.Register(DynamicNetworkBehaviour);
+            DynamicNetworkSerialization.Register(DynamicISyncedAsset);
+        }
+
+        static bool DynamicISyncedAsset(Type type, ref NetworkSerializationResolver resolver)
+        {
+            if (typeof(ISyncedAsset).IsAssignableFrom(type) == false)
+                return false;
+
+            resolver = DynamicNetworkSerialization.ConstructResolver(typeof(SyncedAssetNetworkSerializationResolver<>), type);
+            return true;
+        }
+        static bool DynamicNetworkBehaviour(Type type, ref NetworkSerializationResolver resolver)
+        {
+            if (typeof(INetworkBehaviour).IsAssignableFrom(type) == false)
+                return false;
+
+            resolver = DynamicNetworkSerialization.ConstructResolver(typeof(NetworkBehaviourNetworkSerializationResolver<>), type);
+            return true;
+        }
+    }
+
     #region Vector2
     [Preserve]
     public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
@@ -170,9 +201,7 @@ namespace MNet
     [Preserve]
     public class NetworkEntityNetworkSerializationResolver : NetworkSerializationExplicitResolver<NetworkEntity>
     {
-        public override bool CanResolveDerivatives => true;
-
-        enum State : byte
+        public enum State : byte
         {
             Null, Unready, Ready
         }
@@ -195,7 +224,6 @@ namespace MNet
             writer.Write(State.Ready);
             writer.Write(instance.ID);
         }
-
         public override NetworkEntity Deserialize(NetworkReader reader)
         {
             reader.Read(out State state);
@@ -216,22 +244,21 @@ namespace MNet
     }
 
     [Preserve]
-    public class NetworkBehaviourNetworkSerializationResolver : NetworkSerializationExplicitResolver<INetworkBehaviour>
+    public class NetworkBehaviourNetworkSerializationResolver<T> : NetworkSerializationExplicitResolver<T>
+        where T : class, INetworkBehaviour
     {
-        public override bool CanResolveDerivatives => true;
-
-        public override void Serialize(NetworkWriter writer, INetworkBehaviour instance)
+        public override void Serialize(NetworkWriter writer, T instance)
         {
             writer.Write(instance.Network.Entity);
             writer.Write(instance.Network.ID);
         }
-
-        public override INetworkBehaviour Deserialize(NetworkReader reader)
+        public override T Deserialize(NetworkReader reader)
         {
             reader.Read(out NetworkEntity entity);
             reader.Read(out NetworkBehaviourID id);
 
-            if (entity == null) return null;
+            if (entity == null)
+                return null;
 
             if (entity.Behaviours.Dictionary.TryGetValue(id, out var behaviour) == false)
             {
@@ -239,16 +266,15 @@ namespace MNet
                 return null;
             }
 
-            return behaviour.Contract;
+            return behaviour.Contract as T;
         }
     }
 
     [Preserve]
-    public class SyncedAssetNetworkSerializationResolver : NetworkSerializationExplicitResolver<ISyncedAsset>
+    public class SyncedAssetNetworkSerializationResolver<T> : NetworkSerializationExplicitResolver<T>
+        where T : class, ISyncedAsset
     {
-        public override bool CanResolveDerivatives => true;
-
-        public override void Serialize(NetworkWriter writer, ISyncedAsset instance)
+        public override void Serialize(NetworkWriter writer, T instance)
         {
             var asset = instance as Object;
 
@@ -257,17 +283,16 @@ namespace MNet
 
             writer.Write(index);
         }
-
-        public override ISyncedAsset Deserialize(NetworkReader reader)
+        public override T Deserialize(NetworkReader reader)
         {
             reader.Read(out ushort index);
 
             var asset = NetworkAPI.Config.SyncedAssets[index] as ISyncedAsset;
 
-            if(asset == null)
+            if (asset == null)
                 Debug.LogWarning($"No Synced Asset found for index {index} when Deserializing");
 
-            return asset;
+            return asset as T;
         }
     }
 }

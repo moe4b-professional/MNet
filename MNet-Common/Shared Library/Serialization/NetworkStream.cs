@@ -217,27 +217,17 @@ namespace MNet
         #endregion
 
         #region Read
-        public T Read<T>()
+        public T Read<[NetworkSerializationGenerator] T>()
         {
             T value = default;
 
-            if (ResolveExplicit(ref value)) return value;
-
-            if (ResolveAny(ref value)) return value;
+            if (ResolveExplicit(ref value))
+                return value;
 
             throw FormatResolverException<T>();
         }
-        public void Read<T>(out T value) => value = Read<T>();
+        public void Read<[NetworkSerializationGenerator] T>(out T value) => value = Read<T>();
 
-        public object Read(Type type)
-        {
-            if (ResolveAny(type, out var value)) return value;
-
-            throw FormatResolverException(type);
-        }
-        #endregion
-
-        #region Resolve
         bool ResolveExplicit<T>(ref T value)
         {
             var resolver = NetworkSerializationResolver.Retrieve<T>();
@@ -246,38 +236,6 @@ namespace MNet
                 return false;
 
             value = resolver.Deserialize(this);
-            return true;
-        }
-
-        bool ResolveAny<T>(ref T value)
-        {
-            var type = typeof(T);
-
-            if (ResolveAny(type, out var instance) == false)
-                return false;
-
-            try
-            {
-                value = (T)instance;
-            }
-            catch (InvalidCastException)
-            {
-                throw new InvalidCastException($"NetworkStream Trying to read {instance.GetType()} as {typeof(T)}");
-            }
-
-            return true;
-        }
-
-        bool ResolveAny(Type type, out object value)
-        {
-            var resolver = NetworkSerializationResolver.Retrive(type);
-            if (resolver == null)
-            {
-                value = null;
-                return false;
-            }
-
-            value = resolver.Deserialize(this, type);
             return true;
         }
         #endregion
@@ -364,7 +322,7 @@ namespace MNet
         /// Resize stream to fit a certian capacity
         /// </summary>
         /// <param name="size"></param>
-        protected void Fit(int size)
+        public void Fit(int size)
         {
             if (Remaining >= size) return;
 
@@ -455,34 +413,14 @@ namespace MNet
         #endregion
 
         #region Write
-        public void Write<T>(T value)
+        public void Write<[NetworkSerializationGenerator] T>(T value)
         {
-            if (ResolveExplicit(value)) return;
-
-            var type = typeof(T);
-            if (ResolveAny(value, type)) return;
+            if (ResolveExplicit(value))
+                return;
 
             throw FormatResolverException<T>();
         }
 
-        public void Write(object value)
-        {
-            if (value == null)
-                throw new Exception("Cannot Serialize Null Without Explicilty Defining the Type Parameter");
-
-            var type = value.GetType();
-
-            Write(value, type);
-        }
-        public void Write(object value, Type type)
-        {
-            if (ResolveAny(value, type)) return;
-
-            throw FormatResolverException(type);
-        }
-        #endregion
-
-        #region Resolve
         bool ResolveExplicit<T>(T value)
         {
             var resolver = NetworkSerializationResolver.Retrieve<T>();
@@ -491,16 +429,6 @@ namespace MNet
                 return false;
 
             resolver.Serialize(this, value);
-            return true;
-        }
-
-        bool ResolveAny(object value, Type type)
-        {
-            var resolver = NetworkSerializationResolver.Retrive(type);
-
-            if (resolver == null) return false;
-
-            resolver.Serialize(this, value, type);
             return true;
         }
         #endregion

@@ -1,26 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MNet
 {
     [Preserve]
-    public struct NetworkClientID : IManualNetworkSerializable, IEquatable<NetworkClientID>
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NetworkClientID : IEquatable<NetworkClientID>
     {
         byte value;
         public byte Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(value);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            value = reader.TakeByte();
-        }
 
         public NetworkClientID(byte value)
         {
@@ -112,20 +105,12 @@ namespace MNet
     }
 
     [Preserve]
-    public struct NetworkGroupID : IManualNetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NetworkGroupID
     {
         byte value;
         public byte Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(value);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            value = reader.TakeByte();
-        }
 
         public NetworkGroupID(byte value)
         {

@@ -22,14 +22,22 @@ namespace MNet
         public void Serialize(NetworkWriter writer)
         {
             NetworkSerializationHelper.Length.Write(writer, Count);
-            writer.Insert(Array, Offset, Count);
+            if (Count > 0) writer.Insert(Array, Offset, Count);
         }
         public void Deserialize(NetworkReader reader)
         {
             Count = NetworkSerializationHelper.Length.Read(reader);
 
-            Array = reader.Data;
-            Offset = reader.Position;
+            if(Count == 0)
+            {
+                Array = default;
+                Offset = 0;
+            }
+            else
+            {
+                Array = reader.Data;
+                Offset = reader.Position;
+            }
 
             reader.Position += Count;
         }

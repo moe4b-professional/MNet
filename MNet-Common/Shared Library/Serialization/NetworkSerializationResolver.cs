@@ -3,155 +3,43 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using Helper = MNet.NetworkSerializationHelper;
 
 namespace MNet
 {
-    #region Resolvers
     [Preserve]
-    public abstract partial class NetworkSerializationResolver
+    public class NetworkSerializationResolver
     {
-        public abstract bool CanResolve(Type target);
+        public virtual IEnumerable<Type> Children { get; } = null;
 
-        public abstract void Serialize(NetworkWriter writer, object instance, Type type);
-
-        protected static bool WriteNull(NetworkWriter writer, object value)
-        {
-            if (value == null)
-            {
-                writer.Insert(1); //Is Null Flag Value
-                return true;
-            }
-            else
-            {
-                writer.Insert(0); //Is Not Null Flag
-                return false;
-            }
-        }
-        protected static bool WriteNull(NetworkWriter writer, object instance, Type type)
-        {
-            if (instance == null)
-            {
-                writer.Insert(1); //Is Null Flag Value
-                return true;
-            }
-
-            if (Helper.Nullable.Any.Check(type)) writer.Insert(0); //Is Not Null Flag
-
-            return false;
-        }
-
-        public abstract object Deserialize(NetworkReader reader, Type type);
-
-        protected static bool ReadNull(NetworkReader reader)
-        {
-            return reader.TakeByte() == 1 ? true : false;
-        }
-        protected static bool ReadNull(NetworkReader reader, Type type)
-        {
-            if (Helper.Nullable.Any.Check(type) == false) return false;
-
-            return ReadNull(reader);
-        }
-
-        public NetworkSerializationResolver() { }
-
-        //Static Utility
-
-        public static List<NetworkSerializationResolver> Implicits { get; private set; }
-        public static List<NetworkSerializationResolver> Explicits { get; private set; }
-
-        public static Dictionary<Type, NetworkSerializationResolver> Dictionary { get; private set; }
-
-        protected static readonly object StaticSyncLock = new object();
-
-        static bool TryFindExplicit(Type type, out NetworkSerializationResolver resolver)
-        {
-            for (int i = 0; i < Explicits.Count; i++)
-            {
-                if (Explicits[i].CanResolve(type))
-                {
-                    resolver = Explicits[i];
-                    return true;
-                }
-            }
-
-            resolver = default;
-            return false;
-        }
-        static bool TryFindImplicit(Type type, out NetworkSerializationResolver resolver)
-        {
-            for (int i = 0; i < Implicits.Count; i++)
-            {
-                if (Implicits[i].CanResolve(type))
-                {
-                    resolver = Implicits[i];
-                    return true;
-                }
-            }
-
-            resolver = default;
-            return false;
-        }
+        static readonly object SyncLock = new object();
 
         public static NetworkSerializationExplicitResolver<T> Retrieve<T>()
         {
-            lock (StaticSyncLock)
+            lock (SyncLock)
             {
                 if (NetworkSerializationExplicitResolver<T>.Instance != null)
                     return NetworkSerializationExplicitResolver<T>.Instance;
 
-                DynamicNetworkSerialization.Resolve(typeof(T), out var resolver);
+                var type = typeof(T);
+                if (DynamicNetworkSerialization.Resolve(type, out var resolver))
+                {
+#if MNet_Generated_AOT_Code
+                    Log.Warning($"Dynamic Resolver ({resolver.GetType()}) for ({type}) Created When AOT Code is Present, Please Re-Generate AOT Code");
+#endif
+                }
 
                 return NetworkSerializationExplicitResolver<T>.Instance;
             }
         }
 
-        public static NetworkSerializationResolver Retrive(Type type)
-        {
-            lock (StaticSyncLock)
-            {
-                if (Dictionary.TryGetValue(type, out var resolver))
-                    return resolver;
-
-                if (TryFindExplicit(type, out resolver))
-                {
-                    Assign(type, resolver);
-                }
-                else if (DynamicNetworkSerialization.Resolve(type, out resolver))
-                {
-                    Assign(type, resolver);
-                }
-                else if (TryFindImplicit(type, out resolver))
-                {
-                    Assign(type, resolver);
-
-                    if (DynamicNetworkSerialization.Enabled)
-                    {
-                        Log.Warning($"No Dynamic or Explicit Serialization Resolver Found for ({type}), But an Implicit Resolver was Found" +
-                               $", Please Consider Writing a Dynamic Resolver To Improve Serialization Speed on JIT Platforms");
-                    }
-                }
-
-                static void Assign(Type type, NetworkSerializationResolver resolver)
-                {
-                    Dictionary.Add(type, resolver);
-                }
-
-                return resolver;
-            }
-        }
-
         static NetworkSerializationResolver()
         {
-            Implicits = new List<NetworkSerializationResolver>();
-            Explicits = new List<NetworkSerializationResolver>();
-
-            Dictionary = new Dictionary<Type, NetworkSerializationResolver>();
-
             var target = typeof(NetworkSerializationResolver);
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -169,44 +57,26 @@ namespace MNet
                         throw new InvalidOperationException($"{type.FullName} needs to have an empty constructor to be registered as a {nameof(NetworkSerializationResolver)}");
 
                     var instance = Activator.CreateInstance(type) as NetworkSerializationResolver;
-
-                    if (instance is NetworkSerializationImplicitResolver)
-                        Implicits.Add(instance);
-                    else
-                        Explicits.Add(instance);
                 }
             }
         }
     }
 
+    #region Resolvers
     [Preserve]
     public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
     {
         internal static NetworkSerializationExplicitResolver<T> Instance;
 
-        public static Type Type => typeof(T);
-
-        public virtual bool CanResolveDerivatives => false;
-
-        public override bool CanResolve(Type target)
-        {
-            if (CanResolveDerivatives)
-                return Type.IsAssignableFrom(target);
-            else
-                return Type == target;
-        }
-
         public abstract void Serialize(NetworkWriter writer, T instance);
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
+        public abstract T Deserialize(NetworkReader reader);
+
+        public NetworkSerializationExplicitResolver()
         {
-            if (instance is T value)
-                Serialize(writer, value);
-            else if (instance == null)
-                Serialize(writer, default);
-            else
-                throw new InvalidCastException($"Cannot Use ({GetType()}) to Serialize ({type}) Explicitly, Because ({type}) Cannot be cast to {typeof(T)}");
+            Instance = this;
         }
 
+        #region Null
         protected static bool WriteNull(NetworkWriter writer, T value)
         {
             if (value == null)
@@ -221,48 +91,29 @@ namespace MNet
             }
         }
 
-        public abstract T Deserialize(NetworkReader reader);
-        public override object Deserialize(NetworkReader reader, Type type)
+        protected static bool ReadNull(NetworkReader reader)
         {
-            return Deserialize(reader);
+            return reader.TakeByte() == 1 ? true : false;
         }
-
-        public NetworkSerializationExplicitResolver()
-        {
-            Instance = this;
-        }
-    }
-
-    [Preserve]
-    public abstract class NetworkSerializationImplicitResolver : NetworkSerializationResolver
-    {
-
+        #endregion
     }
 
     [Preserve]
     public abstract class NetworkSerializationDynamicResolver<T> : NetworkSerializationExplicitResolver<T>
     {
-        public NetworkSerializationDynamicResolver() : base()
-        {
 
-        }
     }
     #endregion
 
     [Preserve]
     public static class DynamicNetworkSerialization
     {
-        public static bool Enabled { get; set; } = true;
-
         public static List<ResolveDelegate> Resolvers { get; private set; }
         public delegate bool ResolveDelegate(Type type, ref NetworkSerializationResolver resolver);
 
         internal static bool Resolve(Type type, out NetworkSerializationResolver resolver)
         {
             resolver = default;
-
-            if (Enabled == false)
-                return false;
 
             for (int i = 0; i < Resolvers.Count; i++)
                 if (Resolvers[i].Invoke(type, ref resolver))
@@ -277,7 +128,7 @@ namespace MNet
         {
             Resolvers = new List<ResolveDelegate>();
 
-            Register(ResolveINetworkSerilizable);
+            Register(ResolveINetworkSerializable);
             Register(ResolveIManualNetworkSerilizable);
 
             Register(ResolveEnum);
@@ -293,12 +144,14 @@ namespace MNet
             Register(ResolveQueue);
             Register(ResolveStack);
             Register(ResolveDictionary);
+
+            Register(ResolveBlittable);
         }
 
         #region Default Resolvers
-        static bool ResolveINetworkSerilizable(Type type, ref NetworkSerializationResolver resolver)
+        static bool ResolveINetworkSerializable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (INetworkSerializableResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsINetworkSerializable(type) == false)
                 return false;
 
             resolver = ConstructResolver(typeof(INetworkSerializableResolver<>), type);
@@ -307,7 +160,7 @@ namespace MNet
 
         static bool ResolveIManualNetworkSerilizable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (IManualNetworkSerializableResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsIManualNetworkSerializable(type) == false)
                 return false;
 
             resolver = ConstructResolver(typeof(IManualNetworkSerializableResolver<>), type);
@@ -316,7 +169,7 @@ namespace MNet
 
         static bool ResolveEnum(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (EnumNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsEnum(type) == false)
                 return false;
 
             var backing = Helper.Enum.UnderlyingType.Retrieve(type);
@@ -327,7 +180,7 @@ namespace MNet
 
         static bool ResolveNullable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (NullableNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsNullable(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -341,7 +194,7 @@ namespace MNet
             if (type.IsValueType == false)
                 return false;
 
-            if (TupleNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsTuple(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type[] arguments);
@@ -382,7 +235,7 @@ namespace MNet
 
         static bool ResolveArray(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (ArrayNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsArray(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -393,7 +246,7 @@ namespace MNet
 
         static bool ResolveArraySegment(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (ArraySegmentNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsArraySegment(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -404,7 +257,7 @@ namespace MNet
 
         static bool ResolveList(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (ListNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsList(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -415,7 +268,7 @@ namespace MNet
 
         static bool ResolveHashSet(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (HashSetNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsHashset(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -426,7 +279,7 @@ namespace MNet
 
         static bool ResolveQueue(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (QueueNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsQueue(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -437,7 +290,7 @@ namespace MNet
 
         static bool ResolveStack(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (StackNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsStack(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -448,7 +301,7 @@ namespace MNet
 
         static bool ResolveDictionary(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (DictionaryNetworkSerializationResolver.IsValid(type) == false)
+            if (SerializationTypeChecks.IsDicitionary(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type key, out Type value);
@@ -456,9 +309,21 @@ namespace MNet
             resolver = ConstructResolver(typeof(DictionaryNetworkSerializationResolver<,>), key, value);
             return true;
         }
+
+        static bool ResolveBlittable(Type type, ref NetworkSerializationResolver resolver)
+        {
+            if (SerializationTypeChecks.IsBlittable(type) == false)
+                return false;
+
+            resolver = ConstructResolver(typeof(BlittableNetworkSerializationResolver<>), type);
+            return true;
+        }
         #endregion
 
         //Utility
+
+        public delegate void ConstructResolverDelegate(Type definition, Type[] arguments, NetworkSerializationResolver resolver);
+        public static event ConstructResolverDelegate OnConstructResolver;
 
         public static NetworkSerializationResolver ConstructResolver(Type definition, params Type[] arguments)
         {
@@ -469,7 +334,112 @@ namespace MNet
 
             var resolver = Activator.CreateInstance(target) as NetworkSerializationResolver;
 
+            OnConstructResolver?.Invoke(definition, arguments, resolver);
+
             return resolver;
+        }
+    }
+
+    public static class SerializationTypeChecks
+    {
+        public static bool IsNullable(Type target)
+        {
+            if (target.IsGenericType == false) return false;
+
+            return target.GetGenericTypeDefinition() == typeof(Nullable<>);
+        }
+
+        public static bool IsEnum(Type target)
+        {
+            return target.IsEnum;
+        }
+
+        public static bool IsIManualNetworkSerializable(Type target)
+        {
+            return typeof(IManualNetworkSerializable).IsAssignableFrom(target);
+        }
+
+        public static bool IsINetworkSerializable(Type target)
+        {
+            return typeof(INetworkSerializable).IsAssignableFrom(target);
+        }
+
+        public static bool IsTuple(Type target)
+        {
+            return typeof(ITuple).IsAssignableFrom(target);
+        }
+
+        public static bool IsDicitionary(Type target)
+        {
+            if (target.IsGenericType == false)
+                return false;
+
+            return target.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+        }
+
+        public static bool IsStack(Type target)
+        {
+            if (target.IsGenericType == false)
+                return false;
+
+            return target.GetGenericTypeDefinition() == typeof(Stack<>);
+        }
+
+        public static bool IsQueue(Type target)
+        {
+            if (target.IsGenericType == false)
+                return false;
+
+            return target.GetGenericTypeDefinition() == typeof(Queue<>);
+        }
+
+        public static bool IsHashset(Type target)
+        {
+            if (target.IsGenericType == false) return false;
+
+            return target.GetGenericTypeDefinition() == typeof(HashSet<>);
+        }
+
+        public static bool IsList(Type target)
+        {
+            if (target.IsGenericType == false)
+                return false;
+
+            return target.GetGenericTypeDefinition() == typeof(List<>);
+        }
+
+        public static bool IsArraySegment(Type target)
+        {
+            if (target.IsGenericType == false)
+                return false;
+
+            return target.GetGenericTypeDefinition() == typeof(ArraySegment<>);
+        }
+
+        public static bool IsArray(Type target)
+        {
+            if (target.IsArray == false)
+                return false;
+
+            if (target.GetArrayRank() != 1)
+                return false;
+
+            return true;
+        }
+
+        public static bool IsBlittable(Type target)
+        {
+            var blittable = target.GetCustomAttribute<NetworkBlittableAttribute>();
+            if (blittable is null)
+                return false;
+
+            var layout = target.StructLayoutAttribute;
+            if (layout is null)
+                throw new InvalidOperationException($"({target}) is Marked Blittable but Doesn't Have a Struct Layout Attribute");
+            else if (layout.Value != LayoutKind.Sequential)
+                throw new InvalidOperationException($"({target}) is Marked Blittable but It's Struct Layout Attribute isn't Sequential");
+
+            return true;
         }
     }
 
@@ -852,6 +822,14 @@ namespace MNet
     [Preserve]
     public sealed class ArrayNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<TElement[]>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TElement);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, TElement[] instance)
         {
             if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
@@ -869,56 +847,20 @@ namespace MNet
             return array;
         }
     }
-
-    [Preserve]
-    public sealed class ArrayNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsArray == false)
-                return false;
-
-            if (target.GetArrayRank() != 1)
-                return false;
-
-            return true;
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            var array = instance as IList;
-
-            if (Helper.Length.Collection.WriteExplicit(writer, array) == false) return;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            for (int i = 0; i < array.Count; i++) writer.Write(array[i], argument);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            var array = Array.CreateInstance(argument, length);
-
-            for (int i = 0; i < length; i++)
-            {
-                var element = reader.Read(argument);
-
-                array.SetValue(element, i);
-            }
-
-            return array;
-        }
-    }
     #endregion
 
     #region Array Segment
     [Preserve]
     public sealed class ArraySegmentNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<ArraySegment<TElement>>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TElement);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, ArraySegment<TElement> instance)
         {
             Helper.Length.Write(writer, instance.Count);
@@ -938,55 +880,20 @@ namespace MNet
             return new ArraySegment<TElement>(array);
         }
     }
-
-    [Preserve]
-    public sealed class ArraySegmentNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(ArraySegment<>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            var value = instance as IEnumerable;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            //TODO find a way to get the count to optimize this surrogate creation
-            var list = Helper.List.Instantiate(argument, 0);
-
-            foreach (var item in value) list.Add(item);
-
-            Helper.Length.Write(writer, list.Count);
-
-            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            Helper.Length.Read(reader, out var count);
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            var array = Array.CreateInstance(argument, count) as IList;
-
-            for (int i = 0; i < count; i++)
-                array[i] = reader.Read(argument);
-
-            var segment = Activator.CreateInstance(type, array);
-
-            return segment;
-        }
-    }
     #endregion
 
     #region List
     [Preserve]
     public sealed class ListNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<List<TElement>>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TElement);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, List<TElement> instance)
         {
             if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
@@ -1009,52 +916,20 @@ namespace MNet
             return list;
         }
     }
-
-    [Preserve]
-    public sealed class ListNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(List<>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            var list = instance as IList;
-
-            if (Helper.Length.Collection.WriteExplicit(writer, list) == false) return;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (Helper.Length.Collection.Read(reader, out var count) == false) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            var list = Helper.List.Instantiate(argument, count);
-
-            for (int i = 0; i < count; i++)
-            {
-                var element = reader.Read(argument);
-
-                list.Add(element);
-            }
-
-            return list;
-        }
-    }
     #endregion
 
     #region Hashset
     [Preserve]
     public sealed class HashSetNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<HashSet<TElement>>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TElement);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, HashSet<TElement> instance)
         {
             if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
@@ -1077,59 +952,20 @@ namespace MNet
             return set;
         }
     }
-
-    [Preserve]
-    public sealed class HashSetNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(HashSet<>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (instance == null)
-            {
-                Helper.Length.Collection.WriteNull(writer);
-                return;
-            }
-
-            var value = instance as IEnumerable;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            //TODO find a way to get the count to optimize this surrogate creation
-            var list = Helper.List.Instantiate(argument, 0);
-
-            foreach (var item in value) list.Add(item);
-
-            Helper.Length.Collection.WriteValue(writer, list.Count);
-
-            for (int i = 0; i < list.Count; i++) writer.Write(list[i], argument);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            var array = Array.CreateInstance(argument, length) as IList;
-
-            for (int i = 0; i < length; i++)
-                array[i] = reader.Read(argument);
-
-            return Activator.CreateInstance(type, array);
-        }
-    }
     #endregion
 
     #region Queue
     [Preserve]
     public sealed class QueueNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<Queue<TElement>>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TElement);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, Queue<TElement> instance)
         {
             if (Helper.Length.Collection.WriteExplicit(writer, instance) == false) return;
@@ -1152,54 +988,20 @@ namespace MNet
             return queue;
         }
     }
-
-    [Preserve]
-    public sealed class QueueNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Queue<>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (instance == null)
-            {
-                Helper.Length.Collection.WriteNull(writer);
-                return;
-            }
-
-            var collection = instance as ICollection;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            Helper.Length.Collection.WriteValue(writer, collection.Count);
-
-            foreach (var item in collection) writer.Write(item, argument);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            var array = Array.CreateInstance(argument, length) as IList;
-
-            for (int i = 0; i < length; i++)
-                array[i] = reader.Read(argument);
-
-            return Activator.CreateInstance(type, array);
-        }
-    }
     #endregion
 
     #region Stack
     [Preserve]
     public sealed class StackNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<Stack<TElement>>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TElement);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, Stack<TElement> instance)
         {
             if (Helper.Length.Collection.WriteExplicit(writer, instance) == false) return;
@@ -1220,57 +1022,21 @@ namespace MNet
             return stack;
         }
     }
-
-    [Preserve]
-    public sealed class StackNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Stack<>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (instance == null)
-            {
-                Helper.Length.Collection.WriteNull(writer);
-                return;
-            }
-
-            var collection = instance as ICollection;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            Helper.Length.Collection.WriteValue(writer, collection.Count);
-
-            foreach (var item in collection) writer.Write(item, argument);
-        }
-
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type argument);
-
-            var array = Array.CreateInstance(argument, length) as IList;
-
-            for (int i = 0; i < length; i++)
-                array[i] = reader.Read(argument);
-
-            Array.Reverse(array as Array);
-
-            return Activator.CreateInstance(type, array);
-        }
-    }
     #endregion
 
     #region Dictionary
     [Preserve]
     public sealed class DictionaryNetworkSerializationResolver<TKey, TValue> : NetworkSerializationDynamicResolver<Dictionary<TKey, TValue>>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TKey);
+                yield return typeof(TValue);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, Dictionary<TKey, TValue> instance)
         {
             if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
@@ -1298,57 +1064,21 @@ namespace MNet
             return dictionary;
         }
     }
-
-    [Preserve]
-    public sealed class DictionaryNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Dictionary<,>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            var dictionary = instance as IDictionary;
-
-            if (Helper.Length.Collection.WriteExplicit(writer, dictionary) == false) return;
-
-            Helper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
-
-            foreach (DictionaryEntry entry in dictionary)
-            {
-                writer.Write(entry.Key, keyType);
-                writer.Write(entry.Value, valueType);
-            }
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (Helper.Length.Collection.Read(reader, out var count) == false) return null;
-
-            var dictionary = Activator.CreateInstance(type, count) as IDictionary;
-
-            Helper.GenericArguments.Retrieve(type, out var keyType, out var valueType);
-
-            for (int i = 0; i < count; i++)
-            {
-                var key = reader.Read(keyType);
-                var value = reader.Read(valueType);
-
-                dictionary.Add(key, value);
-            }
-
-            return dictionary;
-        }
-    }
     #endregion
 
     #region Tuple
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2> : NetworkSerializationDynamicResolver<(T1, T2)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2) instance)
         {
             writer.Write(instance.Item1);
@@ -1366,6 +1096,16 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2, T3> : NetworkSerializationDynamicResolver<(T1, T2, T3)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+                yield return typeof(T3);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2, T3) instance)
         {
             writer.Write(instance.Item1);
@@ -1385,6 +1125,17 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+                yield return typeof(T3);
+                yield return typeof(T4);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4) instance)
         {
             writer.Write(instance.Item1);
@@ -1406,6 +1157,18 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+                yield return typeof(T3);
+                yield return typeof(T4);
+                yield return typeof(T5);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5) instance)
         {
             writer.Write(instance.Item1);
@@ -1429,6 +1192,19 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5, T6)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+                yield return typeof(T3);
+                yield return typeof(T4);
+                yield return typeof(T5);
+                yield return typeof(T6);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5, T6) instance)
         {
             writer.Write(instance.Item1);
@@ -1454,6 +1230,20 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6, T7> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5, T6, T7)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+                yield return typeof(T3);
+                yield return typeof(T4);
+                yield return typeof(T5);
+                yield return typeof(T6);
+                yield return typeof(T7);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5, T6, T7) instance)
         {
             writer.Write(instance.Item1);
@@ -1481,6 +1271,21 @@ namespace MNet
     [Preserve]
     public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6, T7, T8> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5, T6, T7, T8)>
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(T1);
+                yield return typeof(T2);
+                yield return typeof(T3);
+                yield return typeof(T4);
+                yield return typeof(T5);
+                yield return typeof(T6);
+                yield return typeof(T7);
+                yield return typeof(T8);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, (T1, T2, T3, T4, T5, T6, T7, T8) instance)
         {
             writer.Write(instance.Item1);
@@ -1504,40 +1309,6 @@ namespace MNet
             reader.Read(out T8 arg8);
 
             return (arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-        }
-    }
-
-    [Preserve]
-    public sealed class TupleNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target) => typeof(ITuple).IsAssignableFrom(target);
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (WriteNull(writer, instance, type)) return;
-
-            var tuple = instance as ITuple;
-
-            Helper.GenericArguments.Retrieve(type, out Type[] arguments);
-
-            for (int i = 0; i < tuple.Length; i++)
-                writer.Write(tuple[i], arguments[i]);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (ReadNull(reader, type)) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type[] arguments);
-
-            var items = new object[arguments.Length];
-
-            for (int i = 0; i < arguments.Length; i++)
-                items[i] = reader.Read(arguments[i]);
-
-            var value = Activator.CreateInstance(type, items);
-
-            return value;
         }
     }
     #endregion
@@ -1577,38 +1348,6 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class INetworkSerializableResolver : NetworkSerializationImplicitResolver
-    {
-        public static Type Interface { get; } = typeof(INetworkSerializable);
-
-        public static bool IsValid(Type target) => Interface.IsAssignableFrom(target);
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (WriteNull(writer, instance, type)) return;
-
-            var value = instance as INetworkSerializable;
-
-            var context = NetworkSerializationContext.Serialize(writer);
-
-            value.Select(ref context);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (ReadNull(reader, type)) return null;
-
-            var value = Activator.CreateInstance(type, true) as INetworkSerializable;
-
-            var context = NetworkSerializationContext.Deserialize(reader);
-
-            value.Select(ref context);
-
-            return value;
-        }
-    }
-
-    [Preserve]
     public readonly ref struct NetworkSerializationContext
     {
         public NetworkWriter Writer { get; }
@@ -1619,7 +1358,7 @@ namespace MNet
         public bool IsSerializing => Operation == NetworkSerializationOperation.Serialization;
         public bool IsDeserializing => Operation == NetworkSerializationOperation.Deserialization;
 
-        public void Select<T>(ref T value)
+        public void Select<[NetworkSerializationGenerator] T>(ref T value)
         {
             switch (Operation)
             {
@@ -1686,34 +1425,6 @@ namespace MNet
             nullable = Helper.Nullable.Generic<T>.Is;
         }
     }
-
-    [Preserve]
-    public sealed class IManualNetworkSerializableResolver : NetworkSerializationImplicitResolver
-    {
-        public static Type Interface { get; } = typeof(IManualNetworkSerializable);
-
-        public static bool IsValid(Type target) => Interface.IsAssignableFrom(target);
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (WriteNull(writer, instance, type)) return;
-
-            var value = instance as IManualNetworkSerializable;
-
-            value.Serialize(writer);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (ReadNull(reader, type)) return null;
-
-            var value = Activator.CreateInstance(type, true) as IManualNetworkSerializable;
-
-            value.Deserialize(reader);
-
-            return value;
-        }
-    }
     #endregion
 
     #region Enum
@@ -1721,6 +1432,14 @@ namespace MNet
     public sealed class EnumNetworkSerializationResolver<TType, TBacking> : NetworkSerializationDynamicResolver<TType>
         where TType : struct, Enum
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TBacking);
+            }
+        }
+
         Dictionary<TBacking, TType> values;
         Dictionary<TType, TBacking> backings;
 
@@ -1769,30 +1488,6 @@ namespace MNet
             }
         }
     }
-
-    [Preserve]
-    public sealed class EnumNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target) => target.IsEnum;
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            var value = Helper.Enum.Value.Retrieve(instance);
-
-            writer.Write(value);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            var backing = Helper.Enum.UnderlyingType.Retrieve(type);
-
-            var value = reader.Read(backing);
-
-            var result = Enum.ToObject(type, value);
-
-            return result;
-        }
-    }
     #endregion
 
     #region Nullable
@@ -1800,6 +1495,14 @@ namespace MNet
     public sealed class NullableNetworkSerializationResolver<TData> : NetworkSerializationDynamicResolver<TData?>
         where TData : struct
     {
+        public override IEnumerable<Type> Children
+        {
+            get
+            {
+                yield return typeof(TData);
+            }
+        }
+
         public override void Serialize(NetworkWriter writer, TData? instance)
         {
             if (WriteNull(writer, instance)) return;
@@ -1811,35 +1514,6 @@ namespace MNet
             if (ReadNull(reader)) return null;
 
             return reader.Read<TData>();
-        }
-    }
-
-    [Preserve]
-    public sealed class NullableNetworkSerializationResolver : NetworkSerializationImplicitResolver
-    {
-        public static bool IsValid(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Nullable<>);
-        }
-        public override bool CanResolve(Type target) => IsValid(target);
-
-        public override void Serialize(NetworkWriter writer, object instance, Type type)
-        {
-            if (WriteNull(writer, instance)) return;
-
-            writer.Write(instance);
-        }
-        public override object Deserialize(NetworkReader reader, Type type)
-        {
-            if (ReadNull(reader)) return null;
-
-            Helper.GenericArguments.Retrieve(type, out Type underlying);
-
-            var value = reader.Read(underlying);
-
-            return Activator.CreateInstance(type, value);
         }
     }
     #endregion
@@ -1885,94 +1559,54 @@ namespace MNet
     }
     #endregion
 
-    #region Object Arary & Object List
-    [Preserve]
-    public sealed class ObjectArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<object[]>
+    #region Blittable
+    public unsafe class BlittableNetworkSerializationResolver<T> : NetworkSerializationDynamicResolver<T>
+        where T : unmanaged
     {
-        public override void Serialize(NetworkWriter writer, object[] instance)
+        int Size;
+
+        public override void Serialize(NetworkWriter writer, T instance)
         {
-            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
+            writer.Fit(Size);
 
-            for (int i = 0; i < instance.Length; i++)
+            fixed (byte* destination = &writer.Data[writer.Position])
             {
-                if (instance[i] is null)
-                {
-                    writer.Write(typeof(void));
-                }
-                else
-                {
-                    var type = instance[i].GetType();
-
-                    writer.Write(type);
-                    writer.Write(instance[i]);
-                }
+#if UNITY_ANDROID
+                var source = &instance;
+                Buffer.MemoryCopy(source, destination, writer.Remaining, Size);
+#else
+                *(T*)destination = instance;
+#endif
             }
+
+            writer.Position += Size;
         }
-        public override object[] Deserialize(NetworkReader reader)
+        public override T Deserialize(NetworkReader reader)
         {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
+            var value = new T();
 
-            var array = new object[length];
-
-            for (int i = 0; i < length; i++)
+            fixed (byte* source = &reader.Data[reader.Position])
             {
-                var type = reader.Read<Type>();
-
-                if (type == typeof(void))
-                    array[i] = null;
-                else
-                    array[i] = reader.Read(type);
+#if UNITY_ANDROID
+                var destination = &value;
+                Buffer.MemoryCopy(source, destination, reader.Remaining, Size);
+#else
+                value = *(T*)source;
+#endif
             }
 
-            return array;
+            reader.Position += Size;
+
+            return value;
+        }
+
+        public BlittableNetworkSerializationResolver()
+        {
+            Size = sizeof(T);
         }
     }
 
-    [Preserve]
-    public sealed class ObjectListNetworkSerialziationResolver : NetworkSerializationExplicitResolver<List<object>>
-    {
-        public override void Serialize(NetworkWriter writer, List<object> instance)
-        {
-            if (Helper.Length.Collection.WriteGeneric(writer, instance) == false) return;
-
-            for (int i = 0; i < instance.Count; i++)
-            {
-                if (instance[i] is null)
-                {
-                    writer.Write(typeof(void));
-                }
-                else
-                {
-                    var type = instance[i].GetType();
-
-                    writer.Write(type);
-                    writer.Write(instance[i]);
-                }
-            }
-        }
-        public override List<object> Deserialize(NetworkReader reader)
-        {
-            if (Helper.Length.Collection.Read(reader, out var length) == false) return null;
-
-            var list = new List<object>(length);
-
-            for (int i = 0; i < length; i++)
-            {
-                var type = reader.Read<Type>();
-
-                if (type == typeof(void))
-                {
-                    list.Add(null);
-                }
-                else
-                {
-                    var item = reader.Read(type);
-                    list.Add(item);
-                }
-            }
-
-            return list;
-        }
-    }
+    [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false)]
+    public class NetworkBlittableAttribute : Attribute { }
     #endregion
 }

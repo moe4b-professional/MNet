@@ -25,9 +25,13 @@ using System.Text;
 
 using MB;
 using System.Reflection;
+using System.Runtime.InteropServices;
+
+using MNet;
 
 namespace MNet.Example
 {
+    [Preserve]
     public class Sandbox : NetworkBehaviour
     {
         public override void OnNetwork()
@@ -39,22 +43,14 @@ namespace MNet.Example
 
         void SpawnCallback()
         {
-
-        }
-
-        [RuntimeInitializeOnLoadMethod]
-        static void OnLoad()
-        {
-
+            
         }
 
 #if UNITY_EDITOR
         [MenuItem("Sandbox/Execute")]
         static void Excute()
         {
-            var array = new byte[4, 4];
-
-            NetworkSerializer.Clone(array);
+            
         }
 #endif
     }

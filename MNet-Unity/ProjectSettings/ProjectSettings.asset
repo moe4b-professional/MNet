@@ -76,7 +76,7 @@ PlayerSettings:
   androidFullscreenMode: 1
   defaultIsNativeResolution: 1
   macRetinaSupport: 1
-  runInBackground: 1
+  runInBackground: 0
   captureSingleScreen: 0
   muteOtherAudioSources: 0
   Prepare IOS For Recording: 0
@@ -135,7 +135,31 @@ PlayerSettings:
     16:9: 1
     Others: 1
   bundleVersion: 1.0
-  preloadedAssets: []
+  preloadedAssets:
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
+  - {fileID: 11400000, guid: e5340fa1f4d285947b2fb9759c9b4f86, type: 2}
+  - {fileID: 11400000, guid: cf52dba945bdd46419a90883f076da7e, type: 2}
+  - {fileID: 11400000, guid: 622abf7289089d048833137feaa4ebaa, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -153,8 +177,8 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
-    Android: com.t4games.multiplayer
-    Standalone: com.T4Games.MNet-Unity
+    Android: com.T4Games.MNetUnity
+    Standalone: com.T4-Games.MNet-Unity
   buildNumber:
     Standalone: 0
     iPhone: 0
@@ -244,7 +268,7 @@ PlayerSettings:
   useCustomBaseGradleTemplate: 0
   useCustomGradlePropertiesTemplate: 0
   useCustomProguardFile: 0
-  AndroidTargetArchitectures: 1
+  AndroidTargetArchitectures: 3
   AndroidTargetDevices: 0
   AndroidSplashScreenScale: 0
   androidSplashScreen: {fileID: 0}
@@ -688,29 +712,29 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
-    Android: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    CloudRendering: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
-    EmbeddedLinux: Assembly_Define_Example;MOE_TOOLBOX
-    GameCoreXboxOne: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
-    Lumin: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    Nintendo Switch: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    PS4: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    PS5: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
-    Stadia: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    Standalone: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    WebGL: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    Windows Store Apps: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX
-    XboxOne: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
-    tvOS: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX
+    Android: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    CloudRendering: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    EmbeddedLinux: Assembly_Define_Example;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    GameCoreXboxOne: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    Lumin: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    Nintendo Switch: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    PS4: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    PS5: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    Stadia: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    Standalone: MNet_Generated_AOT_Code;Assembly_Define_Example;MOE_TOOLBOX
+    WebGL: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    Windows Store Apps: Assembly_Define_Example;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    XboxOne: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
+    tvOS: Assembly_Define_Example;MOE_PACKAGES;MB_TOOLBOX;MOE_TOOLBOX;MNet-Generated-AOT-Code;MNet_Generated_AOT_Code
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
     Android: 0
-    Standalone: 0
+    Standalone: 1
   il2cppCompilerConfiguration:
     WebGL: 1
   managedStrippingLevel:
-    Standalone: 0
+    Standalone: 3
     WebGL: 3
   incrementalIl2cppBuild: {}
   suppressCommonWarnings: 1
@@ -754,6 +778,7 @@ PlayerSettings:
   metroFTAName: 
   metroFTAFileTypes: []
   metroProtocolName: 
+  vcxProjDefaultLanguage: 
   XboxOneProductId: 
   XboxOneUpdateKey: 
   XboxOneSandboxId: 
@@ -807,4 +832,3 @@ PlayerSettings:
   playerDataPath: 
   forceSRGBBlit: 1
   virtualTexturingSupportEnabled: 0
-  uploadClearedTextureDataAfterCreationFromScript: 1

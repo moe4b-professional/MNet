@@ -72,7 +72,7 @@ namespace MNet
                 Log.Add($"Server Log: {payload.Text}", payload.Level);
             }
 
-            public static bool Send<T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
+            public static bool Send<[NetworkSerializationGenerator] T>(ref T payload, DeliveryMode mode = DeliveryMode.ReliableOrdered, byte channel = 0)
             {
                 if (IsConnected == false)
                 {
@@ -248,7 +248,7 @@ namespace MNet
                 }
 
                 public delegate void MessageHandlerDelegate<TPayload>(ref TPayload payload);
-                public static void RegisterHandler<TPayload>(MessageHandlerDelegate<TPayload> handler)
+                public static void RegisterHandler<[NetworkSerializationGenerator] TPayload>(MessageHandlerDelegate<TPayload> handler)
                 {
                     var type = typeof(TPayload);
 
@@ -904,17 +904,12 @@ namespace MNet
                     return Send(ref request);
                 }
 
-                internal static bool Respond(QueryRpcCommand command, object value, Type type)
+                internal static bool Respond(QueryRpcCommand command, NetworkWriter writer)
                 {
-                    using (NetworkWriter.Pool.Lease(out var stream))
-                    {
-                        stream.Write(value, type);
+                    var chunk = writer.AsChunk();
+                    var request = RprRequest.Write(command.Sender, command.Channel, chunk);
 
-                        var chunk = stream.AsChunk();
-                        var request = RprRequest.Write(command.Sender, command.Channel, chunk);
-
-                        return Send(ref request);
-                    }
+                    return Send(ref request);
                 }
                 #endregion
             }

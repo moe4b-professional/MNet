@@ -15,13 +15,16 @@ using UnityEditorInternal;
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct Version : INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Version
     {
 #if UNITY
         [SerializeField]

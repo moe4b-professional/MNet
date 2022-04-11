@@ -1,25 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct SyncVarID : IManualNetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SyncVarID
     {
         byte value;
         public byte Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(value);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out value);
-        }
 
         public SyncVarID(byte value)
         {
@@ -92,19 +85,19 @@ namespace MNet
 
         public void Serialize(NetworkWriter writer)
         {
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            field.Serialize(writer);
-            group.Serialize(writer);
+            writer.Write(entity);
+            writer.Write(behaviour);
+            writer.Write(field);
+            writer.Write(group);
 
             writer.Write(raw);
         }
         public void Deserialize(NetworkReader reader)
         {
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            field.Deserialize(reader);
-            group.Deserialize(reader);
+            reader.Read(out entity);
+            reader.Read(out behaviour);
+            reader.Read(out field);
+            reader.Read(out group);
 
             reader.Read(out raw);
         }
@@ -149,19 +142,19 @@ namespace MNet
 
         public void Serialize(NetworkWriter writer)
         {
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            field.Serialize(writer);
-            group.Serialize(writer);
+            writer.Write(entity);
+            writer.Write(behaviour);
+            writer.Write(field);
+            writer.Write(group);
 
             writer.Write(raw);
         }
         public void Deserialize(NetworkReader reader)
         {
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            field.Deserialize(reader);
-            group.Deserialize(reader);
+            reader.Read(out entity);
+            reader.Read(out behaviour);
+            reader.Read(out field);
+            reader.Read(out group);
 
             reader.Read(out raw);
         }
@@ -202,19 +195,19 @@ namespace MNet
 
         public void Serialize(NetworkWriter writer)
         {
-            sender.Serialize(writer);
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            field.Serialize(writer);
+            writer.Write(sender);
+            writer.Write(entity);
+            writer.Write(behaviour);
+            writer.Write(field);
 
             writer.Write(raw);
         }
         public void Deserialize(NetworkReader reader)
         {
-            sender.Deserialize(reader);
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            field.Deserialize(reader);
+            reader.Read(out sender);
+            reader.Read(out entity);
+            reader.Read(out behaviour);
+            reader.Read(out field);
 
             reader.Read(out raw);
         }

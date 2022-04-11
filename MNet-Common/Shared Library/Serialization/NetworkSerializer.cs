@@ -14,8 +14,7 @@ namespace MNet
     {
         public const int DefaultBufferSize = 512;
 
-        #region Serialize
-        public static byte[] Serialize<T>(T instance)
+        public static byte[] Serialize<[NetworkSerializationGenerator] T>(T instance)
         {
             using (NetworkWriter.Pool.Lease(out var stream))
             {
@@ -25,25 +24,7 @@ namespace MNet
             }
         }
 
-        public static byte[] Serialize(object instance)
-        {
-            var type = instance == null ? null : instance.GetType();
-
-            return Serialize(instance, type);
-        }
-        public static byte[] Serialize(object instance, Type type)
-        {
-            using (NetworkWriter.Pool.Lease(out var stream))
-            {
-                stream.Write(instance, type);
-
-                return stream.ToArray();
-            }
-        }
-        #endregion
-
-        #region Deserialize
-        public static T Deserialize<T>(byte[] data)
+        public static T Deserialize<[NetworkSerializationGenerator] T>(byte[] data)
         {
             using (NetworkReader.Pool.Lease(out var stream))
             {
@@ -52,17 +33,7 @@ namespace MNet
             }
         }
 
-        public static object Deserialize(byte[] data, Type type)
-        {
-            using (NetworkReader.Pool.Lease(out var stream))
-            {
-                stream.Assign(data);
-                return stream.Read(type);
-            }
-        }
-        #endregion
-
-        public static T Clone<T>(T original)
+        public static T Clone<[NetworkSerializationGenerator] T>(T original)
         {
             using (NetworkStream.Pool.Lease(out var reader, out var writer))
             {
@@ -70,17 +41,6 @@ namespace MNet
                 reader.Assign(writer);
 
                 return reader.Read<T>();
-            }
-        }
-
-        public static object Clone(object original, Type type)
-        {
-            using (NetworkStream.Pool.Lease(out var reader, out var writer))
-            {
-                writer.Write(original);
-                reader.Assign(writer);
-
-                return reader.Read(type);
             }
         }
     }

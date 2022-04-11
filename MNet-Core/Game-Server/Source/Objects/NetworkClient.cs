@@ -4,10 +4,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using WebSocketSharp;
-using WebSocketSharp.Net;
-using WebSocketSharp.Server;
-
 namespace MNet
 {
     class NetworkClient

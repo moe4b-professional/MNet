@@ -3,25 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MNet
 {
     [Preserve]
-    public struct RpcID : IManualNetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RpcID
     {
         byte value;
         public byte Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(value);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            value = reader.TakeByte();
-        }
 
         public RpcID(byte value)
         {
@@ -91,7 +85,7 @@ namespace MNet
 
     #region Broadcast
     [Preserve]
-    public struct BroadcastRpcRequest : IRpcRequest, IManualNetworkSerializable
+    public struct BroadcastRpcRequest : IRpcRequest, INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -114,29 +108,15 @@ namespace MNet
         NetworkClientID? exception;
         public NetworkClientID? Exception => exception;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-
-            writer.Write(bufferMode);
-            group.Serialize(writer);
-            writer.Write(exception);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
-
-            reader.Read(out bufferMode);
-            group.Deserialize(reader);
-            reader.Read(out exception);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
+            context.Select(ref bufferMode);
+            context.Select(ref group);
+            context.Select(ref exception);
         }
 
         public override string ToString() => $"RPC Request: {method}";
@@ -168,7 +148,7 @@ namespace MNet
     }
 
     [Preserve]
-    public struct BroadcastRpcCommand : IRpcCommand, IManualNetworkSerializable
+    public struct BroadcastRpcCommand : IRpcCommand, INetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
@@ -185,23 +165,13 @@ namespace MNet
         ByteChunk raw;
         public ByteChunk Raw { get { return raw; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            sender.Serialize(writer);
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            sender.Deserialize(reader);
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
+            context.Select(ref sender);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
         }
 
         //Static Utility
@@ -226,7 +196,7 @@ namespace MNet
 
     #region Target
     [Preserve]
-    public struct TargetRpcRequest : IRpcRequest, IManualNetworkSerializable
+    public struct TargetRpcRequest : IRpcRequest, INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -243,25 +213,13 @@ namespace MNet
         NetworkClientID target;
         public NetworkClientID Target => target;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-
-            target.Serialize(writer);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
-
-            target.Deserialize(reader);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
+            context.Select(ref target);
         }
 
         public override string ToString() => $"RPC Request: {method}";
@@ -288,7 +246,7 @@ namespace MNet
     }
 
     [Preserve]
-    public struct TargetRpcCommand : IRpcCommand, IManualNetworkSerializable
+    public struct TargetRpcCommand : IRpcCommand, INetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
@@ -305,27 +263,13 @@ namespace MNet
         ByteChunk raw;
         public ByteChunk Raw { get { return raw; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            sender.Serialize(writer);
-
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-
-            method.Serialize(writer);
-
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            sender.Deserialize(reader);
-
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
+            context.Select(ref sender);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
         }
 
         //Static Utility
@@ -348,7 +292,7 @@ namespace MNet
 
     #region Query
     [Preserve]
-    public struct QueryRpcRequest : IRpcRequest, IManualNetworkSerializable
+    public struct QueryRpcRequest : IRpcRequest, INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -368,27 +312,14 @@ namespace MNet
         RprChannelID channel;
         public RprChannelID Channel => channel;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-
-            target.Serialize(writer);
-            channel.Serialize(writer);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
-
-            target.Deserialize(reader);
-            channel.Deserialize(reader);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
+            context.Select(ref target);
+            context.Select(ref channel);
         }
 
         public override string ToString() => $"RPC Request: {method}";
@@ -418,7 +349,7 @@ namespace MNet
     }
 
     [Preserve]
-    public struct QueryRpcCommand : IRpcCommand, IManualNetworkSerializable
+    public struct QueryRpcCommand : IRpcCommand, INetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
@@ -438,27 +369,14 @@ namespace MNet
         RprChannelID channel;
         public RprChannelID Channel => channel;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            sender.Serialize(writer);
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-
-            channel.Serialize(writer);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            sender.Deserialize(reader);
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
-
-            channel.Deserialize(reader);
+            context.Select(ref sender);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
+            context.Select(ref channel);
         }
 
         //Static Utility
@@ -482,7 +400,7 @@ namespace MNet
 
     #region Buffer
     [Preserve]
-    public struct BufferRpcRequest : IRpcRequest, IManualNetworkSerializable
+    public struct BufferRpcRequest : IRpcRequest, INetworkSerializable
     {
         NetworkEntityID entity;
         public NetworkEntityID Entity { get { return entity; } }
@@ -499,25 +417,13 @@ namespace MNet
         RemoteBufferMode bufferMode;
         public RemoteBufferMode BufferMode => bufferMode;
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-
-            writer.Write(bufferMode);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
-
-            reader.Read(out bufferMode);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
+            context.Select(ref bufferMode);
         }
 
         public override string ToString() => $"RPC Request: {method}";
@@ -545,7 +451,7 @@ namespace MNet
     }
 
     [Preserve]
-    public struct BufferRpcCommand : IRpcCommand, IManualNetworkSerializable
+    public struct BufferRpcCommand : IRpcCommand, INetworkSerializable
     {
         NetworkClientID sender;
         public NetworkClientID Sender => sender;
@@ -562,23 +468,13 @@ namespace MNet
         ByteChunk raw;
         public ByteChunk Raw { get { return raw; } }
 
-        public void Serialize(NetworkWriter writer)
+        public void Select(ref NetworkSerializationContext context)
         {
-            sender.Serialize(writer);
-            entity.Serialize(writer);
-            behaviour.Serialize(writer);
-            method.Serialize(writer);
-
-            writer.Write(raw);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            sender.Deserialize(reader);
-            entity.Deserialize(reader);
-            behaviour.Deserialize(reader);
-            method.Deserialize(reader);
-
-            reader.Read(out raw);
+            context.Select(ref sender);
+            context.Select(ref entity);
+            context.Select(ref behaviour);
+            context.Select(ref method);
+            context.Select(ref raw);
         }
 
         //Static Utility

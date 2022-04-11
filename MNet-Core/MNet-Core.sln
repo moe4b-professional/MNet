@@ -19,6 +19,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LiteNetLib", "LiteNetLib\Li
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shared", "Shared\Shared.csproj", "{6787E576-0348-489C-985B-DAD12DF4897B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "General-Benchmarks", "General-Benchmarks\General-Benchmarks.csproj", "{99E747A7-BC0E-44C3-8613-9D74B11B652A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MNet-Parser", "MNet-Parser\MNet-Parser.csproj", "{AC98CE85-C949-48BE-9AB7-7E9811F5FE9F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{6787E576-0348-489C-985B-DAD12DF4897B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6787E576-0348-489C-985B-DAD12DF4897B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6787E576-0348-489C-985B-DAD12DF4897B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99E747A7-BC0E-44C3-8613-9D74B11B652A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99E747A7-BC0E-44C3-8613-9D74B11B652A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99E747A7-BC0E-44C3-8613-9D74B11B652A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99E747A7-BC0E-44C3-8613-9D74B11B652A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC98CE85-C949-48BE-9AB7-7E9811F5FE9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC98CE85-C949-48BE-9AB7-7E9811F5FE9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC98CE85-C949-48BE-9AB7-7E9811F5FE9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC98CE85-C949-48BE-9AB7-7E9811F5FE9F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

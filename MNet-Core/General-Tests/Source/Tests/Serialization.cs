@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace MNet
 {
@@ -45,7 +46,7 @@ namespace MNet
         [Test]
         public void NullableTuple()
         {
-            var original = new Tuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);
+            var original = new ValueTuple<DateTime?, Guid?, int?>(DateTime.Now, null, 42);
 
             var copy = NetworkSerializer.Clone(original);
 
@@ -297,7 +298,6 @@ namespace MNet
             var flag = new Bool64Flags();
             BoolFlag(flag);
         }
-
         void BoolFlag<T>(T flag)
             where T : IBoolFlags
         {
@@ -314,5 +314,18 @@ namespace MNet
 
             Assert.AreEqual(flag, clone);
         }
+
+        [Test]
+        public void Blittable()
+        {
+            var original = new BlittableData(40, 12, 24);
+            var clone = NetworkSerializer.Clone(original);
+
+            Assert.AreEqual(original, clone);
+        }
+
+        [NetworkBlittable]
+        [StructLayout(LayoutKind.Sequential)]
+        public readonly record struct BlittableData(int x, int y, int z) { }
     }
 }

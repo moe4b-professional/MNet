@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace MNet
 {
@@ -65,7 +66,9 @@ namespace MNet
         bool this[byte index] { get; set; }
     }
 
-    public struct Bool8Flags : IBoolFlags, INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Bool8Flags : IBoolFlags
     {
         byte binary;
         public byte Binary => binary;
@@ -102,8 +105,6 @@ namespace MNet
             }
         }
 
-        public void Select(ref NetworkSerializationContext context) => context.Select(ref binary);
-
         #region Overrides
         public override int GetHashCode() => binary.GetHashCode();
 
@@ -128,7 +129,9 @@ namespace MNet
         #endregion
     }
 
-    public struct Bool16Flags : IBoolFlags, INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Bool16Flags : IBoolFlags
     {
         ushort binary;
         public ushort Binary => binary;
@@ -165,8 +168,6 @@ namespace MNet
             }
         }
 
-        public void Select(ref NetworkSerializationContext context) => context.Select(ref binary);
-
         #region Overrides
         public override int GetHashCode() => binary.GetHashCode();
 
@@ -191,7 +192,9 @@ namespace MNet
         #endregion
     }
 
-    public struct Bool32Flags : IBoolFlags, INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Bool32Flags : IBoolFlags
     {
         uint binary;
         public uint Binary => binary;
@@ -228,8 +231,6 @@ namespace MNet
             }
         }
 
-        public void Select(ref NetworkSerializationContext context) => context.Select(ref binary);
-
         #region Overrides
         public override int GetHashCode() => binary.GetHashCode();
 
@@ -254,7 +255,9 @@ namespace MNet
         #endregion
     }
 
-    public struct Bool64Flags : IBoolFlags, INetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Bool64Flags : IBoolFlags
     {
         ulong binary;
         public ulong Binary => binary;
@@ -290,8 +293,6 @@ namespace MNet
                 }
             }
         }
-
-        public void Select(ref NetworkSerializationContext context) => context.Select(ref binary);
 
         #region Overrides
         public override int GetHashCode() => binary.GetHashCode();

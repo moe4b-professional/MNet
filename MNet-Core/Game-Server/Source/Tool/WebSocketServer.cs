@@ -82,26 +82,32 @@ namespace MNet
         {
             while (true)
             {
-                TcpClient client;
+                if (PollIncomingRequest() == false)
+                    break;
 
-                try
-                {
-                    client = listener.AcceptTcpClient();
-                }
-                catch (Exception ex)
-                {
-                    if (ex is SocketException || ex is IOException)
-                        break;
-                    else
-                        throw;
-                }
+                var client = listener.AcceptTcpClient();
 
                 Log.Info("Received TCP Request");
 
                 ThreadPool.QueueUserWorkItem(ProcessIncomingSocket, client, false);
             }
+
+            Close();
         }
 
+        bool PollIncomingRequest()
+        {
+            while(true)
+            {
+                if (IsRunning == false)
+                    return false;
+
+                if (listener.Pending())
+                    return true;
+
+                Thread.Sleep(PollingInterval);
+            }
+        }
         void ProcessIncomingSocket(TcpClient client)
         {
             try
@@ -129,7 +135,10 @@ namespace MNet
 
             var socket = new WebSocket(this, client, stream, ID, url);
 
-            Clients.TryAdd(ID, socket);
+            if (IsRunning)
+                Clients.TryAdd(ID, socket);
+            else
+                socket.Disconnect(WebSocketCloseCode.EndpointUnavailable);
 
             return socket;
         }
@@ -148,6 +157,11 @@ namespace MNet
                 clients[i].Disconnect(code, message);
 
             Stopwatch.Reset();
+        }
+
+        public void Close()
+        {
+            Log.Info("Web Socket Server Closed");
 
             listener.Stop();
         }
@@ -1093,61 +1107,55 @@ namespace MNet
         public static bool TryPerform(TcpClient client, Stream stream, out string url)
         {
             var timeout = stream.ReadTimeout;
-
             stream.ReadTimeout = Timeout;
 
-            try
+            if (EnsureGET(stream) == false)
             {
-                if (EnsureGET(stream) == false)
-                {
-                    url = default;
-                    return false;
-                }
-
-                Span<char> characters = stackalloc char[1024];
-                if (TryParseHTTPRequest(stream, ref characters) == false)
-                {
-                    url = default;
-                    return false;
-                }
-
-                if (EnsureWebSocketUpgradeRequest(characters) == false)
-                {
-                    url = default;
-                    return false;
-                }
-
-                //URL
-                {
-                    var span = TryParseURL(characters);
-
-                    if (span.Length == 0)
-                    {
-                        url = default;
-                        return false;
-                    }
-
-                    url = span.ToString();
-                }
-
-                var key = TryParseSecKey(characters, "Sec-WebSocket-Key:");
-                if (key.Length == 0)
-                    return false;
-
-                Span<char> secret = stackalloc char[28];
-                ComputeKeySecret(key, ref secret);
-
-                Span<byte> response = stackalloc byte[1024];
-                WriteResponse(ref response, secret);
-
-                stream.Write(response);
-
-                return true;
+                url = default;
+                return false;
             }
-            finally
+
+            Span<char> characters = stackalloc char[1024];
+            if (TryParseHTTPRequest(stream, ref characters) == false)
             {
-                stream.ReadTimeout = timeout;
+                url = default;
+                return false;
             }
+
+            stream.ReadTimeout = timeout;
+
+            if (EnsureWebSocketUpgradeRequest(characters) == false)
+            {
+                url = default;
+                return false;
+            }
+
+            //URL
+            {
+                var span = TryParseURL(characters);
+
+                if (span.Length == 0)
+                {
+                    url = default;
+                    return false;
+                }
+
+                url = span.ToString();
+            }
+
+            var key = TryParseSecKey(characters, "Sec-WebSocket-Key:");
+            if (key.Length == 0)
+                return false;
+
+            Span<char> secret = stackalloc char[28];
+            ComputeKeySecret(key, ref secret);
+
+            Span<byte> response = stackalloc byte[1024];
+            WriteResponse(ref response, secret);
+
+            stream.Write(response);
+
+            return true;
         }
 
         static bool EnsureGET(Stream stream)

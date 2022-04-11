@@ -809,7 +809,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   value: 
-  valueAsync: 
   success: 0
 --- !u!114 &358559474
 MonoBehaviour:
@@ -824,9 +823,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   results: 
-  coroutine: 0
-  uniTask: 0
-  binary: 0
   success: 0
 --- !u!114 &358559476
 MonoBehaviour:

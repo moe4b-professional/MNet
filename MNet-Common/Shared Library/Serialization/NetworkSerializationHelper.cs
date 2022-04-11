@@ -264,15 +264,6 @@ namespace MNet
 
                 return instance;
             }
-
-            public static IList ReadFrom(NetworkReader reader, Type argument)
-            {
-                var type = Construct(argument);
-
-                var list = reader.Read(type) as IList;
-
-                return list;
-            }
         }
 
         public static class Enum

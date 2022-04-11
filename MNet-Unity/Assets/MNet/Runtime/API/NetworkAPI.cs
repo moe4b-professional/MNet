@@ -43,13 +43,10 @@ namespace MNet
 
         public static void Configure()
         {
-            Log.Output = LogOutput;
+            if (BitConverter.IsLittleEndian == false)
+                throw new PlatformNotSupportedException("Big Endian Systems not Supported by MNet");
 
-#if ENABLE_IL2CPP
-            DynamicNetworkSerialization.Enabled = false;
-#else
-            DynamicNetworkSerialization.Enabled = true;
-#endif
+            Log.Output = LogOutput;
 
             Config = NetworkAPIConfig.Load();
 
@@ -60,6 +57,8 @@ namespace MNet
 
             IsRunning = true;
             Application.quitting += ApplicationQuitCallback;
+
+            Application.runInBackground = true;
 
             Server.Configure();
             Realtime.Configure();

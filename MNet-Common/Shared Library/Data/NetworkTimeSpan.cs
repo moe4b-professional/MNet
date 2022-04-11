@@ -3,28 +3,19 @@ using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace MNet
 {
-    [Preserve]
-    [Serializable]
-    public struct NetworkTimeSpan : IManualNetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NetworkTimeSpan
     {
         long ticks;
         public long Ticks => ticks;
 
         public float Millisecond => ticks / 1f / TimeSpan.TicksPerMillisecond;
         public float Seconds => ticks / 1f / TimeSpan.TicksPerSecond;
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(ticks);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out ticks);
-        }
 
         public NetworkTimeSpan(long ticks)
         {

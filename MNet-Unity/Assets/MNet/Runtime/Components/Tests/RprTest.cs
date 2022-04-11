@@ -26,8 +26,6 @@ namespace MNet
     {
         public string value;
 
-        public string valueAsync;
-
         public bool success = false;
 
         public override void OnNetwork()
@@ -48,29 +46,12 @@ namespace MNet
                     Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
             }
 
-            {
-                var answer = await Network.QueryAsyncRPC(AsyncQueryRPC, NetworkAPI.Room.Master.Client).Send();
-
-                if (answer.Success)
-                    valueAsync = answer.Value;
-                else
-                    Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
-            }
-
-            success = value != string.Empty && valueAsync != string.Empty;
+            success = value != string.Empty;
         }
 
         [NetworkRPC]
         string QueryRPC(RpcInfo info)
         {
-            return NetworkAPI.Client.Profile.Name;
-        }
-
-        [NetworkRPC]
-        async UniTask<string> AsyncQueryRPC(RpcInfo info)
-        {
-            await UniTask.Delay(4000, cancellationToken: Network.DespawnASyncCancellation.Token);
-
             return NetworkAPI.Client.Profile.Name;
         }
     }

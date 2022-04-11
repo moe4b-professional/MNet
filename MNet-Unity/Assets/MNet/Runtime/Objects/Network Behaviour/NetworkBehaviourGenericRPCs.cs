@@ -31,43 +31,82 @@ namespace MNet
             public BroadcastRpcPacket BroadcastRPC(VoidRpcMethod rpc)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name);
+                return BroadcastRPC(name, default);
             }
 
             public BroadcastRpcPacket BroadcastRPC<T1>(VoidRpcMethod<T1> rpc, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<T1, T2>(VoidRpcMethod<T1, T2> rpc, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<T1, T2, T3>(VoidRpcMethod<T1, T2, T3> rpc, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<T1, T2, T3, T4>(VoidRpcMethod<T1, T2, T3, T4> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<T1, T2, T3, T4, T5>(VoidRpcMethod<T1, T2, T3, T4, T5> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<T1, T2, T3, T4, T5, T6>(VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
+
+                return BroadcastRPC(name, writer);
             }
             #endregion
 
@@ -75,43 +114,83 @@ namespace MNet
             public BroadcastRpcPacket BroadcastRPC<TResult>(ReturnRpcMethod<TResult> rpc)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name);
+
+                return BroadcastRPC(name, default);
             }
 
             public BroadcastRpcPacket BroadcastRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return BroadcastRPC(name, writer);
             }
 
             public BroadcastRpcPacket BroadcastRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BroadcastRPC(name, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
+
+                return BroadcastRPC(name, writer);
             }
             #endregion
 
@@ -123,43 +202,83 @@ namespace MNet
             public TargetRpcPacket TargetRPC(VoidRpcMethod rpc, NetworkClient target)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target);
+
+                return TargetRPC(name, target, default);
             }
 
             public TargetRpcPacket TargetRPC<T1>(VoidRpcMethod<T1> rpc, NetworkClient target, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<T1, T2>(VoidRpcMethod<T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<T1, T2, T3>(VoidRpcMethod<T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<T1, T2, T3, T4>(VoidRpcMethod<T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<T1, T2, T3, T4, T5>(VoidRpcMethod<T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<T1, T2, T3, T4, T5, T6>(VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
+
+                return TargetRPC(name, target, writer);
             }
             #endregion
 
@@ -167,138 +286,170 @@ namespace MNet
             public TargetRpcPacket TargetRPC<TResult>(ReturnRpcMethod<TResult> rpc, NetworkClient target)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target);
+
+                return TargetRPC(name, target, default);
             }
 
             public TargetRpcPacket TargetRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, NetworkClient target, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return TargetRPC(name, target, writer);
             }
 
             public TargetRpcPacket TargetRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return TargetRPC(name, target, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
+
+                return TargetRPC(name, target, writer);
             }
             #endregion
 
             #endregion
 
             #region Query
-
-            #region Synchronous
             public QueryRpcPacket<TResult> QueryRPC<TResult>(ReturnRpcMethod<TResult> rpc, NetworkClient target)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target);
+
+                return QueryRPC<TResult>(name, target, default);
             }
 
             public QueryRpcPacket<TResult> QueryRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, NetworkClient target, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return QueryRPC<TResult>(name, target, writer);
             }
 
             public QueryRpcPacket<TResult> QueryRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return QueryRPC<TResult>(name, target, writer);
             }
 
             public QueryRpcPacket<TResult> QueryRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return QueryRPC<TResult>(name, target, writer);
             }
 
             public QueryRpcPacket<TResult> QueryRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return QueryRPC<TResult>(name, target, writer);
             }
 
             public QueryRpcPacket<TResult> QueryRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return QueryRPC<TResult>(name, target, writer);
             }
 
             public QueryRpcPacket<TResult> QueryRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3, arg4, arg5, arg6);
-            }
-            #endregion
 
-            #region Asynchronous
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult>(AsyncReturnRpcMethod<TResult> rpc, NetworkClient target)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target);
-            }
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
 
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult, T1>(AsyncReturnRpcMethod<TResult, T1> rpc, NetworkClient target, T1 arg1)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1);
+                return QueryRPC<TResult>(name, target, writer);
             }
-
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult, T1, T2>(AsyncReturnRpcMethod<TResult, T1, T2> rpc, NetworkClient target, T1 arg1, T2 arg2)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2);
-            }
-
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult, T1, T2, T3>(AsyncReturnRpcMethod<TResult, T1, T2, T3> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3);
-            }
-
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult, T1, T2, T3, T4>(AsyncReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3, arg4);
-            }
-
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5>(AsyncReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3, arg4, arg5);
-            }
-
-            public QueryRpcPacket<TResult> QueryAsyncRPC<TResult, T1, T2, T3, T4, T5, T6>(AsyncReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, NetworkClient target, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-            {
-                var name = RpcBind.GetName(rpc.Method);
-                return QueryRPC<TResult>(name, target, arg1, arg2, arg3, arg4, arg5, arg6);
-            }
-            #endregion
-
             #endregion
 
             #region Buffer
@@ -307,43 +458,83 @@ namespace MNet
             public BufferRpcPacket BufferRPC(VoidRpcMethod rpc)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name);
+
+                return BufferRPC(name, default);
             }
 
             public BufferRpcPacket BufferRPC<T1>(VoidRpcMethod<T1> rpc, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<T1, T2>(VoidRpcMethod<T1, T2> rpc, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<T1, T2, T3>(VoidRpcMethod<T1, T2, T3> rpc, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<T1, T2, T3, T4>(VoidRpcMethod<T1, T2, T3, T4> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<T1, T2, T3, T4, T5>(VoidRpcMethod<T1, T2, T3, T4, T5> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<T1, T2, T3, T4, T5, T6>(VoidRpcMethod<T1, T2, T3, T4, T5, T6> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
+
+                return BufferRPC(name, writer);
             }
             #endregion
 
@@ -351,43 +542,83 @@ namespace MNet
             public BufferRpcPacket BufferRPC<TResult>(ReturnRpcMethod<TResult> rpc)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name);
+
+                return BufferRPC(name, default);
             }
 
             public BufferRpcPacket BufferRPC<TResult, T1>(ReturnRpcMethod<TResult, T1> rpc, T1 arg1)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<TResult, T1, T2>(ReturnRpcMethod<TResult, T1, T2> rpc, T1 arg1, T2 arg2)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<TResult, T1, T2, T3>(ReturnRpcMethod<TResult, T1, T2, T3> rpc, T1 arg1, T2 arg2, T3 arg3)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<TResult, T1, T2, T3, T4>(ReturnRpcMethod<TResult, T1, T2, T3, T4> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3, arg4);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<TResult, T1, T2, T3, T4, T5>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3, arg4, arg5);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+
+                return BufferRPC(name, writer);
             }
 
             public BufferRpcPacket BufferRPC<TResult, T1, T2, T3, T4, T5, T6>(ReturnRpcMethod<TResult, T1, T2, T3, T4, T5, T6> rpc, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
             {
                 var name = RpcBind.GetName(rpc.Method);
-                return BufferRPC(name, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                var writer = NetworkWriter.Pool.Take();
+                writer.Write(arg1);
+                writer.Write(arg2);
+                writer.Write(arg3);
+                writer.Write(arg4);
+                writer.Write(arg5);
+                writer.Write(arg6);
+
+                return BufferRPC(name, writer);
             }
             #endregion
 

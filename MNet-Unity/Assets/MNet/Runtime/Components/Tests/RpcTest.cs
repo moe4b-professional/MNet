@@ -26,10 +26,6 @@ namespace MNet
     {
         public List<bool> results = new List<bool>();
 
-        public bool coroutine;
-        public bool uniTask;
-        public bool binary;
-
         public bool success = false;
 
         public const int Count = 7;
@@ -45,9 +41,6 @@ namespace MNet
         {
             for (int i = 0; i < Count; i++) results.Add(false);
 
-            coroutine = false;
-            uniTask = false;
-            binary = false;
             success = false;
 
             Network.TargetRPC(Call0, NetworkAPI.Client.Self).Send();
@@ -57,10 +50,6 @@ namespace MNet
             Network.TargetRPC(Call4, NetworkAPI.Client.Self, 0, 1, 2, 3).Send();
             Network.TargetRPC(Call5, NetworkAPI.Client.Self, 0, 1, 2, 3, 4).Send();
             Network.TargetRPC(Call6, NetworkAPI.Client.Self, 0, 1, 2, 3, 4, 5).Send();
-
-            Network.TargetRPC(CoroutineRPC, NetworkAPI.Client.Self).Send();
-            Network.TargetRPC(UniTaskRPC, NetworkAPI.Client.Self).Send();
-            Network.TargetRPC(BinaryRPC, NetworkAPI.Client.Self, new byte[] { 0, 1, 2, 3, 4, 5 }).Send();
         }
 
         [NetworkRPC] void Call0(RpcInfo info) => Call();
@@ -82,41 +71,9 @@ namespace MNet
             UpdateState();
         }
 
-        [NetworkRPC]
-        IEnumerator CoroutineRPC(RpcInfo info)
-        {
-            yield return new WaitForSeconds(2f);
-
-            coroutine = true;
-
-            UpdateState();
-        }
-
-        [NetworkRPC]
-        async UniTask UniTaskRPC(RpcInfo info)
-        {
-            await UniTask.Delay(2000, cancellationToken: Network.DespawnASyncCancellation.Token);
-
-            uniTask = true;
-
-            UpdateState();
-        }
-
-        [NetworkRPC]
-        void BinaryRPC(byte[] raw, RpcInfo info)
-        {
-            for (int i = 0; i < raw.Length; i++)
-                if (raw[i] != i)
-                    return;
-
-            binary = true;
-
-            UpdateState();
-        }
-
         void UpdateState()
         {
-            success = results.All(x => x) && coroutine && uniTask && binary;
+            success = results.All(x => x);
         }
     }
 }

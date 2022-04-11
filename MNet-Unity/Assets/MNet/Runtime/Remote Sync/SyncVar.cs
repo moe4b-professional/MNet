@@ -48,7 +48,7 @@ namespace MNet
             ID = new SyncVarID(index);
         }
 
-        internal abstract void Invoke(ISyncVarCommand command);
+        internal abstract void Invoke<TCommand>(TCommand command) where TCommand : ISyncVarCommand;
 
         public override string ToString() => $"{Behaviour}->{Name}";
 
@@ -84,6 +84,67 @@ namespace MNet
 
             return value;
         }
+
+        public static class Parser
+        {
+            public const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+            static Dictionary<Type, VariableInfo[]> Dictionary { get; }
+
+            public static VariableInfo[] Retrieve(Type type)
+            {
+                if (Dictionary.TryGetValue(type, out var array))
+                    return array;
+
+                array = Parse(type);
+                Dictionary[type] = array;
+                return array;
+            }
+
+            static List<VariableInfo> CacheList;
+            static HashSet<string> CacheHashSet;
+            static Comparison<VariableInfo> Comparer;
+
+            static VariableInfo[] Parse(Type type)
+            {
+                CacheList.Clear();
+                CacheHashSet.Clear();
+
+                var array = type.GetVariables(Flags);
+
+                for (int i = 0; i < array.Count; i++)
+                {
+                    if (typeof(SyncVar).IsAssignableFrom(array[i].ValueType) == false)
+                        continue;
+
+                    var name = GetName(array[i]);
+
+                    if (CacheHashSet.Add(name) == false)
+                        throw new Exception($"Multiple '{name}' Sync Vars Registered On '{type}', Please Assign Every Sync Vars a Unique Name And Don't Overload Sync Vars");
+
+                    CacheList.Add(array[i]);
+                }
+
+                CacheList.Sort(Comparer);
+
+                if (CacheList.Count > byte.MaxValue)
+                    throw new Exception($"NetworkBehaviour {type} Can't Have More than {byte.MaxValue} Sync Vars Defined");
+
+                return CacheList.ToArray();
+            }
+
+            static Parser()
+            {
+                Dictionary = new Dictionary<Type, VariableInfo[]>();
+                CacheList = new List<VariableInfo>();
+                CacheHashSet = new HashSet<string>();
+
+                Comparer = (VariableInfo a, VariableInfo b) =>
+                {
+                    return GetName(a).CompareTo(GetName(b));
+                };
+            }
+        }
     }
 
     [Serializable]
@@ -105,7 +166,7 @@ namespace MNet
             OnChange?.Invoke(oldValue, newValue, info);
         }
 
-        internal override void Invoke(ISyncVarCommand command)
+        internal override void Invoke<TCommand>(TCommand command)
         {
             T value;
             try
@@ -179,73 +240,39 @@ namespace MNet
         }
     }
 
-    public class SyncVarPacket<TSelf, TValue> :
-            FluentObjectRecord.IInterface,
-            IDeliveryModeConstructor<TSelf>,
-            IChannelConstructor<TSelf>,
-            INetworkGroupConstructor<TSelf>
-        where TSelf : SyncVarPacket<TSelf, TValue>
+    public struct BroadcastSyncVarPacket<TValue> : IDeliveryModeConstructor<BroadcastSyncVarPacket<TValue>>,
+            IChannelConstructor<BroadcastSyncVarPacket<TValue>>,
+            INetworkGroupConstructor<BroadcastSyncVarPacket<TValue>>
     {
-        public TSelf self { get; protected set; }
+        SyncVar<TValue> Variable;
+        TValue value;
 
-        protected SyncVar<TValue> Variable { get; }
+        NetworkEntity.Behaviour Behaviour;
+        NetworkEntity Entity => Behaviour.Entity;
 
-        protected TValue value { get; }
-
-        protected NetworkEntity.Behaviour Behaviour { get; }
-        protected NetworkEntity Entity => Behaviour.Entity;
-
-        protected DeliveryMode delivery;
-        public TSelf Delivery(DeliveryMode value)
+        DeliveryMode delivery;
+        public BroadcastSyncVarPacket<TValue> Delivery(DeliveryMode value)
         {
             delivery = value;
-            return self;
+            return this;
         }
 
-        protected byte channel;
-        public TSelf Channel(byte value)
+        byte channel;
+        public BroadcastSyncVarPacket<TValue> Channel(byte value)
         {
             channel = value;
-            return self;
+            return this;
         }
 
-        protected NetworkGroupID group;
-        public TSelf Group(NetworkGroupID value)
+        NetworkGroupID group;
+        public BroadcastSyncVarPacket<TValue> Group(NetworkGroupID value)
         {
             group = value;
-            return self;
+            return this;
         }
 
-        public override string ToString()
-        {
-            return $"{Variable} = {value}";
-        }
-
-        SyncVarPacket()
-        {
-            self = this as TSelf;
-        }
-
-        public SyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour)
-        {
-            this.Variable = SyncVar;
-            this.value = value;
-            this.Behaviour = behaviour;
-
-            delivery = DeliveryMode.ReliableOrdered;
-            channel = 0;
-            group = NetworkGroupID.Default;
-
-            FluentObjectRecord.Add(this);
-        }
-    }
-
-    public class BroadcastSyncVarPacket<TValue> : SyncVarPacket<BroadcastSyncVarPacket<TValue>, TValue>
-    {
         public void Send()
         {
-            FluentObjectRecord.Remove(this);
-
             using (NetworkWriter.Pool.Lease(out var stream))
             {
                 stream.Write(value);
@@ -257,18 +284,51 @@ namespace MNet
             }
         }
 
-        public BroadcastSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour) : base(SyncVar, value, behaviour)
+        public BroadcastSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour)
         {
+            this.Variable = SyncVar;
+            this.value = value;
+            this.Behaviour = behaviour;
 
+            delivery = DeliveryMode.ReliableOrdered;
+            channel = 0;
+            group = NetworkGroupID.Default;
         }
     }
 
-    public class BufferSyncVarPacket<TValue> : SyncVarPacket<BufferSyncVarPacket<TValue>, TValue>
+    public struct BufferSyncVarPacket<TValue> : IDeliveryModeConstructor<BufferSyncVarPacket<TValue>>,
+            IChannelConstructor<BufferSyncVarPacket<TValue>>,
+            INetworkGroupConstructor<BufferSyncVarPacket<TValue>>
     {
+        SyncVar<TValue> Variable;
+        TValue value;
+
+        NetworkEntity.Behaviour Behaviour;
+        NetworkEntity Entity => Behaviour.Entity;
+
+        DeliveryMode delivery;
+        public BufferSyncVarPacket<TValue> Delivery(DeliveryMode value)
+        {
+            delivery = value;
+            return this;
+        }
+
+        byte channel;
+        public BufferSyncVarPacket<TValue> Channel(byte value)
+        {
+            channel = value;
+            return this;
+        }
+
+        NetworkGroupID group;
+        public BufferSyncVarPacket<TValue> Group(NetworkGroupID value)
+        {
+            group = value;
+            return this;
+        }
+
         public void Buffer()
         {
-            FluentObjectRecord.Remove(this);
-
             using (NetworkWriter.Pool.Lease(out var stream))
             {
                 stream.Write(value);
@@ -280,9 +340,15 @@ namespace MNet
             }
         }
 
-        public BufferSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour) : base(SyncVar, value, behaviour)
+        public BufferSyncVarPacket(SyncVar<TValue> SyncVar, TValue value, NetworkEntity.Behaviour behaviour)
         {
+            this.Variable = SyncVar;
+            this.value = value;
+            this.Behaviour = behaviour;
 
+            delivery = DeliveryMode.ReliableOrdered;
+            channel = 0;
+            group = NetworkGroupID.Default;
         }
     }
 

@@ -338,6 +338,7 @@ namespace MNet
             ExtraConsoleLog.Bind();
 
             Log.Info($"Network API Version: {Constants.ApiVersion}");
+            Log.Info($"Is Little Endian: {BitConverter.IsLittleEndian}");
 
             ApiKey.Read();
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -69,15 +70,12 @@ namespace MNet
         }
     }
 
-    public struct RoomID : INetworkSerializable, IEquatable<RoomID>
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RoomID : IEquatable<RoomID>
     {
         uint value;
         public uint Value { get { return value; } }
-
-        public void Select(ref NetworkSerializationContext context)
-        {
-            context.Select(ref value);
-        }
 
         public RoomID(uint value)
         {

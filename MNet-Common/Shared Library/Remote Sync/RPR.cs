@@ -3,25 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MNet
 {
     [Preserve]
-    public struct RprChannelID : IManualNetworkSerializable, IEquatable<RprChannelID>
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RprChannelID : IEquatable<RprChannelID>
     {
         byte value;
         public byte Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(value);
-        }
-        public void Deserialize(NetworkReader reader)
-        {
-            value = reader.TakeByte();
-        }
 
         public RprChannelID(byte value)
         {

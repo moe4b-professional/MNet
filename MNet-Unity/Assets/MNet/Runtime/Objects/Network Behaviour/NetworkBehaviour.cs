@@ -76,82 +76,20 @@ namespace MNet
 
             void ParseRPCs()
             {
-                var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-
                 var type = Component.GetType();
+                var data = RpcBind.Parser.Retrieve(type);
 
-                var methods = type.GetMethods(flags).Where(NetworkRPCAttribute.Defined).OrderBy(RpcBind.GetName).ToArray();
-
-                if (methods.Length > byte.MaxValue)
-                    throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} RPCs Defined");
-
-                for (byte i = 0; i < methods.Length; i++)
+                for (byte i = 0; i < data.Length; i++)
                 {
-                    var attribute = NetworkRPCAttribute.Retrieve(methods[i]);
-
-                    var bind = new RpcBind(this, attribute, methods[i], i);
-
-                    if (RPCs.Contains(bind.Name))
-                        throw new Exception($"Rpc '{bind.Name}' Already Registered On '{GetType()}', Please Assign Every RPC a Unique Name And Don't Overload RPC Methods");
+                    var bind = RpcBind.Retrieve(data[i].Method);
+                    bind.Configure(this, data[i].Attribute, data[i].Method, i);
 
                     RPCs.Add(bind.ID, bind.Name, bind);
                 }
             }
 
             #region Methods
-            public class RpcPacket<TSelf> : FluentObjectRecord.IInterface,
-                IDeliveryModeConstructor<TSelf>,
-                IChannelConstructor<TSelf>
-                where TSelf : RpcPacket<TSelf>
-            {
-                public TSelf self { get; protected set; }
-
-                protected RpcBind Bind { get; }
-
-                protected object[] Arguments { get; }
-
-                protected Behaviour Behaviour { get; }
-                protected NetworkEntity Entity => Behaviour.Entity;
-
-                protected DeliveryMode delivery;
-                public TSelf Delivery(DeliveryMode value)
-                {
-                    delivery = value;
-                    return self;
-                }
-
-                protected byte channel;
-                public TSelf Channel(byte value)
-                {
-                    channel = value;
-                    return self;
-                }
-
-                protected bool Send<T>(ref T payload)
-                {
-                    FluentObjectRecord.Remove(this);
-
-                    return Behaviour.Send(ref payload, delivery: delivery, channel: channel);
-                }
-
-                public override string ToString()
-                {
-                    return $"{Bind}{Arguments.ToCollectionString()}";
-                }
-
-                public RpcPacket(RpcBind bind, object[] arguments, Behaviour behaviour)
-                {
-                    this.Bind = bind;
-                    this.Arguments = arguments;
-                    this.Behaviour = behaviour;
-
-                    self = this as TSelf;
-
-                    FluentObjectRecord.Add(this);
-                }
-            }
-
-            public BroadcastRpcPacket BroadcastRPC(string method, params object[] arguments)
+            public BroadcastRpcPacket BroadcastRPC(string method, NetworkWriter stream)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -165,28 +103,49 @@ namespace MNet
                     return default;
                 }
 
-                return new BroadcastRpcPacket(bind, arguments, this);
+                return new BroadcastRpcPacket(bind, stream, this);
             }
-            public class BroadcastRpcPacket : RpcPacket<BroadcastRpcPacket>,
+            public struct BroadcastRpcPacket : IDeliveryModeConstructor<BroadcastRpcPacket>,
+                IChannelConstructor<BroadcastRpcPacket>,
                 INetworkGroupConstructor<BroadcastRpcPacket>,
                 IRemoteBufferModeConstructor<BroadcastRpcPacket>,
                 INetworkClientExceptionConstructor<BroadcastRpcPacket>
             {
-                NetworkGroupID group = NetworkGroupID.Default;
+                RpcBind Bind;
+                NetworkWriter Stream;
+
+                Behaviour Behaviour;
+                NetworkEntity Entity => Behaviour.Entity;
+
+                DeliveryMode delivery;
+                public BroadcastRpcPacket Delivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public BroadcastRpcPacket Channel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
+
+                NetworkGroupID group;
                 public BroadcastRpcPacket Group(NetworkGroupID value)
                 {
                     group = value;
                     return this;
                 }
 
-                RemoteBufferMode buffer = RemoteBufferMode.None;
+                RemoteBufferMode buffer;
                 public BroadcastRpcPacket Buffer(RemoteBufferMode value)
                 {
                     buffer = value;
                     return this;
                 }
 
-                NetworkClient exception = null;
+                NetworkClient exception;
                 public BroadcastRpcPacket Exception(NetworkClient value)
                 {
                     exception = value;
@@ -199,23 +158,29 @@ namespace MNet
                         Debug.LogError($"Conflicting Data for RPC Call '{this}', Cannot send to 'None Default' Network Group and Buffer the RPC" +
                             $", This is not Supported, Message will not be Buffered !!!");
 
-                    using (NetworkWriter.Pool.Lease(out var writer))
-                    {
-                        Bind.SerializeArguments(writer, Arguments, out var chunk);
-                        var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, chunk);
+                    var chunk = Stream == null ? default(ByteChunk) : Stream.AsChunk();
+                    var request = BroadcastRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, group, exception?.ID, chunk);
 
-                        Send(ref request);
-                    }
+                    Behaviour.Send(ref request, delivery: delivery, channel: channel);
+
+                    if (Stream != null) NetworkWriter.Pool.Return(Stream);
                 }
 
-                public BroadcastRpcPacket(RpcBind bind, object[] arguments, Behaviour behaviour)
-                    : base(bind, arguments, behaviour)
+                public BroadcastRpcPacket(RpcBind bind, NetworkWriter stream, Behaviour behaviour)
                 {
+                    this.Bind = bind;
+                    this.Stream = stream;
+                    this.Behaviour = behaviour;
 
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
+                    buffer = RemoteBufferMode.Last;
+                    group = NetworkGroupID.Default;
+                    exception = default;
                 }
             }
 
-            public TargetRpcPacket TargetRPC(string method, NetworkClient target, params object[] arguments)
+            public TargetRpcPacket TargetRPC(string method, NetworkClient target, NetworkWriter stream)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -229,31 +194,56 @@ namespace MNet
                     return default;
                 }
 
-                return new TargetRpcPacket(bind, arguments, this, target);
+                return new TargetRpcPacket(bind, stream, this, target);
             }
-            public class TargetRpcPacket : RpcPacket<TargetRpcPacket>
+            public struct TargetRpcPacket : IDeliveryModeConstructor<TargetRpcPacket>,
+                IChannelConstructor<TargetRpcPacket>
             {
+                RpcBind Bind;
+                NetworkWriter Stream;
+
+                Behaviour Behaviour;
+                NetworkEntity Entity => Behaviour.Entity;
+
                 NetworkClient Target { get; }
+
+                DeliveryMode delivery;
+                public TargetRpcPacket Delivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public TargetRpcPacket Channel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
 
                 public void Send()
                 {
-                    using (NetworkWriter.Pool.Lease(out var writer))
-                    {
-                        Bind.SerializeArguments(writer, Arguments, out var chunk);
-                        var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, chunk);
+                    var chunk = Stream == null ? default(ByteChunk) : Stream.AsChunk();
+                    var request = TargetRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, chunk);
 
-                        Send(ref request);
-                    }
+                    Behaviour.Send(ref request, delivery: delivery, channel: channel);
+
+                    if(Stream != null) NetworkWriter.Pool.Return(Stream);
                 }
 
-                public TargetRpcPacket(RpcBind bind, object[] arguments, Behaviour behaviour, NetworkClient target)
-                    : base(bind, arguments, behaviour)
+                public TargetRpcPacket(RpcBind bind, NetworkWriter stream, Behaviour behaviour, NetworkClient target)
                 {
+                    this.Bind = bind;
+                    this.Stream = stream;
+                    this.Behaviour = behaviour;
                     this.Target = target;
+
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
                 }
             }
 
-            public QueryRpcPacket<TResult> QueryRPC<TResult>(string method, NetworkClient target, params object[] arguments)
+            public QueryRpcPacket<TResult> QueryRPC<TResult>(string method, NetworkClient target, NetworkWriter stream)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -267,23 +257,43 @@ namespace MNet
                     return default;
                 }
 
-                return new QueryRpcPacket<TResult>(bind, arguments, this, target);
+                return new QueryRpcPacket<TResult>(bind, stream, this, target);
             }
-            public class QueryRpcPacket<TResult> : RpcPacket<QueryRpcPacket<TResult>>
+            public struct QueryRpcPacket<TResult> : IDeliveryModeConstructor<QueryRpcPacket<TResult>>,
+                IChannelConstructor<QueryRpcPacket<TResult>>
             {
+                RpcBind Bind;
+                NetworkWriter Stream;
+
+                Behaviour Behaviour;
+                NetworkEntity Entity => Behaviour.Entity;
+
                 NetworkClient Target { get; }
+
+                DeliveryMode delivery;
+                public QueryRpcPacket<TResult> Delivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public QueryRpcPacket<TResult> Channel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
 
                 public async UniTask<RprAnswer<TResult>> Send()
                 {
                     var promise = NetworkAPI.Client.RPR.Promise(Target);
 
-                    var writer = NetworkWriter.Pool.Take();
                     try
                     {
-                        Bind.SerializeArguments(writer, Arguments, out var chunk);
+                        var chunk = Stream == null ? default(ByteChunk) : Stream.AsChunk();
                         var request = QueryRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, Target.ID, promise.Channel, chunk);
 
-                        if (Send(ref request) == false)
+                        if (Behaviour.Send(ref request, delivery: delivery, channel: channel) == false)
                         {
                             Debug.LogError($"Couldn't Send Query RPC {Bind} to {Target}", Behaviour.Component);
                             return new RprAnswer<TResult>(RemoteResponseType.FatalFailure);
@@ -291,7 +301,7 @@ namespace MNet
                     }
                     finally
                     {
-                        NetworkWriter.Pool.Return(writer);
+                        if(Stream != null) NetworkWriter.Pool.Return(Stream);
                     }
 
                     await UniTask.WaitUntil(promise.IsComplete);
@@ -301,14 +311,19 @@ namespace MNet
                     return answer;
                 }
 
-                public QueryRpcPacket(RpcBind bind, object[] arguments, Behaviour behaviour, NetworkClient target)
-                    : base(bind, arguments, behaviour)
+                public QueryRpcPacket(RpcBind bind, NetworkWriter stream, Behaviour behaviour, NetworkClient target)
                 {
+                    this.Bind = bind;
+                    this.Stream = stream;
+                    this.Behaviour = behaviour;
                     this.Target = target;
+
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
                 }
             }
 
-            public BufferRpcPacket BufferRPC(string method, params object[] arguments)
+            public BufferRpcPacket BufferRPC(string method, NetworkWriter stream)
             {
                 if (RPCs.TryGetValue(method, out var bind) == false)
                 {
@@ -322,12 +337,33 @@ namespace MNet
                     return default;
                 }
 
-                return new BufferRpcPacket(bind, arguments, this);
+                return new BufferRpcPacket(bind, stream, this);
             }
-            public class BufferRpcPacket : RpcPacket<BufferRpcPacket>,
+            public struct BufferRpcPacket : IDeliveryModeConstructor<BufferRpcPacket>,
+                IChannelConstructor<BufferRpcPacket>,
                 IRemoteBufferModeConstructor<BufferRpcPacket>
             {
-                RemoteBufferMode buffer = RemoteBufferMode.Last;
+                RpcBind Bind;
+                NetworkWriter Stream;
+
+                Behaviour Behaviour;
+                NetworkEntity Entity => Behaviour.Entity;
+
+                DeliveryMode delivery;
+                public BufferRpcPacket Delivery(DeliveryMode value)
+                {
+                    delivery = value;
+                    return this;
+                }
+
+                byte channel;
+                public BufferRpcPacket Channel(byte value)
+                {
+                    channel = value;
+                    return this;
+                }
+
+                RemoteBufferMode buffer;
                 public BufferRpcPacket Buffer(RemoteBufferMode value)
                 {
                     buffer = value;
@@ -336,19 +372,23 @@ namespace MNet
 
                 public void Send()
                 {
-                    using (NetworkWriter.Pool.Lease(out var writer))
-                    {
-                        Bind.SerializeArguments(writer, Arguments, out var chunk);
-                        var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, chunk);
+                    var chunk = Stream == null ? default(ByteChunk) : Stream.AsChunk();
+                    var request = BufferRpcRequest.Write(Entity.ID, Behaviour.ID, Bind.ID, buffer, chunk);
 
-                        Send(ref request);
-                    }
+                    Behaviour.Send(ref request, delivery: delivery, channel: channel);
+
+                    if(Stream != null) NetworkWriter.Pool.Return(Stream);
                 }
 
-                public BufferRpcPacket(RpcBind bind, object[] arguments, NetworkEntity.Behaviour behaviour)
-                    : base(bind, arguments, behaviour)
+                public BufferRpcPacket(RpcBind bind, NetworkWriter stream, Behaviour behaviour)
                 {
+                    this.Bind = bind;
+                    this.Stream = stream;
+                    this.Behaviour = behaviour;
 
+                    delivery = DeliveryMode.ReliableOrdered;
+                    channel = 0;
+                    buffer = RemoteBufferMode.Last;
                 }
             }
             #endregion
@@ -363,21 +403,7 @@ namespace MNet
                     return false;
                 }
 
-                object[] arguments;
-                RpcInfo info;
-                try
-                {
-                    bind.ParseCommand(command, out arguments, out info);
-                }
-                catch (Exception ex)
-                {
-                    var text = $"Error trying to Parse RPC Arguments of {bind}', Invalid Data Sent Most Likely \n" +
-                        $"Exception: \n" +
-                        $"{ex}";
-
-                    Debug.LogError(text, Component);
-                    return false;
-                }
+                var info = bind.ParseInfo(command);
 
                 if (Entity.CheckAuthority(info.Sender, bind.Authority) == false)
                 {
@@ -385,59 +411,32 @@ namespace MNet
                     return false;
                 }
 
-                object result;
+                var writer = (bind.HasReturn && command is QueryRpcCommand) ? NetworkWriter.Pool.Take() : default(NetworkWriter);
                 try
                 {
-                    result = bind.Invoke(arguments);
-                }
-                catch (TargetInvocationException)
-                {
-                    throw;
+                    using (NetworkReader.Pool.Lease(out var reader))
+                    {
+                        reader.Assign(command.Raw);
+                        bind.Invoke(reader, writer, info);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    var text = $"Error Trying to Invoke RPC {bind}', " +
-                        $"Please Ensure Method is Implemented And Invoked Correctly\n" +
+                    var text = $"Error trying to Execute RPC ({bind})', Invalid Data Sent Most Likely \n" +
                         $"Exception: \n" +
                         $"{ex}";
 
                     Debug.LogError(text, Component);
-
                     return false;
                 }
 
-                if (bind.IsCoroutine) ExceuteCoroutineRPC(result as IEnumerator);
-
                 if (command is QueryRpcCommand query)
                 {
-                    if (bind.IsAsync)
-                        AwaitAsyncQueryRPC(result as IUniTask, query, bind).Forget();
-                    else
-                        NetworkAPI.Client.RPR.Respond(query, result, bind.ReturnType);
+                    NetworkAPI.Client.RPR.Respond(query, writer);
+                    NetworkWriter.Pool.Return(writer);
                 }
 
                 return true;
-            }
-
-            void ExceuteCoroutineRPC(IEnumerator method) => Component.StartCoroutine(method);
-
-            async UniTask AwaitAsyncQueryRPC(IUniTask task, QueryRpcCommand command, RpcBind bind)
-            {
-                while (task.Status == UniTaskStatus.Pending) await UniTask.Yield();
-
-                if (NetworkAPI.Client.IsConnected == false)
-                {
-                    //Debug.LogWarning($"Will not Respond to Async Query RPC {bind} Because Client Disconnected, The Server Will Provide a Default Response to the Requester");
-                    return;
-                }
-
-                if (task.Status != UniTaskStatus.Succeeded)
-                {
-                    NetworkAPI.Client.RPR.Respond(command, RemoteResponseType.FatalFailure);
-                    return;
-                }
-
-                NetworkAPI.Client.RPR.Respond(command, task.Result, task.Type);
             }
             #endregion
 
@@ -448,18 +447,13 @@ namespace MNet
 
             void ParseSyncVars()
             {
-                var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-
                 var type = Component.GetType();
 
-                var variables = type.GetVariables(flags).Where(SyncVar.Is).OrderBy(SyncVar.GetName).ToArray();
+                var data = SyncVar.Parser.Retrieve(type);
 
-                if (variables.Length > byte.MaxValue)
-                    throw new Exception($"NetworkBehaviour {GetType().Name} Can't Have More than {byte.MaxValue} SyncVars Defined");
-
-                for (byte i = 0; i < variables.Length; i++)
+                for (byte i = 0; i < data.Length; i++)
                 {
-                    var value = SyncVar.Assimilate(variables[i], this, i);
+                    var value = SyncVar.Assimilate(data[i], this, i);
 
                     SyncVars.Add(value.ID, value);
                 }
@@ -478,7 +472,7 @@ namespace MNet
             }
             #endregion
 
-            public virtual bool Send<T>(ref T payload, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0)
+            public virtual bool Send<[NetworkSerializationGenerator] T>(ref T payload, DeliveryMode delivery = DeliveryMode.ReliableOrdered, byte channel = 0)
             {
                 if (Entity.IsReady == false)
                 {

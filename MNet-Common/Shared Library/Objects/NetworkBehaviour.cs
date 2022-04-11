@@ -1,27 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MNet
 {
-    [Preserve]
-    [Serializable]
-    public struct NetworkBehaviourID : IManualNetworkSerializable
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NetworkBehaviourID
     {
         byte value;
         public byte Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(Value);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            value = reader.TakeByte();
-        }
 
         public NetworkBehaviourID(byte value)
         {

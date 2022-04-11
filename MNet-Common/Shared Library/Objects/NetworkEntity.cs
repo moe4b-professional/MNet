@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -43,20 +44,12 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct NetworkEntityID : IManualNetworkSerializable, IEquatable<NetworkEntityID>
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NetworkEntityID : IEquatable<NetworkEntityID>
     {
         ushort value;
         public ushort Value { get { return value; } }
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Write(value);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            reader.Read(out value);
-        }
 
         public NetworkEntityID(ushort value)
         {
@@ -89,20 +82,12 @@ namespace MNet
     }
 
     [Preserve]
-    public struct EntitySpawnToken : IManualNetworkSerializable, IEquatable<EntitySpawnToken>
+    [NetworkBlittable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct EntitySpawnToken : IEquatable<EntitySpawnToken>
     {
         byte value;
         public byte Value => value;
-
-        public void Serialize(NetworkWriter writer)
-        {
-            writer.Insert(value);
-        }
-
-        public void Deserialize(NetworkReader reader)
-        {
-            value = reader.TakeByte();
-        }
 
         public EntitySpawnToken(byte value)
         {

@@ -19,7 +19,7 @@ namespace MNet
 
         Dictionary<TKey, object> cache;
 
-        public void Set<TValue>(TKey key, TValue value)
+        public void Set<[NetworkSerializationGenerator] TValue>(TKey key, TValue value)
         {
             using (NetworkWriter.Pool.Lease(out var stream))
             {
@@ -32,7 +32,7 @@ namespace MNet
             };
         }
 
-        public TValue Get<TValue>(TKey key)
+        public TValue Get<[NetworkSerializationGenerator] TValue>(TKey key)
         {
             if (TryGetValue<TValue>(key, out var value) == false)
                 value = default;
@@ -40,7 +40,7 @@ namespace MNet
             return value;
         }
 
-        public bool TryGetValue<TValue>(TKey key, out TValue value)
+        public bool TryGetValue<[NetworkSerializationGenerator] TValue>(TKey key, out TValue value)
         {
             if (cache.TryGetValue(key, out var instance))
             {
