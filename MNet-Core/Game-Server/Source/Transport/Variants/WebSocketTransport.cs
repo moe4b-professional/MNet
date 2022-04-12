@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace MNet
 {
-    class WebSocketTransport : NetworkTransport<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocket>
+    class WebSocketTransport : NetworkTransport<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocketClient>
     {
         public WebSocketServer Server { get; }
 
@@ -29,7 +29,7 @@ namespace MNet
         }
 
         #region Callbacks
-        void ConnectCallback(WebSocket socket)
+        void ConnectCallback(WebSocketClient socket)
         {
             var key = socket.URL.TrimStart('/');
 
@@ -58,7 +58,7 @@ namespace MNet
             tag.Context = context;
             tag.Client = context.RegisterClient(socket);
         }
-        void MessageCallback(WebSocket socket, WebSocketPacket packet)
+        void MessageCallback(WebSocketClient socket, WebSocketPacket packet)
         {
             WebSocketClientTag.Retrieve(socket, out var context, out var client);
 
@@ -66,7 +66,7 @@ namespace MNet
 
             context.InvokeMessage(client, segment, DeliveryMode.ReliableOrdered, 0, packet.Recycle);
         }
-        void DisconnectCallback(WebSocket socket, WebSocketCloseCode code, string message)
+        void DisconnectCallback(WebSocketClient socket, WebSocketCloseCode code, string message)
         {
             WebSocketClientTag.Retrieve(socket, out var context, out var client);
 
@@ -95,7 +95,7 @@ namespace MNet
         }
     }
 
-    class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocket>
+    class WebSocketTransportContext : NetworkTransportContext<WebSocketTransport, WebSocketTransportContext, WebSocketTransportClient, WebSocketClient>
     {
         public override void Send(WebSocketTransportClient client, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
@@ -119,7 +119,7 @@ namespace MNet
         protected override void Close() { }
     }
 
-    class WebSocketTransportClient : NetworkTransportClient<WebSocketTransportContext, WebSocket>
+    class WebSocketTransportClient : NetworkTransportClient<WebSocketTransportContext, WebSocketClient>
     {
         public bool IsOpen => Connection.State == WebSocketState.Open;
     }
@@ -129,8 +129,8 @@ namespace MNet
         public WebSocketTransportContext Context;
         public WebSocketTransportClient Client;
 
-        public static WebSocketClientTag Retrieve(WebSocket socket) => socket.Tag as WebSocketClientTag;
-        public static WebSocketClientTag Retrieve(WebSocket socket, out WebSocketTransportContext context, out WebSocketTransportClient client)
+        public static WebSocketClientTag Retrieve(WebSocketClient socket) => socket.Tag as WebSocketClientTag;
+        public static WebSocketClientTag Retrieve(WebSocketClient socket, out WebSocketTransportContext context, out WebSocketTransportClient client)
         {
             var tag = Retrieve(socket);
 

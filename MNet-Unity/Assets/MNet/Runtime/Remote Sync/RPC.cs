@@ -31,7 +31,7 @@ namespace MNet
         public string Name { get; protected set; }
 
         public NetworkEntity.Behaviour Behaviour { get; protected set; }
-        public Component Component => Behaviour.Component;
+        public MonoBehaviour Component => Behaviour.Component;
         public NetworkEntity Entity => Behaviour.Entity;
 
         public abstract void Configure(NetworkEntity.Behaviour behaviour, NetworkRPCAttribute attribute, MethodInfo method, byte index);
@@ -283,6 +283,12 @@ namespace MNet
         }
 
         public TDelegate Method { get; private set; }
+
+        public virtual void ProcessReturnValue<TReturn>(TReturn result)
+        {
+            if (result is IEnumerator routine)
+                Component.StartCoroutine(routine);
+        }
     }
 
     #region Void
@@ -433,7 +439,8 @@ namespace MNet
         public override void Invoke(NetworkReader reader, NetworkWriter writer, RpcInfo info)
         {
             var result = Method.Invoke(info);
-            if(writer != null) writer.Write(result);
+            ProcessReturnValue(result);
+            if (writer != null) writer.Write(result);
         }
 
         //Static Utiltiy
@@ -452,6 +459,7 @@ namespace MNet
             var arg1 = reader.Read<T1>();
 
             var result = Method.Invoke(arg1, info);
+            ProcessReturnValue(result);
             writer.Write(result);
         }
 
@@ -472,6 +480,7 @@ namespace MNet
             var arg2 = reader.Read<T2>();
 
             var result = Method.Invoke(arg1, arg2, info);
+            ProcessReturnValue(result);
             if (writer != null) writer.Write(result);
         }
 
@@ -493,6 +502,7 @@ namespace MNet
             var arg3 = reader.Read<T3>();
 
             var result = Method.Invoke(arg1, arg2, arg3, info);
+            ProcessReturnValue(result);
             if (writer != null) writer.Write(result);
         }
 
@@ -515,6 +525,7 @@ namespace MNet
             var arg4 = reader.Read<T4>();
 
             var result = Method.Invoke(arg1, arg2, arg3, arg4, info);
+            ProcessReturnValue(result);
             if (writer != null) writer.Write(result);
         }
 
@@ -538,6 +549,7 @@ namespace MNet
             var arg5 = reader.Read<T5>();
 
             var result = Method.Invoke(arg1, arg2, arg3, arg4, arg5, info);
+            ProcessReturnValue(result);
             if (writer != null) writer.Write(result);
         }
 
@@ -562,6 +574,7 @@ namespace MNet
             var arg6 = reader.Read<T6>();
 
             var result = Method.Invoke(arg1, arg2, arg3, arg4, arg5, arg6, info);
+            ProcessReturnValue(result);
             if (writer != null) writer.Write(result);
         }
 

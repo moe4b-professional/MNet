@@ -13,7 +13,7 @@ namespace MNet
     {
         static RestClientAPI RestAPI;
 
-        static string IP = "127.0.0.1";
+        static string IP = "10.0.0.10";
 
         static AppID AppID = new AppID("Game 1 (Global)");
 

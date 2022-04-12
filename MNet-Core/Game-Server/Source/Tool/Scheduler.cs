@@ -62,7 +62,7 @@ namespace MNet
             IsRunning = false;
         }
 
-        public Scheduler(long interval, Delegate callback)
+        public Scheduler(long interval, Delegate callback, int stackSize)
         {
             this.Interval = interval;
 
@@ -71,7 +71,7 @@ namespace MNet
 
             this.callback = callback;
 
-            thread = new Thread(Procedure);
+            thread = new Thread(Procedure, stackSize);
         }
     }
 }

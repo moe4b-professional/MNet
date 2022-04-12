@@ -1249,6 +1249,8 @@ namespace MNet
         Scheduler Scheduler;
         public bool IsRunning => Scheduler.IsRunning;
 
+        const int MaxThreadStackSize = 32 * 1024;
+
         public INetworkTransportContext TransportContext;
 
         public void Start(RoomOptions options)
@@ -1412,7 +1414,7 @@ namespace MNet
             Attributes = options.Attributes;
             HostConnected = false;
 
-            Scheduler = new Scheduler(App.TickDelay, Tick);
+            Scheduler = new Scheduler(App.TickDelay, Tick, MaxThreadStackSize);
 
             NetworkStream.Pool.Take(out NetworkReader, out NetworkWriter);
 
