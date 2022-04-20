@@ -40,12 +40,13 @@ namespace MNet
             }
 
             #region Join
-            public static void Join(RoomInfo info, string password = null) => Join(info.ID, password);
-            public static void Join(RoomID id, string password = null)
+            public static void Join(RoomID id, NetworkClientProfile profile) => Join(id, profile, default);
+            public static void Join(RoomID id, NetworkClientProfile profile, FixedString16 password)
             {
                 var server = OfflineMode.On ? default : Server.Game.ID;
 
                 Client.Register.Password = password;
+                Client.Register.Profile = profile;
 
                 Realtime.Connect(server, id);
             }
@@ -101,8 +102,8 @@ namespace MNet
                 static RoomID id;
                 public static RoomID ID => id;
 
-                static string name;
-                public static string Name => name;
+                static FixedString32 name;
+                public static FixedString32 Name => name;
 
                 static byte capacity;
                 public static byte Capacity => capacity;
@@ -957,7 +958,7 @@ namespace MNet
                 static void InvokeBufferRPC(ref BufferRpcCommand command) => InvokeRPC(ref command);
 
                 static void InvokeRPC<T>(ref T command)
-                    where T : IRpcCommand
+                    where T : struct, IRpcCommand
                 {
                     if (Entities.TryGet(command.Entity, out var target) == false)
                     {

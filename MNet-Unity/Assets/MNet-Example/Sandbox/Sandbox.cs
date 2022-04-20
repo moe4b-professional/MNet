@@ -46,6 +46,18 @@ namespace MNet.Example
             
         }
 
+        [NetworkRPC]
+        void Call(Dictionary<List<Data>, HashSet<Data>> dictionary, RpcInfo info)
+        {
+
+        }
+
+        [NetworkBlittable]
+        public struct Data
+        {
+            public int a, b, c;
+        }
+
 #if UNITY_EDITOR
         [MenuItem("Sandbox/Execute")]
         static void Excute()

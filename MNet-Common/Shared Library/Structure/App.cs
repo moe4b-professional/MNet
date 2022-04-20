@@ -8,41 +8,45 @@ namespace MNet
 {
     [Preserve]
     [Serializable]
-    public struct AppID : INetworkSerializable
+    public struct AppID : INetworkSerializable, IEquatable<AppID>, IComparable<AppID>
     {
-        string value;
-        public string Value { get { return value; } }
+        FixedString32 value;
+        public FixedString32 Value { get { return value; } }
 
         public void Select(ref NetworkSerializationContext context)
         {
             context.Select(ref value);
         }
 
-        public AppID(string value)
+        public AppID(FixedString32 value)
         {
             this.value = value;
         }
+        public AppID(ReadOnlySpan<char> characters) : this(new FixedString32(characters)) { }
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(AppID))
-            {
-                var target = (AppID)obj;
-
-                return Equals(target.value, this.value);
-            }
+            if (obj is AppID target)
+                return Equals(target);
 
             return false;
         }
+        public bool Equals(AppID target)
+        {
+            return this.Value.Equals(target.Value);
+        }
+
+        public int CompareTo(AppID target) => this.Value.CompareTo(target.Value);
 
         public override int GetHashCode() => value == null ? 0 : value.GetHashCode();
 
-        public override string ToString() => value?.ToString();
+        public override string ToString() => value.ToString();
 
         public static bool operator ==(AppID a, AppID b) => a.Equals(b);
         public static bool operator !=(AppID a, AppID b) => !a.Equals(b);
 
-        public static explicit operator AppID(string text) => new AppID(text);
+        public static explicit operator AppID(string text) => new AppID(new FixedString32(text));
+        public static explicit operator AppID(FixedString32 text) => new AppID(text);
     }
 
     [Preserve]

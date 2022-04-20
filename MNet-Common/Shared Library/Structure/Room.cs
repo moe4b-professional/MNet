@@ -15,8 +15,8 @@ namespace MNet
         RoomID id;
         public RoomID ID { get { return id; } }
 
-        string name;
-        public string Name { get { return name; } }
+        FixedString32 name;
+        public FixedString32 Name { get { return name; } }
 
         byte capacity;
         public byte Capacity { get { return capacity; } }
@@ -47,7 +47,7 @@ namespace MNet
             context.Select(ref attributes);
         }
 
-        public RoomInfo(RoomID id, string name, byte capacity, byte occupancy, bool visibile, bool locked, AttributesCollection attributes)
+        public RoomInfo(RoomID id, FixedString32 name, byte capacity, byte occupancy, bool visibile, bool locked, AttributesCollection attributes)
         {
             this.id = id;
             this.name = name;
@@ -132,12 +132,12 @@ namespace MNet
 
     public struct RoomOptions : INetworkSerializable
     {
-        public string Name;
+        public FixedString32 Name;
 
         public byte Capacity;
 
         public bool Visible;
-        public string Password;
+        public FixedString16 Password;
 
         public MigrationPolicy MigrationPolicy;
 
@@ -162,10 +162,10 @@ namespace MNet
 
         public static RoomOptions Default { get; } = new RoomOptions()
         {
-            Name = "Game Room",
+            Name = new FixedString32("Default Game Room"),
             Capacity = 10,
             Visible = false,
-            Password = null,
+            Password = default,
             MigrationPolicy = MigrationPolicy.Stop,
             Attributes = null,
             Scene = null,

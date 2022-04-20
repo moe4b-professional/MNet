@@ -86,6 +86,8 @@ namespace MNet
         }
         void DisconnectCallback(WebSocketCloseCode code)
         {
+            Debug.Log($"Native WebSocket Disconnect Code: {code}");
+
             var result = Utility.Disconnect.ValueToCode((ushort)code);
 
             InvokeDisconnect(result);

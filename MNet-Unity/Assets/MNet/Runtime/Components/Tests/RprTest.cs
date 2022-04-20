@@ -24,8 +24,6 @@ namespace MNet
     [AddComponentMenu(Constants.Path + "Tests/" + "RPR Test")]
     public class RprTest : NetworkBehaviour
     {
-        public string value;
-
         public bool success = false;
 
         public override void OnNetwork()
@@ -37,20 +35,18 @@ namespace MNet
 
         async void SpawnCallback()
         {
-            {
-                var answer = await Network.QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client).Send();
+            var name = NetworkAPI.Room.Master.Client.Name;
 
-                if (answer.Success)
-                    value = answer.Value;
-                else
-                    Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
-            }
+            var answer = await Network.QueryRPC(QueryRPC, NetworkAPI.Room.Master.Client).Send();
 
-            success = value != string.Empty;
+            if (answer.Success == false)
+                Debug.LogError($"RPR Test Failed, Response: {answer.Response}");
+
+            success = answer.Value == name;
         }
 
         [NetworkRPC]
-        string QueryRPC(RpcInfo info)
+        FixedString32 QueryRPC(RpcInfo info)
         {
             return NetworkAPI.Client.Profile.Name;
         }

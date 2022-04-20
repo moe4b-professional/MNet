@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 namespace MNet
 {
     [Preserve]
-    public class RemoteConfig : INetworkSerializable
+    public struct RemoteConfig : INetworkSerializable
     {
         public void Select(ref NetworkSerializationContext context)
         {
 
         }
-
-        public RemoteConfig() { }
     }
 }

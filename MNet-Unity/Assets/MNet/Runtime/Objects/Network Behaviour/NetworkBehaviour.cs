@@ -393,9 +393,8 @@ namespace MNet
             }
             #endregion
 
-            #region Invoke
             internal bool InvokeRPC<T>(ref T command)
-                where T : IRpcCommand
+                where T : struct, IRpcCommand
             {
                 if (RPCs.TryGetValue(command.Method, out var bind) == false)
                 {
@@ -411,7 +410,7 @@ namespace MNet
                     return false;
                 }
 
-                var writer = (bind.HasReturn && command is QueryRpcCommand) ? NetworkWriter.Pool.Take() : default(NetworkWriter);
+                var writer = (bind.HasReturn && command.GetType() == typeof(QueryRpcCommand)) ? NetworkWriter.Pool.Take() : default(NetworkWriter);
                 try
                 {
                     using (NetworkReader.Pool.Lease(out var reader))
@@ -430,7 +429,7 @@ namespace MNet
                     return false;
                 }
 
-                if (command is QueryRpcCommand query)
+                if (command.Is(out QueryRpcCommand query))
                 {
                     NetworkAPI.Client.RPR.Respond(query, writer);
                     NetworkWriter.Pool.Return(writer);
@@ -438,8 +437,6 @@ namespace MNet
 
                 return true;
             }
-            #endregion
-
             #endregion
 
             #region SyncVar

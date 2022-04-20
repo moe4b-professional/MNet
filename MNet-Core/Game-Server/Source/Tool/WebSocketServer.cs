@@ -201,8 +201,6 @@ namespace MNet
 
             Server.InvokeConnect(this);
 
-            RunningThreads = 2;
-
             ReceiveThread = new Thread(ReceiveLoop, MaxThreadStackSize);
             ReceiveThread.IsBackground = true;
             ReceiveThread.Name = $"Client {ID} Receive Loop";
@@ -252,8 +250,6 @@ namespace MNet
             }
 
             packet.Recycle();
-
-            CloseThread();
         }
 
         bool ReceivePoll()
@@ -399,11 +395,9 @@ namespace MNet
             ClearCommandQueue(PayloadSendQueue);
 
             if (state == WebSocketState.Open)
-                Stop(WebSocketCloseCode.Abnormal);
+                Stop(WebSocketCloseCode.Abnormal, string.Empty);
             else
                 ValidateSendLoopClosure();
-
-            CloseThread();
         }
 
         bool ProcessKeepAlive()
@@ -529,6 +523,7 @@ namespace MNet
 
             if (SendImmediate(WebSocketOPCode.Close, span) == false)
             {
+                Log.Warning($"Socket Send Closure Failed: {ID}");
                 code = WebSocketCloseCode.Abnormal;
                 message = string.Empty;
             }
@@ -575,7 +570,6 @@ namespace MNet
                 return false;
 
             DisconnectPacket = new DisconnectPacketData(code, message);
-            Socket.Shutdown(SocketShutdown.Receive);
             state = WebSocketState.Closing;
 
             return true;
@@ -583,36 +577,27 @@ namespace MNet
         #endregion
 
         #region Stop
-        void Stop(WebSocketCloseCode code) => Stop(code, string.Empty);
         void Stop(WebSocketCloseCode code, string message)
         {
             if (state == WebSocketState.Closed)
                 throw new InvalidOperationException($"Socket Already Closed");
 
-            Log.Info("WebSocket Stopped");
+            Log.Info($"WebSocket {ID} Stopped, Code: {code}");
 
             state = WebSocketState.Closed;
 
+            Socket.Shutdown(SocketShutdown.Both);
+
             Server.InvokeDisconnect(this, code, message);
-        }
-        #endregion
 
-        #region Close
-        int RunningThreads;
+            ReceiveThread.Join();
 
-        void CloseThread()
-        {
-            var value = Interlocked.Decrement(ref RunningThreads);
-
-            if (value == 0)
-                Close();
-            else if (value < 0)
-                throw new InvalidOperationException($"More Threads Close Calls than Running");
+            Dispose();
         }
 
-        void Close()
+        void Dispose()
         {
-            Log.Info("WebSocket Closed");
+            Log.Info($"WebSocket {ID} Disposed");
 
             Socket.Dispose();
         }
@@ -1185,8 +1170,6 @@ namespace MNet
                     return true;
                 }
             }
-
-            return false;
         }
 
         static bool EnsureWebSocketUpgradeRequest(ReadOnlySpan<char> characters)

@@ -327,5 +327,29 @@ namespace MNet
         [NetworkBlittable]
         [StructLayout(LayoutKind.Sequential)]
         public readonly record struct BlittableData(int x, int y, int z) { }
+
+        [Test]
+        public void FixedString()
+        {
+            Process<FixedString16>();
+            Process<FixedString32>();
+            Process<FixedString64>();
+            Process<FixedString128>();
+            Process<FixedString256>();
+
+            static void Process<T>()
+                where T : struct, IFixedString
+            {
+                var original = new T();
+                original.Length = original.Capacity;
+
+                for (int i = 0; i < original.Length; i++)
+                    original[i] = "Hello World "[i % 12];
+
+                var clone = NetworkSerializer.Clone(original);
+
+                Assert.IsTrue(original.Matches(ref clone));
+            }
+        }
     }
 }

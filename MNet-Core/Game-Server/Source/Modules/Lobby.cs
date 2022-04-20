@@ -133,7 +133,7 @@ namespace MNet
 
                 var id = Reserve();
 
-                var room = new Room(id, app, version, options.Name, options);
+                var room = new Room(id, app, version, options);
 
                 Add(room);
 

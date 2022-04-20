@@ -97,16 +97,17 @@ namespace MNet.Example
                 TextInput.Show("Please Enter Password", Callback);
 
                 TextInput.ContentType = InputField.ContentType.Password;
+                TextInput.CharacterLimit = FixedString16.Size;
 
                 void Callback(bool confirmed, string value)
                 {
                     if (confirmed)
-                        Join(template.Data, value);
+                        Join(template.Data.ID, value);
                 }
             }
             else
             {
-                Join(template.Data);
+                Join(template.Data.ID);
             }
         }
 
@@ -117,11 +118,11 @@ namespace MNet.Example
             templates.Clear();
         }
 
-        void Join(RoomInfo room, string password = null)
+        void Join(RoomID id, string password = null)
         {
             Popup.Show("Joining Room");
 
-            NetworkAPI.Room.Join(room, password);
+            NetworkAPI.Room.Join(id, Core.Network.Profile, new FixedString16(password));
         }
 
         void OnDestroy()

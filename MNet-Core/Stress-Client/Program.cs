@@ -67,7 +67,10 @@ namespace MNet
 
         static async void Stress(int index, int occupancy)
         {
-            var room = await CreateRoom($"Stress Room {index}", byte.MaxValue);
+            var name = new FixedString32($"Stress Room {index}");
+            var capacity = byte.MaxValue;
+
+            var room = await CreateRoom(name, capacity);
 
             for (int i = 0; i < occupancy; i++)
             {
@@ -77,7 +80,7 @@ namespace MNet
             }
         }
 
-        static async Task<RoomInfo> CreateRoom(string name, byte capacity)
+        static async Task<RoomInfo> CreateRoom(FixedString32 name, byte capacity)
         {
             var attributes = new AttributesCollection();
             attributes.Set(0, (byte)0);
@@ -88,7 +91,7 @@ namespace MNet
                 Visible = true,
                 Capacity = capacity,
                 MigrationPolicy = MigrationPolicy.Continue,
-                Password = null,
+                Password = default,
                 Attributes = attributes,
             };
 
@@ -151,9 +154,11 @@ namespace MNet
 
         void RegisterClient()
         {
-            var profile = new NetworkClientProfile($"Player {Index}");
+            var name = new FixedString32($"Player {Index}");
 
-            var request = new RegisterClientRequest(profile, null, default);
+            var profile = new NetworkClientProfile(ref name);
+
+            var request = new RegisterClientRequest(profile, default, default);
 
             Send(ref request, DeliveryMethod.ReliableOrdered);
         }

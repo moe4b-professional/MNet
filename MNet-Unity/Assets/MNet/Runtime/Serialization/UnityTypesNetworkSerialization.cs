@@ -52,7 +52,7 @@ namespace MNet
 
     #region Vector2
     [Preserve]
-    public class Vector2SerializationResolver : NetworkSerializationExplicitResolver<Vector2>
+    public class Vector2SerializationResolver : ExplicitNetworkSerializationResolver<Vector2>
     {
         public override void Serialize(NetworkWriter writer, Vector2 instance)
         {
@@ -70,7 +70,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class Vector2IntSerializationResolver : NetworkSerializationExplicitResolver<Vector2Int>
+    public class Vector2IntSerializationResolver : ExplicitNetworkSerializationResolver<Vector2Int>
     {
         public override void Serialize(NetworkWriter writer, Vector2Int instance)
         {
@@ -90,7 +90,7 @@ namespace MNet
 
     #region Vector3
     [Preserve]
-    public class Vector3SerializationResolver : NetworkSerializationExplicitResolver<Vector3>
+    public class Vector3SerializationResolver : ExplicitNetworkSerializationResolver<Vector3>
     {
         public override void Serialize(NetworkWriter writer, Vector3 instance)
         {
@@ -110,7 +110,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class Vector3IntSerializationResolver : NetworkSerializationExplicitResolver<Vector3Int>
+    public class Vector3IntSerializationResolver : ExplicitNetworkSerializationResolver<Vector3Int>
     {
         public override void Serialize(NetworkWriter writer, Vector3Int instance)
         {
@@ -132,7 +132,7 @@ namespace MNet
 
     #region Vector4
     [Preserve]
-    public class Vector4SerializationResolver : NetworkSerializationExplicitResolver<Vector4>
+    public class Vector4SerializationResolver : ExplicitNetworkSerializationResolver<Vector4>
     {
         public override void Serialize(NetworkWriter writer, Vector4 instance)
         {
@@ -155,7 +155,7 @@ namespace MNet
     #endregion
 
     [Preserve]
-    public class ColorSerializationResolver : NetworkSerializationExplicitResolver<Color>
+    public class ColorSerializationResolver : ExplicitNetworkSerializationResolver<Color>
     {
         public override void Serialize(NetworkWriter writer, Color instance)
         {
@@ -177,7 +177,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class QuaternionNetworkSerializationResolver : NetworkSerializationExplicitResolver<Quaternion>
+    public class QuaternionNetworkSerializationResolver : ExplicitNetworkSerializationResolver<Quaternion>
     {
         public override void Serialize(NetworkWriter writer, Quaternion instance)
         {
@@ -199,7 +199,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class NetworkEntityNetworkSerializationResolver : NetworkSerializationExplicitResolver<NetworkEntity>
+    public class NetworkEntityNetworkSerializationResolver : ExplicitNetworkSerializationResolver<NetworkEntity>
     {
         public enum State : byte
         {
@@ -244,7 +244,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class NetworkBehaviourNetworkSerializationResolver<T> : NetworkSerializationExplicitResolver<T>
+    public class NetworkBehaviourNetworkSerializationResolver<T> : DynamicNetworkSerializationResolver<T>
         where T : class, INetworkBehaviour
     {
         public override void Serialize(NetworkWriter writer, T instance)
@@ -271,7 +271,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class SyncedAssetNetworkSerializationResolver<T> : NetworkSerializationExplicitResolver<T>
+    public class SyncedAssetNetworkSerializationResolver<T> : DynamicNetworkSerializationResolver<T>
         where T : class, ISyncedAsset
     {
         public override void Serialize(NetworkWriter writer, T instance)

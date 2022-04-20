@@ -40,18 +40,26 @@ public static class GeneratedNetworkCode
 			MNet.RpcBindVoid<System.Int32, System.Int32, System.Int32, System.Int32>.Register();
 			MNet.RpcBindVoid<System.Int32, System.Int32, System.Int32, System.Int32, System.Int32>.Register();
 			MNet.RpcBindVoid<System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32>.Register();
+			MNet.RpcBindReturn<Cysharp.Threading.Tasks.UniTask>.Register();
+			MNet.RpcBindReturn<System.Collections.IEnumerator>.Register();
 			
 			//MNet.RprTest
-			MNet.RpcBindReturn<System.String>.Register();
+			MNet.RpcBindReturn<MNet.FixedString32>.Register();
 			
 			//MNet.SerializationTest
 			MNet.RpcBindVoid<MNet.NetworkEntity, MNet.SerializationTest>.Register();
+			
+			//MNet.Example.Level
+			MNet.RpcBindVoid.Register();
 			
 			//MNet.Example.RoomLog
 			MNet.RpcBindVoid<System.String>.Register();
 			
 			//MNet.Example.StressBehaviour
 			MNet.RpcBindVoid<System.String>.Register();
+			
+			//MNet.Example.Sandbox
+			MNet.RpcBindVoid<System.Collections.Generic.Dictionary<System.Collections.Generic.List<MNet.Example.Sandbox.Data>, System.Collections.Generic.HashSet<MNet.Example.Sandbox.Data>>>.Register();
 			
 			//MNet.Example.StressEntity
 			MNet.RpcBindVoid<UnityEngine.Vector3, System.Single>.Register();
@@ -64,6 +72,7 @@ public static class GeneratedNetworkCode
 			new MNet.BlittableNetworkSerializationResolver<MNet.PingResponse>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.PingRequest>();
 			new MNet.INetworkSerializableResolver<MNet.NetworkClientProfile>();
+			new MNet.FixedStringNetworkSerializationResolver<MNet.FixedString16>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.TimeRequest>();
 			new MNet.IManualNetworkSerializableResolver<MNet.ByteChunk>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.NetworkClientID>();
@@ -71,16 +80,16 @@ public static class GeneratedNetworkCode
 			new MNet.ArrayNetworkSerializationResolver<MNet.NetworkClientInfo>();
 			new MNet.INetworkSerializableResolver<MNet.NetworkClientInfo>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.TimeResponse>();
-			new MNet.EnumNetworkSerializationResolver<MNet.EntityType, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.EntityType>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.EntitySpawnToken>();
-			new MNet.EnumNetworkSerializationResolver<MNet.PersistanceFlags, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.PersistanceFlags>();
 			new MNet.IManualNetworkSerializableResolver<MNet.AttributesCollection>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.NetworkEntityID>();
-			new MNet.EnumNetworkSerializationResolver<MNet.RoomInfoTarget, System.Int32>();
+			new MNet.EnumNetworkSerializationResolver<MNet.RoomInfoTarget>();
 			new MNet.ArrayNetworkSerializationResolver<System.UInt16>();
 			new MNet.ArrayNetworkSerializationResolver<MNet.NetworkGroupID>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.NetworkGroupID>();
-			new MNet.EnumNetworkSerializationResolver<MNet.Log.Level, System.Int32>();
+			new MNet.EnumNetworkSerializationResolver<MNet.Log.Level>();
 			new MNet.INetworkSerializableResolver<MNet.GameServerID>();
 			new MNet.ListNetworkSerializationResolver<MNet.RoomInfo>();
 			new MNet.INetworkSerializableResolver<MNet.ServerLogPayload>();
@@ -99,7 +108,7 @@ public static class GeneratedNetworkCode
 			new MNet.IManualNetworkSerializableResolver<MNet.BufferSyncVarRequest>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.NetworkBehaviourID>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.RpcID>();
-			new MNet.EnumNetworkSerializationResolver<MNet.RemoteBufferMode, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.RemoteBufferMode>();
 			new MNet.NullableNetworkSerializationResolver<MNet.NetworkClientID>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.RprChannelID>();
 			new MNet.INetworkSerializableResolver<MNet.MasterServerSchemeRequest>();
@@ -110,6 +119,7 @@ public static class GeneratedNetworkCode
 			new MNet.INetworkSerializableResolver<MNet.TargetRpcRequest>();
 			new MNet.INetworkSerializableResolver<MNet.QueryRpcRequest>();
 			new MNet.INetworkSerializableResolver<MNet.BufferRpcRequest>();
+			new MNet.FixedStringNetworkSerializationResolver<MNet.FixedString32>();
 			new MNet.INetworkSerializableResolver<MNet.AppID>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.Version>();
 			new MNet.INetworkSerializableResolver<MNet.RoomOptions>();
@@ -133,19 +143,23 @@ public static class GeneratedNetworkCode
 			new MNet.INetworkSerializableResolver<MNet.BufferRpcCommand>();
 			new MNet.IManualNetworkSerializableResolver<MNet.SyncVarCommand>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.TakeoverEntityRequest>();
-			new MNet.EnumNetworkSerializationResolver<MNet.GameServerRegion, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.GameServerRegion>();
 			new MNet.INetworkSerializableResolver<MNet.GetLobbyInfoRequest>();
 			new MNet.INetworkSerializableResolver<MNet.LobbyInfo>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.RoomID>();
-			new MNet.EnumNetworkSerializationResolver<MNet.MigrationPolicy, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.MigrationPolicy>();
 			new MNet.NullableNetworkSerializationResolver<System.Byte>();
-			new MNet.EnumNetworkSerializationResolver<MNet.NetworkEntityNetworkSerializationResolver.State, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.NetworkEntityNetworkSerializationResolver.State>();
 			new MNet.BlittableNetworkSerializationResolver<MNet.SyncVarID>();
-			new MNet.EnumNetworkSerializationResolver<MNet.SimpleNetworkTransform.ChangeFlags, System.Int32>();
-			new MNet.EnumNetworkSerializationResolver<MNet.NetworkTransportType, System.Byte>();
-			new MNet.EnumNetworkSerializationResolver<MNet.RemoteResponseType, System.Byte>();
+			new MNet.EnumNetworkSerializationResolver<MNet.SimpleNetworkTransform.ChangeFlags>();
+			new MNet.EnumNetworkSerializationResolver<MNet.NetworkTransportType>();
+			new MNet.EnumNetworkSerializationResolver<MNet.RemoteResponseType>();
 			new MNet.INetworkSerializableResolver<MNet.SimpleNetworkTransform.CoordinatesPacket>();
 			new MNet.NetworkBehaviourNetworkSerializationResolver<MNet.SerializationTest>();
+			new MNet.DictionaryNetworkSerializationResolver<System.Collections.Generic.List<MNet.Example.Sandbox.Data>, System.Collections.Generic.HashSet<MNet.Example.Sandbox.Data>>();
+			new MNet.ListNetworkSerializationResolver<MNet.Example.Sandbox.Data>();
+			new MNet.BlittableNetworkSerializationResolver<MNet.Example.Sandbox.Data>();
+			new MNet.HashSetNetworkSerializationResolver<MNet.Example.Sandbox.Data>();
 			
 		}
 		

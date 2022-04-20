@@ -1090,7 +1090,7 @@ internal static class HalfHelper
 namespace MNet.Example
 {
     [Preserve]
-    public class HalfNetworkSerializationResolver : NetworkSerializationExplicitResolver<Half>
+    public class HalfNetworkSerializationResolver : ExplicitNetworkSerializationResolver<Half>
     {
         public override void Serialize(NetworkWriter writer, Half instance)
         {

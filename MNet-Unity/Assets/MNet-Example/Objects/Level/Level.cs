@@ -65,15 +65,34 @@ namespace MNet.Example
 			}
 		}
 
+        void Start()
+        {
+            NetworkAPI.Client.OnDisconnect += DisconnectCallback;
+        }
+
+        void DisconnectCallback(DisconnectCode code)
+        {
+			if (code != DisconnectCode.Normal)
+				Core.UI.Popup.Show($"Disconnected, Code: {code}", "Close").Forget();
+		}
+
         void SpawnCallback()
 		{
 			if (NetworkAPI.Client.IsMaster)
 			{
+				Network.BroadcastRPC(Rpc).Send();
+
 				NetworkAPI.Room.Info.Visible = true;
 			}
 
 			Player.Spawn(player, 4f);
 		}
+
+		[NetworkRPC]
+		public void Rpc(RpcInfo info)
+        {
+
+        }
 
         public async UniTask Quit()
 		{
@@ -90,5 +109,10 @@ namespace MNet.Example
 
 			Core.Scenes.LoadMainMenu();
 		}
-	}
+
+        void OnDestroy()
+        {
+			NetworkAPI.Client.OnDisconnect -= DisconnectCallback;
+		}
+    }
 }

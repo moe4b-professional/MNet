@@ -823,6 +823,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   results: 
+  coroutine: 0
+  async: 0
   success: 0
 --- !u!114 &358559476
 MonoBehaviour:

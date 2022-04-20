@@ -5,6 +5,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -14,81 +17,18 @@ namespace MNet
     {
         public static class Nullable
         {
-            public static class Any
-            {
-                static ConcurrentDictionary<Type, bool> dictionary;
-
-                public static bool Check(Type type)
-                {
-                    if (dictionary.TryGetValue(type, out var value)) return value;
-
-                    value = Evaluate(type);
-
-                    Add(type, value);
-
-                    return value;
-                }
-
-                static void Add(Type type, bool value)
-                {
-                    dictionary.TryAdd(type, value);
-                }
-
-                static Any()
-                {
-                    dictionary = new ConcurrentDictionary<Type, bool>();
-                }
-            }
-
-            public static class Generic<T>
-            {
-                static State state;
-                public enum State
-                {
-                    Undefined, True, False
-                }
-
-                public static bool Is
-                {
-                    get
-                    {
-                        switch (state)
-                        {
-                            case State.Undefined:
-                                return Check();
-
-                            case State.False:
-                                return false;
-
-                            case State.True:
-                                return true;
-                        }
-
-                        return true;
-                    }
-                }
-
-                static bool Check()
-                {
-                    var nullable = Evaluate<T>();
-
-                    state = nullable ? State.True : State.False;
-
-                    return nullable;
-                }
-            }
-
-            static bool Evaluate<T>()
+            public static bool Evaluate<T>()
             {
                 var type = typeof(T);
 
                 return Evaluate(type);
             }
-            static bool Evaluate(Type type)
+            public static bool Evaluate(Type type)
             {
                 if (type.IsValueType)
                 {
-                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) return true;
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        return true;
 
                     return false;
                 }
@@ -165,33 +105,18 @@ namespace MNet
 
         public static class GenericArguments
         {
-            public static ConcurrentDictionary<Type, Type[]> Dictionary { get; private set; }
-
             public static void Retrieve(Type type, out Type argument)
             {
-                if (Dictionary.TryGetValue(type, out var elements))
-                {
-                    argument = elements[0];
-
-                    return;
-                }
-
                 if (type.IsArray)
                 {
                     argument = type.GetElementType();
-                    elements = new Type[] { argument };
-
-                    Dictionary.TryAdd(type, elements);
-
                     return;
                 }
 
                 if (type.IsGenericType)
                 {
-                    elements = type.GetGenericArguments();
+                    var elements = type.GetGenericArguments();
                     argument = elements[0];
-
-                    Dictionary.TryAdd(type, elements);
 
                     return;
                 }
@@ -201,24 +126,14 @@ namespace MNet
 
             public static void Retrieve(Type type, out Type argument1, out Type argument2)
             {
-                if (Dictionary.TryGetValue(type, out var elements))
-                {
-                    argument1 = elements[0];
-                    argument2 = elements[1];
-
-                    return;
-                }
-
                 if (type.IsGenericType)
                 {
-                    elements = type.GetGenericArguments();
+                    var elements = type.GetGenericArguments();
 
                     if (elements.Length >= 2)
                     {
                         argument1 = elements[0];
                         argument2 = elements[1];
-
-                        Dictionary.TryAdd(type, elements);
 
                         return;
                     }
@@ -230,94 +145,169 @@ namespace MNet
 
             public static void Retrieve(Type type, out Type[] arguments)
             {
-                if (Dictionary.TryGetValue(type, out arguments)) return;
-
                 if (type.IsGenericType)
                 {
                     arguments = type.GetGenericArguments();
-
-                    Dictionary.TryAdd(type, arguments);
 
                     return;
                 }
 
                 arguments = null;
             }
+        }
 
-            static GenericArguments()
+        public static class TypeChecks
+        {
+            public static bool IsNullable(Type target)
             {
-                Dictionary = new ConcurrentDictionary<Type, Type[]>();
+                if (target.IsGenericType == false) return false;
+
+                return target.GetGenericTypeDefinition() == typeof(Nullable<>);
+            }
+
+            public static bool IsEnum(Type target)
+            {
+                return target.IsEnum;
+            }
+
+            public static bool IsIManualNetworkSerializable(Type target)
+            {
+                return typeof(IManualNetworkSerializable).IsAssignableFrom(target);
+            }
+
+            public static bool IsINetworkSerializable(Type target)
+            {
+                return typeof(INetworkSerializable).IsAssignableFrom(target);
+            }
+
+            public static bool IsTuple(Type target)
+            {
+                return typeof(ITuple).IsAssignableFrom(target);
+            }
+
+            public static bool IsDicitionary(Type target)
+            {
+                if (target.IsGenericType == false)
+                    return false;
+
+                return target.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+            }
+
+            public static bool IsStack(Type target)
+            {
+                if (target.IsGenericType == false)
+                    return false;
+
+                return target.GetGenericTypeDefinition() == typeof(Stack<>);
+            }
+
+            public static bool IsQueue(Type target)
+            {
+                if (target.IsGenericType == false)
+                    return false;
+
+                return target.GetGenericTypeDefinition() == typeof(Queue<>);
+            }
+
+            public static bool IsHashset(Type target)
+            {
+                if (target.IsGenericType == false) return false;
+
+                return target.GetGenericTypeDefinition() == typeof(HashSet<>);
+            }
+
+            public static bool IsList(Type target)
+            {
+                if (target.IsGenericType == false)
+                    return false;
+
+                return target.GetGenericTypeDefinition() == typeof(List<>);
+            }
+
+            public static bool IsArraySegment(Type target)
+            {
+                if (target.IsGenericType == false)
+                    return false;
+
+                return target.GetGenericTypeDefinition() == typeof(ArraySegment<>);
+            }
+
+            public static bool IsArray(Type target)
+            {
+                if (target.IsArray == false)
+                    return false;
+
+                if (target.GetArrayRank() != 1)
+                    return false;
+
+                return true;
+            }
+
+            public static bool IsBlittable(Type target)
+            {
+                var blittable = target.GetCustomAttribute<NetworkBlittableAttribute>();
+                if (blittable is null)
+                    return false;
+
+                var layout = target.StructLayoutAttribute;
+                if (layout is null)
+                    throw new InvalidOperationException($"({target}) is Marked Blittable but Doesn't Have a Struct Layout Attribute");
+                else if (layout.Value != LayoutKind.Sequential)
+                    throw new InvalidOperationException($"({target}) is Marked Blittable but It's Struct Layout Attribute isn't Sequential");
+
+                return true;
+            }
+
+            public static bool IsFixedString(Type target)
+            {
+                if (typeof(IFixedString).IsAssignableFrom(target) == false)
+                    return false;
+
+                return true;
             }
         }
 
-        public static class List
+        public static class Blittable
         {
-            public static Type GenericDefinition { get; private set; } = typeof(List<>);
-
-            public static Type Construct(Type argument) => GenericDefinition.MakeGenericType(argument);
-
-            public static IList Instantiate(Type argument, int size)
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe void Serialize<T>(NetworkWriter writer, T instance)
+                where T : unmanaged
             {
-                var type = Construct(argument);
+                writer.Fit(sizeof(T));
 
-                var instance = Activator.CreateInstance(type, size) as IList;
-
-                return instance;
-            }
-        }
-
-        public static class Enum
-        {
-            public static class UnderlyingType
-            {
-                public static ConcurrentDictionary<Type, Type> Dictionary { get; private set; }
-
-                public static Type Retrieve(Type type)
+                fixed (byte* destination = &writer.Data[writer.Position])
                 {
-                    if (Dictionary.TryGetValue(type, out var underlying)) return underlying;
-
-                    underlying = System.Enum.GetUnderlyingType(type);
-
-                    Dictionary.TryAdd(type, underlying);
-
-                    return underlying;
-                }
-                public static Type Retrieve<T>()
-                {
-                    var type = typeof(T);
-
-                    return Retrieve(type);
+#if UNITY_ANDROID
+                var source = &instance;
+                Buffer.MemoryCopy(source, destination, writer.Remaining, Size);
+#else
+                    ref var reference = ref Unsafe.AsRef<T>(destination);
+                    reference = instance;
+#endif
                 }
 
-                static UnderlyingType()
-                {
-                    Dictionary = new ConcurrentDictionary<Type, Type>();
-                }
+                writer.Position += sizeof(T);
             }
 
-            public static class Value
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static unsafe T Deserialize<T>(NetworkReader reader)
+                where T : unmanaged
             {
-                public static ConcurrentDictionary<object, object> Dictionary { get; private set; }
+                var value = new T();
 
-                public static object Retrieve(object element)
+                fixed (byte* source = &reader.Data[reader.Position])
                 {
-                    if (Dictionary.TryGetValue(element, out var value)) return value;
-
-                    var type = element.GetType();
-
-                    var backing = UnderlyingType.Retrieve(type);
-
-                    value = Convert.ChangeType(element, backing);
-
-                    Dictionary.TryAdd(element, value);
-
-                    return value;
+#if UNITY_ANDROID
+                var destination = &value;
+                Buffer.MemoryCopy(source, destination, reader.Remaining, Size);
+#else
+                    value = Unsafe.AsRef<T>(source);
+#endif
                 }
 
-                static Value()
-                {
-                    Dictionary = new ConcurrentDictionary<object, object>();
-                }
+                reader.Position += sizeof(T);
+
+                return value;
             }
         }
     }

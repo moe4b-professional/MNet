@@ -28,7 +28,7 @@ namespace MNet.Example
         {
             base.SetData(data);
 
-            Rename(Data.Name);
+            Rename(Data.Name.ToString());
         }
 
         public override void UpdateState()

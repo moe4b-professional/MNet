@@ -19,12 +19,12 @@ namespace MNet
 
         static readonly object SyncLock = new object();
 
-        public static NetworkSerializationExplicitResolver<T> Retrieve<T>()
+        public static ExplicitNetworkSerializationResolver<T> Retrieve<T>()
         {
             lock (SyncLock)
             {
-                if (NetworkSerializationExplicitResolver<T>.Instance != null)
-                    return NetworkSerializationExplicitResolver<T>.Instance;
+                if (ExplicitNetworkSerializationResolver<T>.Instance != null)
+                    return ExplicitNetworkSerializationResolver<T>.Instance;
 
                 var type = typeof(T);
                 if (DynamicNetworkSerialization.Resolve(type, out var resolver))
@@ -34,7 +34,7 @@ namespace MNet
 #endif
                 }
 
-                return NetworkSerializationExplicitResolver<T>.Instance;
+                return ExplicitNetworkSerializationResolver<T>.Instance;
             }
         }
 
@@ -64,14 +64,14 @@ namespace MNet
 
     #region Resolvers
     [Preserve]
-    public abstract class NetworkSerializationExplicitResolver<T> : NetworkSerializationResolver
+    public abstract class ExplicitNetworkSerializationResolver<T> : NetworkSerializationResolver
     {
-        internal static NetworkSerializationExplicitResolver<T> Instance;
+        internal static ExplicitNetworkSerializationResolver<T> Instance;
 
         public abstract void Serialize(NetworkWriter writer, T instance);
         public abstract T Deserialize(NetworkReader reader);
 
-        public NetworkSerializationExplicitResolver()
+        public ExplicitNetworkSerializationResolver()
         {
             Instance = this;
         }
@@ -99,7 +99,7 @@ namespace MNet
     }
 
     [Preserve]
-    public abstract class NetworkSerializationDynamicResolver<T> : NetworkSerializationExplicitResolver<T>
+    public abstract class DynamicNetworkSerializationResolver<T> : ExplicitNetworkSerializationResolver<T>
     {
 
     }
@@ -146,12 +146,14 @@ namespace MNet
             Register(ResolveDictionary);
 
             Register(ResolveBlittable);
+
+            Register(ResolveFixedString);
         }
 
         #region Default Resolvers
         static bool ResolveINetworkSerializable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsINetworkSerializable(type) == false)
+            if (Helper.TypeChecks.IsINetworkSerializable(type) == false)
                 return false;
 
             resolver = ConstructResolver(typeof(INetworkSerializableResolver<>), type);
@@ -160,7 +162,7 @@ namespace MNet
 
         static bool ResolveIManualNetworkSerilizable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsIManualNetworkSerializable(type) == false)
+            if (Helper.TypeChecks.IsIManualNetworkSerializable(type) == false)
                 return false;
 
             resolver = ConstructResolver(typeof(IManualNetworkSerializableResolver<>), type);
@@ -169,18 +171,16 @@ namespace MNet
 
         static bool ResolveEnum(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsEnum(type) == false)
+            if (Helper.TypeChecks.IsEnum(type) == false)
                 return false;
 
-            var backing = Helper.Enum.UnderlyingType.Retrieve(type);
-
-            resolver = ConstructResolver(typeof(EnumNetworkSerializationResolver<,>), type, backing);
+            resolver = ConstructResolver(typeof(EnumNetworkSerializationResolver<>), type);
             return true;
         }
 
         static bool ResolveNullable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsNullable(type) == false)
+            if (Helper.TypeChecks.IsNullable(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -194,7 +194,7 @@ namespace MNet
             if (type.IsValueType == false)
                 return false;
 
-            if (SerializationTypeChecks.IsTuple(type) == false)
+            if (Helper.TypeChecks.IsTuple(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type[] arguments);
@@ -235,7 +235,7 @@ namespace MNet
 
         static bool ResolveArray(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsArray(type) == false)
+            if (Helper.TypeChecks.IsArray(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -246,7 +246,7 @@ namespace MNet
 
         static bool ResolveArraySegment(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsArraySegment(type) == false)
+            if (Helper.TypeChecks.IsArraySegment(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -257,7 +257,7 @@ namespace MNet
 
         static bool ResolveList(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsList(type) == false)
+            if (Helper.TypeChecks.IsList(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -268,7 +268,7 @@ namespace MNet
 
         static bool ResolveHashSet(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsHashset(type) == false)
+            if (Helper.TypeChecks.IsHashset(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -279,7 +279,7 @@ namespace MNet
 
         static bool ResolveQueue(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsQueue(type) == false)
+            if (Helper.TypeChecks.IsQueue(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -290,7 +290,7 @@ namespace MNet
 
         static bool ResolveStack(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsStack(type) == false)
+            if (Helper.TypeChecks.IsStack(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type argument);
@@ -301,7 +301,7 @@ namespace MNet
 
         static bool ResolveDictionary(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsDicitionary(type) == false)
+            if (Helper.TypeChecks.IsDicitionary(type) == false)
                 return false;
 
             Helper.GenericArguments.Retrieve(type, out Type key, out Type value);
@@ -312,10 +312,19 @@ namespace MNet
 
         static bool ResolveBlittable(Type type, ref NetworkSerializationResolver resolver)
         {
-            if (SerializationTypeChecks.IsBlittable(type) == false)
+            if (Helper.TypeChecks.IsBlittable(type) == false)
                 return false;
 
             resolver = ConstructResolver(typeof(BlittableNetworkSerializationResolver<>), type);
+            return true;
+        }
+
+        static bool ResolveFixedString(Type type, ref NetworkSerializationResolver resolver)
+        {
+            if (Helper.TypeChecks.IsFixedString(type) == false)
+                return false;
+
+            resolver = ConstructResolver(typeof(FixedStringNetworkSerializationResolver<>), type);
             return true;
         }
         #endregion
@@ -340,327 +349,150 @@ namespace MNet
         }
     }
 
-    public static class SerializationTypeChecks
-    {
-        public static bool IsNullable(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Nullable<>);
-        }
-
-        public static bool IsEnum(Type target)
-        {
-            return target.IsEnum;
-        }
-
-        public static bool IsIManualNetworkSerializable(Type target)
-        {
-            return typeof(IManualNetworkSerializable).IsAssignableFrom(target);
-        }
-
-        public static bool IsINetworkSerializable(Type target)
-        {
-            return typeof(INetworkSerializable).IsAssignableFrom(target);
-        }
-
-        public static bool IsTuple(Type target)
-        {
-            return typeof(ITuple).IsAssignableFrom(target);
-        }
-
-        public static bool IsDicitionary(Type target)
-        {
-            if (target.IsGenericType == false)
-                return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Dictionary<,>);
-        }
-
-        public static bool IsStack(Type target)
-        {
-            if (target.IsGenericType == false)
-                return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Stack<>);
-        }
-
-        public static bool IsQueue(Type target)
-        {
-            if (target.IsGenericType == false)
-                return false;
-
-            return target.GetGenericTypeDefinition() == typeof(Queue<>);
-        }
-
-        public static bool IsHashset(Type target)
-        {
-            if (target.IsGenericType == false) return false;
-
-            return target.GetGenericTypeDefinition() == typeof(HashSet<>);
-        }
-
-        public static bool IsList(Type target)
-        {
-            if (target.IsGenericType == false)
-                return false;
-
-            return target.GetGenericTypeDefinition() == typeof(List<>);
-        }
-
-        public static bool IsArraySegment(Type target)
-        {
-            if (target.IsGenericType == false)
-                return false;
-
-            return target.GetGenericTypeDefinition() == typeof(ArraySegment<>);
-        }
-
-        public static bool IsArray(Type target)
-        {
-            if (target.IsArray == false)
-                return false;
-
-            if (target.GetArrayRank() != 1)
-                return false;
-
-            return true;
-        }
-
-        public static bool IsBlittable(Type target)
-        {
-            var blittable = target.GetCustomAttribute<NetworkBlittableAttribute>();
-            if (blittable is null)
-                return false;
-
-            var layout = target.StructLayoutAttribute;
-            if (layout is null)
-                throw new InvalidOperationException($"({target}) is Marked Blittable but Doesn't Have a Struct Layout Attribute");
-            else if (layout.Value != LayoutKind.Sequential)
-                throw new InvalidOperationException($"({target}) is Marked Blittable but It's Struct Layout Attribute isn't Sequential");
-
-            return true;
-        }
-    }
-
     #region Primitive
     [Preserve]
-    public sealed class ByteNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte>
+    public sealed class ByteNetworkSerializationResolver : ExplicitNetworkSerializationResolver<byte>
     {
         public override void Serialize(NetworkWriter writer, byte instance)
         {
-            writer.Insert(instance);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override byte Deserialize(NetworkReader reader)
         {
-            return reader.TakeByte();
+            return Helper.Blittable.Deserialize<byte>(reader);
         }
     }
     [Preserve]
-    public sealed class SByteNetworkSerializationResolver : NetworkSerializationExplicitResolver<sbyte>
+    public sealed class SByteNetworkSerializationResolver : ExplicitNetworkSerializationResolver<sbyte>
     {
         public override void Serialize(NetworkWriter writer, sbyte instance)
         {
-            writer.Insert((byte)instance);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override sbyte Deserialize(NetworkReader reader)
         {
-            return (sbyte)reader.TakeByte();
+            return Helper.Blittable.Deserialize<sbyte>(reader);
         }
     }
 
     [Preserve]
-    public sealed class BoolNetworkSerializationResolver : NetworkSerializationExplicitResolver<bool>
+    public sealed class BoolNetworkSerializationResolver : ExplicitNetworkSerializationResolver<bool>
     {
         public override void Serialize(NetworkWriter writer, bool instance)
         {
-            writer.Write(instance ? (byte)1 : (byte)0);
+            Helper.Blittable.Serialize(writer, instance ? (byte)1 : (byte)0);
         }
         public override bool Deserialize(NetworkReader reader)
         {
-            var value = reader.TakeByte();
-
-            return value == 0 ? false : true;
+            return Helper.Blittable.Deserialize<byte>(reader) == 0 ? false : true;
         }
     }
 
     [Preserve]
-    public sealed class ShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<short>
+    public sealed class ShortNetworkSerializationResolver : ExplicitNetworkSerializationResolver<short>
     {
         public override void Serialize(NetworkWriter writer, short instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(short)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override short Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToInt16(reader.Data, reader.Position);
-
-            reader.Position += sizeof(short);
-
-            return value;
+            return Helper.Blittable.Deserialize<short>(reader);
         }
     }
     [Preserve]
-    public sealed class UShortNetworkSerializationResolver : NetworkSerializationExplicitResolver<ushort>
+    public sealed class UShortNetworkSerializationResolver : ExplicitNetworkSerializationResolver<ushort>
     {
         public override void Serialize(NetworkWriter writer, ushort instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(ushort)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override ushort Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToUInt16(reader.Data, reader.Position);
-
-            reader.Position += sizeof(ushort);
-
-            return value;
+            return Helper.Blittable.Deserialize<ushort>(reader);
         }
     }
 
     [Preserve]
-    public sealed class IntNetworkSerializationResolver : NetworkSerializationExplicitResolver<int>
+    public sealed class IntNetworkSerializationResolver : ExplicitNetworkSerializationResolver<int>
     {
         public override void Serialize(NetworkWriter writer, int instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(int)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override int Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToInt32(reader.Data, reader.Position);
-
-            reader.Position += sizeof(int);
-
-            return value;
+            return Helper.Blittable.Deserialize<int>(reader);
         }
     }
     [Preserve]
-    public sealed class UIntNetworkSerializationResolver : NetworkSerializationExplicitResolver<uint>
+    public sealed class UIntNetworkSerializationResolver : ExplicitNetworkSerializationResolver<uint>
     {
         public override void Serialize(NetworkWriter writer, uint instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(uint)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override uint Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToUInt32(reader.Data, reader.Position);
-
-            reader.Position += sizeof(uint);
-
-            return value;
+            return Helper.Blittable.Deserialize<uint>(reader);
         }
     }
 
     [Preserve]
-    public sealed class LongNetworkSerializationResolver : NetworkSerializationExplicitResolver<long>
+    public sealed class LongNetworkSerializationResolver : ExplicitNetworkSerializationResolver<long>
     {
         public override void Serialize(NetworkWriter writer, long instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(long)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override long Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToInt64(reader.Data, reader.Position);
-
-            reader.Position += sizeof(long);
-
-            return value;
+            return Helper.Blittable.Deserialize<long>(reader);
         }
     }
     [Preserve]
-    public sealed class ULongNetworkSerializationResolver : NetworkSerializationExplicitResolver<ulong>
+    public sealed class ULongNetworkSerializationResolver : ExplicitNetworkSerializationResolver<ulong>
     {
         public override void Serialize(NetworkWriter writer, ulong instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(ulong)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override ulong Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToUInt64(reader.Data, reader.Position);
-
-            reader.Position += sizeof(ulong);
-
-            return value;
+            return Helper.Blittable.Deserialize<ulong>(reader);
         }
     }
 
     [Preserve]
-    public sealed class FloatNetworkSerializationResolver : NetworkSerializationExplicitResolver<float>
+    public sealed class FloatNetworkSerializationResolver : ExplicitNetworkSerializationResolver<float>
     {
         public override void Serialize(NetworkWriter writer, float instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(float)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override float Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToSingle(reader.Data, reader.Position);
-
-            reader.Position += sizeof(float);
-
-            return value;
+            return Helper.Blittable.Deserialize<float>(reader);
         }
     }
 
     [Preserve]
-    public sealed class DoubleNetworkSerializationResolver : NetworkSerializationExplicitResolver<double>
+    public sealed class DoubleNetworkSerializationResolver : ExplicitNetworkSerializationResolver<double>
     {
         public override void Serialize(NetworkWriter writer, double instance)
         {
-            Span<byte> span = stackalloc byte[sizeof(double)];
-
-            if (BitConverter.TryWriteBytes(span, instance) == false)
-                throw new InvalidOperationException($"Couldn't Convert to Binary");
-
-            writer.Insert(span);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override double Deserialize(NetworkReader reader)
         {
-            var value = BitConverter.ToDouble(reader.Data, reader.Position);
-
-            reader.Position += sizeof(double);
-
-            return value;
+            return Helper.Blittable.Deserialize<double>(reader);
         }
     }
 
     [Preserve]
-    public sealed class StringNetworkSerializationResolver : NetworkSerializationExplicitResolver<string>
+    public sealed class StringNetworkSerializationResolver : ExplicitNetworkSerializationResolver<string>
     {
-        public const int MaxStackAllocationSize = 1024;
+        public const int MaxStackAllocationSize = 512;
 
         public override void Serialize(NetworkWriter writer, string instance)
         {
@@ -703,7 +535,7 @@ namespace MNet
 
     #region POCO
     [Preserve]
-    public class GuidNetworkSerializationResolver : NetworkSerializationExplicitResolver<Guid>
+    public class GuidNetworkSerializationResolver : ExplicitNetworkSerializationResolver<Guid>
     {
         public const byte Size = 16;
 
@@ -727,7 +559,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class DateTimeNetworkSerializationResolver : NetworkSerializationExplicitResolver<DateTime>
+    public class DateTimeNetworkSerializationResolver : ExplicitNetworkSerializationResolver<DateTime>
     {
         public override void Serialize(NetworkWriter writer, DateTime instance)
         {
@@ -744,7 +576,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class TimeSpanNetworkSerializationResolver : NetworkSerializationExplicitResolver<TimeSpan>
+    public class TimeSpanNetworkSerializationResolver : ExplicitNetworkSerializationResolver<TimeSpan>
     {
         public override void Serialize(NetworkWriter writer, TimeSpan instance)
         {
@@ -761,7 +593,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class IPAddressNetworkSerializationResolver : NetworkSerializationExplicitResolver<IPAddress>
+    public class IPAddressNetworkSerializationResolver : ExplicitNetworkSerializationResolver<IPAddress>
     {
         public const int MaxSize = 16;
 
@@ -799,7 +631,7 @@ namespace MNet
     }
 
     [Preserve]
-    public class TypeNetworkSerializationResolver : NetworkSerializationExplicitResolver<Type>
+    public class TypeNetworkSerializationResolver : ExplicitNetworkSerializationResolver<Type>
     {
         public override void Serialize(NetworkWriter writer, Type instance)
         {
@@ -820,7 +652,7 @@ namespace MNet
 
     #region Array
     [Preserve]
-    public sealed class ArrayNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<TElement[]>
+    public sealed class ArrayNetworkSerializationResolver<TElement> : DynamicNetworkSerializationResolver<TElement[]>
     {
         public override IEnumerable<Type> Children
         {
@@ -851,7 +683,7 @@ namespace MNet
 
     #region Array Segment
     [Preserve]
-    public sealed class ArraySegmentNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<ArraySegment<TElement>>
+    public sealed class ArraySegmentNetworkSerializationResolver<TElement> : DynamicNetworkSerializationResolver<ArraySegment<TElement>>
     {
         public override IEnumerable<Type> Children
         {
@@ -884,7 +716,7 @@ namespace MNet
 
     #region List
     [Preserve]
-    public sealed class ListNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<List<TElement>>
+    public sealed class ListNetworkSerializationResolver<TElement> : DynamicNetworkSerializationResolver<List<TElement>>
     {
         public override IEnumerable<Type> Children
         {
@@ -920,7 +752,7 @@ namespace MNet
 
     #region Hashset
     [Preserve]
-    public sealed class HashSetNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<HashSet<TElement>>
+    public sealed class HashSetNetworkSerializationResolver<TElement> : DynamicNetworkSerializationResolver<HashSet<TElement>>
     {
         public override IEnumerable<Type> Children
         {
@@ -956,7 +788,7 @@ namespace MNet
 
     #region Queue
     [Preserve]
-    public sealed class QueueNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<Queue<TElement>>
+    public sealed class QueueNetworkSerializationResolver<TElement> : DynamicNetworkSerializationResolver<Queue<TElement>>
     {
         public override IEnumerable<Type> Children
         {
@@ -992,7 +824,7 @@ namespace MNet
 
     #region Stack
     [Preserve]
-    public sealed class StackNetworkSerializationResolver<TElement> : NetworkSerializationDynamicResolver<Stack<TElement>>
+    public sealed class StackNetworkSerializationResolver<TElement> : DynamicNetworkSerializationResolver<Stack<TElement>>
     {
         public override IEnumerable<Type> Children
         {
@@ -1026,7 +858,7 @@ namespace MNet
 
     #region Dictionary
     [Preserve]
-    public sealed class DictionaryNetworkSerializationResolver<TKey, TValue> : NetworkSerializationDynamicResolver<Dictionary<TKey, TValue>>
+    public sealed class DictionaryNetworkSerializationResolver<TKey, TValue> : DynamicNetworkSerializationResolver<Dictionary<TKey, TValue>>
     {
         public override IEnumerable<Type> Children
         {
@@ -1068,7 +900,7 @@ namespace MNet
 
     #region Tuple
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2> : NetworkSerializationDynamicResolver<(T1, T2)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2> : DynamicNetworkSerializationResolver<(T1, T2)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1094,7 +926,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2, T3> : NetworkSerializationDynamicResolver<(T1, T2, T3)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2, T3> : DynamicNetworkSerializationResolver<(T1, T2, T3)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1123,7 +955,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4> : DynamicNetworkSerializationResolver<(T1, T2, T3, T4)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1155,7 +987,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5> : DynamicNetworkSerializationResolver<(T1, T2, T3, T4, T5)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1190,7 +1022,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5, T6)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6> : DynamicNetworkSerializationResolver<(T1, T2, T3, T4, T5, T6)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1228,7 +1060,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6, T7> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5, T6, T7)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6, T7> : DynamicNetworkSerializationResolver<(T1, T2, T3, T4, T5, T6, T7)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1269,7 +1101,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6, T7, T8> : NetworkSerializationDynamicResolver<(T1, T2, T3, T4, T5, T6, T7, T8)>
+    public sealed class TupleNetworkSerializationResolver<T1, T2, T3, T4, T5, T6, T7, T8> : DynamicNetworkSerializationResolver<(T1, T2, T3, T4, T5, T6, T7, T8)>
     {
         public override IEnumerable<Type> Children
         {
@@ -1315,7 +1147,7 @@ namespace MNet
 
     #region Network Serializable
     [Preserve]
-    public sealed class INetworkSerializableResolver<T> : NetworkSerializationDynamicResolver<T>
+    public sealed class INetworkSerializableResolver<T> : DynamicNetworkSerializationResolver<T>
         where T : INetworkSerializable, new()
     {
         bool nullable;
@@ -1343,7 +1175,7 @@ namespace MNet
 
         public INetworkSerializableResolver()
         {
-            nullable = Helper.Nullable.Generic<T>.Is;
+            nullable = Helper.Nullable.Evaluate<T>();
         }
     }
 
@@ -1398,7 +1230,7 @@ namespace MNet
 
     #region Manual Network Serializable
     [Preserve]
-    public sealed class IManualNetworkSerializableResolver<T> : NetworkSerializationDynamicResolver<T>
+    public sealed class IManualNetworkSerializableResolver<T> : DynamicNetworkSerializationResolver<T>
         where T : IManualNetworkSerializable, new()
     {
         bool nullable;
@@ -1422,77 +1254,30 @@ namespace MNet
 
         public IManualNetworkSerializableResolver()
         {
-            nullable = Helper.Nullable.Generic<T>.Is;
+            nullable = Helper.Nullable.Evaluate<T>();
         }
     }
     #endregion
 
     #region Enum
     [Preserve]
-    public sealed class EnumNetworkSerializationResolver<TType, TBacking> : NetworkSerializationDynamicResolver<TType>
-        where TType : struct, Enum
+    public sealed unsafe class EnumNetworkSerializationResolver<TType> : DynamicNetworkSerializationResolver<TType>
+        where TType : unmanaged, Enum
     {
-        public override IEnumerable<Type> Children
-        {
-            get
-            {
-                yield return typeof(TBacking);
-            }
-        }
-
-        Dictionary<TBacking, TType> values;
-        Dictionary<TType, TBacking> backings;
-
         public override void Serialize(NetworkWriter writer, TType instance)
         {
-            if (backings.TryGetValue(instance, out var backing) == false)
-            {
-                backing = ChangeType<TBacking>(instance);
-                Register(backing, instance);
-            }
-
-            writer.Write(backing);
+            Helper.Blittable.Serialize(writer, instance);
         }
         public override TType Deserialize(NetworkReader reader)
         {
-            var backing = reader.Read<TBacking>();
-
-            if (values.TryGetValue(backing, out var instance) == false)
-            {
-                instance = ToEnum<TType>(backing);
-                Register(backing, instance);
-            }
-
-            return instance;
-        }
-
-        void Register(TBacking backing, TType type)
-        {
-            values.TryAdd(backing, type);
-            backings.TryAdd(type, backing);
-        }
-
-        public static T ToEnum<T>(object source) => (T)Enum.ToObject(typeof(T), source);
-        public static T ChangeType<T>(object source) => (T)Convert.ChangeType(source, typeof(T));
-
-        public EnumNetworkSerializationResolver()
-        {
-            values = new Dictionary<TBacking, TType>();
-            backings = new Dictionary<TType, TBacking>();
-
-            foreach (TType instance in Enum.GetValues(typeof(TType)))
-            {
-                var backing = ChangeType<TBacking>(instance);
-
-                Register(backing, instance);
-            }
+            return Helper.Blittable.Deserialize<TType>(reader);
         }
     }
     #endregion
 
     #region Nullable
     [Preserve]
-    public sealed class NullableNetworkSerializationResolver<TData> : NetworkSerializationDynamicResolver<TData?>
+    public sealed class NullableNetworkSerializationResolver<TData> : DynamicNetworkSerializationResolver<TData?>
         where TData : struct
     {
         public override IEnumerable<Type> Children
@@ -1520,7 +1305,7 @@ namespace MNet
 
     #region Byte Array & Byte Segment
     [Preserve]
-    public sealed class ByteArrayNetworkSerializationResolver : NetworkSerializationExplicitResolver<byte[]>
+    public sealed class ByteArrayNetworkSerializationResolver : ExplicitNetworkSerializationResolver<byte[]>
     {
         public override void Serialize(NetworkWriter writer, byte[] instance)
         {
@@ -1540,7 +1325,7 @@ namespace MNet
     }
 
     [Preserve]
-    public sealed class ByteArraySegmentSerilizationResolver : NetworkSerializationExplicitResolver<ArraySegment<byte>>
+    public sealed class ByteArraySegmentSerilizationResolver : ExplicitNetworkSerializationResolver<ArraySegment<byte>>
     {
         public override void Serialize(NetworkWriter writer, ArraySegment<byte> instance)
         {
@@ -1560,7 +1345,7 @@ namespace MNet
     #endregion
 
     #region Blittable
-    public unsafe class BlittableNetworkSerializationResolver<T> : NetworkSerializationDynamicResolver<T>
+    public unsafe class BlittableNetworkSerializationResolver<T> : DynamicNetworkSerializationResolver<T>
         where T : unmanaged
     {
         int Size;
@@ -1575,7 +1360,8 @@ namespace MNet
                 var source = &instance;
                 Buffer.MemoryCopy(source, destination, writer.Remaining, Size);
 #else
-                *(T*)destination = instance;
+                ref var reference = ref Unsafe.AsRef<T>(destination);
+                reference = instance;
 #endif
             }
 
@@ -1591,7 +1377,7 @@ namespace MNet
                 var destination = &value;
                 Buffer.MemoryCopy(source, destination, reader.Remaining, Size);
 #else
-                value = *(T*)source;
+                value = Unsafe.AsRef<T>(source);
 #endif
             }
 
@@ -1608,5 +1394,58 @@ namespace MNet
 
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false)]
     public class NetworkBlittableAttribute : Attribute { }
+    #endregion
+
+    #region Fixed String
+    [Preserve]
+    public sealed class FixedStringNetworkSerializationResolver<T> : DynamicNetworkSerializationResolver<T>
+        where T : IFixedString, new()
+    {
+        public const int MaxSize = FixedString.MaxSize;
+
+        public override void Serialize(NetworkWriter writer, T instance)
+        {
+            Helper.Length.Write(writer, instance.Length);
+
+            if (instance.Length > MaxSize)
+                throw new InvalidOperationException($"Cannot Serialize Fixed String With Size of {instance.Length}");
+
+            if (instance.Length == 0)
+                return;
+
+            var characters = instance.ToSpan();
+
+            var size = Encoding.UTF8.GetByteCount(characters);
+
+            Span<byte> buffer = stackalloc byte[size];
+
+            Encoding.UTF8.GetBytes(characters, buffer);
+
+            writer.Insert(buffer);
+        }
+        public override T Deserialize(NetworkReader reader)
+        {
+            var length = Helper.Length.Read(reader);
+
+            if (length > MaxSize)
+                throw new InvalidOperationException($"Cannot Deserialize Fixed String With Size of {length}");
+
+            if (length == 0)
+                return default;
+
+            var value = new T();
+            value.Length = length;
+
+            var characters = value.ToSpan();
+            var buffer = reader.TakeSpan(length);
+
+            var read = Encoding.UTF8.GetChars(buffer, characters);
+
+            if (read != length)
+                throw new Exception("Mismathed Read Length When Deserializing Fixed String" + read);
+
+            return value;
+        }
+    }
     #endregion
 }

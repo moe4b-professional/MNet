@@ -79,6 +79,7 @@ namespace LiteNetLib
         /// <param name="peer">From peer</param>
         /// <param name="reader">DataReader containing all received data</param>
         /// <param name="deliveryMethod">Type of received packet</param>
+        /// <param name="deliveryChannel"></param>
         void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod, byte deliveryChannel);
 
         /// <summary>

@@ -46,7 +46,7 @@ namespace MNet
 
             if (Entity.IsMine == false) return;
 
-            field.Broadcast(NetworkAPI.Client.Profile.Name).Send();
+            field.Broadcast(NetworkAPI.Client.Profile.Name.ToString()).Send();
         }
     }
 }

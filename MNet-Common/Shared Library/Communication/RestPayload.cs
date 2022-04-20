@@ -52,10 +52,11 @@ namespace MNet
 
         public void Select(ref NetworkSerializationContext context)
         {
-            //Note to Self
+            //->Note to Self
             //Always Keep these in the same order to ensure backwards compatibility
+            //for minimum version errors
             context.Select(ref apiVersion);
-            //End of Note
+            //->End of Note
 
             context.Select(ref appID);
             context.Select(ref gameVersion);

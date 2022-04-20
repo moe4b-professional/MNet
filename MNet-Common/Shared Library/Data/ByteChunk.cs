@@ -12,17 +12,17 @@ namespace MNet
     /// </summary>
     public struct ByteChunk : IManualNetworkSerializable
     {
-        public byte[] Array { get; private set; }
+        public byte[] Data { get; private set; }
 
         public int Offset { get; private set; }
         public int Count { get; private set; }
 
-        public byte this[int index] => Array[index + Offset];
+        public byte this[int index] => Data[index + Offset];
 
         public void Serialize(NetworkWriter writer)
         {
             NetworkSerializationHelper.Length.Write(writer, Count);
-            if (Count > 0) writer.Insert(Array, Offset, Count);
+            if (Count > 0) writer.Insert(Data, Offset, Count);
         }
         public void Deserialize(NetworkReader reader)
         {
@@ -30,12 +30,12 @@ namespace MNet
 
             if(Count == 0)
             {
-                Array = default;
+                Data = default;
                 Offset = 0;
             }
             else
             {
-                Array = reader.Data;
+                Data = reader.Data;
                 Offset = reader.Position;
             }
 
@@ -44,7 +44,7 @@ namespace MNet
 
         public ByteChunk(byte[] array, int offset, int count)
         {
-            this.Array = array;
+            this.Data = array;
             this.Offset = offset;
             this.Count = count;
         }
@@ -66,9 +66,17 @@ namespace MNet
         /// <returns></returns>
         public byte[] ToArray()
         {
+            if (Count == 0)
+            {
+                if (Data == null)
+                    return null;
+                else
+                    return Array.Empty<byte>();
+            }
+
             var destination = new byte[Count];
 
-            Buffer.BlockCopy(Array, Offset, destination, 0, Count);
+            Buffer.BlockCopy(Data, Offset, destination, 0, Count);
 
             return destination;
         }

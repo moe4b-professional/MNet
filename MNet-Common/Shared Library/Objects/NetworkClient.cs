@@ -51,10 +51,10 @@ namespace MNet
     }
 
     [Preserve]
-    public class NetworkClientProfile : INetworkSerializable
+    public struct NetworkClientProfile : INetworkSerializable
     {
-        string name;
-        public string Name
+        FixedString32 name;
+        public FixedString32 Name
         {
             get => name;
             set => name = value;
@@ -69,16 +69,15 @@ namespace MNet
             context.Select(ref attributes);
         }
 
-        public NetworkClientProfile() { }
-        public NetworkClientProfile(string name) : this(name, new AttributesCollection()) { }
-        public NetworkClientProfile(string name, AttributesCollection attributes)
+        public NetworkClientProfile(ref FixedString32 name) : this(ref name, new AttributesCollection()) { }
+        public NetworkClientProfile(ref FixedString32 name, AttributesCollection attributes)
         {
             this.name = name;
 
             this.attributes = attributes;
         }
 
-        public override string ToString() => name;
+        public override string ToString() => name.ToString();
     }
 
     [Preserve]

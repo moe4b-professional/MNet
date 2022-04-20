@@ -26,7 +26,7 @@ namespace MNet
 
         public NetworkClientProfile Profile { get; protected set; }
 
-        public string Name => Profile == null ? "Anonymous Client" : Profile.Name;
+        public FixedString32 Name => Profile.Name;
 
         public AttributesCollection Attributes => Profile.Attributes;
 

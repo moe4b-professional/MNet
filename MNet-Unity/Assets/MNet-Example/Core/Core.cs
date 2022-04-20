@@ -139,12 +139,18 @@ namespace MNet.Example
 			public string PlayerName
 			{
 				get => AutoPreferences.Read("Player Name", "Player");
-				set
-				{
-					AutoPreferences.Set("Player Name", value);
-					NetworkAPI.Client.Name = value;
-				}
+				set => AutoPreferences.Set("Player Name", value);
 			}
+
+			public NetworkClientProfile Profile
+            {
+				get
+                {
+					var name = new FixedString32(PlayerName);
+
+					return new NetworkClientProfile(ref name);
+				}
+            }
 
 			PopupPanel Popup => Core.UI.Popup;
 
@@ -162,8 +168,6 @@ namespace MNet.Example
 
 				if (AutoPreferences.Contains("Player Name") == false)
 					PlayerName = $"Player {Random.Range(0, 1000)}";
-
-				NetworkAPI.Client.Name = PlayerName;
 
 				Process().Forget();
 			}

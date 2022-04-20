@@ -15,7 +15,7 @@ MonoBehaviour:
   restScheme: 0
   masterAddress: 127.0.0.1
   appID:
-    global: Game 1 (Web)
+    global: Game 1 (Global)
     overrides:
     - _ID: Game 1 (Web)
       platforms: 11000000

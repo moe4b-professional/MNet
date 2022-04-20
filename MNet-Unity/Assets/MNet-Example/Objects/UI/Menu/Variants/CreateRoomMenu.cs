@@ -82,10 +82,10 @@ namespace MNet.Example
 			{
 				var options = new RoomOptions()
 				{
-					Name = name,
+					Name = new FixedString32(name),
 					Capacity = capacity,
 					Visible = false,
-					Password = password,
+					Password = new FixedString16(password),
 					MigrationPolicy = MigrationPolicy.Stop,
 					Attributes = attributes,
 					Scene = scene,
@@ -99,14 +99,14 @@ namespace MNet.Example
 				return;
 			}
 
-			Join(info, password);
+			Join(info.ID, password);
 		}
 
-		void Join(RoomInfo info, string password)
+		void Join(RoomID id, string password)
         {
 			Popup.Show("Joining Room");
 
-			NetworkAPI.Room.Join(info, password);
+			NetworkAPI.Room.Join(id, Core.Network.Profile,  new FixedString16(password));
 		}
 	}
 }

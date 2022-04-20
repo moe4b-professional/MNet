@@ -182,8 +182,8 @@ namespace MNet
         NetworkClientProfile profile;
         public NetworkClientProfile Profile => profile;
 
-        string password;
-        public string Password => password;
+        FixedString16 password;
+        public FixedString16 Password => password;
 
         TimeRequest time;
         public TimeRequest Time => time;
@@ -195,14 +195,14 @@ namespace MNet
             context.Select(ref time);
         }
 
-        public RegisterClientRequest(NetworkClientProfile profile, string password, TimeRequest time)
+        public RegisterClientRequest(NetworkClientProfile profile, FixedString16 password, TimeRequest time)
         {
             this.profile = profile;
             this.password = password;
             this.time = time;
         }
 
-        public static RegisterClientRequest Write(NetworkClientProfile profile, string password)
+        public static RegisterClientRequest Write(NetworkClientProfile profile, FixedString16 password)
         {
             var time = TimeRequest.Write();
 
@@ -657,12 +657,10 @@ namespace MNet
 
         void RegisterTarget(RoomInfoTarget value)
         {
-            if (targets.HasFlag(value)) return;
-
             targets |= value;
         }
 
-        public bool ModifyVisiblity => targets.HasFlag(RoomInfoTarget.Visiblity);
+        public bool ModifyVisiblity => targets.HasFlagFast(RoomInfoTarget.Visiblity);
         bool visibile;
         public bool Visibile
         {
@@ -675,7 +673,7 @@ namespace MNet
             }
         }
 
-        public bool ModifyAttributes => targets.HasFlag(RoomInfoTarget.ModifyAttributes);
+        public bool ModifyAttributes => targets.HasFlagFast(RoomInfoTarget.ModifyAttributes);
         AttributesCollection modifiedAttributes;
         public AttributesCollection ModifiedAttributes
         {
@@ -687,7 +685,7 @@ namespace MNet
             }
         }
 
-        public bool RemoveAttributes => targets.HasFlag(RoomInfoTarget.RemoveAttributes);
+        public bool RemoveAttributes => targets.HasFlagFast(RoomInfoTarget.RemoveAttributes);
         ushort[] removedAttributes;
         public ushort[] RemovedAttributes
         {

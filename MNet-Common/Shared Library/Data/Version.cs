@@ -24,7 +24,7 @@ namespace MNet
     [Serializable]
     [NetworkBlittable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Version
+    public struct Version : IEquatable<Version>, IComparable<Version>
     {
 #if UNITY
         [SerializeField]
@@ -45,7 +45,7 @@ namespace MNet
         public byte Patch => patch;
 
         /// <summary>
-        /// Numerical Value to Describe the Version, used for Comparison & Hashing
+        /// Numerical Value to Describe the Version, used for Equality, Hashing & Comparison
         /// </summary>
         public int Value => (patch) + (minor * 1_000) + (major * 1_000_000);
 
@@ -60,7 +60,20 @@ namespace MNet
 
         public override int GetHashCode() => Value.GetHashCode();
 
-        public override string ToString() => $"{major}.{minor}.{patch}";
+        public override string ToString()
+        {
+            Span<char> characters = stackalloc char[4 * 3];
+
+            var builder = new SpanStringBuilder(characters);
+
+            builder.Append(major);
+            builder.Append(Splitter);
+            builder.Append(minor);
+            builder.Append(Splitter);
+            builder.Append(patch);
+
+            return builder.ToString();
+        }
 
         public override bool Equals(object obj)
         {
@@ -76,6 +89,8 @@ namespace MNet
 
             return true;
         }
+
+        public int CompareTo(Version target) => this.Value.CompareTo(target.Value);
 
         public Version(byte major, byte minor, byte patch)
         {

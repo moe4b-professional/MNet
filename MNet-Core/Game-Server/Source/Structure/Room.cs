@@ -8,6 +8,7 @@ using System.Threading;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace MNet
 {
@@ -18,7 +19,7 @@ namespace MNet
         public AppConfig App { get; protected set; }
         public Version Version { get; protected set; }
 
-        public string Name { get; protected set; }
+        public FixedString32 Name { get; protected set; }
 
         public byte Capacity { get; protected set; }
         public byte Occupancy => (byte)Clients.Count;
@@ -28,8 +29,8 @@ namespace MNet
 
         public bool Visible { get; protected set; }
 
-        public string Password { get; protected set; }
-        public bool Locked => string.IsNullOrEmpty(Password) == false;
+        public FixedString16 Password { get; protected set; }
+        public bool Locked => Password.Length > 0;
 
         public AttributesCollection Attributes { get; protected set; }
 
@@ -549,7 +550,7 @@ namespace MNet
 
                     case EntityType.Dynamic:
                         {
-                            if (request.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                            if (request.Persistance.HasFlagFast(PersistanceFlags.SceneLoad))
                             {
                                 scene = null;
                                 return true;
@@ -714,7 +715,7 @@ namespace MNet
                 {
                     if (entities[i].Type == EntityType.SceneObject) continue;
 
-                    if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                    if (entities[i].Persistance.HasFlagFast(PersistanceFlags.PlayerDisconnection))
                     {
                         MakeOrphan(entities[i]);
                         continue;
@@ -1249,7 +1250,7 @@ namespace MNet
         Scheduler Scheduler;
         public bool IsRunning => Scheduler.IsRunning;
 
-        const int MaxThreadStackSize = 32 * 1024;
+        const int MaxThreadStackSize = 128 * 1024;
 
         public INetworkTransportContext TransportContext;
 
@@ -1341,6 +1342,7 @@ namespace MNet
             Send(ref payload, target);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         void MessageRecievedCallback(NetworkClientID id, ArraySegment<byte> segment, DeliveryMode mode, byte channel)
         {
             NetworkReader.Assign(segment);
@@ -1398,15 +1400,14 @@ namespace MNet
             OnStop?.Invoke(this);
         }
 
-        public Room(RoomID id, AppConfig app, Version version, string name, RoomOptions options)
+        public Room(RoomID id, AppConfig app, Version version, RoomOptions options)
         {
             this.ID = id;
 
             this.Version = version;
             this.App = app;
 
-            this.Name = name;
-
+            Name = options.Name;
             Capacity = options.Capacity;
             Visible = options.Visible;
             Password = options.Password;

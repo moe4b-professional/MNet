@@ -12,8 +12,7 @@ namespace MNet
 
         public NetworkClientProfile Profile;
 
-        public string Name => Profile.Name;
-
+        public FixedString32 Name => Profile.Name;
         public AttributesCollection Attributes => Profile.Attributes;
 
         public HashSet<NetworkEntity> Entities;

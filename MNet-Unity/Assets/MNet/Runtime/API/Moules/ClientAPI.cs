@@ -29,28 +29,15 @@ namespace MNet
             public static NetworkClient Self { get; private set; }
             public static NetworkClientID ID => Self.ID;
 
-            public static NetworkClientProfile Profile { get; private set; }
-
-            public static string Name
-            {
-                get => Profile.Name;
-                set => Profile.Name = value;
-            }
+            public static NetworkClientProfile Profile => Register.Profile;
 
             public static bool IsConnected => Realtime.IsConnected;
             public static bool IsRegistered => Register.IsComplete;
 
             public static bool IsMaster => Self == null ? false : Self.IsMaster;
 
-            static NetworkReader NetworkReader;
-            static NetworkWriter NetworkWriter;
-
             internal static void Configure()
             {
-                NetworkStream.Pool.Take(out NetworkReader, out NetworkWriter);
-
-                Profile = new NetworkClientProfile("Player");
-
                 MessageDispatcher.Configure();
                 Prediction.Clear();
                 Register.Configure();
@@ -79,22 +66,23 @@ namespace MNet
                     Debug.LogWarning($"Cannot Send Payload '{payload}' When Network Client Isn't Connected");
                     return false;
                 }
-
-                if (Prediction.Process(ref payload, mode) == Prediction.Response.Consume)
-                    return true;
-
-                if (OfflineMode.On)
+                
+                using (NetworkWriter.Pool.Lease(out var writer))
                 {
-                    Debug.LogWarning($"Payload of Type {payload.GetType()} not Consumed in Offline Mode");
-                    return false;
-                }
+                    writer.Write(typeof(T));
+                    writer.Write(payload);
 
-                using (NetworkWriter)
-                {
-                    NetworkWriter.Write(typeof(T));
-                    NetworkWriter.Write(payload);
+                    if (Prediction.Process(writer) == Prediction.Response.Consume)
+                    {
+                        return true;
+                    }
+                    else if (OfflineMode.On)
+                    {
+                        Debug.LogWarning($"Payload of Type {payload.GetType()} not Consumed in Offline Mode");
+                        return false;
+                    }
 
-                    var segment = NetworkWriter.AsSegment();
+                    var segment = writer.AsSegment();
                     Realtime.Send(segment, mode, channel);
                 }
 
@@ -114,7 +102,7 @@ namespace MNet
             {
                 Debug.Log("Client Ready");
 
-                Self = new NetworkClient(response.ID, Profile);
+                Self = new NetworkClient(response.ID, Register.Profile);
 
                 Room.Register(ref response);
 
@@ -123,12 +111,11 @@ namespace MNet
 
             static void MessageCallback(ArraySegment<byte> segment, DeliveryMode mode)
             {
-                NetworkReader.Assign(segment);
-
-                using (NetworkReader)
+                using (NetworkReader.Pool.Lease(out var reader))
                 {
-                    var type = NetworkReader.Read<Type>();
-                    MessageDispatcher.Invoke(type, NetworkReader);
+                    reader.Assign(segment);
+
+                    MessageDispatcher.Invoke(reader);
                 }
             }
 
@@ -186,9 +173,7 @@ namespace MNet
                         if (Realtime.Pause.Active)
                             break;
 
-                        var type = NetworkReader.Read<Type>();
-
-                        MessageDispatcher.Invoke(type, NetworkReader);
+                        MessageDispatcher.Invoke(NetworkReader);
 
                         if (NetworkReader.Remaining == 0)
                         {
@@ -212,33 +197,31 @@ namespace MNet
 
             public static class MessageDispatcher
             {
-                static Dictionary<Type, BinaryMessageCallbackDelegate> Binary;
-                public delegate void BinaryMessageCallbackDelegate(NetworkReader reader);
-
-                static Dictionary<Type, PayloadMessageCallbackDelegate> Payload;
-                public delegate void PayloadMessageCallbackDelegate(object target);
+                static Dictionary<Type, MessageCallbackDelegate> Dictionary;
+                public delegate void MessageCallbackDelegate(NetworkReader reader);
 
                 internal static void Configure()
                 {
-                    Binary = new();
-                    Payload = new();
+                    Dictionary = new();
                 }
 
-                internal static void Invoke(object payload)
+                internal static void Invoke<T>(T payload)
                 {
-                    var type = payload.GetType();
-
-                    if (Payload.TryGetValue(type, out var callback) == false)
+                    using (NetworkStream.Pool.Lease(out var reader, out var writer))
                     {
-                        Debug.LogWarning($"Recieved Message with Payload of {type} Has no Handler");
-                        return;
-                    }
+                        writer.Write(typeof(T));
+                        writer.Write(payload);
 
-                    callback(payload);
+                        reader.Assign(writer);
+
+                        Invoke(reader);
+                    }
                 }
-                internal static void Invoke(Type type, NetworkReader reader)
+                internal static void Invoke(NetworkReader reader)
                 {
-                    if (Binary.TryGetValue(type, out var callback) == false)
+                    var type = reader.Read<Type>();
+
+                    if (Dictionary.TryGetValue(type, out var callback) == false)
                     {
                         Debug.LogWarning($"Recieved Message with Payload of {type} Has no Handler");
                         return;
@@ -252,19 +235,13 @@ namespace MNet
                 {
                     var type = typeof(TPayload);
 
-                    if (Binary.ContainsKey(type) || Payload.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
+                    if (Dictionary.ContainsKey(type)) throw new Exception($"Client Message Dispatcher Already Contains an Entry for {type}");
 
-                    Binary.Add(type, BinaryCallback);
-                    Payload.Add(type, PayloadCallback);
+                    Dictionary.Add(type, Callback);
 
-                    void BinaryCallback(NetworkReader stream)
+                    void Callback(NetworkReader stream)
                     {
                         var payload = stream.Read<TPayload>();
-                        handler(ref payload);
-                    }
-                    void PayloadCallback(object target)
-                    {
-                        var payload = (TPayload)target;
                         handler(ref payload);
                     }
                 }
@@ -272,6 +249,22 @@ namespace MNet
 
             public static class Prediction
             {
+                static Dictionary<Type, ProcessDelegate> Dictionary { get;}
+
+                public delegate Response ProcessDelegate(NetworkReader reader);
+                public delegate Response ProcessDelegate<T>(ref T payload);
+
+                public static void Register<T>(ProcessDelegate<T> method)
+                {
+                    Dictionary.Add(typeof(T), Surrogate);
+
+                    Response Surrogate(NetworkReader reader)
+                    {
+                        var payload = reader.Read<T>();
+                        return method(ref payload);
+                    }
+                }
+
                 public enum Response
                 {
                     None, Consume, Send
@@ -282,79 +275,27 @@ namespace MNet
 
                 }
 
-                internal static Response Process<TPayload>(ref TPayload payload, DeliveryMode mode)
+                internal static Response Process(NetworkWriter source)
                 {
-                    switch (payload)
+                    using (NetworkReader.Pool.Lease(out var reader))
                     {
-                        case RegisterClientRequest instance:
-                            return RegisterClient(ref instance, mode);
+                        reader.Assign(source);
 
-                        #region Entity
-                        case SpawnEntityRequest instance:
-                            return SpawnEntity(ref instance, mode);
+                        var type = reader.Read<Type>();
 
-                        case TransferEntityPayload instance:
-                            return TransferEntity(ref instance, mode);
+                        if (Dictionary.TryGetValue(type, out var method) == false)
+                            return Response.None;
 
-                        case TakeoverEntityRequest instance:
-                            return TakeoverEntity(ref instance, mode);
-
-                        case DestroyEntityPayload instance:
-                            return DestroyEntity(ref instance, mode);
-                        #endregion
-
-                        #region RPC
-                        case BroadcastRpcRequest instance:
-                            return InvokeBroadcastRPC(ref instance, mode);
-
-                        case TargetRpcRequest instance:
-                            return InvokeTargetRPC(ref instance, mode);
-
-                        case QueryRpcRequest instance:
-                            return InvokeQueryRPC(ref instance, mode);
-
-                        case BufferRpcRequest instance:
-                            return InvokeBufferRPC(ref instance, mode);
-                        #endregion
-
-                        case RprRequest instance:
-                            return InvokeRPR(ref instance, mode);
-
-                        #region SyncVar
-                        case BroadcastSyncVarRequest instance:
-                            return InvokeBroadcastSyncVar(ref instance, mode);
-
-                        case BufferSyncVarRequest instance:
-                            return InvokeBufferSyncVar(ref instance, mode);
-                        #endregion
-
-                        #region Scenes
-                        case LoadScenePayload instance:
-                            return LoadScene(ref instance, mode);
-
-                        case UnloadScenePayload instance:
-                            return UnloadScene(ref instance, mode);
-                        #endregion
-
-                        case ChangeRoomInfoPayload instance:
-                            return ChangeRoomInfo(ref instance, mode);
-
-                        case PingRequest instance:
-                            return Ping(ref instance, mode);
-
-                        case TimeRequest instance:
-                            return Time(ref instance, mode);
+                        return method(reader);
                     }
-
-                    return Response.None;
                 }
 
-                static Response RegisterClient(ref RegisterClientRequest request, DeliveryMode mode)
+                static Response RegisterClient(ref RegisterClientRequest request)
                 {
                     if (OfflineMode.On)
                     {
                         var id = new NetworkClientID();
-                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, Profile) };
+                        var clients = new NetworkClientInfo[] { new NetworkClientInfo(id, request.Profile) };
                         var buffer = default(ByteChunk);
                         var time = TimeResponse.Write(default, request.Time);
 
@@ -369,7 +310,7 @@ namespace MNet
                 }
 
                 #region Entity
-                static Response SpawnEntity(ref SpawnEntityRequest request, DeliveryMode mode)
+                static Response SpawnEntity(ref SpawnEntityRequest request)
                 {
                     if (OfflineMode.On)
                     {
@@ -403,7 +344,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response TransferEntity(ref TransferEntityPayload payload, DeliveryMode mode)
+                static Response TransferEntity(ref TransferEntityPayload payload)
                 {
                     MessageDispatcher.Invoke(payload);
 
@@ -412,7 +353,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response TakeoverEntity(ref TakeoverEntityRequest request, DeliveryMode mode)
+                static Response TakeoverEntity(ref TakeoverEntityRequest request)
                 {
                     var command = TakeoverEntityCommand.Write(Client.ID, request);
 
@@ -423,7 +364,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response DestroyEntity(ref DestroyEntityPayload request, DeliveryMode mode)
+                static Response DestroyEntity(ref DestroyEntityPayload request)
                 {
                     MessageDispatcher.Invoke(request);
 
@@ -439,7 +380,7 @@ namespace MNet
                 #endregion
 
                 #region RPC
-                static Response InvokeBroadcastRPC(ref BroadcastRpcRequest request, DeliveryMode mode)
+                static Response InvokeBroadcastRPC(ref BroadcastRpcRequest request)
                 {
                     if (request.Exception != Client.ID && Groups.Contains(request.Group))
                     {
@@ -453,7 +394,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeTargetRPC(ref TargetRpcRequest request, DeliveryMode mode)
+                static Response InvokeTargetRPC(ref TargetRpcRequest request)
                 {
                     if (request.Target == Client.ID)
                     {
@@ -473,7 +414,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeQueryRPC(ref QueryRpcRequest request, DeliveryMode mode)
+                static Response InvokeQueryRPC(ref QueryRpcRequest request)
                 {
                     if (request.Target == Client.ID)
                     {
@@ -493,7 +434,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeBufferRPC(ref BufferRpcRequest request, DeliveryMode mode)
+                static Response InvokeBufferRPC(ref BufferRpcRequest request)
                 {
                     if (OfflineMode.On)
                     {
@@ -504,7 +445,7 @@ namespace MNet
                 }
                 #endregion
 
-                static Response InvokeRPR(ref RprRequest request, DeliveryMode mode)
+                static Response InvokeRPR(ref RprRequest request)
                 {
                     if (request.Target == Client.ID)
                     {
@@ -525,7 +466,7 @@ namespace MNet
                 }
 
                 #region Sync Var
-                static Response InvokeBroadcastSyncVar(ref BroadcastSyncVarRequest request, DeliveryMode mode)
+                static Response InvokeBroadcastSyncVar(ref BroadcastSyncVarRequest request)
                 {
                     var command = SyncVarCommand.Write(Client.ID, request);
 
@@ -536,7 +477,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response InvokeBufferSyncVar(ref BufferSyncVarRequest request, DeliveryMode mode)
+                static Response InvokeBufferSyncVar(ref BufferSyncVarRequest request)
                 {
                     if (OfflineMode.On) return Response.Consume;
 
@@ -545,7 +486,7 @@ namespace MNet
                 #endregion
 
                 #region Scenes
-                static Response LoadScene(ref LoadScenePayload payload, DeliveryMode mode)
+                static Response LoadScene(ref LoadScenePayload payload)
                 {
                     MessageDispatcher.Invoke(payload);
 
@@ -554,7 +495,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response UnloadScene(ref UnloadScenePayload payload, DeliveryMode mode)
+                static Response UnloadScene(ref UnloadScenePayload payload)
                 {
                     MessageDispatcher.Invoke(payload);
 
@@ -564,7 +505,7 @@ namespace MNet
                 }
                 #endregion
 
-                static Response ChangeRoomInfo(ref ChangeRoomInfoPayload payload, DeliveryMode mode)
+                static Response ChangeRoomInfo(ref ChangeRoomInfoPayload payload)
                 {
                     MessageDispatcher.Invoke(payload);
 
@@ -573,7 +514,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response Ping(ref PingRequest request, DeliveryMode mode)
+                static Response Ping(ref PingRequest request)
                 {
                     if (OfflineMode.On)
                     {
@@ -587,7 +528,7 @@ namespace MNet
                     return Response.Send;
                 }
 
-                static Response Time(ref TimeRequest request, DeliveryMode mode)
+                static Response Time(ref TimeRequest request)
                 {
                     if (OfflineMode.On)
                     {
@@ -605,13 +546,53 @@ namespace MNet
                 {
 
                 }
+
+                static Prediction()
+                {
+                    Dictionary = new Dictionary<Type, ProcessDelegate>();
+
+                    Register<RegisterClientRequest>(RegisterClient);
+
+                    #region Entity
+                    Register<SpawnEntityRequest>(SpawnEntity);
+                    Register<TransferEntityPayload>(TransferEntity);
+                    Register<TakeoverEntityRequest>(TakeoverEntity);
+                    Register<DestroyEntityPayload>(DestroyEntity);
+                    #endregion
+
+                    #region RPC
+                    Register<BroadcastRpcRequest>(InvokeBroadcastRPC);
+                    Register<TargetRpcRequest>(InvokeTargetRPC);
+                    Register<QueryRpcRequest>(InvokeQueryRPC);
+                    Register<BufferRpcRequest>(InvokeBufferRPC);
+                    #endregion
+
+                    Register<RprRequest>(InvokeRPR);
+
+                    #region Sync Var
+                    Register<BroadcastSyncVarRequest>(InvokeBroadcastSyncVar);
+                    Register<BufferSyncVarRequest>(InvokeBufferSyncVar);
+                    #endregion
+
+                    #region Scenes
+                    Register<LoadScenePayload>(LoadScene);
+                    Register<UnloadScenePayload>(UnloadScene);
+                    #endregion
+
+                    Register<ChangeRoomInfoPayload>(ChangeRoomInfo);
+
+                    Register<PingRequest>(Ping);
+
+                    Register<TimeRequest>(Time);
+                }
             }
 
             public static class Register
             {
                 public static bool IsComplete => Self != null;
 
-                public static string Password { get; internal set; }
+                public static NetworkClientProfile Profile { get; internal set; }
+                public static FixedString16 Password { get; internal set; }
 
                 internal static void Configure()
                 {

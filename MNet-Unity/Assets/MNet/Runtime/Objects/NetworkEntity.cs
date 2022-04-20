@@ -407,7 +407,7 @@ namespace MNet
 
         #region Remote Sync
         public bool InvokeRPC<T>(ref T command)
-            where T : IRpcCommand
+            where T : struct, IRpcCommand
         {
             if (Behaviours.Dictionary.TryGetValue(command.Behaviour, out var target) == false)
             {

@@ -276,7 +276,7 @@ namespace MNet
             response.StatusDescription = message;
 
             var length = Encoding.UTF8.GetByteCount(message);
-            Span<byte> span = length > 1024 ? new byte[length] : stackalloc byte[length];
+            Span<byte> span = length > 512 ? new byte[length] : stackalloc byte[length];
             length = Encoding.UTF8.GetBytes(message, span);
 
             response.ContentEncoding = Encoding.UTF8;

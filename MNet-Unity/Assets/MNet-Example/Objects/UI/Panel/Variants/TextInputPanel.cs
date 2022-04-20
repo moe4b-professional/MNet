@@ -33,6 +33,12 @@ namespace MNet.Example
 			set => input.contentType = value;
         }
 
+		public int CharacterLimit
+        {
+			get => input.characterLimit;
+			set => input.characterLimit = value;
+        }
+
 		[SerializeField]
 		Button ok = default;
 
@@ -65,6 +71,7 @@ namespace MNet.Example
             base.Show();
 
 			ContentType = InputField.ContentType.Standard;
+			CharacterLimit = 1000;
 		}
 
         void Confirm() => Action(true);

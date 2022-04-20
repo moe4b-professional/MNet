@@ -153,12 +153,12 @@ namespace MNet
         {
             data = array;
 
-            internal_capacity = count + offset;
             internal_position = offset;
+            internal_capacity = count + offset;
         }
 
         public void Assign(ArraySegment<byte> segment) => Assign(segment.Array, segment.Offset, segment.Count);
-        public void Assign(ByteChunk chunk) => Assign(chunk.Array, chunk.Offset, chunk.Count);
+        public void Assign(ByteChunk chunk) => Assign(chunk.Data, chunk.Offset, chunk.Count);
         public void Assign(NetworkWriter writer) => Assign(writer.Data, 0, writer.Position);
         #endregion
 
@@ -387,7 +387,7 @@ namespace MNet
         }
 
         public void Insert(ArraySegment<byte> segment) => Insert(segment.Array, segment.Offset, segment.Count);
-        public void Insert(ByteChunk chunk) => Insert(chunk.Array, chunk.Offset, chunk.Count);
+        public void Insert(ByteChunk chunk) => Insert(chunk.Data, chunk.Offset, chunk.Count);
 
         public void Insert(Span<byte> span)
         {

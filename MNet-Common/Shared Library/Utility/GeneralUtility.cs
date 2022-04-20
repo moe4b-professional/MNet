@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using System.Threading.Tasks;
@@ -106,5 +107,39 @@ namespace MNet
         public static string ToPrettyString<T>(this T value) => GeneralUtility.PrettifyName(value);
 
         public static async void Forget(this Task task) => await task;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Is<TFrom, TTo>(this TFrom target, out TTo value)
+        where TFrom : struct
+        {
+            if (target.GetType() == typeof(TTo))
+            {
+                value = Unsafe.As<TFrom, TTo>(ref target);
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static unsafe bool HasFlagFast<T>(this T target, T value)
+            where T : unmanaged, IConvertible
+        {
+            var size = sizeof(T);
+
+            switch (size)
+            {
+                case 1:
+                    return (Unsafe.As<T, byte>(ref target) & Unsafe.As<T, byte>(ref value)) > 0;
+                case 2:
+                    return (Unsafe.As<T, short>(ref target) & Unsafe.As<T, short>(ref value)) > 0;
+                case 4:
+                    return (Unsafe.As<T, int>(ref target) & Unsafe.As<T, int>(ref value)) > 0;
+                case 8:
+                    return (Unsafe.As<T, long>(ref target) & Unsafe.As<T, long>(ref value)) > 0;
+                default:
+                    throw new ArgumentException($"Invalid Enum with Size of {size}");
+            }
+        }
     }
 }

@@ -70,7 +70,7 @@ namespace MNet.Example
         {
             base.UpdateState();
 
-            title.text = Data.Name;
+            title.text = Data.Name.ToString();
             level.text = Core.Levels.ReadAttribute(Data.Attributes).Name;
             capacity.text = $"{Data.Occupancy}/{Data.Capacity}";
             locked.text = Data.Locked ? "Locked" : "Open";
