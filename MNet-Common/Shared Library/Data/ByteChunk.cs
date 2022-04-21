@@ -30,7 +30,7 @@ namespace MNet
 
             if(Count == 0)
             {
-                Data = default;
+                Data = Array.Empty<byte>();
                 Offset = 0;
             }
             else
@@ -42,13 +42,22 @@ namespace MNet
             reader.Position += Count;
         }
 
-        public ByteChunk(byte[] array, int offset, int count)
+        public ByteChunk(byte[] data, int offset, int count)
         {
-            this.Data = array;
+            this.Data = data;
             this.Offset = offset;
             this.Count = count;
         }
-        public ByteChunk(byte[] array) : this(array, 0, array.Length) { }
+        public ByteChunk(byte[] data)
+        {
+            this.Data = data;
+            this.Offset = 0;
+
+            if (data is null)
+                Count = 0;
+            else
+                Count = data.Length;
+        }
 
         /// <summary>
         /// Clones the ByteChunk in memory by allocating it's contents so it's no longer dangerous to use

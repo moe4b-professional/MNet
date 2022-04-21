@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -87,10 +86,10 @@ namespace MNet
 
                 if (Samples.Count > MaxSamples) Samples.RemoveRange(0, Samples.Count - MaxSamples);
 
-                Average = Samples.Sum() / Samples.Count;
+                Average = GeneralUtility.Collection.Average(Samples);
 
-                Min = Samples.Min();
-                Max = Samples.Max();
+                Min = GeneralUtility.Collection.Min(Samples);
+                Max = GeneralUtility.Collection.Max(Samples);
 
                 InvokeChange();
             }

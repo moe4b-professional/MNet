@@ -17,7 +17,7 @@ namespace MNet
 
     [Preserve]
     [Serializable]
-    public struct GameServerID : INetworkSerializable
+    public struct GameServerID : IEquatable<GameServerID>, INetworkSerializable
     {
         IPAddress value;
         public IPAddress Value { get { return value; } }
@@ -31,15 +31,12 @@ namespace MNet
 
         public override bool Equals(object obj)
         {
-            if (obj.GetType() == typeof(GameServerID))
-            {
-                var target = (GameServerID)obj;
-
-                return Equals(this.value, target.value);
-            }
+            if (obj is GameServerID target)
+                return Equals(target);
 
             return false;
         }
+        public bool Equals(GameServerID target) => this.value == target.value;
 
         public override int GetHashCode() => value.GetHashCode();
 

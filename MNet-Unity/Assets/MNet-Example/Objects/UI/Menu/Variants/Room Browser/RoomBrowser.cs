@@ -97,7 +97,7 @@ namespace MNet.Example
                 TextInput.Show("Please Enter Password", Callback);
 
                 TextInput.ContentType = InputField.ContentType.Password;
-                TextInput.CharacterLimit = FixedString16.Size;
+                TextInput.CharacterLimit = FixedString16.MaxSize;
 
                 void Callback(bool confirmed, string value)
                 {

@@ -9,7 +9,7 @@ namespace MNet
 {
     [NetworkBlittable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct NetworkBehaviourID
+    public struct NetworkBehaviourID : IEquatable<NetworkBehaviourID>
     {
         byte value;
         public byte Value { get { return value; } }
@@ -25,7 +25,7 @@ namespace MNet
 
             return false;
         }
-        public bool Equals(NetworkBehaviourID id) => Equals(value, id.value);
+        public bool Equals(NetworkBehaviourID id) => this.value == id.value;
 
         public override int GetHashCode() => value.GetHashCode();
 

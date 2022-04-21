@@ -133,17 +133,17 @@ namespace MNet
             //instantly validate every buffered message
             if (NetworkAPI.Client.Buffer.IsOn) return true;
 
-            if (authority.HasFlag(RemoteAuthority.Any)) return true;
+            if (authority.HasFlagFast(RemoteAuthority.Any)) return true;
 
             if (client == null) return false;
 
-            if (authority.HasFlag(RemoteAuthority.Owner))
+            if (authority.HasFlagFast(RemoteAuthority.Owner))
             {
                 if (client == Owner)
                     return true;
             }
 
-            if (authority.HasFlag(RemoteAuthority.Master))
+            if (authority.HasFlagFast(RemoteAuthority.Master))
             {
                 if (client == NetworkAPI.Room.Master.Client)
                     return true;

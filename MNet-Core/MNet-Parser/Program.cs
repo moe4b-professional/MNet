@@ -23,18 +23,11 @@ using Newtonsoft.Json.Converters;
 
 namespace MNet.Parser
 {
-    public class LocalizationParser
+    public class NetParser
     {
         static async Task Main(string[] args)
         {
             Console.Title = "Narrative System Parser";
-
-            if (args.Length == 0)
-            {
-                args = new string[2];
-                args[0] = @"C:\Projects\Monolith\MNet\MNet-Unity\MNet-Unity.sln";
-                args[1] = "MNet Parser";
-            }
 
             if (args.Length < 2)
             {

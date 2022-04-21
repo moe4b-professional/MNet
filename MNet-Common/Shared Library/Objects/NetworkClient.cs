@@ -106,7 +106,7 @@ namespace MNet
     [Preserve]
     [NetworkBlittable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct NetworkGroupID
+    public struct NetworkGroupID : IEquatable<NetworkGroupID>, IComparable<NetworkGroupID>
     {
         byte value;
         public byte Value { get { return value; } }
@@ -123,6 +123,8 @@ namespace MNet
             return false;
         }
         public bool Equals(NetworkGroupID id) => this.value == id.value;
+
+        public int CompareTo(NetworkGroupID target) => this.value.CompareTo(target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 

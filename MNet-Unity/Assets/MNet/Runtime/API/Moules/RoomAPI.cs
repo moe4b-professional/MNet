@@ -697,7 +697,7 @@ namespace MNet
                         case EntityType.Dynamic:
                         case EntityType.Orphan:
                             {
-                                if (command.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                                if (command.Persistance.HasFlagFast(PersistanceFlags.SceneLoad))
                                 {
                                     scene = null;
                                     return true;
@@ -738,7 +738,7 @@ namespace MNet
 
                     if (entity.IsDynamic)
                     {
-                        if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                        if (entity.Persistance.HasFlagFast(PersistanceFlags.SceneLoad))
                             Object.DontDestroyOnLoad(entity);
                         else
                             scene.AddDynamic(entity);
@@ -894,7 +894,7 @@ namespace MNet
                     {
                         if (entities[i].IsMasterObject) continue;
 
-                        if (entities[i].Persistance.HasFlag(PersistanceFlags.PlayerDisconnection))
+                        if (entities[i].Persistance.HasFlagFast(PersistanceFlags.PlayerDisconnection))
                         {
                             MakeOrphan(entities[i]);
                             continue;
@@ -917,7 +917,7 @@ namespace MNet
                 {
                     entity.Despawn();
 
-                    if (entity.Persistance.HasFlag(PersistanceFlags.SceneLoad))
+                    if (entity.Persistance.HasFlagFast(PersistanceFlags.SceneLoad))
                         SceneManager.MoveGameObjectToScene(entity.gameObject, SceneManager.GetActiveScene());
                 }
 

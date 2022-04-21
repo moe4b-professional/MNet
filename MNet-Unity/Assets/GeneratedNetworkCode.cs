@@ -58,9 +58,6 @@ public static class GeneratedNetworkCode
 			//MNet.Example.StressBehaviour
 			MNet.RpcBindVoid<System.String>.Register();
 			
-			//MNet.Example.Sandbox
-			MNet.RpcBindVoid<System.Collections.Generic.Dictionary<System.Collections.Generic.List<MNet.Example.Sandbox.Data>, System.Collections.Generic.HashSet<MNet.Example.Sandbox.Data>>>.Register();
-			
 			//MNet.Example.StressEntity
 			MNet.RpcBindVoid<UnityEngine.Vector3, System.Single>.Register();
 			
@@ -156,10 +153,6 @@ public static class GeneratedNetworkCode
 			new MNet.EnumNetworkSerializationResolver<MNet.RemoteResponseType>();
 			new MNet.INetworkSerializableResolver<MNet.SimpleNetworkTransform.CoordinatesPacket>();
 			new MNet.NetworkBehaviourNetworkSerializationResolver<MNet.SerializationTest>();
-			new MNet.DictionaryNetworkSerializationResolver<System.Collections.Generic.List<MNet.Example.Sandbox.Data>, System.Collections.Generic.HashSet<MNet.Example.Sandbox.Data>>();
-			new MNet.ListNetworkSerializationResolver<MNet.Example.Sandbox.Data>();
-			new MNet.BlittableNetworkSerializationResolver<MNet.Example.Sandbox.Data>();
-			new MNet.HashSetNetworkSerializationResolver<MNet.Example.Sandbox.Data>();
 			
 		}
 		

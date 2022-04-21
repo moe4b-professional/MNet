@@ -254,9 +254,9 @@ namespace MNet
                     z = Mathf.Abs(delta.z),
                 };
 
-                if (constraint.HasFlag(flags[0])) if (delta.x >= epsilon) change |= flags[0];
-                if (constraint.HasFlag(flags[1])) if (delta.y >= epsilon) change |= flags[1];
-                if (constraint.HasFlag(flags[2])) if (delta.z >= epsilon) change |= flags[2];
+                if (constraint.HasFlagFast(flags[0])) if (delta.x >= epsilon) change |= flags[0];
+                if (constraint.HasFlagFast(flags[1])) if (delta.y >= epsilon) change |= flags[1];
+                if (constraint.HasFlagFast(flags[2])) if (delta.z >= epsilon) change |= flags[2];
 
                 return change;
             }
@@ -272,9 +272,9 @@ namespace MNet
             {
                 var copy = source;
 
-                if (change.HasFlag(flags[0])) copy.x = target.x;
-                if (change.HasFlag(flags[1])) copy.y = target.y;
-                if (change.HasFlag(flags[2])) copy.z = target.z;
+                if (change.HasFlagFast(flags[0])) copy.x = target.x;
+                if (change.HasFlagFast(flags[1])) copy.y = target.y;
+                if (change.HasFlagFast(flags[2])) copy.z = target.z;
 
                 return copy;
             }
@@ -541,15 +541,15 @@ namespace MNet
             {
                 context.Select(ref changes);
 
-                if (changes.HasFlag(ChangeFlags.PositionX)) context.Select(ref positionX);
-                if (changes.HasFlag(ChangeFlags.PositionY)) context.Select(ref positionY);
-                if (changes.HasFlag(ChangeFlags.PositionZ)) context.Select(ref positionZ);
+                if (changes.HasFlagFast(ChangeFlags.PositionX)) context.Select(ref positionX);
+                if (changes.HasFlagFast(ChangeFlags.PositionY)) context.Select(ref positionY);
+                if (changes.HasFlagFast(ChangeFlags.PositionZ)) context.Select(ref positionZ);
 
-                if (changes.HasFlag(ChangeFlags.RotationX)) context.Select(ref rotationX);
-                if (changes.HasFlag(ChangeFlags.RotationY)) context.Select(ref rotationY);
-                if (changes.HasFlag(ChangeFlags.RotationZ)) context.Select(ref rotationZ);
+                if (changes.HasFlagFast(ChangeFlags.RotationX)) context.Select(ref rotationX);
+                if (changes.HasFlagFast(ChangeFlags.RotationY)) context.Select(ref rotationY);
+                if (changes.HasFlagFast(ChangeFlags.RotationZ)) context.Select(ref rotationZ);
 
-                if (changes.HasFlag(ChangeFlags.Scale))
+                if (changes.HasFlagFast(ChangeFlags.Scale))
                 {
                     context.Select(ref scaleX);
                     context.Select(ref scaleY);

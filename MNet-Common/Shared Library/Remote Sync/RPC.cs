@@ -12,7 +12,7 @@ namespace MNet
     [Preserve]
     [NetworkBlittable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct RpcID
+    public struct RpcID : IEquatable<RpcID>, IComparable<RpcID>
     {
         byte value;
         public byte Value { get { return value; } }
@@ -28,7 +28,9 @@ namespace MNet
 
             return false;
         }
-        public bool Equals(RpcID target) => Equals(value, target.value);
+        public bool Equals(RpcID target) => this.value == target.value;
+
+        public int CompareTo(RpcID target) => this.value.CompareTo(target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 

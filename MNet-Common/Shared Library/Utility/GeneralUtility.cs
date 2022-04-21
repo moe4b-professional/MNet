@@ -47,6 +47,69 @@ namespace MNet
                 public static int FromMinutes(int minutes) => FromSeconds(minutes * 60);
             }
         }
+
+        public static class Collection
+        {
+            public static float Average(IList<float> list)
+            {
+                var sum = 0f;
+
+                for (int i = 0; i < list.Count; i++)
+                    sum += list[i];
+
+                return sum / list.Count;
+            }
+            public static float Min(IList<float> list)
+            {
+                var value = float.MaxValue;
+
+                for (int i = 0; i < list.Count; i++)
+                    if (list[i] < value)
+                        value = list[i];
+
+                return value;
+            }
+            public static float Max(IList<float> list)
+            {
+                var value = float.MinValue;
+
+                for (int i = 0; i < list.Count; i++)
+                    if (list[i] > value)
+                        value = list[i];
+
+                return value;
+            }
+
+            public static double Average(IList<double> list)
+            {
+                var sum = 0d;
+
+                for (int i = 0; i < list.Count; i++)
+                    sum += list[i];
+
+                return sum / list.Count;
+            }
+            public static double Min(IList<double> list)
+            {
+                var value = double.MaxValue;
+
+                for (int i = 0; i < list.Count; i++)
+                    if (list[i] < value)
+                        value = list[i];
+
+                return value;
+            }
+            public static double Max(IList<double> list)
+            {
+                var value = double.MinValue;
+
+                for (int i = 0; i < list.Count; i++)
+                    if (list[i] > value)
+                        value = list[i];
+
+                return value;
+            }
+        }
     }
 
     public static class GeneralExtensions

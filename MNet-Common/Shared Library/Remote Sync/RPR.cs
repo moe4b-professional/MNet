@@ -28,7 +28,7 @@ namespace MNet
 
             return false;
         }
-        public bool Equals(RprChannelID target) => Equals(value, target.value);
+        public bool Equals(RprChannelID target) => this.value == target.value;
 
         public override int GetHashCode() => value.GetHashCode();
 

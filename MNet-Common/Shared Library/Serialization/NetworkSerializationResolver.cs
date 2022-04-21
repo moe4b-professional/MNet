@@ -77,9 +77,10 @@ namespace MNet
         }
 
         #region Null
-        protected static bool WriteNull(NetworkWriter writer, T value)
+        protected static bool WriteNull(NetworkWriter writer, T value) => WriteNull(writer, value == null);
+        protected static bool WriteNull(NetworkWriter writer, bool value)
         {
-            if (value == null)
+            if (value)
             {
                 writer.Insert(1); //Is Null Flag Value
                 return true;
@@ -1290,13 +1291,14 @@ namespace MNet
 
         public override void Serialize(NetworkWriter writer, TData? instance)
         {
-            if (WriteNull(writer, instance)) return;
+            if (WriteNull(writer, instance.HasValue == false)) return;
 
             writer.Write(instance.Value);
         }
         public override TData? Deserialize(NetworkReader reader)
         {
-            if (ReadNull(reader)) return null;
+            if (ReadNull(reader))
+                return default;
 
             return reader.Read<TData>();
         }
