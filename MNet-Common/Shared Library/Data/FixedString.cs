@@ -5,71 +5,46 @@ using System.Runtime.InteropServices;
 
 namespace MNet
 {
-    public unsafe interface IFixedString
-    {
-        int Length { get; set; }
-
-        int Capacity { get; }
-
-        char this[int index] { get; set; }
-
-        public Span<char> ToSpan();
-
-        ref char GetPinnableReference();
-    }
-
     public static unsafe class FixedString
     {
-        public const int MaxSize = 256;
+        public const int MaxSize = 128;
 
-        #region Matches
+        #region Matching & Comparison
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Matches<TLeft, TRight>(ref this TLeft left, ref TRight right)
-            where TLeft : struct, IFixedString
-            where TRight : IFixedString
-        {
-            return Matches(ref left, ref right, StringComparison.Ordinal);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool Matches<TLeft, TRight>(ref this TLeft left, ref TRight right, StringComparison comparison)
-            where TLeft : struct, IFixedString
+        public static bool Matches<TLeft, TRight>(this TLeft left, TRight right, StringComparison comparison = StringComparison.Ordinal)
+            where TLeft : IFixedString
             where TRight : IFixedString
         {
             if (left.Length != right.Length)
                 return false;
 
-            fixed (char* ptr1 = left, ptr2 = right)
-            {
-                var span1 = new Span<char>(ptr1, left.Length);
-                var span2 = new Span<char>(ptr2, right.Length);
+            var leftSpan = left.ToSpan();
+            var rightSpan = right.ToSpan();
 
-                return MemoryExtensions.Equals(span1, span2, comparison);
-            }
-        }
-        #endregion
-
-        #region Compare
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CompareTo<TLeft, TRight>(ref this TRight left, ref TLeft right)
-            where TLeft : struct, IFixedString
-            where TRight : struct, IFixedString
-        {
-            return CompareTo(ref left, ref right, StringComparison.Ordinal);
+            return MemoryExtensions.Equals(leftSpan, rightSpan, comparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int CompareTo<TLeft, TRight>(ref this TRight left, ref TLeft right, StringComparison comparison)
-            where TLeft : struct, IFixedString
-            where TRight : struct, IFixedString
+        public static bool Matches<TLeft>(this TLeft left, ReadOnlySpan<char> right, StringComparison comparison = StringComparison.Ordinal)
+            where TLeft : IFixedString
         {
-            fixed (char* ptr1 = left, ptr2 = right)
-            {
-                var span1 = new Span<char>(ptr1, left.Length);
-                var span2 = new Span<char>(ptr2, right.Length);
+            if (left.Length != right.Length)
+                return false;
 
-                return MemoryExtensions.CompareTo(span1, span2, comparison);
-            }
+            var leftSpan = left.ToSpan();
+
+            return MemoryExtensions.Equals(leftSpan, right, comparison);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CompareTo<TLeft, TRight>(this TRight left, TLeft right, StringComparison comparison = StringComparison.Ordinal)
+            where TLeft : IFixedString
+            where TRight : IFixedString
+        {
+            var leftSpan = left.ToSpan();
+            var rightSpan = right.ToSpan();
+
+            return MemoryExtensions.CompareTo(leftSpan, rightSpan, comparison);
         }
         #endregion
 
@@ -108,42 +83,16 @@ namespace MNet
         public static string ToString<T>(ref T target)
             where T : struct, IFixedString
         {
-            fixed (char* ptr = target)
-            {
-                var span = new Span<char>(ptr, target.Length);
-                return new string(span);
-            }
+            var span = target.ToSpan();
+            return new string(span);
         }
         #endregion
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Assign<T>(ref this T target, ReadOnlySpan<char> source)
-            where T : struct, IFixedString
-        {
-            if (source.Length > target.Capacity)
-                throw new InvalidOperationException($"Source Bigger than Capacity of {target.Capacity}");
-
-            target.Length = source.Length;
-
-            fixed (char* ptr = target)
-            {
-                var destination = new Span<char>(ptr, target.Length);
-                source.CopyTo(destination);
-            }
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Clone<T>(this T target)
             where T : struct, IFixedString
         {
             return target;
-        }
-
-        #region Iteration
-        public static Numerator<T> GetEnumerator<T>(this T target)
-            where T : IFixedString
-        {
-            return new Numerator<T>(target);
         }
 
         public struct Numerator<T>
@@ -164,22 +113,34 @@ namespace MNet
                 return true;
             }
 
-            public Numerator(T text)
+            public Numerator(ref T text)
             {
                 this.Text = text;
                 index = -1;
             }
         }
-        #endregion
+    }
+
+    public interface IFixedString
+    {
+        int Length { get; set; }
+
+        int Capacity { get; }
+
+        char this[int index] { get; set; }
+
+        public Span<char> ToSpan();
+
+        ref char GetPinnableReference();
     }
 
     #region Variants
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct FixedString16 : IFixedString, IEquatable<FixedString16>, IComparable<FixedString16>
     {
-        public const int Size = 16;
+        public const int MaxSize = 16;
 
-        fixed char buffer[Size];
+        fixed char buffer[MaxSize];
 
         public char this[int index]
         {
@@ -199,9 +160,20 @@ namespace MNet
             }
         }
 
-        public int Length { get; set; }
+        int internal_length;
+        public int Length
+        {
+            get => internal_length;
+            set
+            {
+                if (internal_length > MaxSize || internal_length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(Length));
 
-        public int Capacity => Size;
+                internal_length = value;
+            }
+        }
+
+        public int Capacity => MaxSize;
 
         public Span<char> ToSpan()
         {
@@ -214,57 +186,87 @@ namespace MNet
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref char GetPinnableReference() => ref buffer[0];
 
-        #region Overrides
+        public FixedString.Numerator<FixedString16> GetEnumerator() => new FixedString.Numerator<FixedString16>(ref this);
+
+        #region Object Overrides
         public override int GetHashCode() => FixedString.GetHashCode(ref this);
         public override string ToString() => FixedString.ToString(ref this);
 
         public override bool Equals(object obj)
         {
             if (obj is IFixedString target)
-                return FixedString.Matches(ref this, ref target);
+                return FixedString.Matches(this, target);
 
             return false;
         }
         #endregion
 
-        #region Equality & Comparison
-        public bool Equals(FixedString16 target) => FixedString.Matches(ref this, ref target);
+        #region Equality & Comparison Methods
+        public bool Equals(FixedString16 target) => FixedString.Matches(this, target);
 
-        public int CompareTo(FixedString16 target) => FixedString.CompareTo(ref this, ref target);
+        public int CompareTo(FixedString16 target) => FixedString.CompareTo(this, target);
         #endregion
 
         #region Constructors
         public FixedString16(ReadOnlySpan<char> source)
         {
-            Length = default;
+            if (source.Length > MaxSize)
+                throw new InvalidOperationException($"Source Bigger than Max Size of {MaxSize}");
 
-            FixedString.Assign(ref this, source);
+            internal_length = source.Length;
+
+            fixed (char* ptr = buffer)
+            {
+                var destination = new Span<char>(ptr, internal_length);
+
+                source.CopyTo(destination);
+            }
         }
 
         public FixedString16(int length)
         {
-            this.Length = length;
+            if (length > MaxSize)
+                throw new InvalidOperationException($"Argument Length Bigger than Max Size of {MaxSize}");
+
+            internal_length = length;
         }
 
         public FixedString16(bool fill)
         {
             if (fill)
-                Length = Size;
+                internal_length = MaxSize;
             else
-                Length = 0;
+                internal_length = 0;
         }
         #endregion
 
-        public static bool operator ==(FixedString16 left, FixedString16 right) => left.Equals(right);
-        public static bool operator !=(FixedString16 left, FixedString16 right) => !left.Equals(right);
+        #region Equality Operators
+        public static bool operator ==(FixedString16 left, FixedString16 right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString16 left, FixedString16 right) => !FixedString.Matches(left, right);
+
+        public static bool operator ==(FixedString16 left, string right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString16 left, string right) => !FixedString.Matches(left, right);
+
+        public static bool operator ==(string right, FixedString16 left) => FixedString.Matches(left, right);
+        public static bool operator !=(string right, FixedString16 left) => !FixedString.Matches(left, right);
+        #endregion
+
+        #region Conversions Operators
+        public static implicit operator FixedString16(ReadOnlySpan<char> span) => new FixedString16(span);
+        public static implicit operator ReadOnlySpan<char>(FixedString16 span) => span.ToSpan();
+
+        public static implicit operator Span<char>(FixedString16 span) => span.ToSpan();
+
+        public static implicit operator FixedString16(string text) => new FixedString16(text);
+        #endregion
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct FixedString32 : IFixedString, IEquatable<FixedString32>, IComparable<FixedString32>
     {
-        public const int Size = 32;
+        public const int MaxSize = 32;
 
-        fixed char buffer[Size];
+        fixed char buffer[MaxSize];
 
         public char this[int index]
         {
@@ -284,9 +286,20 @@ namespace MNet
             }
         }
 
-        public int Length { get; set; }
+        int internal_length;
+        public int Length
+        {
+            get => internal_length;
+            set
+            {
+                if (internal_length > MaxSize || internal_length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(Length));
 
-        public int Capacity => Size;
+                internal_length = value;
+            }
+        }
+
+        public int Capacity => MaxSize;
 
         public Span<char> ToSpan()
         {
@@ -299,57 +312,87 @@ namespace MNet
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref char GetPinnableReference() => ref buffer[0];
 
-        #region Overrides
+        public FixedString.Numerator<FixedString32> GetEnumerator() => new FixedString.Numerator<FixedString32>(ref this);
+
+        #region Object Overrides
         public override int GetHashCode() => FixedString.GetHashCode(ref this);
         public override string ToString() => FixedString.ToString(ref this);
 
         public override bool Equals(object obj)
         {
             if (obj is IFixedString target)
-                return FixedString.Matches(ref this, ref target);
+                return FixedString.Matches(this, target);
 
             return false;
         }
         #endregion
 
-        #region Equality & Comparison
-        public bool Equals(FixedString32 target) => FixedString.Matches(ref this, ref target);
+        #region Equality & Comparison Methods
+        public bool Equals(FixedString32 target) => FixedString.Matches(this, target);
 
-        public int CompareTo(FixedString32 target) => FixedString.CompareTo(ref this, ref target);
+        public int CompareTo(FixedString32 target) => FixedString.CompareTo(this, target);
         #endregion
 
         #region Constructors
         public FixedString32(ReadOnlySpan<char> source)
         {
-            Length = default;
+            if (source.Length > MaxSize)
+                throw new InvalidOperationException($"Source Bigger than Max Size of {MaxSize}");
 
-            FixedString.Assign(ref this, source);
+            internal_length = source.Length;
+
+            fixed (char* ptr = buffer)
+            {
+                var destination = new Span<char>(ptr, internal_length);
+
+                source.CopyTo(destination);
+            }
         }
 
         public FixedString32(int length)
         {
-            this.Length = length;
+            if (length > MaxSize)
+                throw new InvalidOperationException($"Argument Length Bigger than Max Size of {MaxSize}");
+
+            internal_length = length;
         }
 
         public FixedString32(bool fill)
         {
             if (fill)
-                Length = Size;
+                internal_length = MaxSize;
             else
-                Length = 0;
+                internal_length = 0;
         }
         #endregion
 
-        public static bool operator ==(FixedString32 left, FixedString32 right) => left.Equals(right);
-        public static bool operator !=(FixedString32 left, FixedString32 right) => !left.Equals(right);
+        #region Equality Operators
+        public static bool operator ==(FixedString32 left, FixedString32 right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString32 left, FixedString32 right) => !FixedString.Matches(left, right);
+
+        public static bool operator ==(FixedString32 left, string right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString32 left, string right) => !FixedString.Matches(left, right);
+
+        public static bool operator ==(string right, FixedString32 left) => FixedString.Matches(left, right);
+        public static bool operator !=(string right, FixedString32 left) => !FixedString.Matches(left, right);
+        #endregion
+
+        #region Conversions Operators
+        public static implicit operator FixedString32(ReadOnlySpan<char> span) => new FixedString32(span);
+        public static implicit operator ReadOnlySpan<char>(FixedString32 span) => span.ToSpan();
+
+        public static implicit operator Span<char>(FixedString32 span) => span.ToSpan();
+
+        public static implicit operator FixedString32(string text) => new FixedString32(text);
+        #endregion
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct FixedString64 : IFixedString, IEquatable<FixedString64>, IComparable<FixedString64>
     {
-        public const int Size = 64;
+        public const int MaxSize = 64;
 
-        fixed char buffer[Size];
+        fixed char buffer[MaxSize];
 
         public char this[int index]
         {
@@ -369,9 +412,20 @@ namespace MNet
             }
         }
 
-        public int Length { get; set; }
+        int internal_length;
+        public int Length
+        {
+            get => internal_length;
+            set
+            {
+                if (internal_length > MaxSize || internal_length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(Length));
 
-        public int Capacity => Size;
+                internal_length = value;
+            }
+        }
+
+        public int Capacity => MaxSize;
 
         public Span<char> ToSpan()
         {
@@ -384,63 +438,87 @@ namespace MNet
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref char GetPinnableReference() => ref buffer[0];
 
-        #region Overrides
+        public FixedString.Numerator<FixedString64> GetEnumerator() => new FixedString.Numerator<FixedString64>(ref this);
+
+        #region Object Overrides
         public override int GetHashCode() => FixedString.GetHashCode(ref this);
         public override string ToString() => FixedString.ToString(ref this);
 
         public override bool Equals(object obj)
         {
             if (obj is IFixedString target)
-                return FixedString.Matches(ref this, ref target);
+                return FixedString.Matches(this, target);
 
             return false;
         }
         #endregion
 
-        #region Equals
-        public bool Equals(FixedString64 target) => FixedString.Matches(ref this, ref target);
+        #region Equality & Comparison Methods
+        public bool Equals(FixedString64 target) => FixedString.Matches(this, target);
 
-        public bool Equals(FixedString64 target, StringComparison comparison) => FixedString.Matches(ref this, ref target, comparison);
-        #endregion
-
-        #region Compare To
-        public int CompareTo(FixedString64 target) => FixedString.CompareTo(ref this, ref target);
-
-        public int CompareTo(FixedString64 target, StringComparison comparison) => FixedString.CompareTo(ref this, ref target, comparison);
+        public int CompareTo(FixedString64 target) => FixedString.CompareTo(this, target);
         #endregion
 
         #region Constructors
         public FixedString64(ReadOnlySpan<char> source)
         {
-            Length = default;
+            if (source.Length > MaxSize)
+                throw new InvalidOperationException($"Source Bigger than Max Size of {MaxSize}");
 
-            FixedString.Assign(ref this, source);
+            internal_length = source.Length;
+
+            fixed (char* ptr = buffer)
+            {
+                var destination = new Span<char>(ptr, internal_length);
+
+                source.CopyTo(destination);
+            }
         }
 
         public FixedString64(int length)
         {
-            this.Length = length;
+            if (length > MaxSize)
+                throw new InvalidOperationException($"Argument Length Bigger than Max Size of {MaxSize}");
+
+            internal_length = length;
         }
 
         public FixedString64(bool fill)
         {
             if (fill)
-                Length = Size;
+                internal_length = MaxSize;
             else
-                Length = 0;
+                internal_length = 0;
         }
         #endregion
 
-        public static bool operator ==(FixedString64 left, FixedString64 right) => left.Equals(right);
-        public static bool operator !=(FixedString64 left, FixedString64 right) => !left.Equals(right);
+        #region Equality Operators
+        public static bool operator ==(FixedString64 left, FixedString64 right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString64 left, FixedString64 right) => !FixedString.Matches(left, right);
+
+        public static bool operator ==(FixedString64 left, string right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString64 left, string right) => !FixedString.Matches(left, right);
+
+        public static bool operator ==(string right, FixedString64 left) => FixedString.Matches(left, right);
+        public static bool operator !=(string right, FixedString64 left) => !FixedString.Matches(left, right);
+        #endregion
+
+        #region Conversions Operators
+        public static implicit operator FixedString64(ReadOnlySpan<char> span) => new FixedString64(span);
+        public static implicit operator ReadOnlySpan<char>(FixedString64 span) => span.ToSpan();
+
+        public static implicit operator Span<char>(FixedString64 span) => span.ToSpan();
+
+        public static implicit operator FixedString64(string text) => new FixedString64(text);
+        #endregion
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct FixedString128 : IFixedString, IEquatable<FixedString128>, IComparable<FixedString128>
     {
-        public const int Size = 128;
+        public const int MaxSize = 128;
 
-        fixed char buffer[Size];
+        fixed char buffer[MaxSize];
 
         public char this[int index]
         {
@@ -460,9 +538,20 @@ namespace MNet
             }
         }
 
-        public int Length { get; set; }
+        int internal_length;
+        public int Length
+        {
+            get => internal_length;
+            set
+            {
+                if (internal_length > MaxSize || internal_length < 0)
+                    throw new ArgumentOutOfRangeException(nameof(Length));
 
-        public int Capacity => Size;
+                internal_length = value;
+            }
+        }
+
+        public int Capacity => MaxSize;
 
         public Span<char> ToSpan()
         {
@@ -475,146 +564,79 @@ namespace MNet
         [EditorBrowsable(EditorBrowsableState.Never)]
         public ref char GetPinnableReference() => ref buffer[0];
 
-        #region Overrides
+        public FixedString.Numerator<FixedString128> GetEnumerator() => new FixedString.Numerator<FixedString128>(ref this);
+
+        #region Object Overrides
         public override int GetHashCode() => FixedString.GetHashCode(ref this);
         public override string ToString() => FixedString.ToString(ref this);
 
         public override bool Equals(object obj)
         {
             if (obj is IFixedString target)
-                return FixedString.Matches(ref this, ref target);
+                return FixedString.Matches(this, target);
 
             return false;
         }
         #endregion
 
-        #region Equals
-        public bool Equals(FixedString128 target) => FixedString.Matches(ref this, ref target);
+        #region Equality & Comparison Methods
+        public bool Equals(FixedString128 target) => FixedString.Matches(this, target);
 
-        public bool Equals(FixedString128 target, StringComparison comparison) => FixedString.Matches(ref this, ref target, comparison);
-        #endregion
-
-        #region Compare To
-        public int CompareTo(FixedString128 target) => FixedString.CompareTo(ref this, ref target);
-
-        public int CompareTo(FixedString128 target, StringComparison comparison) => FixedString.CompareTo(ref this, ref target, comparison);
+        public int CompareTo(FixedString128 target) => FixedString.CompareTo(this, target);
         #endregion
 
         #region Constructors
         public FixedString128(ReadOnlySpan<char> source)
         {
-            Length = default;
+            if (source.Length > MaxSize)
+                throw new InvalidOperationException($"Source Bigger than Max Size of {MaxSize}");
 
-            FixedString.Assign(ref this, source);
+            internal_length = source.Length;
+
+            fixed (char* ptr = buffer)
+            {
+                var destination = new Span<char>(ptr, internal_length);
+
+                source.CopyTo(destination);
+            }
         }
 
         public FixedString128(int length)
         {
-            this.Length = length;
+            if (length > MaxSize)
+                throw new InvalidOperationException($"Argument Length Bigger than Max Size of {MaxSize}");
+
+            internal_length = length;
         }
 
         public FixedString128(bool fill)
         {
             if (fill)
-                Length = Size;
+                internal_length = MaxSize;
             else
-                Length = 0;
+                internal_length = 0;
         }
         #endregion
 
-        public static bool operator ==(FixedString128 left, FixedString128 right) => left.Equals(right);
-        public static bool operator !=(FixedString128 left, FixedString128 right) => !left.Equals(right);
-    }
+        #region Equality Operators
+        public static bool operator ==(FixedString128 left, FixedString128 right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString128 left, FixedString128 right) => !FixedString.Matches(left, right);
 
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct FixedString256 : IFixedString, IEquatable<FixedString256>, IComparable<FixedString256>
-    {
-        public const int Size = 256;
+        public static bool operator ==(FixedString128 left, string right) => FixedString.Matches(left, right);
+        public static bool operator !=(FixedString128 left, string right) => !FixedString.Matches(left, right);
 
-        fixed char buffer[Size];
-
-        public char this[int index]
-        {
-            get
-            {
-                if (index < 0 || index >= Length)
-                    throw new IndexOutOfRangeException($"Index of {index} out of Length of {Length}");
-
-                return buffer[index];
-            }
-            set
-            {
-                if (index < 0 || index >= Length)
-                    throw new IndexOutOfRangeException($"Index of {index} out of Length of {Length}");
-
-                buffer[index] = value;
-            }
-        }
-
-        public int Length { get; set; }
-
-        public int Capacity => Size;
-
-        public Span<char> ToSpan()
-        {
-            fixed (char* pointer = buffer)
-            {
-                return new Span<char>(pointer, Length);
-            }
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public ref char GetPinnableReference() => ref buffer[0];
-
-        #region Overrides
-        public override int GetHashCode() => FixedString.GetHashCode(ref this);
-        public override string ToString() => FixedString.ToString(ref this);
-
-        public override bool Equals(object obj)
-        {
-            if (obj is IFixedString target)
-                return FixedString.Matches(ref this, ref target);
-
-            return false;
-        }
+        public static bool operator ==(string right, FixedString128 left) => FixedString.Matches(left, right);
+        public static bool operator !=(string right, FixedString128 left) => !FixedString.Matches(left, right);
         #endregion
 
-        #region Equals
-        public bool Equals(FixedString256 target) => FixedString.Matches(ref this, ref target);
+        #region Conversions Operators
+        public static implicit operator FixedString128(ReadOnlySpan<char> span) => new FixedString128(span);
+        public static implicit operator ReadOnlySpan<char>(FixedString128 span) => span.ToSpan();
 
-        public bool Equals(FixedString256 target, StringComparison comparison) => FixedString.Matches(ref this, ref target, comparison);
+        public static implicit operator Span<char>(FixedString128 span) => span.ToSpan();
+
+        public static implicit operator FixedString128(string text) => new FixedString128(text);
         #endregion
-
-        #region Compare To
-        public int CompareTo(FixedString256 target) => FixedString.CompareTo(ref this, ref target);
-
-        public int CompareTo(FixedString256 target, StringComparison comparison) => FixedString.CompareTo(ref this, ref target, comparison);
-        #endregion
-
-        #region Constructors
-        public FixedString256(ReadOnlySpan<char> source)
-        {
-            Length = default;
-
-            FixedString.Assign(ref this, source);
-        }
-
-        public FixedString256(int length)
-        {
-            this.Length = length;
-        }
-
-        public FixedString256(bool fill)
-        {
-            if (fill)
-                Length = Size;
-            else
-                Length = 0;
-        }
-        #endregion
-
-        public static bool operator ==(FixedString256 left, FixedString256 right) => left.Equals(right);
-        public static bool operator !=(FixedString256 left, FixedString256 right) => !left.Equals(right);
     }
     #endregion
 }

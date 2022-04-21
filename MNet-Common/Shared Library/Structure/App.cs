@@ -22,7 +22,6 @@ namespace MNet
         {
             this.value = value;
         }
-        public AppID(ReadOnlySpan<char> characters) : this(new FixedString32(characters)) { }
 
         public override bool Equals(object obj)
         {

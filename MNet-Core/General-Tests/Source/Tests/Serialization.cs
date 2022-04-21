@@ -335,20 +335,21 @@ namespace MNet
             Process<FixedString32>();
             Process<FixedString64>();
             Process<FixedString128>();
-            Process<FixedString256>();
 
             static void Process<T>()
                 where T : struct, IFixedString
             {
+                const string Template = "-Hello World-";
+
                 var original = new T();
                 original.Length = original.Capacity;
 
                 for (int i = 0; i < original.Length; i++)
-                    original[i] = "Hello World "[i % 12];
+                    original[i] = Template[i % Template.Length];
 
                 var clone = NetworkSerializer.Clone(original);
 
-                Assert.IsTrue(original.Matches(ref clone));
+                Assert.AreEqual(original, clone);
             }
         }
     }
