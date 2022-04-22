@@ -30,8 +30,6 @@ namespace MNet
 
             var response = await Rest.POST<RegisterGameServerRequest, RegisterGameServerResponse>(Constants.Server.Master.Rest.Requests.Server.Register, payload);
 
-            Log.Info(response.RemoteConfig);
-
             GameServer.Config.Set(response.RemoteConfig);
             AppsAPI.Set(response.Apps);
         }

@@ -93,6 +93,7 @@ namespace MNet
                 MigrationPolicy = MigrationPolicy.Continue,
                 Password = default,
                 Attributes = attributes,
+                Scene = 1,
             };
 
             var request = new CreateRoomRequest(AppID, GameVersion, options);

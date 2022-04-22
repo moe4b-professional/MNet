@@ -535,41 +535,41 @@ namespace MNet
                 switch (request.Type)
                 {
                     case EntityType.SceneObject:
+                    {
+                        if (Scenes.TryGet(request.Scene, out scene) == false)
                         {
-                            if (Scenes.TryGet(request.Scene, out scene) == false)
-                            {
-                                var text = $"Scene {request.Scene} Not Loaded, Cannot Spawn Scene Object";
-                                Log.Warning(text);
-                                Room.LogTo(sender, Log.Level.Error, text);
+                            var text = $"Scene {request.Scene} Not Loaded, Cannot Spawn Scene Object";
+                            Log.Warning(text);
+                            Room.LogTo(sender, Log.Level.Error, text);
 
-                                return false;
-                            }
-
-                            return true;
+                            return false;
                         }
+
+                        return true;
+                    }
 
                     case EntityType.Dynamic:
+                    {
+                        if (request.Persistance.HasFlagFast(PersistanceFlags.SceneLoad))
                         {
-                            if (request.Persistance.HasFlagFast(PersistanceFlags.SceneLoad))
-                            {
-                                scene = null;
-                                return true;
-                            }
-
-                            if (Scenes.Active == null)
-                            {
-                                scene = null;
-
-                                var text = "Cannot Spawn Entity, No Active Scene Loaded";
-                                Log.Warning(text);
-                                Room.LogTo(sender, Log.Level.Error, text);
-                                
-                                return false;
-                            }
-
-                            scene = Scenes.Active;
+                            scene = null;
                             return true;
                         }
+
+                        if (Scenes.Active == null)
+                        {
+                            scene = null;
+
+                            var text = "Cannot Spawn Entity, No Active Scene Loaded";
+                            Log.Warning(text);
+                            Room.LogTo(sender, Log.Level.Error, text);
+
+                            return false;
+                        }
+
+                        scene = Scenes.Active;
+                        return true;
+                    }
 
                     default:
                         throw new NotImplementedException($"No Condition Set For {request.Type}");

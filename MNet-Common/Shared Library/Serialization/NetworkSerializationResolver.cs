@@ -1403,14 +1403,14 @@ namespace MNet
     public sealed class FixedStringNetworkSerializationResolver<T> : DynamicNetworkSerializationResolver<T>
         where T : IFixedString, new()
     {
-        public const int MaxSize = FixedString.MaxSize;
+        public const int MaxSize = byte.MaxValue;
 
         public override void Serialize(NetworkWriter writer, T instance)
         {
-            Helper.Length.Write(writer, instance.Length);
-
             if (instance.Length > MaxSize)
                 throw new InvalidOperationException($"Cannot Serialize Fixed String With Size of {instance.Length}");
+
+            writer.Insert((byte)instance.Length);
 
             if (instance.Length == 0)
                 return;
@@ -1427,7 +1427,7 @@ namespace MNet
         }
         public override T Deserialize(NetworkReader reader)
         {
-            var length = Helper.Length.Read(reader);
+            var length = reader.TakeByte();
 
             if (length > MaxSize)
                 throw new InvalidOperationException($"Cannot Deserialize Fixed String With Size of {length}");

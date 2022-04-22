@@ -17,8 +17,8 @@ namespace MNet
         public GameServerID ID => info.ID;
         public GameServerRegion Region => info.Region;
 
-        string key;
-        public string Key => key;
+        FixedString64 key;
+        public FixedString64 Key => key;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -27,7 +27,7 @@ namespace MNet
             context.Select(ref key);
         }
 
-        public RegisterGameServerRequest(GameServerInfo info, string key)
+        public RegisterGameServerRequest(GameServerInfo info, FixedString64 key)
         {
             this.apiVersion = Constants.ApiVersion;
 
@@ -66,8 +66,8 @@ namespace MNet
         GameServerID id;
         public GameServerID ID => id;
 
-        string key;
-        public string Key => key;
+        FixedString64 key;
+        public FixedString64 Key => key;
 
         public void Select(ref NetworkSerializationContext context)
         {
@@ -75,7 +75,7 @@ namespace MNet
             context.Select(ref key);
         }
 
-        public RemoveGameServerRequest(GameServerID id, string key)
+        public RemoveGameServerRequest(GameServerID id, FixedString64 key)
         {
             this.id = id;
             this.key = key;

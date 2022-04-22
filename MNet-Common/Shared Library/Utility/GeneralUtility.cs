@@ -185,21 +185,21 @@ namespace MNet
             return false;
         }
 
-        public static unsafe bool HasFlagFast<T>(this T target, T value)
-            where T : unmanaged, IConvertible
+        public static unsafe bool HasFlagFast<T>(this T target, T flag)
+            where T : unmanaged, Enum
         {
             var size = sizeof(T);
 
             switch (size)
             {
                 case 1:
-                    return (Unsafe.As<T, byte>(ref target) & Unsafe.As<T, byte>(ref value)) > 0;
+                    return (Unsafe.As<T, byte>(ref target) & Unsafe.As<T, byte>(ref flag)) > 0;
                 case 2:
-                    return (Unsafe.As<T, short>(ref target) & Unsafe.As<T, short>(ref value)) > 0;
+                    return (Unsafe.As<T, short>(ref target) & Unsafe.As<T, short>(ref flag)) > 0;
                 case 4:
-                    return (Unsafe.As<T, int>(ref target) & Unsafe.As<T, int>(ref value)) > 0;
+                    return (Unsafe.As<T, int>(ref target) & Unsafe.As<T, int>(ref flag)) > 0;
                 case 8:
-                    return (Unsafe.As<T, long>(ref target) & Unsafe.As<T, long>(ref value)) > 0;
+                    return (Unsafe.As<T, long>(ref target) & Unsafe.As<T, long>(ref flag)) > 0;
                 default:
                     throw new ArgumentException($"Invalid Enum with Size of {size}");
             }

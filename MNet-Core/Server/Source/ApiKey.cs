@@ -7,7 +7,7 @@ namespace MNet
 {
     public static class ApiKey
     {
-        public static string Token { get; private set; } = string.Empty;
+        public static FixedString64 Token { get; private set; } = default;
 
         public const string Name = "API Key.txt";
 
