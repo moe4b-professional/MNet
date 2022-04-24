@@ -36,7 +36,7 @@ namespace MNet
 
             return false;
         }
-        public bool Equals(GameServerID target) => this.value == target.value;
+        public bool Equals(GameServerID target) => this.value.Equals(target.value);
 
         public override int GetHashCode() => value.GetHashCode();
 

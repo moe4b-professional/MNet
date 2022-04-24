@@ -113,7 +113,7 @@ namespace MNet
                 if (WebSocketHandshake.TryPerform(socket, out var url) == false)
                     return;
 
-                Log.Info("WebSocket Handshake Complete");
+                Log.Trace("WebSocket Handshake Complete");
 
                 Register(socket, url);
             }
@@ -582,7 +582,7 @@ namespace MNet
             if (state == WebSocketState.Closed)
                 throw new InvalidOperationException($"Socket Already Closed");
 
-            Log.Info($"WebSocket {ID} Stopped, Code: {code}");
+            Log.Trace($"WebSocket {ID} Stopped, Code: {code}");
 
             state = WebSocketState.Closed;
 
@@ -597,7 +597,7 @@ namespace MNet
 
         void Dispose()
         {
-            Log.Info($"WebSocket {ID} Disposed");
+            Log.Trace($"WebSocket {ID} Disposed");
 
             Socket.Dispose();
         }

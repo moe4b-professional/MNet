@@ -19,29 +19,24 @@ namespace MNet
 
         static readonly object SyncLock = new object();
 
-        public static class Output
+        public static void Write(object target) => Write(target, ConsoleColor.White);
+        public static void Write(object target, ConsoleColor color)
         {
-            public static ConsoleColor Color { get; set; } = ConsoleColor.White;
-
-            public static void Write(object target)
+            lock (SyncLock)
             {
-                lock (SyncLock)
-                {
-                    Input.Clean();
+                Input.Clean();
 
-                    Console.ForegroundColor = Color;
-                    Console.WriteLine(target);
-                    Console.ResetColor();
+                Console.ForegroundColor = color;
+                Console.WriteLine(target);
+                Console.ResetColor();
 
-                    Input.Write();
-                }
+                Input.Write();
             }
         }
-        public static void Write(object target) => Output.Write(target);
 
         public static class Input
         {
-            public static ConsoleColor Color { get; set; } = ConsoleColor.Yellow;
+            public static ConsoleColor Color { get; set; } = ConsoleColor.Green;
 
             static List<char> List;
 
@@ -125,20 +120,24 @@ namespace MNet
         {
             ExtraConsole.Input.Color = ConsoleColor.Green;
 
+            Log.Minimum = Log.Level.Info;
             Log.Output = Output;
         }
 
         static void Output(object target, Log.Level level)
         {
-            ExtraConsole.Output.Color = LevelToColor(level);
+            var color = LevelToColor(level);
 
-            ExtraConsole.Output.Write($"[{Log.TimeStamp}] {target}");
+            ExtraConsole.Write($"[{Log.TimeStamp}] {target}", color);
         }
 
         static ConsoleColor LevelToColor(Log.Level level)
         {
             switch (level)
             {
+                case Log.Level.Trace:
+                    return ConsoleColor.White;
+
                 case Log.Level.Info:
                     return ConsoleColor.White;
 

@@ -10,7 +10,7 @@ namespace MNet
         int size;
         int position;
 
-        int Remaining => size - position;
+        public int Remaining => size - position;
 
         #region Append
         public void NewLine() => Append('\n');
@@ -205,8 +205,16 @@ namespace MNet
         }
         #endregion
 
+        public void Increment(int offset)
+        {
+            if (offset > Remaining)
+                throw new ArgumentOutOfRangeException("Cannot Increment Position");
+
+            position += offset;
+        }
+
         #region Slicing
-        Span<char> Take(int length)
+        public Span<char> Take(int length)
         {
             CheckLength(length);
 
@@ -217,7 +225,7 @@ namespace MNet
             return span;
         }
 
-        Span<char> Buffer()
+        public Span<char> Buffer()
         {
             var span = characters.Slice(position, Remaining);
 
@@ -230,6 +238,11 @@ namespace MNet
                 throw new InvalidOperationException("Cannot Allocate any More Characters");
         }
         #endregion
+
+        public void Clear()
+        {
+            position = 0;
+        }
 
         public ReadOnlySpan<char> ToSpan()
         {

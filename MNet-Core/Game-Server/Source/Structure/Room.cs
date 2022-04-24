@@ -114,7 +114,7 @@ namespace MNet
             #region Connect & Add
             internal void ConnectCallback(NetworkClientID id)
             {
-                Log.Info($"Room {Room.ID}: Client {id} Connected");
+                Log.Trace($"Room {Room.ID}: Client {id} Connected");
             }
 
             public void Register(NetworkClientID id, ref RegisterClientRequest request)
@@ -140,7 +140,7 @@ namespace MNet
                     return;
                 }
 
-                Log.Info($"Room {Room.ID}: Client {id} Registerd");
+                Log.Trace($"Room {Room.ID}: Client {id} Registerd");
 
                 var client = Add(id, request.Profile);
 
@@ -186,7 +186,7 @@ namespace MNet
 
             internal void DisconnectCallback(NetworkClientID id)
             {
-                Log.Info($"Room {Room.ID}: Client {id} Disconnected");
+                Log.Trace($"Room {Room.ID}: Client {id} Disconnected");
 
                 if (Dictionary.TryGetValue(id, out var client) == false)
                     return;
@@ -513,7 +513,7 @@ namespace MNet
                 scene?.Entities.Add(entity);
                 if (entity.IsMasterObject) MasterObjects.Add(entity);
 
-                Log.Info($"Room {Room.ID}: Client {sender.ID} Spawned Entity {entity.ID}");
+                Log.Trace($"Room {Room.ID}: Client {sender.ID} Spawned Entity {entity.ID}");
 
                 if (entity.IsDynamic)
                 {
@@ -1256,7 +1256,7 @@ namespace MNet
 
         public void Start(RoomOptions options)
         {
-            Log.Info($"Starting Room {ID}");
+            Log.Trace($"Starting Room {ID}");
 
             MessageDispatcher.RegisterHandler<PingRequest>(Ping);
 
@@ -1389,7 +1389,7 @@ namespace MNet
             if (IsRunning == false)
                 throw new Exception($"Room already Closed");
 
-            Log.Info($"Stopping Room {ID}");
+            Log.Trace($"Stopping Room {ID}");
 
             Scheduler.Stop();
 

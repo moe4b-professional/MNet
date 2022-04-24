@@ -8,11 +8,12 @@ namespace MNet
 {
     public static class Log
     {
+        public static Level Minimum { get; set; } = Level.Trace;
+
         public static void Warning(object target) => Add(target, Level.Warning);
-
         public static void Error(object target) => Add(target, Level.Error);
-
         public static void Info(object target) => Add(target, Level.Info);
+        public static void Trace(object target) => Add(target, Level.Trace);
 
         public static string TimeStamp => DateTime.Now.ToString("hh:mm:ss");
 
@@ -20,6 +21,9 @@ namespace MNet
         public static OutputDelegate Output { get; set; }
         public static void Add(object target, Level level)
         {
+            if (level < Minimum)
+                return;
+
             if (Output == null)
                 Console.WriteLine($"[{TimeStamp}] {level}: {target}");
             else
@@ -28,7 +32,10 @@ namespace MNet
 
         public enum Level
         {
-            Info, Warning, Error
+            Trace,
+            Info,
+            Warning,
+            Error
         }
     }
 }

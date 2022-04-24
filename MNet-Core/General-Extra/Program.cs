@@ -6,9 +6,9 @@ using System.IO;
 WriteVersion();
 
 #if DEBUG
-Sandbox.Execute();
+    Sandbox.Execute();
 #else
-Benchmarks.Execute();
+    Benchmarks.Execute();
 #endif
 
 static void WriteVersion()
