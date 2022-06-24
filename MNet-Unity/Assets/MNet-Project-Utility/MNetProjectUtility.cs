@@ -39,11 +39,9 @@ namespace MNet
             {
                 public const string Path = Launch.Path + "Server/";
 
-                public const string Folder = "MNet-Core";
-                public const string Release = "Debug";
-                public const string Variant = "net6.0";
+                public const string Folder = "MNet-Release/Servers/";
 
-                public static string ParsePath(string name) => $"../{Folder}/{name}/bin/{Release}/{Variant}/Start (Windows).bat";
+                public static string ParsePath(string name) => $"../{Folder}/{name}/Start (Windows).bat";
 
                 [MenuItem(Path + "All", priority = Priority)]
                 public static void All()
@@ -137,12 +135,21 @@ namespace MNet
         {
             public const int Priority = MNetProjectUtility.Priority + 300;
 
+            public const string Destination = "../MNet-Release/";
+
             [MenuItem(Path + "Package", priority = Priority)]
             static void Perform()
             {
                 var options = ExportPackageOptions.Interactive | ExportPackageOptions.Recurse;
 
-                AssetDatabase.ExportPackage("Assets/MNet", "MNet-Unity.unitypackage", options);
+                AssetDatabase.ExportPackage("Assets/MNet", Destination + "MNet-Unity.unitypackage", options);
+
+                WriteVersion();
+            }
+
+            static void WriteVersion()
+            {
+                File.WriteAllText(Destination + "Version.txt", $"v{Constants.ApiVersion}");
             }
         }
 
